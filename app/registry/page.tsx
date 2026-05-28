@@ -1,0 +1,214 @@
+"use client"
+
+import { useState, useMemo } from "react"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { PrimitiveCard } from "@/components/primitives/primitive-card"
+import { primitives } from "@/lib/data/primitives"
+import { categories } from "@/lib/data/categories"
+import { agents } from "@/lib/data/agents"
+import type { Category, CompatibleAgent, TrustStatus } from "@/lib/types"
+import { Search, SlidersHorizontal, X, Package } from "lucide-react"
+
+const trustStatuses: TrustStatus[] = ["Trusted", "In Review", "Experimental", "Deprecated"]
+
+export default function RegistryPage() {
+  const [query, setQuery] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
+  const [selectedAgent, setSelectedAgent] = useState<CompatibleAgent | null>(null)
+  const [selectedStatus, setSelectedStatus] = useState<TrustStatus | null>(null)
+  const [showFilters, setShowFilters] = useState(false)
+
+  const filtered = useMemo(() => {
+    return primitives.filter((p) => {
+      const matchesQuery =
+        !query ||
+        p.name.toLowerCase().includes(query.toLowerCase()) ||
+        p.description.toLowerCase().includes(query.toLowerCase()) ||
+        p.fileName.toLowerCase().includes(query.toLowerCase())
+      const matchesCategory = !selectedCategory || p.category === selectedCategory
+      const matchesAgent = !selectedAgent || p.compatibleAgents.includes(selectedAgent)
+      const matchesStatus = !selectedStatus || p.status === selectedStatus
+      return matchesQuery && matchesCategory && matchesAgent && matchesStatus
+    })
+  }, [query, selectedCategory, selectedAgent, selectedStatus])
+
+  const hasFilters = selectedCategory || selectedAgent || selectedStatus
+  const totalTokens = filtered.reduce((sum, p) => sum + p.tokens, 0)
+  const avgQuality = filtered.length
+    ? Math.round(filtered.reduce((sum, p) => sum + p.qualityScore, 0) / filtered.length)
+    : 0
+
+  return (
+    <main className="min-h-screen">
+      <div className="border-b border-border/40">
+        <div className="mx-auto max-w-7xl px-4 py-10 lg:px-6">
+          <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-primary mb-2">
+            Trusted Registry
+          </p>
+          <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Primitive Registry</h1>
+          <p className="mt-2 text-sm text-muted-foreground max-w-xl leading-relaxed">
+            Explore, search, and install trusted AI Context Primitives. Every entry is expert-authored,
+            validated through Context CI, versioned with semver, content-addressed by SHA-256 digest,
+            and scored across four quality dimensions. Ed25519 signing planned via Sigstore.
+          </p>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6">
+        {/* Search bar */}
+        <div className="flex items-center gap-3 mb-6">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search by name, category, or keyword..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="pl-9 bg-card border-border/60 h-9 text-sm"
+            />
+          </div>
+          <Button
+            variant={showFilters ? "secondary" : "outline"}
+            size="sm"
+            className="gap-1.5 shrink-0 h-9 border-border/60"
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            <SlidersHorizontal className="size-3" />
+            Filters
+          </Button>
+          {hasFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-1 text-muted-foreground shrink-0 h-9"
+              onClick={() => {
+                setSelectedCategory(null)
+                setSelectedAgent(null)
+                setSelectedStatus(null)
+              }}
+            >
+              <X className="size-3" />
+              Clear
+            </Button>
+          )}
+        </div>
+
+        {/* Filters panel */}
+        {showFilters && (
+          <div className="mb-6 space-y-4 rounded-xl border border-border/40 bg-card p-4">
+            <div>
+              <p className="text-[9px] uppercase tracking-widest text-muted-foreground mb-2 font-medium">
+                Category
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {categories.map((cat) => (
+                  <Badge
+                    key={cat}
+                    variant={selectedCategory === cat ? "default" : "outline"}
+                    className={
+                      selectedCategory === cat
+                        ? "cursor-pointer bg-primary text-primary-foreground"
+                        : "cursor-pointer border-border/60 text-muted-foreground hover:text-foreground hover:border-border"
+                    }
+                    onClick={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
+                  >
+                    {cat}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="text-[9px] uppercase tracking-widest text-muted-foreground mb-2 font-medium">
+                Compatible Agent
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {agents.map((agent) => (
+                  <Badge
+                    key={agent}
+                    variant={selectedAgent === agent ? "default" : "outline"}
+                    className={
+                      selectedAgent === agent
+                        ? "cursor-pointer bg-primary text-primary-foreground font-mono"
+                        : "cursor-pointer border-border/60 text-muted-foreground font-mono hover:text-foreground hover:border-border"
+                    }
+                    onClick={() => setSelectedAgent(selectedAgent === agent ? null : agent)}
+                  >
+                    {agent}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="text-[9px] uppercase tracking-widest text-muted-foreground mb-2 font-medium">
+                Trust Status
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {trustStatuses.map((status) => (
+                  <Badge
+                    key={status}
+                    variant={selectedStatus === status ? "default" : "outline"}
+                    className={
+                      selectedStatus === status
+                        ? "cursor-pointer bg-primary text-primary-foreground"
+                        : "cursor-pointer border-border/60 text-muted-foreground hover:text-foreground hover:border-border"
+                    }
+                    onClick={() => setSelectedStatus(selectedStatus === status ? null : status)}
+                  >
+                    {status}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Result stats */}
+        <div className="flex items-center justify-between mb-5">
+          <p className="text-xs text-muted-foreground">
+            <span className="font-mono text-foreground/70">{filtered.length}</span> primitive{filtered.length !== 1 ? "s" : ""}
+          </p>
+          <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
+            <span>
+              <span className="font-mono text-foreground/70">{totalTokens.toLocaleString()}</span> total tokens
+            </span>
+            <span>
+              avg quality <span className="font-mono text-success">{avgQuality}</span>
+            </span>
+          </div>
+        </div>
+
+        {/* Grid */}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {filtered.map((primitive) => (
+            <PrimitiveCard key={primitive.slug} primitive={primitive} />
+          ))}
+        </div>
+
+        {/* Empty state */}
+        {filtered.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="flex size-12 items-center justify-center rounded-xl bg-secondary mb-4">
+              <Package className="size-5 text-muted-foreground" />
+            </div>
+            <p className="text-sm text-foreground mb-1">No primitives match your search</p>
+            <p className="text-xs text-muted-foreground mb-4">Try adjusting your filters or search terms.</p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-primary border-primary/20"
+              onClick={() => {
+                setQuery("")
+                setSelectedCategory(null)
+                setSelectedAgent(null)
+                setSelectedStatus(null)
+              }}
+            >
+              Clear all filters
+            </Button>
+          </div>
+        )}
+      </div>
+    </main>
+  )
+}
