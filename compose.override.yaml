@@ -15,6 +15,6 @@ services:
       NODE_ENV: development
       WATCHPACK_POLLING: "true"
     volumes:
-      - .:/app
+      - ./apps/web:/app
       - /app/node_modules
       - /app/.next

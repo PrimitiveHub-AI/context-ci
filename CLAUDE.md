@@ -21,10 +21,42 @@ See [project memory](/home/primitive/.claude/projects/-srv-primitivehub-app/memo
 and [launch posture memory](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/project_launch_posture.md)
 for the full picture. **Read both before responding to a strategic question.**
 
+## Repository layout
+
+```
+.
+├── CLAUDE.md              this file
+├── DESIGN.md              unified design doctrine (single source of truth)
+├── README.md              project-level dev workflow
+├── apps/
+│   └── web/               Next.js 16 frontend (this is the only app today)
+│       ├── app/           App Router pages + route handlers
+│       ├── components/    React components (ui / landing / primitives / workbench / contributors)
+│       ├── content/       per-primitive markdown source
+│       ├── hooks/         custom hooks
+│       ├── lib/           types, data, workbench utilities
+│       ├── public/        static assets (robots.txt, icons, …)
+│       ├── scripts/       check-data.mjs runtime invariant guard
+│       ├── Dockerfile     multi-stage; built by CI
+│       └── package.json   web app dependencies
+├── compose.yaml           base compose (builds apps/web)
+├── compose.override.yaml  dev overlay (auto-loaded)
+├── compose.prod.yaml      prod overlay
+├── docs/
+│   ├── README.md          doc index
+│   ├── spec.md            Primitive Spec v0.1
+│   └── threat-model.md    10 supply-chain attack categories
+└── .github/workflows/     CI (paths: apps/web/**)
+```
+
+**Future:** `apps/api/` (Django + Ninja) lands when Phase 3 backend
+bootstrap ships. Other services (workers, scanners) land alongside.
+
 ## Canonical documents (treat as authoritative)
 
 | Path | What it defines |
 |---|---|
+| [`DESIGN.md`](./DESIGN.md) | Unified design doctrine for the whole project. Visual theme, palette + roles, typography, components, layout principles. Supersedes scattered taste references. |
 | [`docs/threat-model.md`](./docs/threat-model.md) | 10 supply-chain attack categories Context CI is designed to detect. Cited by the paper. |
 | [`docs/spec.md`](./docs/spec.md) | Primitive Spec v0.1: frontmatter, body sections, content addressing, in-toto Attestation predicate, Sigstore signing model, SLSA mapping. |
 | [`docs/README.md`](./docs/README.md) | Doc index + planned OSS sibling repos. |
@@ -36,24 +68,24 @@ is the justification.
 
 ## Expert primitives — load these before any frontend work
 
-The directory [`content/primitives/`](./content/primitives/) holds the
-project's expert cognition primitives, calibrated to the actual stack
-and the actual codebase. **Before making any non-trivial frontend
+The directory [`apps/web/content/primitives/`](./apps/web/content/primitives/)
+holds the project's expert cognition primitives, calibrated to the actual
+stack and the actual codebase. **Before making any non-trivial frontend
 change, read the primitives in the second column.**
 
 | Touching… | Load these primitives |
 |---|---|
-| Tailwind classes, `app/globals.css`, theme tokens, fonts | [`content/primitives/tailwind-v4-mastery.md`](./content/primitives/tailwind-v4-mastery.md) |
-| Any file in `app/` (pages, layouts, route handlers, server/client decisions) | [`content/primitives/nextjs-16-app-router.md`](./content/primitives/nextjs-16-app-router.md) |
-| Components in `components/ui/` or `components/<feature>/`, variants, primitives composition | [`content/primitives/shadcn-ui-composition.md`](./content/primitives/shadcn-ui-composition.md) |
-| **Any** UI / visual design decision — taste, hierarchy, microcopy, restraint | [`content/primitives/frontend-design-elite.md`](./content/primitives/frontend-design-elite.md) |
-| Producing a DESIGN.md, documenting a screen's visual logic | [`content/primitives/design-md-spec.md`](./content/primitives/design-md-spec.md) |
+| Tailwind classes, `apps/web/app/globals.css`, theme tokens, fonts | [`apps/web/content/primitives/tailwind-v4-mastery.md`](./apps/web/content/primitives/tailwind-v4-mastery.md) |
+| Any file in `apps/web/app/` (pages, layouts, route handlers, server/client decisions) | [`apps/web/content/primitives/nextjs-16-app-router.md`](./apps/web/content/primitives/nextjs-16-app-router.md) |
+| Components in `apps/web/components/ui/` or `apps/web/components/<feature>/`, variants, primitives composition | [`apps/web/content/primitives/shadcn-ui-composition.md`](./apps/web/content/primitives/shadcn-ui-composition.md) |
+| **Any** UI / visual design decision — taste, hierarchy, microcopy, restraint | [`apps/web/content/primitives/frontend-design-elite.md`](./apps/web/content/primitives/frontend-design-elite.md) |
+| Producing a DESIGN.md, documenting a screen's visual logic | [`apps/web/content/primitives/design-md-spec.md`](./apps/web/content/primitives/design-md-spec.md) |
 
 **These primitives reference each other.** Loading `frontend-design-elite`
 references the demo-data discipline from `feedback-no-fake-numbers`
 memory; loading `tailwind-v4-mastery` references the actual
-`app/globals.css`; loading `nextjs-16-app-router` references the
-server-split PR we already shipped. Read them as a connected system, not
+`apps/web/app/globals.css`; loading `nextjs-16-app-router` references the
+server-split pattern already shipped. Read them as a connected system, not
 as isolated docs.
 
 ## Hard rules
@@ -70,12 +102,11 @@ These are **enforced by user instruction**; not negotiable.
    or labeled `<DemoDataBadge>`. See
    [feedback-no-fake-numbers memory](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/feedback_no_fake_numbers.md).
 5. **No public deploys, no social posts, no domain references** anywhere
-   indexable until the paper publishes. Use `noindex` defenses + the
-   `chore/noindex-everywhere` belt-and-suspenders that's already merged
-   or pending merge.
+   indexable until the paper publishes. `noindex` defenses are live
+   (robots.txt + meta + X-Robots-Tag).
 6. **No npx skill installs.** External AI skills get *read into
-   /tmp/primitivehub-skills/, distilled into a spec-conformant
-   primitive in `content/primitives/`, source deleted*. The npx
+   `/tmp/primitivehub-skills/`, distilled into a spec-conformant
+   primitive in `apps/web/content/primitives/`, source deleted*. The npx
    install path is treated as a supply-chain attack vector (T5 in our
    threat model).
 
@@ -93,8 +124,8 @@ This wording is load-bearing for the paper's correctness.
 
 ## Architecture (locked decisions)
 
-- **Frontend:** Next.js 16 + TypeScript + Tailwind v4 + shadcn/ui ✓ done
-- **Backend (Phase 3+):** Django 5 + Django Ninja + Postgres 17
+- **Frontend:** Next.js 16 + TypeScript + Tailwind v4 + shadcn/ui ✓ done (`apps/web/`)
+- **Backend (Phase 3+):** Django 5 + Django Ninja + Postgres 17 (`apps/api/`, not yet built)
 - **Cache / sessions:** Valkey (not Redis)
 - **Jobs:** Procrastinate (Postgres-backed; defers RabbitMQ to Phase 5+)
 - **Object storage:** Cloudflare R2 (v1); MinIO swap-in for enterprise
@@ -109,11 +140,17 @@ This wording is load-bearing for the paper's correctness.
 
 ## Build hygiene
 
-- `pnpm typecheck` must pass before any commit touching `.ts`/`.tsx`.
-- `pnpm check:data` must pass before any commit touching `lib/data/*`
-  or `lib/types.ts`. The data-integrity guard is non-negotiable.
-- Real TS errors block builds — `next.config.mjs` does NOT silence them
-  (the v0 `ignoreBuildErrors: true` flag was removed in Phase 1).
+All commands run from **`apps/web/`** (the Next.js app's root).
+
+- `cd apps/web && pnpm typecheck` must pass before any commit touching
+  `.ts`/`.tsx`.
+- `cd apps/web && pnpm check:data` must pass before any commit touching
+  `apps/web/lib/data/*` or `apps/web/lib/types.ts`. The data-integrity
+  guard is non-negotiable.
+- Real TS errors block builds — `apps/web/next.config.mjs` does NOT silence
+  them (the v0 `ignoreBuildErrors: true` flag was removed in Phase 1).
+- Container builds: `docker compose build web` from the repo root (compose
+  files at root point `context: ./apps/web`).
 
 ## Workflow
 
@@ -125,7 +162,7 @@ This wording is load-bearing for the paper's correctness.
 
 ## When in doubt
 
-1. Read the relevant primitive in `content/primitives/`.
+1. Read the relevant primitive in `apps/web/content/primitives/`.
 2. Read the relevant `docs/*`.
 3. Read the relevant memory file.
 4. **Ask.** The user has stated repeatedly that they value being
@@ -134,5 +171,6 @@ This wording is load-bearing for the paper's correctness.
 
 ---
 
-This file is updated whenever a primitive is added or the contract
-shifts. It is meant to be a load-bearing reference, not a snapshot.
+This file is updated whenever a primitive is added, the contract shifts,
+or the repository structure changes. It is meant to be a load-bearing
+reference, not a snapshot.

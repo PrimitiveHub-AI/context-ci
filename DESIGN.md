@@ -53,7 +53,7 @@ The brand sentence — the load-bearing claim — is:
 > disposable prompt text.**
 
 This sentence appears as a styled callout in
-[`components/landing/why-section.tsx`](components/landing/why-section.tsx)
+[`apps/web/components/landing/why-section.tsx`](apps/web/components/landing/why-section.tsx)
 and is what every other visual decision must support.
 
 ---
@@ -61,7 +61,7 @@ and is what every other visual decision must support.
 ## 2. Color Palette & Roles
 
 All values are OKLCH (`oklch(L C H)` — perceptual lightness, chroma,
-hue) and live in [`app/globals.css`](app/globals.css) as CSS variables
+hue) and live in [`apps/web/app/globals.css`](apps/web/app/globals.css) as CSS variables
 inside `:root { … }` and exposed to Tailwind via `@theme inline`. New
 colors are added there; component code references the produced Tailwind
 utility (e.g., `text-primary`, `bg-success/[0.06]`) and never inlines a
@@ -108,7 +108,7 @@ alpha tokens.
 ## 3. Typography Rules
 
 Two font families, sourced via Next.js Google Fonts and exposed as CSS
-variables ([`app/layout.tsx`](app/layout.tsx)):
+variables ([`apps/web/app/layout.tsx`](apps/web/app/layout.tsx)):
 
 - **Geist Sans** (`var(--font-geist-sans)` → Tailwind `font-sans`) — body,
   headings, microcopy, button labels, descriptive prose
@@ -168,16 +168,16 @@ only in the Hero. Outside of headlines, the dominant size range is
 ## 4. Component Stylings
 
 The product is composed almost entirely from primitives in
-[`components/ui/`](components/ui/) (a standard shadcn/ui install) and
-feature components in `components/<feature>/`. The descriptions below
+[`apps/web/components/ui/`](apps/web/components/ui/) (a standard shadcn/ui install) and
+feature components in `apps/web/components/<feature>/`. The descriptions below
 are functional, not implementation — they capture what the component is
 *for* and what tone it carries.
 
-### 4.1 Cards ([`components/ui/card.tsx`](components/ui/card.tsx))
+### 4.1 Cards ([`apps/web/components/ui/card.tsx`](apps/web/components/ui/card.tsx))
 
 A card is a content vessel with one-step elevation over background
 (`bg-card`) and a subtle outline (`border-border/40`). **No shadow by
-default.** The PrimitiveCard ([`components/primitives/primitive-card.tsx`](components/primitives/primitive-card.tsx))
+default.** The PrimitiveCard ([`apps/web/components/primitives/primitive-card.tsx`](apps/web/components/primitives/primitive-card.tsx))
 adds a thin colored top accent (`h-px w-full bg-success/40`) to mark
 trust status without occupying additional visual weight. Cards are dense
 inside: a primitive card packs filename, status, description, six
@@ -185,20 +185,20 @@ metadata fields, four score badges, a token-budget bar, risk + category
 chips, six agent compatibility tags, an install command, and two
 actions — all in a single ~340px-wide card. The density is the point.
 
-### 4.2 Badges ([`components/ui/badge.tsx`](components/ui/badge.tsx))
+### 4.2 Badges ([`apps/web/components/ui/badge.tsx`](apps/web/components/ui/badge.tsx))
 
 Badges are status carriers. Three families:
 
-- **Trust badges** ([`components/primitives/trust-badge.tsx`](components/primitives/trust-badge.tsx))
+- **Trust badges** ([`apps/web/components/primitives/trust-badge.tsx`](apps/web/components/primitives/trust-badge.tsx))
   — status word + lucide icon, hue-coded against background and border
   (success / amber / violet / muted). Always mono, always small.
-- **Demo data badges** ([`components/primitives/demo-data-badge.tsx`](components/primitives/demo-data-badge.tsx))
+- **Demo data badges** ([`apps/web/components/primitives/demo-data-badge.tsx`](apps/web/components/primitives/demo-data-badge.tsx))
   — amber pill with info icon. Used wherever synthetic numbers appear
   in UI. Carries a `title` attribute with explanatory text.
 - **Generic chips** — filter selection, agent compatibility, category
   labels. Mono, 9–10px, low-saturation border.
 
-### 4.3 Buttons ([`components/ui/button.tsx`](components/ui/button.tsx))
+### 4.3 Buttons ([`apps/web/components/ui/button.tsx`](apps/web/components/ui/button.tsx))
 
 Three variants in active use: `default` (primary fill), `outline`
 (transparent + border), `ghost` (no background, hover-revealed). The
@@ -206,7 +206,7 @@ default size in the product is `sm` (28px height) or h-10 for hero CTAs.
 **Never more than three actions in a single decision area.** Primary
 gets the cyan, outline gets the border, ghost gets the muted text.
 
-### 4.4 Tabs ([`components/ui/tabs.tsx`](components/ui/tabs.tsx); custom inline pattern on primitive detail)
+### 4.4 Tabs ([`apps/web/components/ui/tabs.tsx`](apps/web/components/ui/tabs.tsx); custom inline pattern on primitive detail)
 
 The product's tab pattern is a row of mono 13px buttons with a
 **1px-wide 24px-long underline marker** (`absolute bottom-0 left-1/2
@@ -216,7 +216,7 @@ trust products read as "channels of the same content," not as separate
 modes. The Workbench overrides this for its three modes (Author /
 Validate / Test, planned) where pill-style tabs would be appropriate.
 
-### 4.5 Editor ([`components/workbench/markdown-editor.tsx`](components/workbench/markdown-editor.tsx))
+### 4.5 Editor ([`apps/web/components/workbench/markdown-editor.tsx`](apps/web/components/workbench/markdown-editor.tsx))
 
 The Workbench uses **CodeMirror 6** with a custom theme matching this
 palette (cyan caret + selection, amber lint-warning underline,
@@ -242,7 +242,7 @@ Install commands, CLI roadmap examples, full validation CI logs, and
 the `phub verify` provenance output all share a single visual pattern:
 `rounded-md bg-secondary/40 border border-border/50` with a `$` prompt
 in `text-primary/60` followed by mono code at 10.5–11px. The CLI
-Roadmap component ([`components/landing/cli-roadmap.tsx`](components/landing/cli-roadmap.tsx))
+Roadmap component ([`apps/web/components/landing/cli-roadmap.tsx`](apps/web/components/landing/cli-roadmap.tsx))
 is the canonical example.
 
 ### 4.8 Eyebrow labels
@@ -337,7 +337,7 @@ security buyers at desks. Tailwind breakpoints in use:
 ### 5.5 Backgrounds and surface accents
 
 - **Hero** carries two stacked backgrounds: a subtle dot grid
-  (`bg-grid` class in [`app/globals.css`](app/globals.css)) at 30%
+  (`bg-grid` class in [`apps/web/app/globals.css`](apps/web/app/globals.css)) at 30%
   opacity, and a `radial-gradient` cyan glow at the top
   (`oklch(0.78 0.14 195 / 0.06)`). These are the only landing-background
   treatments in the product. Don't introduce another.
@@ -366,8 +366,8 @@ security buyers at desks. Tailwind breakpoints in use:
 
 ## Cross-references
 
-- **Color tokens**: [`app/globals.css`](app/globals.css) (`:root` + `@theme inline`)
-- **Font wiring**: [`app/layout.tsx`](app/layout.tsx)
+- **Color tokens**: [`apps/web/app/globals.css`](apps/web/app/globals.css) (`:root` + `@theme inline`)
+- **Font wiring**: [`apps/web/app/layout.tsx`](apps/web/app/layout.tsx)
 - **Tailwind v4 conventions**: [`content/primitives/tailwind-v4-mastery.md`](content/primitives/tailwind-v4-mastery.md)
 - **shadcn composition patterns**: [`content/primitives/shadcn-ui-composition.md`](content/primitives/shadcn-ui-composition.md)
 - **Elite taste calibration**: [`content/primitives/frontend-design-elite.md`](content/primitives/frontend-design-elite.md)
@@ -379,6 +379,6 @@ security buyers at desks. Tailwind breakpoints in use:
 Add a section under "Non-obvious decisions" whenever you make a
 design choice that future you (or future Claude) would otherwise have
 to re-derive. Update the palette section when a new token lands in
-`app/globals.css`. Update the typography scale when a new size enters
+`apps/web/app/globals.css`. Update the typography scale when a new size enters
 the product. **Don't let this file fall behind the code — it is the
 authority.**
