@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/card"
+import { DemoDataBadge } from "@/components/primitives/demo-data-badge"
 import {
   Code2,
   Palette,
@@ -80,6 +81,12 @@ export function ConceptSection() {
               </div>
             ))}
           </div>
+          <p className="mt-3 flex items-center justify-center gap-2 text-[10px] text-muted-foreground">
+            <DemoDataBadge />
+            <span className="text-muted-foreground/70">
+              seed numbers for the prototype — replaced with live registry counts at v1
+            </span>
+          </p>
         </div>
       </div>
     </section>

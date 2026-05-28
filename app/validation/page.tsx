@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card"
 import { PipelineStage } from "@/components/primitives/pipeline-stage"
 import { ScoreBadge } from "@/components/primitives/score-badge"
 import { LifecycleTimeline } from "@/components/primitives/lifecycle-timeline"
+import { DemoDataBadge } from "@/components/primitives/demo-data-badge"
 import { pipelineStages } from "@/lib/data/pipeline"
 import { Badge } from "@/components/ui/badge"
 import { ShieldCheck, FileText, Fingerprint, Clock } from "lucide-react"
@@ -34,6 +35,14 @@ export default function ValidationPage() {
       </div>
 
       <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6">
+        {/* Demo-data disclosure */}
+        <div className="mb-4 flex items-center gap-2">
+          <DemoDataBadge label="demo run" />
+          <span className="text-[10px] text-muted-foreground/70">
+            illustrative pipeline output — live Context CI runs replace this when v1 ships
+          </span>
+        </div>
+
         {/* Current run header */}
         <Card className="border-border/40 bg-card p-5 mb-8">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">

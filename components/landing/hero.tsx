@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { DemoDataBadge } from "@/components/primitives/demo-data-badge"
 import { ArrowRight, Terminal, BookOpen, Copy, ShieldCheck, GitBranch, Fingerprint, BarChart3, Users, Boxes } from "lucide-react"
 
 const credibilityPillars = [
@@ -105,11 +106,14 @@ export function Hero() {
             From raw markdown to trusted cognition
           </p>
           <div className="grid grid-cols-2 gap-px md:grid-cols-3 lg:grid-cols-6 rounded-xl border border-border/40 overflow-hidden bg-border/40">
-            {pipelineSteps.map((s) => (
+            {pipelineSteps.map((s, i) => (
               <div key={s.step} className="flex flex-col items-center bg-card p-4 text-center">
                 <span className="text-[9px] font-mono uppercase tracking-widest text-primary/50 mb-2">{s.step}</span>
                 <p className="text-[11px] font-semibold text-foreground leading-tight">{s.label}</p>
                 <p className="mt-1.5 text-[9px] text-muted-foreground leading-relaxed">{s.detail}</p>
+                {i === pipelineSteps.length - 1 && (
+                  <DemoDataBadge className="mt-2" />
+                )}
               </div>
             ))}
           </div>

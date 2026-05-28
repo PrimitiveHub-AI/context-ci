@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { DemoDataBadge } from "@/components/primitives/demo-data-badge"
 import { Download, BookOpen, Quote, CheckCircle2, ExternalLink } from "lucide-react"
 
 const contributions = [
@@ -246,18 +247,26 @@ recommended_sections:
           </div>
 
           {/* Benchmark results */}
-          <div className="mt-4 grid grid-cols-2 gap-px sm:grid-cols-4 rounded-xl border border-border/40 overflow-hidden bg-border/40">
-            {[
-              { label: "Specificity", value: "+42%" },
-              { label: "Originality", value: "+38%" },
-              { label: "Anti-Pattern", value: "-51%" },
-              { label: "Compliance", value: "+46%" },
-            ].map((m) => (
-              <div key={m.label} className="bg-card p-4 text-center">
-                <p className="text-lg font-bold font-mono text-success tabular-nums">{m.value}</p>
-                <p className="mt-1 text-[9px] uppercase tracking-wider text-muted-foreground font-medium">{m.label}</p>
-              </div>
-            ))}
+          <div className="mt-4">
+            <div className="mb-2 flex items-center gap-2">
+              <DemoDataBadge label="demo benchmark" />
+              <span className="text-[10px] text-muted-foreground/70">
+                prototype values illustrating the methodology — not live measurements
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-px sm:grid-cols-4 rounded-xl border border-border/40 overflow-hidden bg-border/40">
+              {[
+                { label: "Specificity", value: "+42%" },
+                { label: "Originality", value: "+38%" },
+                { label: "Anti-Pattern", value: "-51%" },
+                { label: "Compliance", value: "+46%" },
+              ].map((m) => (
+                <div key={m.label} className="bg-card p-4 text-center">
+                  <p className="text-lg font-bold font-mono text-success tabular-nums">{m.value}</p>
+                  <p className="mt-1 text-[9px] uppercase tracking-wider text-muted-foreground font-medium">{m.label}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
