@@ -1,6 +1,6 @@
 "use client"
 
-import { use, useState } from "react"
+import { use, useEffect, useState } from "react"
 import { notFound } from "next/navigation"
 import { primitives } from "@/lib/data/primitives"
 import { pipelineStages } from "@/lib/data/pipeline"
@@ -36,7 +36,35 @@ export default function PrimitiveDetailPage({
   const primitive = primitives.find((p) => p.slug === slug)
   const [activeTab, setActiveTab] = useState("Overview")
   const [copied, setCopied] = useState(false)
+  const [markdownContent, setMarkdownContent] = useState<string | null>(null)
+  const [markdownLoadState, setMarkdownLoadState] = useState<"idle" | "loading" | "loaded" | "missing">("idle")
   const tokenPercent = primitive ? Math.round((primitive.tokens / primitive.tokenBudget) * 100) : 0
+
+  // Fetch real markdown content from content/primitives/<slug>.md via the
+  // /api/primitives/[slug]/raw route. Falls back to template if 404.
+  useEffect(() => {
+    if (!primitive) return
+    let cancelled = false
+    setMarkdownLoadState("loading")
+    fetch(`/api/primitives/${primitive.slug}/raw`)
+      .then(async (r) => (r.ok ? r.text() : null))
+      .then((content) => {
+        if (cancelled) return
+        if (content) {
+          setMarkdownContent(content)
+          setMarkdownLoadState("loaded")
+        } else {
+          setMarkdownContent(null)
+          setMarkdownLoadState("missing")
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setMarkdownLoadState("missing")
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [primitive])
 
   if (!primitive) return notFound()
 
@@ -44,6 +72,16 @@ export default function PrimitiveDetailPage({
     navigator.clipboard.writeText(primitive!.installCommand)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  async function handleCopyMarkdown() {
+    const content = markdownContent ?? ""
+    if (!content) return
+    try {
+      await navigator.clipboard.writeText(content)
+    } catch {
+      // ignore
+    }
   }
 
   return (
@@ -329,19 +367,41 @@ export default function PrimitiveDetailPage({
         {activeTab === "Markdown" && (
           <Card className="border-border/40 bg-card p-0 overflow-hidden">
             <div className="border-b border-border/40 bg-secondary/20 px-4 py-2 flex items-center justify-between">
-              <span className="text-xs font-mono text-muted-foreground">{primitive.fileName}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono text-muted-foreground">{primitive.fileName}</span>
+                {markdownLoadState === "loaded" && (
+                  <span className="inline-flex items-center gap-1 rounded-sm border border-success/25 bg-success/[0.06] px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-wider text-success/85">
+                    <span className="size-1 rounded-full bg-success/80" />
+                    live content
+                  </span>
+                )}
+                {markdownLoadState === "missing" && (
+                  <span className="inline-flex items-center gap-1 rounded-sm border border-amber/25 bg-amber/[0.06] px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-wider text-amber/85">
+                    <span className="size-1 rounded-full bg-amber/80" />
+                    template fallback
+                  </span>
+                )}
+              </div>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-mono text-muted-foreground">
-                  {primitive.tokens.toLocaleString()} tokens
+                  {markdownContent
+                    ? `${markdownContent.length.toLocaleString()} chars`
+                    : `${primitive.tokens.toLocaleString()} tokens`}
                 </span>
-                <Button variant="ghost" size="sm" className="gap-1 text-xs h-6 px-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1 text-xs h-6 px-2"
+                  onClick={handleCopyMarkdown}
+                  disabled={!markdownContent}
+                >
                   <Copy className="size-3" />
                   Copy
                 </Button>
               </div>
             </div>
-            <pre className="p-5 text-[11px] font-mono text-muted-foreground leading-[1.7] overflow-x-auto">
-{`---
+            <pre className="p-5 text-[11px] font-mono text-muted-foreground leading-[1.7] overflow-x-auto whitespace-pre-wrap">
+{markdownContent ?? `---
 name: ${primitive.slug}
 version: ${primitive.version}
 type: ${primitive.category.toLowerCase().replace(/ & /g, "-").replace(/ /g, "-")}
@@ -368,6 +428,10 @@ ${primitive.doNotUseWhen.map((d) => `  - "${d}"`).join("\n")}
 This primitive teaches an AI agent how to reason about ${primitive.name.toLowerCase()}.
 It provides structured decision rules, anti-patterns, and review checklists
 that enforce expert-level output quality.
+
+[Template fallback shown — real domain-specific markdown is being authored
+in content/primitives/${primitive.slug}.md. When it lands, this tab will
+render the real content automatically.]
 
 ## Core Principles
 - Enforce measurable criteria over vague quality statements
