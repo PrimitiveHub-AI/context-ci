@@ -1,0 +1,20 @@
+# Dev overlay — automatically loaded by `docker compose up`.
+#
+# - Builds the `dev` Dockerfile stage (hot-reload, source mounted).
+# - Bind-mounts the repo over /app so edits apply instantly.
+# - Anonymous volumes preserve container-installed node_modules and .next
+#   so the host's empty (or differently-versioned) versions don't clobber them.
+
+services:
+  web:
+    build:
+      target: dev
+    image: primitivehub-web:dev
+    command: ["pnpm", "dev"]
+    environment:
+      NODE_ENV: development
+      WATCHPACK_POLLING: "true"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next

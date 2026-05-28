@@ -1,0 +1,17 @@
+# Production overlay — only loaded explicitly:
+#
+#   docker compose -f compose.yaml -f compose.prod.yaml pull
+#   docker compose -f compose.yaml -f compose.prod.yaml up -d
+#
+# In prod we never build locally — the image comes from GHCR (built by CI).
+
+services:
+  web:
+    pull_policy: always
+    mem_limit: 512m
+    cpus: 1.0
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

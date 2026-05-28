@@ -1,0 +1,30 @@
+# PrimitiveHub Compose stack — base config.
+#
+#   docker compose up                                → loads compose.yaml + compose.override.yaml (dev)
+#   docker compose -f compose.yaml -f compose.prod.yaml up -d   → production
+#
+# Right now this is just the web app. Future services (api, postgres, valkey,
+# authentik) will be added alongside in their own dedicated PRs.
+
+name: primitivehub
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    image: ${WEB_IMAGE:-ghcr.io/devxyzx/primitivehub-web:latest}
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: "3000"
+    networks:
+      - primitivehub_net
+
+networks:
+  primitivehub_net:
+    driver: bridge
