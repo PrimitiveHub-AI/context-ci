@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises"
+import path from "node:path"
 import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 import { primitives, findPrimitiveBySlug } from "@/lib/data/primitives"
@@ -44,10 +46,30 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 }
 
+// Read the real domain-specific markdown from content/primitives/<slug>.md
+// at build time. Returns null if the file does not exist — the view falls
+// back to a generic template with a "template fallback" badge.
+async function loadPrimitiveMarkdown(slug: string): Promise<string | null> {
+  try {
+    const filePath = path.join(process.cwd(), "content", "primitives", `${slug}.md`)
+    return await readFile(filePath, "utf-8")
+  } catch {
+    return null
+  }
+}
+
 export default async function PrimitiveDetailPage({ params }: PageProps) {
   const { slug } = await params
   const primitive = findPrimitiveBySlug(slug)
   if (!primitive) notFound()
 
-  return <PrimitiveDetailView primitive={primitive} pipelineStages={pipelineStages} />
+  const markdownContent = await loadPrimitiveMarkdown(slug)
+
+  return (
+    <PrimitiveDetailView
+      primitive={primitive}
+      pipelineStages={pipelineStages}
+      markdownContent={markdownContent}
+    />
+  )
 }

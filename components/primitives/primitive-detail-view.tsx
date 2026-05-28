@@ -30,17 +30,37 @@ type TabName = (typeof TABS)[number]
 interface PrimitiveDetailViewProps {
   primitive: Primitive
   pipelineStages: PipelineStageType[]
+  /**
+   * The real domain-specific markdown for this primitive, read at build time
+   * from `content/primitives/<slug>.md`. `null` when no file exists yet —
+   * the Markdown tab falls back to a generic template with a visible
+   * "template fallback" badge.
+   */
+  markdownContent?: string | null
 }
 
-export function PrimitiveDetailView({ primitive, pipelineStages }: PrimitiveDetailViewProps) {
+export function PrimitiveDetailView({ primitive, pipelineStages, markdownContent }: PrimitiveDetailViewProps) {
   const [activeTab, setActiveTab] = useState<TabName>("Overview")
   const [copied, setCopied] = useState(false)
+  const [copiedMd, setCopiedMd] = useState(false)
   const tokenPercent = Math.round((primitive.tokens / primitive.tokenBudget) * 100)
+  const hasRealMarkdown = typeof markdownContent === "string" && markdownContent.length > 0
 
   function handleCopy() {
     navigator.clipboard.writeText(primitive.installCommand)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  async function handleCopyMarkdown() {
+    if (!hasRealMarkdown) return
+    try {
+      await navigator.clipboard.writeText(markdownContent!)
+      setCopiedMd(true)
+      setTimeout(() => setCopiedMd(false), 2000)
+    } catch {
+      // ignore
+    }
   }
 
   return (
@@ -335,19 +355,40 @@ export function PrimitiveDetailView({ primitive, pipelineStages }: PrimitiveDeta
         {activeTab === "Markdown" && (
           <Card className="border-border/40 bg-card p-0 overflow-hidden">
             <div className="border-b border-border/40 bg-secondary/20 px-4 py-2 flex items-center justify-between">
-              <span className="text-xs font-mono text-muted-foreground">{primitive.fileName}</span>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono text-muted-foreground">
-                  {primitive.tokens.toLocaleString()} tokens
+                <span className="text-xs font-mono text-muted-foreground">{primitive.fileName}</span>
+                {hasRealMarkdown ? (
+                  <span className="inline-flex items-center gap-1 rounded-sm border border-success/25 bg-success/[0.06] px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-wider text-success/85">
+                    <span className="size-1 rounded-full bg-success/80" />
+                    live content
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 rounded-sm border border-amber/25 bg-amber/[0.06] px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-wider text-amber/85">
+                    <span className="size-1 rounded-full bg-amber/80" />
+                    template fallback
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono text-muted-foreground tabular-nums">
+                  {hasRealMarkdown
+                    ? `${markdownContent!.length.toLocaleString()} chars`
+                    : `${primitive.tokens.toLocaleString()} tokens`}
                 </span>
-                <Button variant="ghost" size="sm" className="gap-1 text-xs h-6 px-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1 text-xs h-6 px-2"
+                  onClick={handleCopyMarkdown}
+                  disabled={!hasRealMarkdown}
+                >
                   <Copy className="size-3" />
-                  Copy
+                  {copiedMd ? "copied" : "Copy"}
                 </Button>
               </div>
             </div>
-            <pre className="p-5 text-[11px] font-mono text-muted-foreground leading-[1.7] overflow-x-auto">
-{`---
+            <pre className="p-5 text-[11px] font-mono text-muted-foreground leading-[1.7] overflow-x-auto whitespace-pre-wrap">
+{hasRealMarkdown ? markdownContent : `---
 name: ${primitive.slug}
 version: ${primitive.version}
 type: ${primitive.category.toLowerCase().replace(/ & /g, "-").replace(/ /g, "-")}
@@ -413,12 +454,14 @@ When this primitive is loaded, the agent should:
 5. Respect token budget constraints
 6. Log which rules were applied and which were skipped`}
             </pre>
-            <div className="border-t border-border/40 bg-secondary/10 px-4 py-2 flex items-center gap-2">
-              <DemoDataBadge label="template content" />
-              <span className="text-[10px] text-muted-foreground/70">
-                placeholder structure — domain-specific content lands in the next iteration
-              </span>
-            </div>
+            {!hasRealMarkdown && (
+              <div className="border-t border-border/40 bg-secondary/10 px-4 py-2 flex items-center gap-2">
+                <DemoDataBadge label="template content" />
+                <span className="text-[10px] text-muted-foreground/70">
+                  placeholder structure — domain-specific content lands in the next iteration
+                </span>
+              </div>
+            )}
           </Card>
         )}
 
