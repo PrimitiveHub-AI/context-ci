@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://primitivehub.dev"),
+  metadataBase: new URL("https://primitivehub.ai"),
   title: {
     default: "PrimitiveHub — Trusted Registry for AI Context Primitives",
     template: "%s — PrimitiveHub",
@@ -35,6 +35,22 @@ export const metadata: Metadata = {
     "PrimitiveHub",
     "CyberOrca",
   ],
+  // Pre-launch posture: every page declares itself non-indexable.
+  // Remove this `robots` block on launch day, alongside public/robots.txt
+  // and the X-Robots-Tag header in next.config.mjs.
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+      "max-snippet": -1,
+      "max-image-preview": "none",
+      "max-video-preview": -1,
+    },
+  },
   openGraph: {
     type: "website",
     title: "PrimitiveHub — Trusted Registry for AI Context Primitives",
