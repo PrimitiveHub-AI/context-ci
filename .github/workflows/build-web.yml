@@ -3,8 +3,16 @@ name: web — build + publish
 on:
   push:
     branches: [main]
+    paths:
+      - "apps/web/**"
+      - ".github/workflows/build-web.yml"
+      - "compose.yaml"
   pull_request:
     branches: [main]
+    paths:
+      - "apps/web/**"
+      - ".github/workflows/build-web.yml"
+      - "compose.yaml"
   workflow_dispatch:
 
 permissions:
@@ -19,6 +27,9 @@ jobs:
   preflight:
     name: data check + typecheck
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
     steps:
       - uses: actions/checkout@v4
 
@@ -30,6 +41,7 @@ jobs:
         with:
           node-version: "24"
           cache: pnpm
+          cache-dependency-path: apps/web/pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -71,7 +83,7 @@ jobs:
       - name: Build (and push on main)
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ./apps/web
           target: runner
           push: ${{ github.event_name == 'push' }}
           tags: ${{ steps.meta.outputs.tags }}

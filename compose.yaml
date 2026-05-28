@@ -11,7 +11,7 @@ name: primitivehub
 services:
   web:
     build:
-      context: .
+      context: ./apps/web
       dockerfile: Dockerfile
       target: runner
     image: ${WEB_IMAGE:-ghcr.io/devxyzx/primitivehub-web:latest}
