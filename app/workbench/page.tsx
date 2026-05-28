@@ -1,10 +1,15 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { MarkdownEditor } from "@/components/workbench/markdown-editor"
+import { lintFrontmatter } from "@/lib/workbench/codemirror-linter"
+import { lintWorkbenchContent } from "@/lib/workbench/lint"
+import { analyzeSections, estimateTokens, countLines, extractFrontmatter } from "@/lib/workbench/parse"
+import { linter } from "@codemirror/lint"
 import {
   Play,
   FlaskConical,
@@ -21,6 +26,7 @@ import {
 } from "lucide-react"
 
 const sampleMarkdown = `---
+spec_version: "0.1"
 name: my-new-primitive
 version: 0.1.0
 type: engineering
@@ -68,61 +74,54 @@ Include measurable criteria for success.
 When loaded, the agent should:
 1. Apply all decision rules before generating output
 2. Check output against anti-patterns
-3. Report confidence level for each section`
-
-const lintWarnings = [
-  {
-    type: "error" as const,
-    line: 29,
-    message: "Instruction is vague: \"Describe what this primitive teaches\" — add measurable criteria and expected outcomes.",
-  },
-  {
-    type: "error" as const,
-    line: 33,
-    message: "Core Principles lack concrete examples. Each principle must include at least one testable example.",
-  },
-  {
-    type: "warning" as const,
-    line: 0,
-    message: "No \"Expected Output Format\" section found. Agents need explicit format guidance for consistent outputs.",
-  },
-  {
-    type: "warning" as const,
-    line: 0,
-    message: "No \"Examples\" section found. Real-world examples significantly improve primitive effectiveness.",
-  },
-  {
-    type: "info" as const,
-    line: 0,
-    message: "Token count will be calculated after content is finalized. Current estimate: ~420 tokens.",
-  },
-]
-
-const sectionChecklist = [
-  { name: "YAML Frontmatter", present: true, required: true },
-  { name: "Purpose", present: true, required: true },
-  { name: "Core Principles", present: true, required: true },
-  { name: "Decision Rules", present: true, required: true },
-  { name: "Anti-Patterns", present: true, required: true },
-  { name: "Review Checklist", present: true, required: true },
-  { name: "Agent Behavior", present: true, required: true },
-  { name: "Use When / Do Not Use", present: true, required: true },
-  { name: "Expected Output Format", present: false, required: false },
-  { name: "Examples", present: false, required: false },
-  { name: "References", present: false, required: false },
-]
+3. Report confidence level for each section
+`
 
 export default function WorkbenchPage() {
   const [content, setContent] = useState(sampleMarkdown)
 
-  const tokenEstimate = Math.round(content.length / 4)
-  const tokenBudget = 4000
-  const tokenPercent = Math.min(100, Math.round((tokenEstimate / tokenBudget) * 100))
-  const lineCount = content.split("\n").length
-  const errors = lintWarnings.filter((w) => w.type === "error").length
-  const warnings = lintWarnings.filter((w) => w.type === "warning").length
-  const requiredSections = sectionChecklist.filter((s) => s.required)
-  const requiredPresent = requiredSections.filter((s) => s.present).length
+  // Live analysis — recomputed on every keystroke (cheap; ~100µs for typical primitives).
+  const analysis = useMemo(() => {
+    const fm = extractFrontmatter(content)
+    const sections = analyzeSections(fm.ok ? fm.body : content)
+    const findings = lintWorkbenchContent(content)
+    const tokens = estimateTokens(content)
+    return {
+      tokens,
+      lineCount: countLines(content),
+      sections,
+      findings,
+      errors: findings.filter((f) => f.severity === "error").length,
+      warnings: findings.filter((f) => f.severity === "warning").length,
+      infos: findings.filter((f) => f.severity === "info").length,
+      // Pull live frontmatter for the metadata bar
+      fmName: fm.ok && typeof fm.data.name === "string" ? fm.data.name : "—",
+      fmType: fm.ok && typeof fm.data.type === "string" ? fm.data.type : "—",
+      fmRisk: fm.ok && typeof fm.data.risk_level === "string" ? fm.data.risk_level : "—",
+      fmLicense: fm.ok && typeof fm.data.license === "string" ? fm.data.license : "—",
+      fmBudget: fm.ok && typeof fm.data.token_budget === "number" ? fm.data.token_budget : 4000,
+    }
+  }, [content])
+
+  const tokenPercent = Math.min(
+    100,
+    Math.round((analysis.tokens / analysis.fmBudget) * 100),
+  )
+
+  // CodeMirror extensions: the linter + a few options. Memoized so the editor
+  // doesn't re-init on every render.
+  const editorExtensions = useMemo(
+    () => [linter(lintFrontmatter, { delay: 250 })],
+    [],
+  )
+
+  const allSections = [
+    { name: "YAML Frontmatter", present: extractFrontmatter(content).ok, required: true },
+    ...analysis.sections.required.map((s) => ({ ...s })),
+    ...analysis.sections.recommended.map((s) => ({ ...s })),
+  ]
+  const requiredAll = allSections.filter((s) => s.required)
+  const requiredPresent = requiredAll.filter((s) => s.present).length
 
   return (
     <main className="min-h-screen">
@@ -136,8 +135,8 @@ export default function WorkbenchPage() {
               </p>
               <h1 className="text-xl font-bold text-foreground">Primitive Authoring Environment</h1>
               <p className="mt-1 text-xs text-muted-foreground max-w-lg">
-                An engineering environment for creating, linting, testing, validating, and
-                publishing AI Context Primitives. Author with structure. Ship with confidence.
+                IDE-grade authoring for AI Context Primitives. CodeMirror editor with live spec
+                validation, inline lint, and section discovery — calibrated to Primitive Spec v0.1.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -166,38 +165,53 @@ export default function WorkbenchPage() {
         </div>
       </div>
 
-      {/* Metadata bar */}
+      {/* Metadata bar — derived live from the frontmatter */}
       <div className="border-b border-border/40">
         <div className="mx-auto max-w-7xl px-4 py-2.5 lg:px-6">
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2">
               <span className="text-[9px] uppercase tracking-widest text-muted-foreground font-medium">Name</span>
-              <Input className="h-6 w-36 bg-secondary/30 border-border/40 text-[11px] font-mono px-2" defaultValue="my-new-primitive" />
+              <Input
+                className="h-6 w-44 bg-secondary/30 border-border/40 text-[11px] font-mono px-2"
+                value={analysis.fmName}
+                readOnly
+              />
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[9px] uppercase tracking-widest text-muted-foreground font-medium">Category</span>
-              <Badge variant="outline" className="text-[10px] font-mono border-border/40 text-muted-foreground cursor-pointer hover:border-border h-5">
-                Software Engineering
+              <span className="text-[9px] uppercase tracking-widest text-muted-foreground font-medium">Type</span>
+              <Badge variant="outline" className="text-[10px] font-mono border-border/40 text-muted-foreground h-5">
+                {analysis.fmType}
               </Badge>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-[9px] uppercase tracking-widest text-muted-foreground font-medium">Risk</span>
-              <Badge variant="outline" className="text-[10px] border-success/20 text-success cursor-pointer h-5 gap-1">
+              <Badge
+                variant="outline"
+                className={`text-[10px] h-5 gap-1 font-mono ${
+                  analysis.fmRisk === "low"
+                    ? "border-success/20 text-success"
+                    : analysis.fmRisk === "medium"
+                      ? "border-amber/20 text-amber"
+                      : analysis.fmRisk === "high"
+                        ? "border-destructive/20 text-destructive"
+                        : "border-border/40 text-muted-foreground"
+                }`}
+              >
                 <Shield className="size-2" />
-                Low
+                {analysis.fmRisk}
               </Badge>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-[9px] uppercase tracking-widest text-muted-foreground font-medium">License</span>
-              <Badge variant="outline" className="text-[10px] font-mono border-border/40 text-muted-foreground cursor-pointer hover:border-border h-5">
-                MIT
+              <Badge variant="outline" className="text-[10px] font-mono border-border/40 text-muted-foreground h-5">
+                {analysis.fmLicense}
               </Badge>
             </div>
 
-            {/* Token budget */}
+            {/* Token budget — live */}
             <div className="flex items-center gap-2 ml-auto">
               <Gauge className="size-3 text-muted-foreground" />
-              <div className="token-bar w-20 h-1.5">
+              <div className="token-bar w-24 h-1.5">
                 <div
                   className={`token-bar-fill h-full ${
                     tokenPercent > 90 ? "bg-amber" : "bg-primary/50"
@@ -205,31 +219,35 @@ export default function WorkbenchPage() {
                   style={{ width: `${tokenPercent}%` }}
                 />
               </div>
-              <span className="text-[10px] font-mono text-muted-foreground">
-                ~{tokenEstimate.toLocaleString()}/{tokenBudget.toLocaleString()}
+              <span className="text-[10px] font-mono text-muted-foreground tabular-nums">
+                ~{analysis.tokens.toLocaleString()}/{analysis.fmBudget.toLocaleString()}
               </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Status bar */}
+      {/* Status bar — live counts */}
       <div className="border-b border-border/40">
         <div className="mx-auto max-w-7xl px-4 py-1.5 lg:px-6">
           <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
             <span className="flex items-center gap-1">
               <XCircle className="size-2.5 text-destructive" />
-              {errors} errors
+              <span className="tabular-nums">{analysis.errors}</span> errors
             </span>
             <span className="flex items-center gap-1">
               <AlertTriangle className="size-2.5 text-amber" />
-              {warnings} warnings
+              <span className="tabular-nums">{analysis.warnings}</span> warnings
+            </span>
+            <span className="flex items-center gap-1">
+              <Info className="size-2.5 text-primary" />
+              <span className="tabular-nums">{analysis.infos}</span> info
             </span>
             <span className="flex items-center gap-1">
               <CheckCircle2 className="size-2.5 text-success" />
-              {requiredPresent}/{requiredSections.length} required sections
+              <span className="tabular-nums">{requiredPresent}</span>/{requiredAll.length} required sections
             </span>
-            <span className="ml-auto font-mono">{lineCount} lines</span>
+            <span className="ml-auto font-mono tabular-nums">{analysis.lineCount} lines</span>
           </div>
         </div>
       </div>
@@ -243,39 +261,51 @@ export default function WorkbenchPage() {
               <div className="border-b border-border/40 bg-secondary/20 px-4 py-1.5 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <FileText className="size-3 text-primary/60" />
-                  <span className="text-[11px] font-mono text-muted-foreground">editor</span>
+                  <span className="text-[11px] font-mono text-muted-foreground">editor.md</span>
                 </div>
-                <span className="text-[9px] font-mono text-muted-foreground">
-                  markdown
-                </span>
+                <div className="flex items-center gap-3 text-[9px] font-mono text-muted-foreground">
+                  <span>spec v0.1</span>
+                  <span className="text-border">|</span>
+                  <span>markdown</span>
+                </div>
               </div>
-              <textarea
+              <MarkdownEditor
                 value={content}
-                onChange={(e) => setContent(e.target.value)}
-                className="w-full min-h-[560px] resize-none bg-transparent p-4 text-[11px] font-mono text-foreground/90 leading-[1.7] focus:outline-none placeholder:text-muted-foreground"
-                spellCheck={false}
+                onChange={setContent}
+                extensions={editorExtensions}
+                className="min-h-[640px]"
               />
             </Card>
           </div>
 
           {/* Right panels */}
           <div className="lg:col-span-5 space-y-4">
-            {/* Section checklist */}
+            {/* Sections — live */}
             <Card className="border-border/40 bg-card p-4">
               <h3 className="text-[11px] font-semibold text-foreground mb-3 flex items-center gap-1.5 uppercase tracking-wider">
                 <CheckCircle2 className="size-3 text-success/70" />
                 Sections
               </h3>
               <div className="space-y-1.5">
-                {sectionChecklist.map((section) => (
+                {allSections.map((section) => (
                   <div key={section.name} className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       {section.present ? (
                         <CheckCircle2 className="size-3 text-success/70" />
+                      ) : section.required ? (
+                        <AlertTriangle className="size-3 text-destructive/70" />
                       ) : (
-                        <AlertTriangle className="size-3 text-amber/70" />
+                        <Info className="size-3 text-muted-foreground/70" />
                       )}
-                      <span className={`text-[11px] ${section.present ? "text-muted-foreground" : "text-amber/80"}`}>
+                      <span
+                        className={`text-[11px] ${
+                          section.present
+                            ? "text-muted-foreground"
+                            : section.required
+                              ? "text-destructive/80"
+                              : "text-muted-foreground/70"
+                        }`}
+                      >
                         {section.name}
                       </span>
                     </div>
@@ -287,45 +317,63 @@ export default function WorkbenchPage() {
               </div>
             </Card>
 
-            {/* Lint output */}
+            {/* Lint output — live from the same linter as the editor squiggles */}
             <Card className="border-border/40 bg-card p-4">
-              <h3 className="text-[11px] font-semibold text-foreground mb-3 flex items-center gap-1.5 uppercase tracking-wider">
-                <AlertTriangle className="size-3 text-amber/70" />
-                Lint Output
-              </h3>
-              <div className="space-y-2">
-                {lintWarnings.map((warning, i) => (
-                  <div
-                    key={i}
-                    className={`flex items-start gap-2 rounded-md px-2.5 py-2 text-[11px] ${
-                      warning.type === "error"
-                        ? "bg-destructive/[0.04] border border-destructive/15"
-                        : warning.type === "warning"
-                          ? "bg-amber/[0.04] border border-amber/15"
-                          : "bg-primary/[0.03] border border-primary/10"
-                    }`}
-                  >
-                    {warning.type === "error" ? (
-                      <XCircle className="size-3 shrink-0 text-destructive mt-0.5" />
-                    ) : warning.type === "warning" ? (
-                      <AlertTriangle className="size-3 shrink-0 text-amber mt-0.5" />
-                    ) : (
-                      <Info className="size-3 shrink-0 text-primary mt-0.5" />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <span className="text-muted-foreground leading-relaxed">{warning.message}</span>
-                      {warning.line > 0 && (
-                        <span className="ml-1.5 text-[9px] font-mono text-muted-foreground/50">
-                          L{warning.line}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-[11px] font-semibold text-foreground flex items-center gap-1.5 uppercase tracking-wider">
+                  <AlertTriangle className="size-3 text-amber/70" />
+                  Lint Output
+                </h3>
+                <span className="text-[9px] font-mono text-muted-foreground/70">
+                  {analysis.findings.length} finding{analysis.findings.length === 1 ? "" : "s"}
+                </span>
               </div>
+              {analysis.findings.length === 0 ? (
+                <div className="rounded-md bg-success/[0.04] border border-success/15 px-2.5 py-3 text-center">
+                  <CheckCircle2 className="inline size-3.5 text-success/70 mr-1.5 mb-0.5" />
+                  <span className="text-[11px] text-muted-foreground">
+                    No findings — primitive conforms to Spec v0.1.
+                  </span>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-72 overflow-y-auto">
+                  {analysis.findings.map((finding, i) => (
+                    <div
+                      key={`${finding.code}-${i}`}
+                      className={`flex items-start gap-2 rounded-md px-2.5 py-2 text-[11px] ${
+                        finding.severity === "error"
+                          ? "bg-destructive/[0.04] border border-destructive/15"
+                          : finding.severity === "warning"
+                            ? "bg-amber/[0.04] border border-amber/15"
+                            : "bg-primary/[0.03] border border-primary/10"
+                      }`}
+                    >
+                      {finding.severity === "error" ? (
+                        <XCircle className="size-3 shrink-0 text-destructive mt-0.5" />
+                      ) : finding.severity === "warning" ? (
+                        <AlertTriangle className="size-3 shrink-0 text-amber mt-0.5" />
+                      ) : (
+                        <Info className="size-3 shrink-0 text-primary mt-0.5" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-muted-foreground leading-relaxed">{finding.message}</p>
+                        <p className="mt-1 flex items-center gap-2 text-[9px] font-mono text-muted-foreground/60">
+                          <span>{finding.code}</span>
+                          {finding.line !== undefined && (
+                            <>
+                              <span className="text-border">·</span>
+                              <span>L{finding.line}</span>
+                            </>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </Card>
 
-            {/* Compatibility selector */}
+            {/* Target agents */}
             <Card className="border-border/40 bg-card p-4">
               <h3 className="text-[11px] font-semibold text-foreground mb-3 uppercase tracking-wider">
                 Target Agents
