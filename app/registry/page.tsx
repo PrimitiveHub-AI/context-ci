@@ -1,17 +1,22 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { PrimitiveCard } from "@/components/primitives/primitive-card"
+import { PrimitiveTable } from "@/components/primitives/primitive-table"
 import { primitives } from "@/lib/data/primitives"
 import { categories } from "@/lib/data/categories"
 import { agents } from "@/lib/data/agents"
 import type { Category, CompatibleAgent, TrustStatus } from "@/lib/types"
-import { Search, SlidersHorizontal, X, Package } from "lucide-react"
+import { LayoutGrid, List, Search, SlidersHorizontal, X, Package } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 const trustStatuses: TrustStatus[] = ["Trusted", "In Review", "Experimental", "Deprecated"]
+
+type ViewMode = "cards" | "table"
+const VIEW_STORAGE_KEY = "primitivehub:registry-view"
 
 export default function RegistryPage() {
   const [query, setQuery] = useState("")
@@ -19,6 +24,26 @@ export default function RegistryPage() {
   const [selectedAgent, setSelectedAgent] = useState<CompatibleAgent | null>(null)
   const [selectedStatus, setSelectedStatus] = useState<TrustStatus | null>(null)
   const [showFilters, setShowFilters] = useState(false)
+  const [view, setView] = useState<ViewMode>("cards")
+
+  // Load persisted view preference after mount (avoids SSR mismatch)
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(VIEW_STORAGE_KEY)
+      if (stored === "cards" || stored === "table") setView(stored)
+    } catch {
+      // ignore (private-mode, etc.)
+    }
+  }, [])
+
+  function setAndPersistView(next: ViewMode) {
+    setView(next)
+    try {
+      window.localStorage.setItem(VIEW_STORAGE_KEY, next)
+    } catch {
+      // ignore
+    }
+  }
 
   const filtered = useMemo(() => {
     return primitives.filter((p) => {
@@ -57,7 +82,7 @@ export default function RegistryPage() {
       </div>
 
       <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6">
-        {/* Search bar */}
+        {/* Search bar + view toggle */}
         <div className="flex items-center gap-3 mb-6">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -92,6 +117,44 @@ export default function RegistryPage() {
               Clear
             </Button>
           )}
+
+          {/* View toggle */}
+          <div
+            role="radiogroup"
+            aria-label="View mode"
+            className="flex items-center gap-0 rounded-md border border-border/60 bg-card h-9 p-0.5 shrink-0"
+          >
+            <button
+              type="button"
+              role="radio"
+              aria-checked={view === "cards"}
+              onClick={() => setAndPersistView("cards")}
+              className={cn(
+                "inline-flex items-center gap-1.5 px-2.5 h-full rounded-sm text-[11px] font-mono transition-colors",
+                view === "cards"
+                  ? "bg-secondary text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <LayoutGrid className="size-3" />
+              Cards
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={view === "table"}
+              onClick={() => setAndPersistView("table")}
+              className={cn(
+                "inline-flex items-center gap-1.5 px-2.5 h-full rounded-sm text-[11px] font-mono transition-colors",
+                view === "table"
+                  ? "bg-secondary text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <List className="size-3" />
+              Table
+            </button>
+          </div>
         </div>
 
         {/* Filters panel */}
@@ -166,24 +229,31 @@ export default function RegistryPage() {
         {/* Result stats */}
         <div className="flex items-center justify-between mb-5">
           <p className="text-xs text-muted-foreground">
-            <span className="font-mono text-foreground/70">{filtered.length}</span> primitive{filtered.length !== 1 ? "s" : ""}
+            <span className="font-mono text-foreground/70 tabular-nums">{filtered.length}</span>{" "}
+            primitive{filtered.length !== 1 ? "s" : ""}
           </p>
           <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
             <span>
-              <span className="font-mono text-foreground/70">{totalTokens.toLocaleString()}</span> total tokens
+              <span className="font-mono text-foreground/70 tabular-nums">{totalTokens.toLocaleString()}</span> total tokens
             </span>
             <span>
-              avg quality <span className="font-mono text-success">{avgQuality}</span>
+              avg quality <span className="font-mono text-success tabular-nums">{avgQuality}</span>
             </span>
           </div>
         </div>
 
-        {/* Grid */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((primitive) => (
-            <PrimitiveCard key={primitive.slug} primitive={primitive} />
-          ))}
-        </div>
+        {/* View — Cards or Table */}
+        {filtered.length > 0 && view === "cards" && (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {filtered.map((primitive) => (
+              <PrimitiveCard key={primitive.slug} primitive={primitive} />
+            ))}
+          </div>
+        )}
+
+        {filtered.length > 0 && view === "table" && (
+          <PrimitiveTable primitives={filtered} />
+        )}
 
         {/* Empty state */}
         {filtered.length === 0 && (
