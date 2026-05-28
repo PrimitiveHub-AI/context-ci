@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { GovernanceSection } from "@/components/contributors/governance-section"
 import { reviewQueue } from "@/lib/data/reviews"
 import { contributors as contributorsData } from "@/lib/data/contributors"
 import {
@@ -56,6 +57,9 @@ export default function ContributorsPage() {
           </p>
         </div>
       </div>
+
+      {/* Governance — roles, responsibilities, public-uploads disclosure */}
+      <GovernanceSection />
 
       {/* Tab toggle */}
       <div className="border-b border-border/40">

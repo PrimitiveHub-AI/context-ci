@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card"
 import { PipelineStage } from "@/components/primitives/pipeline-stage"
 import { ScoreBadge } from "@/components/primitives/score-badge"
+import { LifecycleTimeline } from "@/components/primitives/lifecycle-timeline"
 import { pipelineStages } from "@/lib/data/pipeline"
 import { Badge } from "@/components/ui/badge"
 import { ShieldCheck, FileText, Fingerprint, Clock } from "lucide-react"
@@ -22,6 +23,13 @@ export default function ValidationPage() {
             Agent benchmarking. Expert human review. Attested release. This is Context CI --
             infrastructure-grade validation for cognition files.
           </p>
+        </div>
+      </div>
+
+      {/* Lifecycle Timeline — the macro view */}
+      <div className="border-b border-border/40">
+        <div className="mx-auto max-w-7xl px-4 py-10 lg:px-6">
+          <LifecycleTimeline currentStage="Context CI" />
         </div>
       </div>
 
