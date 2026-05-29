@@ -65,6 +65,12 @@ services:
         condition: service_healthy
       valkey:
         condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8000/api/v1/healthz | grep -q '\"status\":\"ok\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     networks: [primitivehub_net]
 
   # ── Truth DB ──────────────────────────────────────────────────────────────
