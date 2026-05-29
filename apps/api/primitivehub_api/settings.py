@@ -26,7 +26,7 @@ if env_file.is_file():
 
 SECRET_KEY = env(
     "DJANGO_SECRET_KEY",
-    default="dev-secret-not-for-production-replace-via-env",  # noqa: S105
+    default="dev-secret-not-for-production-replace-via-env",
 )
 DEBUG = env("DEBUG")
 ALLOWED_HOSTS = env("ALLOWED_HOSTS")
@@ -39,9 +39,9 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.sessions",
     # Project apps
-    "apps.accounts",
-    "apps.orgs",
-    "apps.registry",
+    "accounts",
+    "orgs",
+    "registry",
 ]
 
 MIDDLEWARE = [
@@ -53,7 +53,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # PrimitiveHub OIDC: extracts + validates Bearer tokens, attaches request.oidc_subject
-    "apps.accounts.middleware.OIDCAuthenticationMiddleware",
+    "accounts.middleware.OIDCAuthenticationMiddleware",
 ]
 
 ROOT_URLCONF = "primitivehub_api.urls"
@@ -179,7 +179,7 @@ LOGGING = {
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
-            "formatter": "json" if not DEBUG else "json",
+            "formatter": "json",
         },
     },
     "root": {

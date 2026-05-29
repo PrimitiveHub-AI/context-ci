@@ -12,15 +12,17 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from functools import wraps
-from typing import Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
-from django.http import HttpRequest
 from ninja.errors import HttpError
+
+if TYPE_CHECKING:
+    from django.http import HttpRequest
 
 F = TypeVar("F", bound=Callable[..., Any])
 
 
-def requires_auth(view: F) -> F:
+def requires_auth[F: Callable[..., Any]](view: F) -> F:
     """Reject unauthenticated requests with 401.
 
     Authenticated = `request.oidc_subject is not None`, i.e. the OIDC

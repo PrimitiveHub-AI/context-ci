@@ -20,35 +20,30 @@ limit row visibility to the active org context.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, cast
 
-from django.db.models import Count, QuerySet
-from django.http import HttpRequest
+from django.db.models import Count
 from ninja import Router
 
-from apps.orgs.models import Organization, OrganizationMember
-from apps.orgs.schemas import OrganizationMembershipOut, OrganizationOut
+from accounts.models import User  # noqa: TC001 — used by cast() at runtime
+from orgs.models import OrganizationMember
+from orgs.schemas import OrganizationMembershipOut, OrganizationOut
 from primitivehub_api.auth import requires_auth
 
-router = Router(tags=["orgs"])
+if TYPE_CHECKING:
+    from django.http import HttpRequest
 
-
-def _org_queryset_for_user(user: Any) -> QuerySet[Organization]:
-    """Return orgs the user is a member of, annotated with member_role_count."""
-    return (
-        Organization.objects.filter(members__user=user)
-        .annotate(member_role_count=Count("members"))
-        .distinct()
-        .order_by("slug")
-    )
+router = Router(tags=["orgs"], by_alias=True)
 
 
 @router.get("/organizations", response=list[OrganizationMembershipOut])
 @requires_auth
 def list_organizations(request: HttpRequest) -> list[OrganizationMembershipOut]:
     """List the authenticated user's organization memberships, with roles."""
+    # requires_auth guarantees request.user is the OIDC-provisioned User row.
+    user = cast("User", request.user)
     memberships = (
-        OrganizationMember.objects.filter(user=request.user)
+        OrganizationMember.objects.filter(user=user)
         .select_related("organization")
         .annotate(member_role_count=Count("organization__members"))
         .order_by("organization__slug")

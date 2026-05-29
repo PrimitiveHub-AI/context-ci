@@ -11,12 +11,11 @@ literals change, the constants below must be updated in lockstep.
 
 from __future__ import annotations
 
-from apps.registry.api import (
+from registry.api import (
     _CATEGORY_LABEL_BY_VALUE,
     _TRUST_STATUS_BY_VERDICT,
 )
-from apps.registry.models import Primitive, PrimitiveVersion
-
+from registry.models import Primitive, PrimitiveVersion
 
 # Mirror of apps/web/lib/types.ts literal unions, as of the parity audit.
 WEB_TRUST_STATUSES: set[str] = {"Trusted", "In Review", "Experimental", "Deprecated"}
@@ -65,4 +64,4 @@ def test_every_web_trust_status_is_reachable() -> None:
 def test_every_web_risk_level_is_a_model_choice() -> None:
     """Web RiskLevel literals must map 1:1 to `Primitive.RiskLevel`."""
     model_values = {value for value, _label in Primitive.RiskLevel.choices}
-    assert WEB_RISK_LEVELS == model_values, (WEB_RISK_LEVELS, model_values)
+    assert model_values == WEB_RISK_LEVELS, (WEB_RISK_LEVELS, model_values)

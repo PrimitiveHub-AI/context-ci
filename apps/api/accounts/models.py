@@ -23,7 +23,7 @@ class UserManager(BaseUserManager["User"]):
     membership.
     """
 
-    def create_user(self, subject: str, email: str = "", **extra_fields: object) -> "User":
+    def create_user(self, subject: str, email: str = "", **extra_fields: object) -> User:
         if not subject:
             msg = "OIDC subject is required"
             raise ValueError(msg)
@@ -36,7 +36,7 @@ class UserManager(BaseUserManager["User"]):
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, subject: str, email: str = "", **extra_fields: object) -> "User":
+    def create_superuser(self, subject: str, email: str = "", **extra_fields: object) -> User:
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
         return self.create_user(subject=subject, email=email, **extra_fields)

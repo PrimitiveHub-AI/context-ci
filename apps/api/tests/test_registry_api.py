@@ -18,8 +18,8 @@ from django.contrib.auth import get_user_model
 from django.test import Client, override_settings
 from django.utils import timezone
 
-from apps.orgs.models import Organization, OrganizationMember, Role
-from apps.registry.models import (
+from orgs.models import Organization, OrganizationMember, Role
+from registry.models import (
     Attestation,
     Primitive,
     PrimitiveVersion,
@@ -49,16 +49,10 @@ def two_orgs_with_data():
     OrganizationMember.objects.create(
         organization=alice_org, user=alice, roles=[Role.MAINTAINER.value]
     )
-    OrganizationMember.objects.create(
-        organization=bob_org, user=bob, roles=[Role.MAINTAINER.value]
-    )
+    OrganizationMember.objects.create(organization=bob_org, user=bob, roles=[Role.MAINTAINER.value])
 
-    alice_registry = Registry.objects.create(
-        organization=alice_org, slug="public", name="Public"
-    )
-    bob_registry = Registry.objects.create(
-        organization=bob_org, slug="public", name="Public"
-    )
+    alice_registry = Registry.objects.create(organization=alice_org, slug="public", name="Public")
+    bob_registry = Registry.objects.create(organization=bob_org, slug="public", name="Public")
 
     alice_repo = Repository.objects.create(
         organization=alice_org,
@@ -177,9 +171,7 @@ def test_list_repositories_scoped(client: Client, two_orgs_with_data) -> None:
 
 
 @pytest.mark.django_db
-def test_list_primitives_returns_alice_only(
-    client: Client, two_orgs_with_data
-) -> None:
+def test_list_primitives_returns_alice_only(client: Client, two_orgs_with_data) -> None:
     with override_settings(DEV_OIDC_SUBJECT="alice@example.com"):
         response = client.get("/api/v1/primitives")
     assert response.status_code == 200
@@ -190,9 +182,7 @@ def test_list_primitives_returns_alice_only(
 
 
 @pytest.mark.django_db
-def test_list_primitives_filter_by_category(
-    client: Client, two_orgs_with_data
-) -> None:
+def test_list_primitives_filter_by_category(client: Client, two_orgs_with_data) -> None:
     with override_settings(DEV_OIDC_SUBJECT="alice@example.com"):
         response = client.get("/api/v1/primitives", {"category": "Software Engineering"})
     assert response.status_code == 200
@@ -201,9 +191,7 @@ def test_list_primitives_filter_by_category(
 
 
 @pytest.mark.django_db
-def test_list_primitives_filter_by_status(
-    client: Client, two_orgs_with_data
-) -> None:
+def test_list_primitives_filter_by_status(client: Client, two_orgs_with_data) -> None:
     with override_settings(DEV_OIDC_SUBJECT="alice@example.com"):
         response = client.get("/api/v1/primitives", {"status": "Trusted"})
     assert response.status_code == 200
@@ -225,9 +213,7 @@ def test_get_primitive_detail(client: Client, two_orgs_with_data) -> None:
 
 
 @pytest.mark.django_db
-def test_get_primitive_cross_tenant_returns_404(
-    client: Client, two_orgs_with_data
-) -> None:
+def test_get_primitive_cross_tenant_returns_404(client: Client, two_orgs_with_data) -> None:
     """IDOR refusal: Alice asking for Bob's primitive slug → 404, not 403."""
     with override_settings(DEV_OIDC_SUBJECT="alice@example.com"):
         response = client.get("/api/v1/primitives/bob-primitive")
@@ -247,23 +233,14 @@ def test_get_primitive_version_detail(client: Client, two_orgs_with_data) -> Non
 @pytest.mark.django_db
 def test_get_attestation_present(client: Client, two_orgs_with_data) -> None:
     with override_settings(DEV_OIDC_SUBJECT="alice@example.com"):
-        response = client.get(
-            "/api/v1/primitives/alice-primitive/versions/1.0.0/attestation"
-        )
+        response = client.get("/api/v1/primitives/alice-primitive/versions/1.0.0/attestation")
     assert response.status_code == 200
     body = response.json()
-    assert (
-        body["predicateType"]
-        == "https://primitivehub.ai/context-ci/v0.1/Attestation"
-    )
+    assert body["predicateType"] == "https://primitivehub.ai/context-ci/v0.1/Attestation"
 
 
 @pytest.mark.django_db
-def test_get_attestation_cross_tenant_returns_404(
-    client: Client, two_orgs_with_data
-) -> None:
+def test_get_attestation_cross_tenant_returns_404(client: Client, two_orgs_with_data) -> None:
     with override_settings(DEV_OIDC_SUBJECT="alice@example.com"):
-        response = client.get(
-            "/api/v1/primitives/bob-primitive/versions/0.1.0/attestation"
-        )
+        response = client.get("/api/v1/primitives/bob-primitive/versions/0.1.0/attestation")
     assert response.status_code == 404

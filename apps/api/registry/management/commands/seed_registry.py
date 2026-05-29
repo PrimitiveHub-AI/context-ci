@@ -16,8 +16,8 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
-from apps.orgs.models import Organization, OrganizationMember, Role
-from apps.registry.fixtures.seed_primitives import (
+from orgs.models import Organization, OrganizationMember, Role
+from registry.fixtures.seed_primitives import (
     SEED_ORG_NAME,
     SEED_ORG_SLUG,
     SEED_PRIMITIVES,
@@ -25,7 +25,7 @@ from apps.registry.fixtures.seed_primitives import (
     SEED_REGISTRY_SLUG,
     SEED_REPOSITORIES,
 )
-from apps.registry.models import (
+from registry.models import (
     Attestation,
     Primitive,
     PrimitiveVersion,
@@ -42,7 +42,7 @@ def _fake_digest(slug: str, semver: str) -> str:
 class Command(BaseCommand):
     help = "Seed the local registry with representative primitives for dev + tests."
 
-    def add_arguments(self, parser: Any) -> None:  # noqa: ANN401
+    def add_arguments(self, parser: Any) -> None:
         parser.add_argument(
             "--reset",
             action="store_true",
@@ -57,7 +57,7 @@ class Command(BaseCommand):
             if org:
                 org.delete()  # cascades through everything below
 
-        User = get_user_model()  # noqa: N806
+        User = get_user_model()
         seed_user, _ = User.objects.get_or_create(
             subject=settings.DEV_OIDC_SUBJECT,
             defaults={

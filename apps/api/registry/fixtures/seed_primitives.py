@@ -21,7 +21,7 @@ Step 3.
 
 from __future__ import annotations
 
-from typing import TypedDict
+from typing import Any, TypedDict
 
 
 class PrimitiveFixture(TypedDict):
@@ -31,7 +31,7 @@ class PrimitiveFixture(TypedDict):
     category: str
     risk_level: str
     repository_slug: str
-    version: dict
+    version: dict[str, Any]
 
 
 SEED_ORG_SLUG = "primitivehub-labs"
@@ -40,10 +40,18 @@ SEED_REGISTRY_SLUG = "public"
 SEED_REGISTRY_NAME = "Public Registry"
 
 
-SEED_REPOSITORIES: list[dict] = [
+SEED_REPOSITORIES: list[dict[str, str]] = [
     {"slug": "frontend", "name": "Frontend", "description": "UI + design primitives."},
-    {"slug": "engineering", "name": "Engineering", "description": "Code + architecture primitives."},
-    {"slug": "security", "name": "Security", "description": "Supply-chain + threat-model primitives."},
+    {
+        "slug": "engineering",
+        "name": "Engineering",
+        "description": "Code + architecture primitives.",
+    },
+    {
+        "slug": "security",
+        "name": "Security",
+        "description": "Supply-chain + threat-model primitives.",
+    },
 ]
 
 

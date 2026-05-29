@@ -12,14 +12,34 @@ Deferred fields (return defaults until later phases):
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime  # noqa: TC003 — Pydantic needs runtime access
+from typing import Any
 
 from ninja import Schema
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict
+from pydantic.alias_generators import to_camel
 
 
 class CamelSchema(Schema):
-    model_config = ConfigDict(populate_by_name=True)
+    """Base schema that emits camelCase JSON keys but accepts snake_case in code.
+
+    Ninja's response serialization calls `model_dump()` without `by_alias=True`,
+    so we override the method to force-emit aliases.
+    """
+
+    model_config = ConfigDict(
+        alias_generator=to_camel,
+        populate_by_name=True,
+        serialize_by_alias=True,
+    )
+
+    def model_dump(self, **kwargs: Any) -> dict[str, Any]:
+        kwargs.setdefault("by_alias", True)
+        return super().model_dump(**kwargs)
+
+    def model_dump_json(self, **kwargs: Any) -> str:
+        kwargs.setdefault("by_alias", True)
+        return super().model_dump_json(**kwargs)
 
 
 class RegistryOut(CamelSchema):
@@ -27,8 +47,8 @@ class RegistryOut(CamelSchema):
     slug: str
     name: str
     visibility: str
-    organization_slug: str = Field(alias="organizationSlug")
-    created_at: datetime = Field(alias="createdAt")
+    organization_slug: str
+    created_at: datetime
 
 
 class RepositoryOut(CamelSchema):
@@ -36,9 +56,9 @@ class RepositoryOut(CamelSchema):
     slug: str
     name: str
     description: str
-    registry_slug: str = Field(alias="registrySlug")
-    organization_slug: str = Field(alias="organizationSlug")
-    created_at: datetime = Field(alias="createdAt")
+    registry_slug: str
+    organization_slug: str
+    created_at: datetime
 
 
 class PrimitiveOut(CamelSchema):
@@ -47,68 +67,68 @@ class PrimitiveOut(CamelSchema):
 
     slug: str
     name: str
-    file_name: str = Field(alias="fileName")
+    file_name: str
     category: str
     description: str
     author: str
     version: str
     tokens: int
-    token_budget: int = Field(alias="tokenBudget")
-    quality_score: int = Field(alias="qualityScore")
-    safety_score: int = Field(alias="safetyScore")
-    context_efficiency: int = Field(alias="contextEfficiency")
-    agent_impact: int = Field(alias="agentImpact")
+    token_budget: int
+    quality_score: int
+    safety_score: int
+    context_efficiency: int
+    agent_impact: int
     status: str
-    compatible_agents: list[str] = Field(alias="compatibleAgents")
+    compatible_agents: list[str]
     license: str
-    last_updated: str = Field(alias="lastUpdated")
-    use_when: list[str] = Field(alias="useWhen")
-    do_not_use_when: list[str] = Field(alias="doNotUseWhen")
-    risk_level: str = Field(alias="riskLevel")
-    content_digest: str = Field(alias="contentDigest")
-    install_command: str = Field(alias="installCommand")
+    last_updated: str
+    use_when: list[str]
+    do_not_use_when: list[str]
+    risk_level: str
+    content_digest: str
+    install_command: str
     downloads: int = 0
-    reviewer_badge: str | None = Field(default=None, alias="reviewerBadge")
+    reviewer_badge: str | None = None
 
 
 class PrimitiveVersionOut(CamelSchema):
     """Per-version detail. Used by /primitives/{slug}/versions/{semver}."""
 
     semver: str
-    content_digest: str = Field(alias="contentDigest")
-    storage_key: str = Field(alias="storageKey")
+    content_digest: str
+    storage_key: str
     tokens: int
-    token_budget: int = Field(alias="tokenBudget")
+    token_budget: int
     license: str
-    spec_version: str = Field(alias="specVersion")
+    spec_version: str
     verdict: str
-    submitted_at: datetime = Field(alias="submittedAt")
-    attested_at: datetime | None = Field(default=None, alias="attestedAt")
-    quality_score: int | None = Field(default=None, alias="qualityScore")
-    safety_score: int | None = Field(default=None, alias="safetyScore")
-    efficiency_score: int | None = Field(default=None, alias="efficiencyScore")
-    impact_score: int | None = Field(default=None, alias="impactScore")
-    compatible_agents: list[str] = Field(alias="compatibleAgents")
-    use_when: list[str] = Field(alias="useWhen")
-    do_not_use_when: list[str] = Field(alias="doNotUseWhen")
+    submitted_at: datetime
+    attested_at: datetime | None = None
+    quality_score: int | None = None
+    safety_score: int | None = None
+    efficiency_score: int | None = None
+    impact_score: int | None = None
+    compatible_agents: list[str]
+    use_when: list[str]
+    do_not_use_when: list[str]
 
 
 class AttestationOut(CamelSchema):
     """Context CI attestation record (in-toto Statement)."""
 
     id: str
-    predicate_type: str = Field(alias="predicateType")
-    predicate: dict
-    threat_model_version: str = Field(alias="threatModelVersion")
-    spec_version: str = Field(alias="specVersion")
-    rekor_entry_id: str | None = Field(default=None, alias="rekorEntryId")
-    signed_at: datetime | None = Field(default=None, alias="signedAt")
-    recorded_at: datetime = Field(alias="recordedAt")
+    predicate_type: str
+    predicate: dict[str, Any]
+    threat_model_version: str
+    spec_version: str
+    rekor_entry_id: str | None = None
+    signed_at: datetime | None = None
+    recorded_at: datetime
 
 
 class PrimitivePage(CamelSchema):
     """A cursor-paginated page of primitives."""
 
     items: list[PrimitiveOut]
-    next_cursor: str | None = Field(default=None, alias="nextCursor")
-    page_size: int = Field(alias="pageSize")
+    next_cursor: str | None = None
+    page_size: int

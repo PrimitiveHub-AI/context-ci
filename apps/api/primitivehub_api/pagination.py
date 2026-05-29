@@ -18,7 +18,7 @@ import base64
 import json
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Generic, TypeVar
+from typing import Any, TypeVar
 
 from django.db.models import Q, QuerySet
 from ninja import Schema
@@ -41,7 +41,7 @@ class Cursor:
         return base64.urlsafe_b64encode(payload.encode()).decode()
 
     @classmethod
-    def decode(cls, token: str) -> "Cursor | None":
+    def decode(cls, token: str) -> Cursor | None:
         try:
             payload = json.loads(base64.urlsafe_b64decode(token.encode()).decode())
             return cls(ts=datetime.fromisoformat(payload["ts"]), id=str(payload["id"]))
@@ -49,7 +49,7 @@ class Cursor:
             return None
 
 
-class Page(Schema, Generic[T]):
+class Page[T](Schema):
     """A page of results plus an optional `next_cursor` for the next page."""
 
     items: list[T]
@@ -58,12 +58,12 @@ class Page(Schema, Generic[T]):
 
 
 def paginate(
-    queryset: QuerySet,
+    queryset: QuerySet[Any],
     *,
     cursor: str | None = None,
     page_size: int | None = None,
     order_field: str = "created_at",
-) -> tuple[list, str | None, int]:
+) -> tuple[list[Any], str | None, int]:
     """Apply cursor pagination to a queryset.
 
     Returns (items, next_cursor, effective_page_size). The caller serializes

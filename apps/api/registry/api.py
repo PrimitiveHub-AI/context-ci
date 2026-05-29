@@ -23,22 +23,23 @@ Ownership:  Tenant scoping + RLS (defense in depth via
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, cast
 
-from django.db.models import QuerySet
-from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
-from ninja import Query, Router
+from ninja import Router
 
-from apps.orgs.models import Organization
-from apps.registry.models import (
+from accounts.models import User  # noqa: TC001 — used by cast() at runtime
+from orgs.models import Organization
+from primitivehub_api.auth import requires_auth
+from primitivehub_api.pagination import paginate
+from registry.models import (
     Attestation,
     Primitive,
     PrimitiveVersion,
     Registry,
     Repository,
 )
-from apps.registry.schemas import (
+from registry.schemas import (
     AttestationOut,
     PrimitiveOut,
     PrimitivePage,
@@ -46,10 +47,12 @@ from apps.registry.schemas import (
     RegistryOut,
     RepositoryOut,
 )
-from primitivehub_api.auth import requires_auth
-from primitivehub_api.pagination import paginate
 
-router = Router(tags=["registry"])
+if TYPE_CHECKING:
+    from django.db.models import QuerySet
+    from django.http import HttpRequest
+
+router = Router(tags=["registry"], by_alias=True)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -57,25 +60,30 @@ router = Router(tags=["registry"])
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-def _user_orgs(user: Any) -> QuerySet[Organization]:
+def _user_orgs(user: User) -> QuerySet[Organization]:
     """Orgs the user is a member of. Single source of tenant scope."""
     return Organization.objects.filter(members__user=user)
 
 
-def _scoped_registries(user: Any) -> QuerySet[Registry]:
+def _scoped_registries(user: User) -> QuerySet[Registry]:
     return Registry.objects.filter(organization__in=_user_orgs(user))
 
 
-def _scoped_repositories(user: Any) -> QuerySet[Repository]:
+def _scoped_repositories(user: User) -> QuerySet[Repository]:
     return Repository.objects.filter(organization__in=_user_orgs(user))
 
 
-def _scoped_primitives(user: Any) -> QuerySet[Primitive]:
+def _scoped_primitives(user: User) -> QuerySet[Primitive]:
     return Primitive.objects.filter(organization__in=_user_orgs(user))
 
 
-def _scoped_versions(user: Any) -> QuerySet[PrimitiveVersion]:
+def _scoped_versions(user: User) -> QuerySet[PrimitiveVersion]:
     return PrimitiveVersion.objects.filter(organization__in=_user_orgs(user))
+
+
+def _user(request: HttpRequest) -> User:
+    """Narrow request.user — requires_auth guarantees it's a real User row."""
+    return cast("User", request.user)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -84,15 +92,21 @@ def _scoped_versions(user: Any) -> QuerySet[PrimitiveVersion]:
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-_TRUST_STATUS_BY_VERDICT = {
-    PrimitiveVersion.Verdict.TRUSTED: "Trusted",
-    PrimitiveVersion.Verdict.IN_REVIEW: "In Review",
-    PrimitiveVersion.Verdict.SUBMITTED: "In Review",
-    PrimitiveVersion.Verdict.EXPERIMENTAL: "Experimental",
-    PrimitiveVersion.Verdict.DEPRECATED: "Deprecated",
-    PrimitiveVersion.Verdict.REJECTED: "Deprecated",
-    PrimitiveVersion.Verdict.DRAFT: "Experimental",
+_TRUST_STATUS_BY_VERDICT: dict[str, str] = {
+    PrimitiveVersion.Verdict.TRUSTED.value: "Trusted",
+    PrimitiveVersion.Verdict.IN_REVIEW.value: "In Review",
+    PrimitiveVersion.Verdict.SUBMITTED.value: "In Review",
+    PrimitiveVersion.Verdict.EXPERIMENTAL.value: "Experimental",
+    PrimitiveVersion.Verdict.DEPRECATED.value: "Deprecated",
+    PrimitiveVersion.Verdict.REJECTED.value: "Deprecated",
+    PrimitiveVersion.Verdict.DRAFT.value: "Experimental",
 }
+
+
+def _status_for_verdict(verdict: str) -> str:
+    """Map a stored Verdict string to a web TrustStatus literal."""
+    return _TRUST_STATUS_BY_VERDICT.get(verdict, "Experimental")
+
 
 _CATEGORY_LABEL_BY_VALUE = {
     Primitive.Category.SOFTWARE_ENGINEERING: "Software Engineering",
@@ -132,7 +146,9 @@ def _serialize_primitive(primitive: Primitive) -> PrimitiveOut:
         slug=primitive.slug,
         name=name,
         file_name=f"{primitive.slug}.md",
-        category=_CATEGORY_LABEL_BY_VALUE.get(primitive.category, primitive.category),
+        category=_CATEGORY_LABEL_BY_VALUE.get(
+            cast("Primitive.Category", primitive.category), primitive.category
+        ),
         description=primitive.description,
         author=org_slug,
         version=semver,
@@ -142,9 +158,7 @@ def _serialize_primitive(primitive: Primitive) -> PrimitiveOut:
         safety_score=version.safety_score or 0 if version else 0,
         context_efficiency=version.efficiency_score or 0 if version else 0,
         agent_impact=version.impact_score or 0 if version else 0,
-        status=_TRUST_STATUS_BY_VERDICT.get(version.verdict, "Experimental")
-        if version
-        else "Experimental",
+        status=_status_for_verdict(version.verdict) if version else "Experimental",
         compatible_agents=list(version.compatible_agents) if version else [],
         license=version.license if version else "",
         last_updated=last_updated,
@@ -189,7 +203,7 @@ def _serialize_version(version: PrimitiveVersion) -> PrimitiveVersionOut:
 @requires_auth
 def list_registries(request: HttpRequest) -> list[RegistryOut]:
     """List registries the caller's orgs own."""
-    qs = _scoped_registries(request.user).select_related("organization").order_by("slug")
+    qs = _scoped_registries(_user(request)).select_related("organization").order_by("slug")
     return [
         RegistryOut(
             id=str(r.id),
@@ -208,13 +222,11 @@ def list_registries(request: HttpRequest) -> list[RegistryOut]:
     response=list[RepositoryOut],
 )
 @requires_auth
-def list_repositories(
-    request: HttpRequest, registry_slug: str
-) -> list[RepositoryOut]:
+def list_repositories(request: HttpRequest, registry_slug: str) -> list[RepositoryOut]:
     """List repositories within a registry the caller can see."""
-    registry = get_object_or_404(_scoped_registries(request.user), slug=registry_slug)
+    registry = get_object_or_404(_scoped_registries(_user(request)), slug=registry_slug)
     qs = (
-        _scoped_repositories(request.user)
+        _scoped_repositories(_user(request))
         .filter(registry=registry)
         .select_related("registry", "organization")
         .order_by("slug")
@@ -239,14 +251,14 @@ def list_primitives(
     request: HttpRequest,
     cursor: str | None = None,
     page_size: int | None = None,
-    category: str | None = Query(None),
-    agent: str | None = Query(None, description="Filter by compatible_agent token"),
-    status: str | None = Query(None, description="TrustStatus literal"),
-    search: str | None = Query(None, description="Substring match on name/description"),
+    category: str | None = None,
+    agent: str | None = None,
+    status: str | None = None,
+    search: str | None = None,
 ) -> PrimitivePage:
     """Cursor-paginated, filterable primitive list."""
     qs = (
-        _scoped_primitives(request.user)
+        _scoped_primitives(_user(request))
         .select_related("organization", "repository")
         .prefetch_related("versions")
     )
@@ -282,7 +294,7 @@ def list_primitives(
 def get_primitive(request: HttpRequest, slug: str) -> PrimitiveOut:
     """Single-primitive detail (latest version composite)."""
     primitive = get_object_or_404(
-        _scoped_primitives(request.user).select_related("organization", "repository"),
+        _scoped_primitives(_user(request)).select_related("organization", "repository"),
         slug=slug,
     )
     return _serialize_primitive(primitive)
@@ -293,12 +305,10 @@ def get_primitive(request: HttpRequest, slug: str) -> PrimitiveOut:
     response=PrimitiveVersionOut,
 )
 @requires_auth
-def get_primitive_version(
-    request: HttpRequest, slug: str, semver: str
-) -> PrimitiveVersionOut:
+def get_primitive_version(request: HttpRequest, slug: str, semver: str) -> PrimitiveVersionOut:
     """Per-version detail."""
     version = get_object_or_404(
-        _scoped_versions(request.user).select_related("primitive"),
+        _scoped_versions(_user(request)).select_related("primitive"),
         primitive__slug=slug,
         semver=semver,
     )
@@ -310,12 +320,10 @@ def get_primitive_version(
     response=AttestationOut,
 )
 @requires_auth
-def get_attestation(
-    request: HttpRequest, slug: str, semver: str
-) -> AttestationOut:
+def get_attestation(request: HttpRequest, slug: str, semver: str) -> AttestationOut:
     """Context CI attestation record for a version (in-toto Statement)."""
     version = get_object_or_404(
-        _scoped_versions(request.user),
+        _scoped_versions(_user(request)),
         primitive__slug=slug,
         semver=semver,
     )

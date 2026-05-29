@@ -19,15 +19,17 @@ import json
 import logging
 import threading
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
 import httpx
 import jwt
 from django.conf import settings
-from django.http import HttpRequest, HttpResponse
 
 from .models import User
+
+if TYPE_CHECKING:
+    from django.http import HttpRequest, HttpResponse
 
 logger = logging.getLogger("primitivehub.auth")
 
@@ -42,8 +44,7 @@ class _JwksCache:
 
     def _is_stale(self) -> bool:
         return (
-            self._keys is None
-            or time.time() - self._fetched_at > settings.OIDC_JWKS_CACHE_SECONDS
+            self._keys is None or time.time() - self._fetched_at > settings.OIDC_JWKS_CACHE_SECONDS
         )
 
     def get(self) -> dict[str, Any]:
@@ -60,7 +61,7 @@ class _JwksCache:
                 discovery = client.get(well_known).raise_for_status().json()
                 jwks_uri: str = discovery["jwks_uri"]
                 jwks: dict[str, Any] = client.get(jwks_uri).raise_for_status().json()
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.warning(
                 "JWKS refresh failed",
                 extra={"issuer": settings.OIDC_ISSUER, "exc": str(exc)},

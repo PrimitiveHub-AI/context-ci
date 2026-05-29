@@ -12,7 +12,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.test import Client, override_settings
 
-from apps.orgs.models import Organization, OrganizationMember, Role
+from orgs.models import Organization, OrganizationMember, Role
 
 
 @pytest.fixture
@@ -28,9 +28,7 @@ def alice_and_bob():
     OrganizationMember.objects.create(
         organization=alice_org, user=alice, roles=[Role.MAINTAINER.value]
     )
-    OrganizationMember.objects.create(
-        organization=bob_org, user=bob, roles=[Role.AUTHOR.value]
-    )
+    OrganizationMember.objects.create(organization=bob_org, user=bob, roles=[Role.AUTHOR.value])
     return alice, bob, alice_org, bob_org
 
 
@@ -43,9 +41,7 @@ def test_list_organizations_unauthenticated_returns_401(client: Client) -> None:
 
 
 @pytest.mark.django_db
-def test_list_organizations_returns_own_memberships(
-    client: Client, alice_and_bob
-) -> None:
+def test_list_organizations_returns_own_memberships(client: Client, alice_and_bob) -> None:
     _alice, _bob, alice_org, _bob_org = alice_and_bob
     with override_settings(DEV_OIDC_SUBJECT="alice@example.com"):
         response = client.get("/api/v1/organizations")

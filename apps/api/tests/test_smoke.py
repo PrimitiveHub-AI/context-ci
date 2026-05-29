@@ -6,8 +6,12 @@ Business logic lands in app-specific test modules in later PRs.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
-from django.test import Client
+
+if TYPE_CHECKING:
+    from django.test import Client
 
 
 @pytest.mark.django_db
@@ -34,6 +38,7 @@ def test_whoami_with_dev_bypass(client: Client) -> None:
     assert "subject" in data
 
 
+@pytest.mark.django_db
 def test_openapi_schema_available(client: Client) -> None:
     """/api/v1/openapi.json is present and well-formed."""
     response = client.get("/api/v1/openapi.json")
@@ -41,5 +46,5 @@ def test_openapi_schema_available(client: Client) -> None:
     schema = response.json()
     assert schema["info"]["title"] == "PrimitiveHub API"
     assert schema["info"]["version"] == "0.1.0"
-    assert "/healthz" in schema["paths"]
-    assert "/whoami" in schema["paths"]
+    assert "/api/v1/healthz" in schema["paths"]
+    assert "/api/v1/whoami" in schema["paths"]

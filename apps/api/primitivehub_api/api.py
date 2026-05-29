@@ -11,12 +11,33 @@ from datetime import UTC, datetime
 from typing import Any
 
 from django.conf import settings
-from django.db import connection
 from django.core.cache import cache
+from django.db import connection
 from ninja import NinjaAPI, Schema
+from ninja.renderers import JSONRenderer
 
-from apps.orgs.api import router as orgs_router
-from apps.registry.api import router as registry_router
+from orgs.api import router as orgs_router
+from registry.api import router as registry_router
+
+
+class CamelJSONRenderer(JSONRenderer):
+    """JSON renderer that dumps Pydantic Schema instances by_alias=True.
+
+    Schemas defined with `alias_generator=to_camel` emit camelCase keys on
+    the wire while keeping snake_case in Python. The default Ninja renderer
+    ignores the alias config, so we override it here.
+    """
+
+    def render(self, request: Any, data: Any, *, response_status: int) -> bytes:
+        if hasattr(data, "model_dump"):
+            data = data.model_dump(by_alias=True)
+        elif isinstance(data, list):
+            data = [
+                item.model_dump(by_alias=True) if hasattr(item, "model_dump") else item
+                for item in data
+            ]
+        result: bytes = super().render(request, data, response_status=response_status)
+        return result
 
 
 class HealthResponse(Schema):
@@ -39,6 +60,7 @@ api = NinjaAPI(
     ),
     docs_url="/docs",
     openapi_url="/openapi.json",
+    renderer=CamelJSONRenderer(),
 )
 
 
@@ -53,7 +75,7 @@ def healthz(request: Any) -> HealthResponse:
             cursor.execute("SELECT 1")
             cursor.fetchone()
         checks["db"] = "ok"
-    except Exception as exc:  # noqa: BLE001 — surface any DB problem to the response
+    except Exception as exc:
         checks["db"] = f"error: {exc.__class__.__name__}"
 
     # Cache (Valkey) — set + get a probe key
@@ -61,7 +83,7 @@ def healthz(request: Any) -> HealthResponse:
         cache.set("healthz:probe", "ok", timeout=10)
         cached_value = cache.get("healthz:probe")
         checks["cache"] = "ok" if cached_value == "ok" else "degraded"
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         checks["cache"] = f"error: {exc.__class__.__name__}"
 
     overall = "ok" if all(v == "ok" for v in checks.values()) else "degraded"
