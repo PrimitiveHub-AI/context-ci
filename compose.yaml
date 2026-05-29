@@ -1,14 +1,22 @@
 # PrimitiveHub Compose stack — base config.
 #
-#   docker compose up                                → loads compose.yaml + compose.override.yaml (dev)
+#   docker compose up                                           → dev (loads compose.yaml + compose.override.yaml)
 #   docker compose -f compose.yaml -f compose.prod.yaml up -d   → production
 #
-# Right now this is just the web app. Future services (api, postgres, valkey,
-# authentik) will be added alongside in their own dedicated PRs.
+# Services:
+#   web                  — Next.js 16 frontend (apps/web)
+#   api                  — Django + Ninja backend (apps/api)
+#   postgres             — Postgres 17 (truth DB; shared with authentik via separate DB names)
+#   valkey               — Valkey 8 (cache + sessions + rate limiting)
+#   authentik-server     — Authentik OIDC identity provider
+#   authentik-worker     — Authentik background worker
+#
+# Object storage (Cloudflare R2 in v1) is external — not a container.
 
 name: primitivehub
 
 services:
+  # ── Frontend ──────────────────────────────────────────────────────────────
   web:
     build:
       context: ./apps/web
@@ -22,8 +30,122 @@ services:
       NODE_ENV: production
       HOSTNAME: 0.0.0.0
       PORT: "3000"
-    networks:
-      - primitivehub_net
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    depends_on:
+      api:
+        condition: service_healthy
+    networks: [primitivehub_net]
+
+  # ── Backend ───────────────────────────────────────────────────────────────
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+      target: runner
+    image: ${API_IMAGE:-ghcr.io/devxyzx/primitivehub-api:latest}
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-8000}:8000"
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-dev-secret-not-for-production}
+      DEBUG: ${DEBUG:-False}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,api}
+      DATABASE_URL: postgres://primitivehub:${POSTGRES_PASSWORD:-dev_password}@postgres:5432/primitivehub
+      VALKEY_URL: redis://valkey:6379/0
+      OIDC_ISSUER: ${OIDC_ISSUER:-http://authentik-server:9000/application/o/primitivehub/}
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE:-primitivehub-api}
+      DEV_AUTH_BYPASS: ${DEV_AUTH_BYPASS:-False}
+      S3_ENDPOINT_URL: ${S3_ENDPOINT_URL:-}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-}
+      S3_BUCKET: ${S3_BUCKET:-primitivehub-primitives}
+      S3_REGION: ${S3_REGION:-auto}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_started
+    networks: [primitivehub_net]
+
+  # ── Truth DB ──────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: primitivehub
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev_password}
+      # Two databases in one Postgres instance: primitivehub (api) + authentik (idp).
+      # The init script creates the second one.
+      POSTGRES_DB: primitivehub
+      POSTGRES_MULTIPLE_DATABASES: authentik
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init-multi-db.sh:/docker-entrypoint-initdb.d/init-multi-db.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U primitivehub -d primitivehub"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [primitivehub_net]
+
+  # ── Cache / sessions / rate limit ─────────────────────────────────────────
+  valkey:
+    image: valkey/valkey:8-alpine
+    restart: unless-stopped
+    command: ["valkey-server", "--save", "60", "1", "--appendonly", "no"]
+    volumes:
+      - valkey_data:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [primitivehub_net]
+
+  # ── OIDC identity provider ────────────────────────────────────────────────
+  authentik-server:
+    image: ghcr.io/goauthentik/server:2025.10
+    restart: unless-stopped
+    command: server
+    environment:
+      AUTHENTIK_REDIS__HOST: valkey
+      AUTHENTIK_POSTGRESQL__HOST: postgres
+      AUTHENTIK_POSTGRESQL__USER: primitivehub
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${POSTGRES_PASSWORD:-dev_password}
+      AUTHENTIK_POSTGRESQL__NAME: authentik
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:-replace-me-in-production-32-chars-min}
+      AUTHENTIK_BOOTSTRAP_PASSWORD: ${AUTHENTIK_BOOTSTRAP_PASSWORD:-changeme-on-first-login}
+      AUTHENTIK_BOOTSTRAP_EMAIL: ${AUTHENTIK_BOOTSTRAP_EMAIL:-admin@cyberorca.sa}
+    ports:
+      - "${AUTHENTIK_PORT:-9000}:9000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_started
+    networks: [primitivehub_net]
+
+  authentik-worker:
+    image: ghcr.io/goauthentik/server:2025.10
+    restart: unless-stopped
+    command: worker
+    environment:
+      AUTHENTIK_REDIS__HOST: valkey
+      AUTHENTIK_POSTGRESQL__HOST: postgres
+      AUTHENTIK_POSTGRESQL__USER: primitivehub
+      AUTHENTIK_POSTGRESQL__PASSWORD: ${POSTGRES_PASSWORD:-dev_password}
+      AUTHENTIK_POSTGRESQL__NAME: authentik
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:-replace-me-in-production-32-chars-min}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_started
+    networks: [primitivehub_net]
+
+volumes:
+  postgres_data:
+  valkey_data:
 
 networks:
   primitivehub_net:

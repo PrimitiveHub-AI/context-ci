@@ -29,17 +29,29 @@ for the full picture. **Read both before responding to a strategic question.**
 ├── DESIGN.md              unified design doctrine (single source of truth)
 ├── README.md              project-level dev workflow
 ├── apps/
-│   └── web/               Next.js 16 frontend (this is the only app today)
-│       ├── app/           App Router pages + route handlers
-│       ├── components/    React components (ui / landing / primitives / workbench / contributors)
-│       ├── content/       per-primitive markdown source
-│       ├── hooks/         custom hooks
-│       ├── lib/           types, data, workbench utilities
-│       ├── public/        static assets (robots.txt, icons, …)
-│       ├── scripts/       check-data.mjs runtime invariant guard
-│       ├── Dockerfile     multi-stage; built by CI
-│       └── package.json   web app dependencies
-├── compose.yaml           base compose (builds apps/web)
+│   ├── web/               Next.js 16 frontend
+│   │   ├── app/           App Router pages + route handlers
+│   │   ├── components/    React components (ui / landing / primitives / workbench / contributors)
+│   │   ├── content/       per-primitive markdown source
+│   │   ├── hooks/         custom hooks
+│   │   ├── lib/           types, data, workbench utilities
+│   │   ├── public/        static assets (robots.txt, icons, …)
+│   │   ├── scripts/       check-data.mjs runtime invariant guard
+│   │   ├── Dockerfile     multi-stage; built by CI
+│   │   └── package.json   web app dependencies
+│   └── api/               Django 5 + Django Ninja backend (Phase 3 bootstrap)
+│       ├── pyproject.toml uv-managed Python 3.13 project
+│       ├── manage.py
+│       ├── primitivehub_api/   Django project package (settings, urls, api composition)
+│       ├── accounts/      custom User + OIDC middleware
+│       ├── orgs/          Organization + Member + Role
+│       ├── registry/      Registry → Repository → Primitive → Version → Attestation
+│       ├── tests/         pytest suite
+│       ├── scripts/check_schema.py  schema invariant guard
+│       └── Dockerfile     multi-stage (uv → slim runtime)
+├── infra/
+│   └── postgres/init-multi-db.sh   Postgres initdb hook (primitivehub + authentik dbs)
+├── compose.yaml           base compose (orchestrates web + api + postgres + valkey + authentik)
 ├── compose.override.yaml  dev overlay (auto-loaded)
 ├── compose.prod.yaml      prod overlay
 ├── docs/
@@ -49,8 +61,9 @@ for the full picture. **Read both before responding to a strategic question.**
 └── .github/workflows/     CI (paths: apps/web/**)
 ```
 
-**Future:** `apps/api/` (Django + Ninja) lands when Phase 3 backend
-bootstrap ships. Other services (workers, scanners) land alongside.
+**Phase 3 bones are now in `apps/api/`.** Phase 4 wires Sigstore + Procrastinate
+workers; Phase 5+ adds scanners. New services land as siblings of `apps/web/`
+and `apps/api/`.
 
 ## Canonical documents (treat as authoritative)
 
@@ -157,7 +170,9 @@ This wording is load-bearing for the paper's correctness.
 
 ## Build hygiene
 
-All commands run from **`apps/web/`** (the Next.js app's root).
+### Frontend (`apps/web/`)
+
+All web commands run from `apps/web/`.
 
 - `cd apps/web && pnpm typecheck` must pass before any commit touching
   `.ts`/`.tsx`.
@@ -166,8 +181,22 @@ All commands run from **`apps/web/`** (the Next.js app's root).
   guard is non-negotiable.
 - Real TS errors block builds — `apps/web/next.config.mjs` does NOT silence
   them (the v0 `ignoreBuildErrors: true` flag was removed in Phase 1).
-- Container builds: `docker compose build web` from the repo root (compose
-  files at root point `context: ./apps/web`).
+- Container builds: `docker compose build web` from the repo root.
+
+### Backend (`apps/api/`)
+
+All Python commands run from `apps/api/` via `uv`.
+
+- `uv run ruff check .` must pass — Python lint (S = security, B = bugbear, DJ = Django).
+- `uv run ruff format --check .` must pass — formatter is non-negotiable.
+- `uv run mypy primitivehub_api apps` must pass — strict typing on (django-stubs plugin enabled).
+- `uv run python scripts/check_schema.py` must pass — schema invariant guard.
+- `uv run python manage.py check --fail-level WARNING` must pass — Django system check.
+- `uv run pytest` must pass — smoke + business tests.
+- Migrations: hand-edited migrations are committed; never use `--squash` on
+  released migrations. RLS migrations use `RunPython` with a no-op on
+  non-Postgres backends so sqlite-based tests still work.
+- Container builds: `docker compose build api` from the repo root.
 
 ## Workflow
 

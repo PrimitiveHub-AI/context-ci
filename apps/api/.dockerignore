@@ -1,0 +1,60 @@
+# Keep build context lean and avoid leaking secrets into images.
+
+.git
+.github
+.gitattributes
+.gitignore
+.dockerignore
+Dockerfile
+
+# Python build/cache artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+*.egg
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.tox/
+.venv/
+venv/
+ENV/
+
+# uv cache (CI handles caching separately)
+.uv/
+
+# Django runtime / collected static
+staticfiles/
+media/
+db.sqlite3
+db.sqlite3-journal
+
+# Env files — never bake secrets into images
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# Logs
+*.log
+
+# OS / Editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Personal / per-developer
+.claude/
+
+# Docs not needed in the image
+README.md
+docs/

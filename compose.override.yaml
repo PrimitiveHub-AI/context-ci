@@ -1,9 +1,9 @@
 # Dev overlay — automatically loaded by `docker compose up`.
 #
-# - Builds the `dev` Dockerfile stage (hot-reload, source mounted).
-# - Bind-mounts the repo over /app so edits apply instantly.
-# - Anonymous volumes preserve container-installed node_modules and .next
-#   so the host's empty (or differently-versioned) versions don't clobber them.
+# - web:  builds the `dev` Dockerfile stage (hot-reload, source mounted)
+# - api:  builds the `dev` Dockerfile stage (manage.py runserver, source mounted)
+# - DEV_AUTH_BYPASS defaults to True in dev so the api works without
+#   needing Authentik fully configured. Production must NEVER set this.
 
 services:
   web:
@@ -18,3 +18,18 @@ services:
       - ./apps/web:/app
       - /app/node_modules
       - /app/.next
+
+  api:
+    build:
+      target: dev
+    image: primitivehub-api:dev
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    environment:
+      DEBUG: "True"
+      DEV_AUTH_BYPASS: "True"
+      ALLOWED_HOSTS: "*"
+    volumes:
+      - ./apps/api:/app
+      # Anonymous volume: keep container's /opt/venv from being overwritten
+      # if the host happens to have one
+      - /opt/venv
