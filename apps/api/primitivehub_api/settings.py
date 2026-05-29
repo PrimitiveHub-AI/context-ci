@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "orgs",
     "registry",
     "storage",
+    "validation",
 ]
 
 MIDDLEWARE = [

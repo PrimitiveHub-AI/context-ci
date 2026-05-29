@@ -5,10 +5,13 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { GovernanceSection } from "@/components/contributors/governance-section"
-import { reviewQueue } from "@/lib/data/reviews"
-import { contributors as contributorsData } from "@/lib/data/contributors"
+import { useContributors, useReviews } from "@/lib/api/queries"
+import { reviewQueue as mockReviews } from "@/lib/data/reviews"
+import { contributors as mockContributors } from "@/lib/data/contributors"
+import type { Contributor, ReviewItem } from "@/lib/types"
 import {
   ShieldCheck,
+  AlertCircle,
   AlertTriangle,
   Clock,
   CheckCircle2,
@@ -39,6 +42,13 @@ const statusIcons: Record<string, { icon: React.ElementType; color: string }> = 
 
 export default function ContributorsPage() {
   const [tab, setTab] = useState<"queue" | "contributors">("queue")
+  const reviewsQuery = useReviews()
+  const contributorsQuery = useContributors()
+  const reviewQueue: ReviewItem[] =
+    reviewsQuery.data ?? (reviewsQuery.isError ? mockReviews : [])
+  const contributorsData: Contributor[] =
+    contributorsQuery.data ?? (contributorsQuery.isError ? mockContributors : [])
+  const apiDegraded = reviewsQuery.isError || contributorsQuery.isError
 
   return (
     <main className="min-h-screen">
@@ -92,6 +102,12 @@ export default function ContributorsPage() {
       </div>
 
       <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6">
+        {apiDegraded && (
+          <div className="mb-3 flex items-center gap-2 rounded-md border border-amber/30 bg-amber/5 px-3 py-2 text-[11px] text-amber">
+            <AlertCircle className="size-3" />
+            api unreachable — showing cached/demo data
+          </div>
+        )}
         {tab === "queue" && (
           <div className="space-y-2.5">
             {reviewQueue.map((item) => {

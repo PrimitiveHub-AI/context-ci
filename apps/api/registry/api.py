@@ -39,6 +39,7 @@ from primitivehub_api.auth import requires_auth
 from primitivehub_api.pagination import paginate
 from registry.models import (
     Attestation,
+    Bundle,
     Primitive,
     PrimitiveVersion,
     Registry,
@@ -528,3 +529,80 @@ def get_primitive_version_content(request: HttpRequest, slug: str, semver: str) 
     response["X-Content-Digest"] = f"sha256:{version.content_digest}"
     response["Content-Length"] = str(len(content))
     return response
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Bundles — curated collections of primitives. Same tenant-scoping rules as
+# the primitive endpoints; same IDOR posture.
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+from registry.bundle_schemas import BundleOut  # noqa: E402
+
+
+def _scoped_bundles(user: User) -> QuerySet[Bundle]:
+    return Bundle.objects.filter(organization__in=_user_orgs(user))
+
+
+def _serialize_bundle(bundle: Bundle) -> BundleOut:
+    # Eager-loaded by the caller via prefetch_related("primitives__versions").
+    primitives = list(bundle.primitives.all())
+    primitive_slugs = [p.slug for p in primitives]
+
+    # Roll up version-derived totals across the bundle's primitives.
+    versions: list[PrimitiveVersion] = [
+        v for v in (_latest_version(p) for p in primitives) if v is not None
+    ]
+    total_tokens = sum(v.tokens for v in versions)
+    total_budget = sum(v.token_budget for v in versions)
+    quality_avg = (
+        round(sum((v.quality_score or 0) for v in versions) / len(versions)) if versions else 0
+    )
+    agent_union: list[str] = []
+    seen: set[str] = set()
+    for v in versions:
+        for agent in v.compatible_agents or []:
+            if agent not in seen:
+                agent_union.append(agent)
+                seen.add(agent)
+
+    return BundleOut(
+        slug=bundle.slug,
+        name=bundle.name,
+        description=bundle.description,
+        primitives=primitive_slugs,
+        total_tokens=total_tokens,
+        total_budget=total_budget,
+        compatible_agents=agent_union,
+        quality_average=quality_avg,
+        use_case=bundle.use_case,
+        install_command=f"phub install --bundle {bundle.slug}",
+        downloads=0,
+        created_at=bundle.created_at,
+    )
+
+
+@router.get("/bundles", response=list[BundleOut])
+@requires_auth
+def list_bundles(request: HttpRequest) -> list[BundleOut]:
+    """List bundles in the caller's orgs."""
+    qs = (
+        _scoped_bundles(_user(request))
+        .select_related("organization")
+        .prefetch_related("primitives__versions")
+        .order_by("slug")
+    )
+    return [_serialize_bundle(b) for b in qs]
+
+
+@router.get("/bundles/{slug}", response=BundleOut)
+@requires_auth
+def get_bundle(request: HttpRequest, slug: str) -> BundleOut:
+    """Single bundle detail."""
+    bundle = get_object_or_404(
+        _scoped_bundles(_user(request))
+        .select_related("organization")
+        .prefetch_related("primitives__versions"),
+        slug=slug,
+    )
+    return _serialize_bundle(bundle)

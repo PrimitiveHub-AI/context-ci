@@ -16,8 +16,10 @@ from django.db import connection
 from ninja import NinjaAPI, Schema
 from ninja.renderers import JSONRenderer
 
+from accounts.api import router as accounts_router
 from orgs.api import router as orgs_router
 from registry.api import router as registry_router
+from validation.api import router as validation_router
 
 
 class CamelJSONRenderer(JSONRenderer):
@@ -114,3 +116,5 @@ def whoami(request: Any) -> dict[str, Any]:
 
 api.add_router("", orgs_router)
 api.add_router("", registry_router)
+api.add_router("", validation_router)
+api.add_router("", accounts_router)

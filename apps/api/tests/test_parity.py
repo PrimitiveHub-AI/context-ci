@@ -11,11 +11,14 @@ literals change, the constants below must be updated in lockstep.
 
 from __future__ import annotations
 
+from accounts.schemas import _WEB_ROLE_BY_DB
 from registry.api import (
     _CATEGORY_LABEL_BY_VALUE,
     _TRUST_STATUS_BY_VERDICT,
 )
 from registry.models import Primitive, PrimitiveVersion
+from validation.models import PipelineStage, ReviewItem
+from validation.schemas import _WEB_STATUS_BY_DB
 
 # Mirror of apps/web/lib/types.ts literal unions, as of the parity audit.
 WEB_TRUST_STATUSES: set[str] = {"Trusted", "In Review", "Experimental", "Deprecated"}
@@ -30,6 +33,21 @@ WEB_CATEGORIES: set[str] = {
     "Domain Expertise",
 }
 WEB_RISK_LEVELS: set[str] = {"low", "medium", "high"}
+WEB_REVIEW_STATUSES: set[str] = {
+    "Needs Security Review",
+    "Benchmark Failed",
+    "Human Review Pending",
+    "Approved",
+    "Rejected",
+}
+WEB_CONTRIBUTOR_ROLES: set[str] = {
+    "Maintainer",
+    "Verified Expert",
+    "Author",
+    "Reviewer",
+    "Security Reviewer",
+}
+WEB_PIPELINE_STAGE_STATUSES: set[str] = {"passed", "warning", "failed"}
 
 
 def test_every_web_category_label_is_mapped() -> None:
@@ -65,3 +83,27 @@ def test_every_web_risk_level_is_a_model_choice() -> None:
     """Web RiskLevel literals must map 1:1 to `Primitive.RiskLevel`."""
     model_values = {value for value, _label in Primitive.RiskLevel.choices}
     assert model_values == WEB_RISK_LEVELS, (WEB_RISK_LEVELS, model_values)
+
+
+def test_every_review_status_maps_to_web_literal() -> None:
+    """Every ReviewItem.Status DB value maps to a web ReviewStatus literal."""
+    for db_value, _label in ReviewItem.Status.choices:
+        mapped = _WEB_STATUS_BY_DB.get(db_value)
+        assert mapped is not None, db_value
+        assert mapped in WEB_REVIEW_STATUSES, (db_value, mapped)
+
+
+def test_every_web_review_status_is_reachable() -> None:
+    """Every web ReviewStatus must be reachable from one DB status."""
+    assert set(_WEB_STATUS_BY_DB.values()) == WEB_REVIEW_STATUSES
+
+
+def test_every_web_contributor_role_is_reachable() -> None:
+    """Every web ContributorRole must be in the role mapping table."""
+    assert set(_WEB_ROLE_BY_DB.values()) == WEB_CONTRIBUTOR_ROLES
+
+
+def test_every_pipeline_stage_status_maps_to_web_literal() -> None:
+    """PipelineStage.StageStatus values must equal the web's PipelineStageStatus set."""
+    model_values = {value for value, _label in PipelineStage.StageStatus.choices}
+    assert model_values == WEB_PIPELINE_STAGE_STATUSES

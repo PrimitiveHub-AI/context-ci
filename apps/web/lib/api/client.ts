@@ -13,7 +13,13 @@
  * is the seam where that wires in.
  */
 
-import type { Primitive } from "@/lib/types"
+import type {
+  Bundle,
+  Contributor,
+  PipelineStage,
+  Primitive,
+  ReviewItem,
+} from "@/lib/types"
 
 const DEFAULT_BASE_URL = "http://localhost:8000/api/v1"
 
@@ -146,4 +152,26 @@ export const api = {
 
   getPrimitive: (slug: string, options: ApiRequestOptions = {}) =>
     apiFetch<Primitive>(`/primitives/${encodeURIComponent(slug)}`, options),
+
+  listBundles: (options: ApiRequestOptions = {}) =>
+    apiFetch<Bundle[]>("/bundles", options),
+
+  getBundle: (slug: string, options: ApiRequestOptions = {}) =>
+    apiFetch<Bundle>(`/bundles/${encodeURIComponent(slug)}`, options),
+
+  listReviews: (options: ApiRequestOptions = {}) =>
+    apiFetch<ReviewItem[]>("/reviews", options),
+
+  listPipelineStages: (
+    slug: string,
+    semver: string,
+    options: ApiRequestOptions = {},
+  ) =>
+    apiFetch<PipelineStage[]>(
+      `/primitives/${encodeURIComponent(slug)}/versions/${encodeURIComponent(semver)}/pipeline-stages`,
+      options,
+    ),
+
+  listContributors: (options: ApiRequestOptions = {}) =>
+    apiFetch<Contributor[]>("/contributors", options),
 }

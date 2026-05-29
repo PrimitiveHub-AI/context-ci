@@ -17,7 +17,13 @@ import {
   type PrimitiveListParams,
   type PrimitivePage,
 } from "@/lib/api/client"
-import type { Primitive } from "@/lib/types"
+import type {
+  Bundle,
+  Contributor,
+  PipelineStage,
+  Primitive,
+  ReviewItem,
+} from "@/lib/types"
 
 const STALE_TIME_MS = 5 * 60 * 1000 // 5 min — registry data updates slowly
 
@@ -45,5 +51,41 @@ export function usePrimitive(slug: string): UseQueryResult<Primitive> {
     queryFn: ({ signal }) => api.getPrimitive(slug, { signal }),
     staleTime: STALE_TIME_MS,
     enabled: Boolean(slug),
+  })
+}
+
+export function useBundles(): UseQueryResult<Bundle[]> {
+  return useQuery({
+    queryKey: ["bundles"],
+    queryFn: ({ signal }) => api.listBundles({ signal }),
+    staleTime: STALE_TIME_MS,
+  })
+}
+
+export function useReviews(): UseQueryResult<ReviewItem[]> {
+  return useQuery({
+    queryKey: ["reviews"],
+    queryFn: ({ signal }) => api.listReviews({ signal }),
+    staleTime: STALE_TIME_MS,
+  })
+}
+
+export function usePipelineStages(
+  slug: string,
+  semver: string,
+): UseQueryResult<PipelineStage[]> {
+  return useQuery({
+    queryKey: ["pipeline-stages", slug, semver],
+    queryFn: ({ signal }) => api.listPipelineStages(slug, semver, { signal }),
+    staleTime: STALE_TIME_MS,
+    enabled: Boolean(slug && semver),
+  })
+}
+
+export function useContributors(): UseQueryResult<Contributor[]> {
+  return useQuery({
+    queryKey: ["contributors"],
+    queryFn: ({ signal }) => api.listContributors({ signal }),
+    staleTime: STALE_TIME_MS,
   })
 }

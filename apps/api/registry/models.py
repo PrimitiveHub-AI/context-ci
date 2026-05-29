@@ -244,3 +244,37 @@ class Attestation(models.Model):
 
     def __str__(self) -> str:
         return f"attestation:{self.primitive_version}"
+
+
+class Bundle(models.Model):
+    """A curated collection of primitives, marketed as a single install.
+
+    Many-to-many with Primitive (cross-org membership isn't allowed — a
+    Bundle's primitives must share its organization, enforced by the
+    serializer + tested in test_bundles_api.py).
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name="bundles")
+    slug = models.SlugField(max_length=64)
+    name = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    use_case = models.CharField(max_length=300, blank=True)
+    primitives = models.ManyToManyField(Primitive, related_name="bundles", blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "registry_bundle"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "slug"], name="registry_bundle_org_slug_unique"
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["organization"]),
+            models.Index(fields=["-created_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.organization.slug}/bundle:{self.slug}"
