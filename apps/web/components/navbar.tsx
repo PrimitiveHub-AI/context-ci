@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Github, Menu, X, Hexagon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
+import { OrgPicker } from "@/components/org-picker"
 
 const navLinks = [
   { href: "/registry", label: "Registry" },
@@ -52,6 +53,7 @@ export function Navbar() {
           </nav>
         </div>
         <div className="hidden items-center gap-1.5 md:flex">
+          <OrgPicker />
           <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground" asChild>
             <a href="https://github.com" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
               <Github className="size-3.5" />

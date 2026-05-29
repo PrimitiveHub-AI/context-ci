@@ -43,6 +43,11 @@ export interface ApiRequestOptions {
   body?: unknown
   searchParams?: Record<string, string | number | undefined>
   authToken?: string
+  /** Tenant context — sent as `X-Organization-Slug`. The backend
+   *  validates membership and sets `primitivehub.current_organization`
+   *  per request for RLS. Omit to use the backend's default (first org
+   *  by slug ascending). */
+  orgSlug?: string | null
   signal?: AbortSignal
 }
 
@@ -50,7 +55,7 @@ async function apiFetch<T>(
   path: string,
   options: ApiRequestOptions = {},
 ): Promise<T> {
-  const { method = "GET", body, searchParams, authToken, signal } = options
+  const { method = "GET", body, searchParams, authToken, orgSlug, signal } = options
   const url = new URL(`${apiBaseUrl}${path}`)
   if (searchParams) {
     for (const [key, value] of Object.entries(searchParams)) {
@@ -66,6 +71,9 @@ async function apiFetch<T>(
   }
   if (authToken) {
     headers.Authorization = `Bearer ${authToken}`
+  }
+  if (orgSlug) {
+    headers["X-Organization-Slug"] = orgSlug
   }
 
   const response = await fetch(url.toString(), {
