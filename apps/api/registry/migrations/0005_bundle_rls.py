@@ -1,4 +1,9 @@
-"""RLS policy for registry_bundle, matching the 0002 pattern."""
+"""RLS policy for registry_bundle, matching the 0002 pattern.
+
+Postgres-only by design (see registry/migrations/0002_rls_policies.py).
+The vendor guard below exists for `dumpdata`/`inspectdb` against foreign
+backends only — production and tests run against Postgres.
+"""
 
 from __future__ import annotations
 

@@ -192,10 +192,21 @@ All Python commands run from `apps/api/` via `uv`.
 - `uv run mypy primitivehub_api apps` must pass — strict typing on (django-stubs plugin enabled).
 - `uv run python scripts/check_schema.py` must pass — schema invariant guard.
 - `uv run python manage.py check --fail-level WARNING` must pass — Django system check.
-- `uv run pytest` must pass — smoke + business tests.
+- `uv run pytest` must pass — smoke + business tests. **Tests run against
+  Postgres**, not sqlite. The `primitivehub_test` database is provisioned
+  by `infra/postgres/init-multi-db.sh` (one-time on fresh clusters; for
+  existing clusters, run the script's SQL manually). pytest-django uses
+  `--reuse-db` so the test database persists across runs and keeps the
+  `test_bypass_rls` role grants. Tests bypass RLS in their fixture
+  setup via `SET ROLE test_bypass_rls`; the dedicated
+  `test_rls_actually_isolates.py` resets back to `primitivehub_app`
+  (NOSUPERUSER, NOBYPASSRLS) to prove RLS enforces. **sqlite is
+  forbidden for tests** — it skips RLS migrations and would hide
+  tenant-isolation regressions.
 - Migrations: hand-edited migrations are committed; never use `--squash` on
-  released migrations. RLS migrations use `RunPython` with a no-op on
-  non-Postgres backends so sqlite-based tests still work.
+  released migrations. RLS migrations have an `if vendor != "postgresql"`
+  early-return for `dumpdata`/`inspectdb` against foreign backends only;
+  production and tests are Postgres.
 - Container builds: `docker compose build api` from the repo root.
 
 ## Workflow

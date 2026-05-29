@@ -1,14 +1,29 @@
 """Enable Postgres Row-Level Security on every tenant-scoped table.
 
-The application sets `SET LOCAL primitivehub.current_organization = '<uuid>'`
-at the start of each request (Phase 3 follow-up: tenant-context middleware).
-RLS policies below restrict visibility to rows where `organization_id`
-matches the session setting.
+PrimitiveHub is Postgres-only by design. The tenant-context middleware
+(`accounts.tenant_middleware.TenantContextMiddleware`) sets
+`SET LOCAL primitivehub.current_organization = '<uuid>'` at the start of
+each request. RLS policies below restrict visibility to rows where
+`organization_id` matches that session setting. An unset setting denies
+every row — RLS fails closed.
 
-Superusers (`is_superuser = TRUE` Postgres role attribute) bypass RLS by
-default — used by migrations and admin tooling.
+Postgres role attributes:
+  - The api container runs as the `primitivehub` role (NOSUPERUSER).
+    RLS applies to it.
+  - Migrations and admin tooling run as `primitivehub` too (still
+    NOSUPERUSER); the `FORCE ROW LEVEL SECURITY` clause means even the
+    table owner is subject to RLS.
+  - The `postgres` superuser bypasses RLS by Postgres design but is
+    never used by the application.
 
-This migration is a no-op on non-Postgres backends (e.g. sqlite tests).
+Vendor guard
+  The `if vendor != "postgresql"` early-return below exists ONLY so
+  `manage.py dumpdata` / `inspectdb` against a foreign backend doesn't
+  raise — production and tests both run against Postgres. The test suite
+  (settings_test.py) uses a dedicated `primitivehub_test` database on
+  the same Postgres service, NOT sqlite. sqlite is explicitly forbidden
+  for tests because it would silently skip RLS and hide tenant-isolation
+  regressions.
 """
 
 from __future__ import annotations

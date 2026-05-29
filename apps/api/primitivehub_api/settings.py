@@ -61,6 +61,9 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # PrimitiveHub OIDC: extracts + validates Bearer tokens, attaches request.oidc_subject
     "accounts.middleware.OIDCAuthenticationMiddleware",
+    # Tenant context: sets `primitivehub.current_organization` for RLS.
+    # MUST come after OIDC so request.user is populated.
+    "accounts.tenant_middleware.TenantContextMiddleware",
 ]
 
 ROOT_URLCONF = "primitivehub_api.urls"
@@ -102,6 +105,12 @@ DATABASES["default"]["ENGINE"] = "django.db.backends.postgresql"
 DATABASES["default"].setdefault("CONN_MAX_AGE", 60)
 DATABASES["default"].setdefault("OPTIONS", {})
 DATABASES["default"]["OPTIONS"].setdefault("connect_timeout", 5)
+# Every request runs inside a Postgres transaction. Required so the
+# tenant-context middleware can use `SET LOCAL primitivehub.current_organization`
+# — without an open transaction, SET LOCAL is silently a no-op and RLS
+# would never see the org context. The cost (transaction wrap per request)
+# is acceptable for a multi-tenant API where tenant isolation is load-bearing.
+DATABASES["default"]["ATOMIC_REQUESTS"] = True
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

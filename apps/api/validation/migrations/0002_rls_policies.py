@@ -1,4 +1,9 @@
-"""RLS on validation_review_item + validation_pipeline_stage."""
+"""RLS on validation_review_item + validation_pipeline_stage.
+
+Postgres-only by design (see registry/migrations/0002_rls_policies.py).
+The vendor guard below exists for `dumpdata`/`inspectdb` against foreign
+backends only — production and tests run against Postgres.
+"""
 
 from __future__ import annotations
 

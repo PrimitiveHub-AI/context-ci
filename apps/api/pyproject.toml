@@ -113,6 +113,10 @@ module = "accounts.middleware"
 ignore_errors = true
 
 [[tool.mypy.overrides]]
+module = "accounts.tenant_middleware"
+ignore_errors = true
+
+[[tool.mypy.overrides]]
 module = "accounts.admin"
 ignore_errors = true
 
@@ -127,6 +131,15 @@ addopts = [
     "-ra",
     "--strict-markers",
     "--strict-config",
+    # Force settings_test.py even when the container's DJANGO_SETTINGS_MODULE
+    # env var points at production settings. --ds beats env per pytest-django.
+    "--ds=primitivehub_api.settings_test",
+    # Reuse the test DB across sessions. Required because the test
+    # database carries role grants (test_bypass_rls) applied by the
+    # postgres init flow; pytest-django's default --create-db drops the
+    # DB and loses the grants. The CI workflow pre-creates the DB
+    # with these grants once and uses --reuse-db on every run.
+    "--reuse-db",
     "--cov=apps",
     "--cov=primitivehub_api",
     "--cov-report=term-missing:skip-covered",
