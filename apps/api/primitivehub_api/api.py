@@ -15,8 +15,8 @@ from django.db import connection
 from django.core.cache import cache
 from ninja import NinjaAPI, Schema
 
-# Future: from apps.orgs.api import router as orgs_router
-# Future: from apps.registry.api import router as registry_router
+from apps.orgs.api import router as orgs_router
+from apps.registry.api import router as registry_router
 
 
 class HealthResponse(Schema):
@@ -90,6 +90,5 @@ def whoami(request: Any) -> dict[str, Any]:
     }
 
 
-# Phase 4+ sub-routers register here:
-# api.add_router("/orgs", orgs_router)
-# api.add_router("/primitives", registry_router)
+api.add_router("", orgs_router)
+api.add_router("", registry_router)

@@ -171,6 +171,10 @@ class PrimitiveVersion(models.Model):
     token_budget = models.PositiveIntegerField()
     license = models.CharField(max_length=64)
     spec_version = models.CharField(max_length=16, default="0.1")
+    # Primitive Spec v0.1 §3 frontmatter — surfaced to API consumers.
+    compatible_agents = models.JSONField(default=list)
+    use_when = models.JSONField(default=list)
+    do_not_use_when = models.JSONField(default=list)
     submitted_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
