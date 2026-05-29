@@ -66,20 +66,37 @@ attestation, signing, primitive validation, or the threat model — **read
 the relevant docs/* first.** The spec is the contract; the threat model
 is the justification.
 
-## Expert primitives — load these before any frontend work
+## Expert primitives — load these before non-trivial work
 
 The directory [`apps/web/content/primitives/`](./apps/web/content/primitives/)
 holds the project's expert cognition primitives, calibrated to the actual
-stack and the actual codebase. **Before making any non-trivial frontend
-change, read the primitives in the second column.**
+stack and the actual codebase. **Before making any non-trivial change,
+read the primitives in the second column.** Max 5-10 per change (see
+[`feedback-bloat-control`](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/feedback_bloat_control.md));
+if more than 10 match, the change is too broad — split it.
+
+### Frontend (`apps/web/`)
 
 | Touching… | Load these primitives |
 |---|---|
 | Tailwind classes, `apps/web/app/globals.css`, theme tokens, fonts | [`apps/web/content/primitives/tailwind-v4-mastery.md`](./apps/web/content/primitives/tailwind-v4-mastery.md) |
 | Any file in `apps/web/app/` (pages, layouts, route handlers, server/client decisions) | [`apps/web/content/primitives/nextjs-16-app-router.md`](./apps/web/content/primitives/nextjs-16-app-router.md) |
-| Components in `apps/web/components/ui/` or `apps/web/components/<feature>/`, variants, primitives composition | [`apps/web/content/primitives/shadcn-ui-composition.md`](./apps/web/content/primitives/shadcn-ui-composition.md) |
+| Components in `apps/web/components/`, CVA variants, Radix composition | [`apps/web/content/primitives/shadcn-ui-composition.md`](./apps/web/content/primitives/shadcn-ui-composition.md) |
 | **Any** UI / visual design decision — taste, hierarchy, microcopy, restraint | [`apps/web/content/primitives/frontend-design-elite.md`](./apps/web/content/primitives/frontend-design-elite.md) |
 | Producing a DESIGN.md, documenting a screen's visual logic | [`apps/web/content/primitives/design-md-spec.md`](./apps/web/content/primitives/design-md-spec.md) |
+| Any chart, score badge, attestation timeline, threat-model panel | [`apps/web/content/primitives/tufte-data-visualization.md`](./apps/web/content/primitives/tufte-data-visualization.md) |
+| Designing `/registry`, `/validation`, future founder/admin dashboards | [`apps/web/content/primitives/dashboard-information-design.md`](./apps/web/content/primitives/dashboard-information-design.md) |
+| Any interactive component (focus, keyboard, ARIA, contrast, motion) | [`apps/web/content/primitives/accessibility-wcag22.md`](./apps/web/content/primitives/accessibility-wcag22.md) |
+
+### Backend (`apps/api/`)
+
+| Touching… | Load these primitives |
+|---|---|
+| Attestation, signing, key handling, threat-model code | [`apps/web/content/primitives/security-engineering-supplychain.md`](./apps/web/content/primitives/security-engineering-supplychain.md) |
+| Any model, migration, multi-tenant data flow | [`apps/web/content/primitives/ddia-multi-tenant.md`](./apps/web/content/primitives/ddia-multi-tenant.md) |
+| Postgres queries, indexes, migrations, EXPLAIN diagnosis | [`apps/web/content/primitives/postgresql-production.md`](./apps/web/content/primitives/postgresql-production.md) |
+| Django models, Ninja endpoints, Procrastinate tasks, IDOR prevention | [`apps/web/content/primitives/django-ninja-production.md`](./apps/web/content/primitives/django-ninja-production.md) |
+| Caching, rate limiting, Valkey, Next.js `"use cache"` | [`apps/web/content/primitives/valkey-caching-patterns.md`](./apps/web/content/primitives/valkey-caching-patterns.md) |
 
 **These primitives reference each other.** Loading `frontend-design-elite`
 references the demo-data discipline from `feedback-no-fake-numbers`
