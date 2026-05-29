@@ -1,12 +1,12 @@
 ---
 spec_version: "0.1"
 name: frontend-design-elite
-version: 0.1.0
+version: 0.2.0
 type: design
 domain: frontend
-author: PrimitiveHub Labs (synthesized from anthropics/claude-code frontend-design skill + maintainer taste calibration)
+author: PrimitiveHub Labs (synthesized from anthropics/claude-code frontend-design skill + maintainer taste calibration; v0.2.0 adds Companion primitives section linking to Tufte + Few)
 license: CC-BY-4.0
-tokens: 3600
+tokens: 3800
 token_budget: 5000
 risk_level: low
 content_digest: sha256:pending-cci-v0.1-attestation
@@ -224,6 +224,25 @@ and a single quote callout. That's the elite shape.
 
 The **`components/landing/cli-roadmap.tsx`** mimics terminal output
 with no decoration — and reads as believable product surface.
+
+## Companion primitives
+
+This primitive governs taste. Two sibling primitives govern the
+**quantitative truth** the taste sits on top of — load them together
+whenever the surface contains data, charts, or scores.
+
+| When you're touching… | Load alongside this primitive |
+|---|---|
+| A chart, sparkline, score badge, threat-model grid, attestation timeline | [`tufte-data-visualization`](./tufte-data-visualization.md) — data-ink ratio, small multiples, eliminate chartjunk |
+| A multi-panel dashboard surface (registry, validation, org overview) | [`dashboard-information-design`](./dashboard-information-design.md) — Stephen Few's dashboard doctrine: dense, scannable, comparison-first |
+| Any interactive control, focus order, ARIA semantics | [`accessibility-wcag22`](./accessibility-wcag22.md) — WCAG 2.2 AA + ARIA APG patterns; bakes in what restraint alone won't catch |
+
+**Precedence when they disagree:** quantitative truth (Tufte / Few)
+wins over visual restraint when there's a real conflict — a more
+data-dense chart that's correctly labeled beats a prettier chart
+that misleads. Accessibility wins over both whenever a tradeoff
+exists. See [`feedback-bloat-control`](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/feedback_bloat_control.md)
+for the full priority stack.
 
 ## References
 

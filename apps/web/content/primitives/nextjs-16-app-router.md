@@ -1,12 +1,12 @@
 ---
 spec_version: "0.1"
 name: nextjs-16-app-router
-version: 0.1.0
+version: 0.2.0
 type: engineering
 domain: frontend
-author: PrimitiveHub Labs (synthesized from wsimmonds/claude-nextjs-skills + vercel-labs/next-skills + maintainer knowledge)
+author: PrimitiveHub Labs (synthesized from wsimmonds/claude-nextjs-skills + vercel-labs/next-skills + maintainer knowledge; v0.2.0 enrichment adds Server Actions, parallel/intercepting routes, proxy.ts, React.cache, after(), View Transitions)
 license: CC-BY-4.0
-tokens: 4800
+tokens: 5600
 token_budget: 6500
 risk_level: low
 content_digest: sha256:pending-cci-v0.1-attestation
@@ -25,6 +25,12 @@ use_when:
   - "Implementing route handlers (app/**/route.ts)"
   - "Migrating a page from client to server (or vice versa)"
   - "Implementing layouts, loading, error, not-found special files"
+  - "Writing Server Actions (`'use server'`) and React 19 form/action hooks"
+  - "Designing parallel (`@slot`) or intercepting (`(.)folder`) routes"
+  - "Adding proxy.ts middleware (renamed from middleware.ts in Next 16)"
+  - "Deduplicating data fetches in RSCs with React.cache"
+  - "Adding non-blocking post-response work via after()"
+  - "Coordinating page transitions with View Transitions API"
 do_not_use_when:
   - "Pages Router projects (this project is App Router only)"
   - "Non-Next.js React applications"
@@ -97,6 +103,56 @@ This primitive eliminates those.
   default (was force-cache). Opt into caching explicitly with
   `{ next: { revalidate: <seconds> } }` or `{ cache: "force-cache" }`.
 
+- **Server Actions are the mutation primitive.** Functions tagged with
+  `"use server"` (top-of-file or top-of-function) become callable from
+  client components and form `action={…}` attributes. The framework
+  serializes the call, runs it on the server, and revalidates the
+  affected routes. **React 19's `useActionState(action, initialState)`**
+  pairs with this to expose `[state, formAction, isPending]` — the
+  canonical form-submit pattern. **`useOptimistic(state, reducer)`**
+  shows the optimistic UI before the action resolves. **`action.bind(null,
+  arg)`** is how you partially-apply server actions before passing them
+  to form `action={…}`. Never invent custom REST endpoints when a Server
+  Action expresses the same intent — fewer moving parts.
+
+- **`React.cache(fn)` deduplicates per-request data fetches in RSCs.**
+  Wrap a server-only data fn once at the module level; every RSC in the
+  same request that calls it gets the same Promise. This is how a header
+  and a body component can both call `getCurrentUser()` without making
+  two requests. Has no effect in client components.
+
+- **`after(() => …)` runs work after the response has been sent.**
+  Imported from `next/server`. Use for telemetry, audit log writes,
+  cache warming — anything that shouldn't delay the user's first byte.
+  The function still runs on the server with full request context.
+
+- **`proxy.ts` replaces `middleware.ts` in Next 16.** Same export shape
+  (`export function proxy(request) { … }`, `export const config = {
+  matcher: … }`), new name. The rename was intentional — calling it
+  "middleware" implied it ran on every render; "proxy" reflects what it
+  actually does (edge-resident request rewriting before route matching).
+
+- **Parallel routes (`@slot`) render multiple pages into one layout.**
+  A folder `app/dashboard/@analytics/page.tsx` becomes an `analytics`
+  prop on `app/dashboard/layout.tsx`. The layout decides where each
+  slot renders. Combined with conditional rendering of slots and
+  independent loading/error states, this is how complex dashboards
+  isolate failures per region.
+
+- **Intercepting routes (`(.)folder`) render a route in the current
+  layout context.** The prefixes are `(.)`/`(..)`/`(...)` for sibling /
+  parent / root. Canonical use: clicking a photo in a feed opens a
+  modal route that intercepts `/photo/[id]` to render inside the feed
+  layout while the URL still says `/photo/[id]` (deep-link friendly).
+  Hard-refresh hits the non-intercepted page.
+
+- **View Transitions for cross-page animation.** Wrap navigation in
+  `unstable_ViewTransition` (or use the upcoming stable export) and
+  Next coordinates a CSS view-transition between the outgoing and
+  incoming pages. Tag matching elements with `view-transition-name:
+  …` in CSS to morph between them. Avoid for any transition longer
+  than ~250ms — perceived as lag.
+
 ## Decision Rules
 
 - **IF a component uses `useState`, `useEffect`, event handlers, or
@@ -125,6 +181,27 @@ This primitive eliminates those.
   `fetch(url, { next: { revalidate: 3600 } })` and document the TTL.
 - **IF an API endpoint is needed THEN** create `app/<path>/route.ts`
   with named exports `GET`/`POST`/etc. that return `Response`.
+- **IF a mutation comes from a form or button click THEN** prefer a
+  Server Action over inventing a route handler. Use `useActionState`
+  for the form-state pair; `useOptimistic` only when the optimistic
+  state is cheap to compute and roll back.
+- **IF the same data fetch runs in multiple RSCs in one request THEN**
+  wrap the fetch fn with `React.cache(…)` at module scope to dedupe.
+- **IF work should run AFTER the response is sent (telemetry, audit
+  log, cache warm) THEN** wrap it in `after(() => …)` from
+  `next/server`. Do not block the response on it.
+- **IF route-aware request rewriting / auth-redirect is needed THEN**
+  add `apps/web/proxy.ts` (NOT `middleware.ts` in Next 16) exporting
+  `proxy()` and `config.matcher`.
+- **IF a layout must render multiple independent regions with isolated
+  loading/error states THEN** use parallel routes (`@<slot>` folders +
+  slot props on the layout).
+- **IF a modal-on-top-of-feed UX is needed with deep-linkable URLs
+  THEN** use intercepting routes (`(.)folder`). Hard-refresh fallback
+  page renders the full route.
+- **IF transitioning between two pages with a shared visual element
+  THEN** consider View Transitions with matching
+  `view-transition-name`. Keep the animation under ~250ms or skip it.
 
 ## Anti-Patterns
 
@@ -145,6 +222,31 @@ This primitive eliminates those.
 - **Putting business logic in `route.ts` directly.** Route handlers
   should be thin glue calling lib/* helpers, so the same logic can be
   unit-tested without the route layer.
+- **Storing per-request state in module-level variables in RSCs.**
+  Server modules are reused across requests; a `let currentUser = …`
+  at module scope leaks between users. Per-request state belongs in
+  the request itself (`headers()`, `cookies()`) or in a
+  `React.cache`-wrapped getter that reads them.
+- **Hand-rolling a fetch endpoint when a Server Action would do.**
+  Doubles the surface area (validation, error path, types, CSRF).
+  Server Actions inherit revalidation and type-safe args.
+- **Calling `after()` work that mutates the response.** `after()` runs
+  after the response is flushed — anything it writes to headers or
+  body is lost. Use it for side-effects, not output.
+- **Naming the file `middleware.ts` in Next 16.** Use `proxy.ts`. The
+  legacy name still loads with a warning but breaks future-proofing.
+- **Wide barrel re-exports
+  (`export * from './big-module'`).** Defeats Turbopack's tree-shaking
+  and pulls client-only code into RSC graphs unintentionally
+  (`"use client"` gets implicit from any client export reachable
+  through the barrel). Re-export only what's actually consumed, or
+  import from the leaf directly.
+- **Using a parallel-route slot for a region that always renders.**
+  The slot machinery is for independent loading/error/conditional
+  rendering. If the region is unconditional, just compose components.
+- **Using View Transitions for any transition slower than ~250ms.**
+  Perceived as lag, not transition. Skip the animation; navigate
+  directly.
 
 ## Review Checklist
 
