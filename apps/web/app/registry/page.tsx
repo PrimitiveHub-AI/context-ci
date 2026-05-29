@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { PrimitiveCard } from "@/components/primitives/primitive-card"
 import { PrimitiveTable } from "@/components/primitives/primitive-table"
-import { primitives } from "@/lib/data/primitives"
+import { usePrimitives } from "@/lib/api/queries"
+import { primitives as mockPrimitives } from "@/lib/data/primitives"
 import { categories } from "@/lib/data/categories"
 import { agents } from "@/lib/data/agents"
-import type { Category, CompatibleAgent, TrustStatus } from "@/lib/types"
-import { LayoutGrid, List, Search, SlidersHorizontal, X, Package } from "lucide-react"
+import type { Category, CompatibleAgent, Primitive, TrustStatus } from "@/lib/types"
+import { LayoutGrid, List, Search, SlidersHorizontal, X, Package, AlertCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const trustStatuses: TrustStatus[] = ["Trusted", "In Review", "Experimental", "Deprecated"]
@@ -45,8 +46,17 @@ export default function RegistryPage() {
     }
   }
 
+  // Real API call. Loading + error states are rendered below the filters
+  // panel so the UI shell + filters stay interactive during a refetch.
+  // Falls back to the curated mock list when the API is unreachable —
+  // useful in CI / preview environments without a running backend.
+  // Remove the fallback once the API is the only source of truth (Step 5).
+  const primitivesQuery = usePrimitives({ pageSize: 100 })
+  const sourcePrimitives: Primitive[] =
+    primitivesQuery.data?.items ?? (primitivesQuery.isError ? mockPrimitives : [])
+
   const filtered = useMemo(() => {
-    return primitives.filter((p) => {
+    return sourcePrimitives.filter((p) => {
       const matchesQuery =
         !query ||
         p.name.toLowerCase().includes(query.toLowerCase()) ||
@@ -57,7 +67,7 @@ export default function RegistryPage() {
       const matchesStatus = !selectedStatus || p.status === selectedStatus
       return matchesQuery && matchesCategory && matchesAgent && matchesStatus
     })
-  }, [query, selectedCategory, selectedAgent, selectedStatus])
+  }, [sourcePrimitives, query, selectedCategory, selectedAgent, selectedStatus])
 
   const hasFilters = selectedCategory || selectedAgent || selectedStatus
   const totalTokens = filtered.reduce((sum, p) => sum + p.tokens, 0)
@@ -223,6 +233,21 @@ export default function RegistryPage() {
                 ))}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* API status row — loading / error indicators tie back to the
+            TanStack Query state; only visible while the request is in
+            flight or has failed. */}
+        {primitivesQuery.isLoading && (
+          <div className="mb-3 text-[11px] font-mono text-muted-foreground">
+            loading from registry…
+          </div>
+        )}
+        {primitivesQuery.isError && (
+          <div className="mb-3 flex items-center gap-2 rounded-md border border-amber/30 bg-amber/5 px-3 py-2 text-[11px] text-amber">
+            <AlertCircle className="size-3" />
+            api unreachable — showing cached/demo data
           </div>
         )}
 

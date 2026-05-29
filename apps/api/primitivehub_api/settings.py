@@ -38,6 +38,8 @@ INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.messages",
     "django.contrib.sessions",
+    # Third-party
+    "corsheaders",
     # Project apps
     "accounts",
     "orgs",
@@ -47,6 +49,9 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    # CORS must precede CommonMiddleware so it can answer OPTIONS preflight
+    # before any other middleware short-circuits with a redirect.
+    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -157,6 +162,24 @@ S3_REGION = env("S3_REGION", default="auto")  # "auto" works with R2
 # primitive (10 KiB typical, 100 KiB extreme); raise only if a real
 # primitive needs it.
 PRIMITIVE_MAX_BYTES = env("PRIMITIVE_MAX_BYTES", default=1024 * 1024, cast=int)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CORS — the web app (localhost:3000 in dev) calls the api (localhost:8000).
+# In prod they share an origin via reverse proxy; CORS_ALLOWED_ORIGINS stays
+# empty in that case. Pre-launch posture: explicit allow-list, no wildcards.
+# ─────────────────────────────────────────────────────────────────────────────
+CORS_ALLOWED_ORIGINS = env(
+    "CORS_ALLOWED_ORIGINS",
+    cast=list,
+    default=["http://localhost:3000", "http://127.0.0.1:3000"],
+)
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "authorization",
+    "content-type",
+    "x-requested-with",
+]
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Internationalization

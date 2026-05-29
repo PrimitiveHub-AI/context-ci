@@ -30,6 +30,9 @@ dependencies = [
     "procrastinate[django]>=2.15",
     # Settings
     "django-environ>=0.11",
+    # CORS — the web app at localhost:3000 calls the api at localhost:8000.
+    # In prod the two share an origin (reverse-proxied), but dev needs CORS.
+    "django-cors-headers>=4.5",
     # Observability deferred — print-to-stdout + JSON-line logging via structlog for now
     "structlog>=24.4",
     # Cryptographic operations
