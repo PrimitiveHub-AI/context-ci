@@ -47,6 +47,7 @@ dev = [
     "mypy>=1.13",
     "django-stubs[compatible-mypy]>=5.1",
     "django-stubs-ext>=5.1",
+    "moto[s3]>=5.0",            # in-process S3 mock for storage tests
 ]
 
 [tool.ruff]

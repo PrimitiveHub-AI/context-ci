@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "accounts",
     "orgs",
     "registry",
+    "storage",
 ]
 
 MIDDLEWARE = [
@@ -150,6 +151,12 @@ S3_ACCESS_KEY_ID = env("S3_ACCESS_KEY_ID", default="")
 S3_SECRET_ACCESS_KEY = env("S3_SECRET_ACCESS_KEY", default="")
 S3_BUCKET = env("S3_BUCKET", default="primitivehub-primitives")
 S3_REGION = env("S3_REGION", default="auto")  # "auto" works with R2
+
+# Per-request upload guard (size limit for primitive content). Defends
+# against DoS via massive uploads. 1 MiB is generous for a markdown
+# primitive (10 KiB typical, 100 KiB extreme); raise only if a real
+# primitive needs it.
+PRIMITIVE_MAX_BYTES = env("PRIMITIVE_MAX_BYTES", default=1024 * 1024, cast=int)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Internationalization

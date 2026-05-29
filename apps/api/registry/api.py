@@ -23,13 +23,18 @@ Ownership:  Tenant scoping + RLS (defense in depth via
 
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING, cast
 
+from django.conf import settings
+from django.db import transaction
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from ninja import Router
+from ninja.errors import HttpError
 
 from accounts.models import User  # noqa: TC001 — used by cast() at runtime
-from orgs.models import Organization
+from orgs.models import Organization, OrganizationMember, Role
 from primitivehub_api.auth import requires_auth
 from primitivehub_api.pagination import paginate
 from registry.models import (
@@ -46,6 +51,14 @@ from registry.schemas import (
     PrimitiveVersionOut,
     RegistryOut,
     RepositoryOut,
+)
+from storage.client import get_primitive_content, put_primitive_content
+from storage.digest import read_with_digest
+from storage.exceptions import (
+    ContentNotFoundError,
+    DigestMismatchError,
+    SizeLimitExceededError,
+    StorageUnavailableError,
 )
 
 if TYPE_CHECKING:
@@ -338,3 +351,180 @@ def get_attestation(request: HttpRequest, slug: str, semver: str) -> Attestation
         signed_at=attestation.signed_at,
         recorded_at=attestation.recorded_at,
     )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Content-addressed write + read
+#
+# Security goal triplet (per security-engineering-supplychain primitive)
+#   Asset:      Primitive content bytes + the (slug, semver) → digest binding
+#   Opponent:   (a) Compromised author w/ stolen OIDC token, (b) Storage
+#               compromise / silent corruption (T9), (c) Cross-tenant
+#               attempted pivot (T2).
+#   Assumption: SHA-256 collision-resistance holds; R2 ACL + bucket-scoped
+#               credentials honored; Postgres durability.
+#
+# Controls
+#   - Server computes digest from received bytes (never trust client claim)
+#   - Object key IS the digest (sha256:<hex>) — no mutable path
+#   - Re-hash on every read (`get_primitive_content`); mismatch → refuse
+#   - Tenant scope via `_scoped_primitives`/`_scoped_versions`
+#   - Role check: only members with AUTHOR or MAINTAINER can upload
+#   - Per-request size guard via `read_with_digest` (PRIMITIVE_MAX_BYTES)
+#   - Postgres txn wraps the row insert; R2 upload runs FIRST (idempotent
+#     on digest collisions, so a failed row insert + retry is safe)
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+_UPLOAD_ROLES: frozenset[str] = frozenset(
+    {Role.AUTHOR.value, Role.MAINTAINER.value, Role.REGISTRY_ADMIN.value}
+)
+
+
+def _membership_for(user: User, organization: Organization) -> OrganizationMember | None:
+    return OrganizationMember.objects.filter(user=user, organization=organization).first()
+
+
+def _parse_json_list(field_name: str, raw: str) -> list[str]:
+    """Parse a JSON string into a list[str]. Raises 400 on malformed input."""
+    try:
+        value = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise HttpError(400, f"{field_name} must be a JSON array of strings") from exc
+    if not isinstance(value, list) or not all(isinstance(s, str) for s in value):
+        raise HttpError(400, f"{field_name} must be a JSON array of strings")
+    return value
+
+
+def _require_form_field(request: HttpRequest, name: str) -> str:
+    value = request.POST.get(name)
+    if not value:
+        raise HttpError(400, f"missing form field: {name}")
+    return value
+
+
+@router.post(
+    "/primitives/{slug}/versions",
+    response={201: PrimitiveVersionOut},
+)
+@requires_auth
+def upload_primitive_version(request: HttpRequest, slug: str) -> tuple[int, PrimitiveVersionOut]:
+    """Upload a new immutable, content-addressed version of a primitive.
+
+    Multipart form with fields:
+      semver, license, token_budget (int),
+      compatible_agents (JSON array str), use_when (JSON array str),
+      do_not_use_when (JSON array str), content (file).
+
+    Server hashes the bytes; the storage key is `sha256:<hex>`. Re-upload
+    of identical content is a no-op at the storage layer (same digest →
+    same key); the row insert enforces (primitive, semver) uniqueness, so
+    a re-publish under the same semver returns 409.
+
+    We read the multipart directly via `request.POST` / `request.FILES`
+    rather than Ninja's `Form()`/`File()` params — Ninja 1.3 + Pydantic
+    2.13 has a forward-ref issue with `UploadedFile` annotations under
+    `from __future__ import annotations`.
+    """
+    user = _user(request)
+
+    primitive = get_object_or_404(
+        _scoped_primitives(user).select_related("organization"),
+        slug=slug,
+    )
+
+    # Role check — only authors+ within the primitive's org can upload.
+    membership = _membership_for(user, primitive.organization)
+    if membership is None or not (set(membership.roles or []) & _UPLOAD_ROLES):
+        # 403 here, not 404, because the caller already proved org membership
+        # by reading the primitive via _scoped_primitives. Refusing with 403
+        # is honest about "you're a member, just not authorized for this".
+        raise HttpError(403, "Author role required to publish a primitive version")
+
+    semver = _require_form_field(request, "semver")
+    license_val = _require_form_field(request, "license")
+    token_budget_str = _require_form_field(request, "token_budget")
+    try:
+        token_budget = int(token_budget_str)
+    except ValueError as exc:
+        raise HttpError(400, "token_budget must be an integer") from exc
+
+    content_file = request.FILES.get("content")
+    if content_file is None:
+        raise HttpError(400, "missing file field: content")
+
+    if PrimitiveVersion.objects.filter(primitive=primitive, semver=semver).exists():
+        raise HttpError(409, f"version {semver} already exists for {slug}")
+
+    try:
+        content_bytes, digest_hex = read_with_digest(
+            content_file, max_bytes=settings.PRIMITIVE_MAX_BYTES
+        )
+    except SizeLimitExceededError as exc:
+        raise HttpError(413, str(exc)) from exc
+
+    agents_list = _parse_json_list(
+        "compatible_agents", _require_form_field(request, "compatible_agents")
+    )
+    use_when_list = _parse_json_list("use_when", _require_form_field(request, "use_when"))
+    do_not_use_when_list = _parse_json_list(
+        "do_not_use_when", request.POST.get("do_not_use_when") or "[]"
+    )
+
+    try:
+        storage_key = put_primitive_content(content_bytes, digest_hex=digest_hex)
+    except StorageUnavailableError as exc:
+        raise HttpError(503, "storage temporarily unavailable") from exc
+
+    with transaction.atomic():
+        version = PrimitiveVersion.objects.create(
+            organization=primitive.organization,
+            primitive=primitive,
+            semver=semver,
+            content_digest=digest_hex,
+            storage_key=storage_key,
+            tokens=len(content_bytes),
+            token_budget=token_budget,
+            license=license_val,
+            spec_version="0.1",
+            submitted_by=user,
+            verdict=PrimitiveVersion.Verdict.SUBMITTED,
+            compatible_agents=agents_list,
+            use_when=use_when_list,
+            do_not_use_when=do_not_use_when_list,
+        )
+    return 201, _serialize_version(version)
+
+
+@router.get("/primitives/{slug}/versions/{semver}/content")
+@requires_auth
+def get_primitive_version_content(request: HttpRequest, slug: str, semver: str) -> HttpResponse:
+    """Stream the content bytes for a version, after server-side digest verify.
+
+    Re-hashes the bytes from storage and refuses to serve if they don't
+    match the stored `content_digest`. This is the runtime T9 (Trust Drift)
+    defense the spec promises — a tampered or corrupted object never
+    reaches the caller.
+    """
+    user = _user(request)
+    version = get_object_or_404(
+        _scoped_versions(user).select_related("primitive"),
+        primitive__slug=slug,
+        semver=semver,
+    )
+
+    try:
+        content = get_primitive_content(digest_hex=version.content_digest)
+    except ContentNotFoundError as exc:
+        raise HttpError(404, "content missing from storage") from exc
+    except DigestMismatchError as exc:
+        # Integrity violation — log + refuse. 500 over 502 because we own
+        # the storage; the user can't fix the upstream.
+        raise HttpError(500, "content integrity check failed") from exc
+    except StorageUnavailableError as exc:
+        raise HttpError(503, "storage temporarily unavailable") from exc
+
+    response = HttpResponse(content, content_type="text/markdown; charset=utf-8")
+    response["X-Content-Digest"] = f"sha256:{version.content_digest}"
+    response["Content-Length"] = str(len(content))
+    return response
