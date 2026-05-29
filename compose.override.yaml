@@ -28,6 +28,11 @@ services:
       DEBUG: "True"
       DEV_AUTH_BYPASS: "True"
       ALLOWED_HOSTS: "*"
+    # Inject dev-only secrets (R2 keys, etc.) from apps/api/.env. The file is
+    # gitignored. `required: false` lets the compose start before .env exists.
+    env_file:
+      - path: ./apps/api/.env
+        required: false
     volumes:
       - ./apps/api:/app
       # Anonymous volume: keep container's /opt/venv from being overwritten
