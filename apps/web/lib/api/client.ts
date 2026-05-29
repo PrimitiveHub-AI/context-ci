@@ -21,7 +21,12 @@ import type {
   ReviewItem,
 } from "@/lib/types"
 
-const DEFAULT_BASE_URL = "http://localhost:8000/api/v1"
+// Same-origin: the browser hits Next's /api/v1/* proxy route, which
+// attaches the Bearer token from the httpOnly cookie and forwards to
+// the Django backend. Override only when the api is reachable directly
+// (e.g. server-side rendering pre-launch where Next can talk to the
+// container by hostname).
+const DEFAULT_BASE_URL = "/api/v1"
 
 export const apiBaseUrl =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? DEFAULT_BASE_URL
@@ -132,6 +137,19 @@ export interface OrganizationOut {
   memberRoleCount: number
 }
 
+export interface WhoamiResponse {
+  subject: string | null
+  authenticated: boolean
+  devBypass: boolean
+  user: {
+    id: string
+    subject: string
+    email: string
+    displayName: string
+  } | null
+  activeOrganization: string | null
+}
+
 export interface OrganizationMembershipOut {
   organization: OrganizationOut
   roles: string[]
@@ -182,4 +200,7 @@ export const api = {
 
   listContributors: (options: ApiRequestOptions = {}) =>
     apiFetch<Contributor[]>("/contributors", options),
+
+  whoami: (options: ApiRequestOptions = {}) =>
+    apiFetch<WhoamiResponse>("/whoami", options),
 }

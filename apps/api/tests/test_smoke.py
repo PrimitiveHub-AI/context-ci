@@ -34,8 +34,10 @@ def test_whoami_with_dev_bypass(client: Client) -> None:
     assert response.status_code == 200
     data = response.json()
     assert data["authenticated"] is True
-    assert data["dev_bypass"] is True
+    assert data["devBypass"] is True
     assert "subject" in data
+    assert data["user"] is not None
+    assert data["user"]["subject"]
 
 
 @pytest.mark.django_db

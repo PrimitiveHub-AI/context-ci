@@ -101,16 +101,29 @@ def healthz(request: Any) -> HealthResponse:
 
 @api.get("/whoami", tags=["meta"])
 def whoami(request: Any) -> dict[str, Any]:
-    """Return the OIDC subject the request carries, or null if unauthenticated.
+    """Return the active session — subject, profile, and any active tenant.
 
-    Useful in Phase 3 for confirming the auth middleware + Authentik wiring
-    actually work end-to-end without needing a real protected endpoint yet.
+    The frontend calls this on bootstrap to learn (a) whether a session is
+    active and (b) display details to render the navbar. Returns
+    `authenticated: false` for anonymous requests instead of 401 so the
+    frontend can call it speculatively without setting up auth headers.
     """
     subject = getattr(request, "oidc_subject", None)
+    user = getattr(request, "user", None) if subject else None
+    profile: dict[str, Any] | None = None
+    if user is not None:
+        profile = {
+            "id": str(user.id),
+            "subject": subject,
+            "email": user.email or "",
+            "displayName": user.display_name or user.email or subject or "",
+        }
     return {
         "subject": subject,
         "authenticated": subject is not None,
-        "dev_bypass": bool(settings.DEV_AUTH_BYPASS),
+        "devBypass": bool(settings.DEV_AUTH_BYPASS),
+        "user": profile,
+        "activeOrganization": getattr(request, "tenant_org_id", None),
     }
 
 

@@ -20,6 +20,7 @@ import {
   type OrganizationMembershipOut,
   type PrimitiveListParams,
   type PrimitivePage,
+  type WhoamiResponse,
 } from "@/lib/api/client"
 import { useActiveOrg } from "@/lib/api/org-context"
 import type {
@@ -31,6 +32,18 @@ import type {
 } from "@/lib/types"
 
 const STALE_TIME_MS = 5 * 60 * 1000 // 5 min — registry data updates slowly
+
+export function useWhoami(): UseQueryResult<WhoamiResponse> {
+  // The whoami endpoint is the source of truth for "is anyone signed in
+  // right now?". Short staleTime so logout / login reflect promptly in
+  // the navbar; retry: false so anonymous reads don't waste ops.
+  return useQuery({
+    queryKey: ["whoami"],
+    queryFn: ({ signal }) => api.whoami({ signal }),
+    staleTime: 30 * 1000,
+    retry: false,
+  })
+}
 
 export function useOrganizations(): UseQueryResult<OrganizationMembershipOut[]> {
   // Memberships are a property of the user, not of any one org —
