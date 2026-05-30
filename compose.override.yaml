@@ -48,6 +48,30 @@ services:
       # if the host happens to have one
       - /opt/venv
 
+  api-worker:
+    build:
+      target: dev
+    image: primitivehub-api:dev
+    # In dev, restart on source changes by using --connection-timeout=0
+    # so Procrastinate exits cleanly on SIGTERM and compose can re-spawn it
+    # when we `docker compose restart api-worker`. We don't have file-watch
+    # auto-reload yet (Phase 4 follow-up if it becomes painful).
+    command:
+      - "sh"
+      - "-c"
+      - |
+        python manage.py migrate procrastinate --noinput && \
+        exec python manage.py procrastinate worker --queues=default
+    environment:
+      DEBUG: "True"
+      ALLOWED_HOSTS: "*"
+    env_file:
+      - path: ./apps/api/.env
+        required: false
+    volumes:
+      - ./apps/api:/app
+      - /opt/venv
+
   # ── Optional MinIO for offline dev (opt-in via `--profile minio`) ─────────
   # Start with: docker compose --profile minio up
   # Then point apps/api/.env at it:
