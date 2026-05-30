@@ -55,9 +55,15 @@ for the full picture. **Read both before responding to a strategic question.**
 ├── compose.override.yaml  dev overlay (auto-loaded)
 ├── compose.prod.yaml      prod overlay
 ├── docs/
-│   ├── README.md          doc index
-│   ├── spec.md            Primitive Spec v0.1
-│   └── threat-model.md    10 supply-chain attack categories
+│   ├── README.md          doc index (canonical refs + strategic foundation)
+│   ├── vision.md          WHY this exists — 1/3/10-year north star
+│   ├── positioning.md     WHO we are not — vs GitHub, HF, npm, …
+│   ├── principles.md      WHAT is non-negotiable — 18 beliefs
+│   ├── roadmap.md         WHEN we ship — Phase 1 through Phase 12+
+│   ├── bugs.md            WHAT broke + root cause + prevention
+│   ├── decisions/         HOW we built it — ADRs (0001-NNNN)
+│   ├── spec.md            Primitive Spec v0.1 (canonical, paper-cited)
+│   └── threat-model.md    10 supply-chain attack categories (canonical)
 └── .github/workflows/     CI (paths: apps/web/**)
 ```
 
@@ -72,12 +78,40 @@ and `apps/api/`.
 | [`DESIGN.md`](./DESIGN.md) | Unified design doctrine for the whole project. Visual theme, palette + roles, typography, components, layout principles. Supersedes scattered taste references. |
 | [`docs/threat-model.md`](./docs/threat-model.md) | 10 supply-chain attack categories Context CI is designed to detect. Cited by the paper. |
 | [`docs/spec.md`](./docs/spec.md) | Primitive Spec v0.1: frontmatter, body sections, content addressing, in-toto Attestation predicate, Sigstore signing model, SLSA mapping. |
-| [`docs/README.md`](./docs/README.md) | Doc index + planned OSS sibling repos. |
+| [`docs/README.md`](./docs/README.md) | Doc index + planned OSS sibling repos + the relationship diagram for the whole strategic doc layer. |
 
 When you write code that touches any of: cryptographic vocabulary,
 attestation, signing, primitive validation, or the threat model — **read
 the relevant docs/* first.** The spec is the contract; the threat model
 is the justification.
+
+## Strategic foundation (read before any non-trivial work)
+
+The team-facing strategic layer that frames every decision:
+
+| Path | What it answers |
+|---|---|
+| [`docs/vision.md`](./docs/vision.md) | **WHY** — the agent-context-as-supply-chain thesis. 1 / 3 / 10-year horizon. The North Star. |
+| [`docs/positioning.md`](./docs/positioning.md) | **WHO we are NOT** — competitive landscape vs GitHub, HF, npm, MCP Registry, vendor skill registries. |
+| [`docs/principles.md`](./docs/principles.md) | **WHAT is non-negotiable** — 18 beliefs the project ships against. |
+| [`docs/roadmap.md`](./docs/roadmap.md) | **WHEN** — Phase 1 through Phase 12+ with target windows, ship lists, success metrics. |
+| [`docs/bugs.md`](./docs/bugs.md) | **WHAT broke** — every load-bearing bug + root cause + prevention. Grep before re-deriving. AI-hallucination log at the bottom. |
+| [`docs/decisions/`](./docs/decisions/) | **HOW we built it** — Architecture Decision Records. One file per load-bearing choice with status, alternatives, consequences. |
+
+**Discipline:**
+- Before proposing a new feature: skim `vision.md` + `principles.md`
+  to check alignment.
+- Before adopting a third-party library: skim `positioning.md` for
+  competitor signal + write an ADR if the choice is load-bearing.
+- After fixing a bug: add an entry to `bugs.md` (with root cause +
+  prevention) BEFORE the fix merges. No silent fixes.
+- Before re-deriving a known failure: grep `bugs.md` for the symptom.
+- Before debating an architecture pattern: search `decisions/` for an
+  existing ADR. If you disagree, propose superseding it; do not
+  silently violate.
+
+These documents are the institutional memory. Treat them with the
+same discipline as the codebase.
 
 ## Expert primitives — load these before non-trivial work
 

@@ -1,0 +1,228 @@
+# PrimitiveHub Roadmap
+
+> **Status:** Living document. Updated when a phase ships, when a
+> phase scope changes, or when a new phase is added. Phases land in
+> order; later phases may move based on what shipping earlier ones
+> teaches us.
+
+## Where we are right now
+
+Phase 3 complete + Phase 3.5 (auth round-out) shipping. Ten branches
+stacked, post-Step-7-OIDC. The end-to-end Sign-in flow is live.
+
+| Phase | State | Tag |
+|---|---|---|
+| 1 — UI shell + brand foundation | ✓ shipped | `v0.1.0-ui` |
+| 2 — Architecture cleanup + monorepo | ✓ shipped | `v0.2.0-arch` |
+| 3 — Backend bootstrap + first endpoints | ✓ shipped | branches stacked, pre-merge |
+| 3.5 — Real OIDC + auth polish | ✓ shipped | branches stacked, pre-merge |
+| **4 — Sigstore signing + Procrastinate workers** | ◐ NEXT | target Q1 2026 |
+| 5 — Context CI v1: 10 stages, 10 threats | ◯ planned | target Q1 2026 |
+| 6 — Marketplace + search + downloads + reviews | ◯ planned | target Q2 2026 |
+| 7 — Enterprise: self-host Sigstore, MinIO, schema-per-tenant | ◯ planned | target Q2 2026 |
+| 8 — Observability + analytics | ◯ planned | target Q2-Q3 2026 |
+| 9 — arXiv paper coordination + reviewer comms | ◯ planned | target Q3 2026 |
+| 10 — Public launch | ◯ planned | target Q3 2026 (paper-coordinated) |
+| 11 — Federation + cross-registry trust | ◯ planned | post-launch |
+| 12 — Standards body submission (e.g., OASIS / IETF) | ◯ planned | post-launch + adoption |
+
+## Phase-by-phase
+
+### Phase 4 — Sigstore signing + Procrastinate workers (Q1 2026)
+
+**Goal:** Every primitive publish produces a real Sigstore signature on
+a real Rekor log entry. Async work (validation runs, attestation
+generation, webhook delivery) moves off the request thread.
+
+**Ships:**
+- `apps/api/signing/` — Sigstore keyless client (Fulcio OIDC flow +
+  Rekor log entry submission), ed25519-signed in-toto DSSE envelopes.
+- `apps/api/jobs/` — Procrastinate task definitions. Tasks: validate,
+  attest, notify, reindex.
+- Publish path: `POST /primitives/{slug}/versions` → enqueue validate →
+  enqueue attest (depends on validate) → enqueue notify (depends on
+  attest).
+- Idempotency keys on every external side effect (Sigstore, webhook,
+  email).
+- "Trusted" badge requires `attestation.signed_at IS NOT NULL` AND a
+  valid Rekor entry; UI surface enforces this.
+- Tests: signing a real primitive, verifying the signature, replaying
+  the verification against Rekor.
+
+**Success metric:** A primitive published in dev produces a Rekor entry
+the maintainer can paste into <https://search.sigstore.dev/> and see.
+
+### Phase 5 — Context CI v1: 10 stages, 10 threats (Q1 2026)
+
+**Goal:** The 10 supply-chain attack categories in `docs/threat-model.md`
+each have a working detector. A primitive run through the pipeline
+produces a structured verdict per category.
+
+**Ships:**
+- `apps/scanners/` (new repo or new app — TBD; sibling OSS repo is the
+  current plan per `docs/README.md`): one detector per category.
+  - T1 prompt-injection-in-markdown
+  - T2 Unicode-steganography
+  - T3 encoded-payloads
+  - T4 remote-content-fetch
+  - T5 unsafe-shell-install
+  - T6 credential-exfiltration-via-instruction
+  - T7 typosquatting + impersonation
+  - T8 fake-citation
+  - T9 copyright-contaminated (initial pass; full lineage in Phase 11)
+  - T10 context-bloat
+- Pipeline stage rows materialize per primitive version
+  (`validation.PipelineStage`).
+- Attestation predicate's `validation` section enumerates all 10
+  stages with verdicts.
+- Failing detectors produce reviewer-actionable diff hints, not just
+  pass/fail.
+
+**Success metric:** A purposely-malicious primitive (one per category,
+authored as part of the test suite) gets blocked at the right stage and
+NEVER reaches `Trusted`.
+
+### Phase 6 — Marketplace + search + downloads + reviews (Q2 2026)
+
+**Goal:** The site becomes browseable. `/registry`, `/bundles`,
+`/contributors`, `/validation` all hit live counters, search returns
+live results, reviewers can act on review-queue items.
+
+**Ships:**
+- Postgres FTS for primitive search (slug + name + description +
+  use_when + category). Meilisearch deferred to post-launch.
+- Append-event downloads counter (per `ddia-multi-tenant`: no
+  row-updates on hot rows).
+- Reviewer actions: Approve / Reject / Request changes wire through to
+  `validation.ReviewItem` with audit trail.
+- Real reputation formula: peer-validated quality + decay; replaces
+  the placeholder `60 + 5×primitives + 2×reviews` formula.
+- Bundle install command produces an installable archive.
+- Profile pages (`/contributors/{slug}`) wire to the contributor view.
+
+**Success metric:** A new author can publish a primitive, see it
+indexed, watch it progress through Context CI, get reviewed, and ship
+to `Trusted` end-to-end without engineer intervention.
+
+### Phase 7 — Enterprise: self-host Sigstore, MinIO, schema-per-tenant (Q2 2026)
+
+**Goal:** The product is deployable inside an enterprise's perimeter
+without depending on public Sigstore (which would publicly disclose
+private-registry author identities via Rekor).
+
+**Ships:**
+- Self-hosted Sigstore: Fulcio + Rekor + Trillian deployment recipe.
+- MinIO swap-in for R2; same S3 API, same content-addressed key
+  scheme.
+- Optional schema-per-tenant Postgres model for enterprises with hard
+  isolation requirements (shared-schema-with-RLS stays the default).
+- SSO via SAML / OIDC mapping to organization-membership-as-claim.
+- Audit-log export (admin actions, publish events, attestation rotations).
+- Helm chart for k8s deployment.
+
+**Success metric:** A design partner runs PrimitiveHub in their own
+VPC, publishes a primitive, verifies it via their own Sigstore, all
+without traffic leaving the perimeter.
+
+### Phase 8 — Observability + analytics (Q2-Q3 2026)
+
+**Goal:** We can answer "what's the registry doing right now?" with
+real data, not guesses.
+
+**Ships:**
+- Structured JSON logs to a chosen aggregator (Grafana Loki + Tempo
+  pattern, or OpenTelemetry → vendor of choice).
+- p50/p95/p99 latency dashboards for the ritual paths (publish, read,
+  verify) per `ddia-multi-tenant`.
+- Per-tenant cost attribution (R2 bytes, Postgres rows, signing ops).
+- Anomaly alerts: failure-rate spikes, Sigstore-call timeouts, Rekor
+  inclusion delays.
+
+**Success metric:** A maintainer answers "is the registry behaving" in
+≤2 dashboard glances without SSH-ing into a host.
+
+### Phase 9 — arXiv paper coordination + reviewer comms (Q3 2026)
+
+**Goal:** The paper is submission-ready. Reviewers (academic + industry)
+have early access. Citations to in-toto, Sigstore, SLSA, the
+Shai-Hulud incident, xz, etc. are correct and current.
+
+**Ships:**
+- `docs/paper/` — LaTeX sources, figures, threat-model reference
+  appendix, evaluation results from Phase 5 scanner runs.
+- A reviewer-access feature on the (still-private) registry: a special
+  link grants read-only access for paper reviewers without exposing
+  full marketplace UX.
+- Pre-publication checklist (terminology consistency, threat-model
+  version bump if needed, spec version freeze for paper-aligned
+  release).
+
+**Success metric:** Paper accepted at a venue (or arXiv preprint with
+≥5 citations within 90 days of posting).
+
+### Phase 10 — Public launch (Q3 2026, paper-coordinated)
+
+**Goal:** The site goes public on the same day the paper appears.
+First impression matters: every surface ships in trust-defining
+state.
+
+**Ships:**
+- Lift `noindex` defenses, social posts, domain DNS pointing
+  primitivehub.ai at the prod stack.
+- Launch primitives: a seed catalog of 100+ attested primitives across
+  every threat-category-relevant domain.
+- Bug bounty program announcement.
+- A 5-minute video demoing publish → attest → verify → consume.
+- Public Discord / Slack / mailing list (TBD on which).
+
+**Success metric:** ≥1,000 unique authors registered, ≥10,000
+primitive reads, ≥5 unsolicited blog posts in the first 30 days.
+
+### Phase 11 — Federation + cross-registry trust (post-launch)
+
+**Goal:** Enterprises running their own private PrimitiveHub
+instances can federate with the public registry (or with each other)
+without compromising tenant boundaries.
+
+**Ships:**
+- Cross-registry attestation verification (a primitive's signature
+  produced under one Sigstore instance is verifiable from another).
+- Federation handshake protocol (out-of-band trust-root exchange).
+- Mirror-and-verify pattern: a private registry can pull + verify a
+  public primitive without proxying every request.
+- Full copyright/lineage scanning (the deferred half of T9).
+
+**Success metric:** A primitive published on the public registry is
+provably installable + verifiable from a private enterprise instance
+with no public-registry network call at install time.
+
+### Phase 12 — Standards body submission (post-launch + adoption)
+
+**Goal:** The Primitive Spec + Attestation predicate become canonical
+references in a standards body — OASIS, IETF, OpenSSF, or CNCF
+sandbox.
+
+**Ships:**
+- Spec rewritten in standards-body-format (RFC-style or OASIS spec
+  format).
+- Reference implementations in ≥3 languages (Python, TypeScript, Go).
+- Interoperability test suite.
+
+**Success metric:** A widely-adopted agent framework adopts the spec
+as a load-bearing reference (i.e., they cite us, not their own
+internal format).
+
+## How to use this document
+
+When prioritizing work, ask:
+
+1. Which phase does this belong to?
+2. Is it on the critical path for the **next** phase, or further out?
+3. If further out, is there a Phase X reason to do it early (e.g., it
+   unblocks a paper experiment)?
+4. If unrelated to any phase — does the [vision](./vision.md) bless it,
+   or is it scope creep?
+
+Pull-requests should reference a phase in their description. PRs that
+don't fit any phase trigger a roadmap-update discussion before they
+merge.
