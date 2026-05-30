@@ -175,16 +175,15 @@ def test_verdict_as_predicate_dict_has_stable_shape() -> None:
 
 
 # ─────────────────────────────────────────────────────────────────────
-# Registry integration
+# Registry integration — current detector-set assertion lives in the
+# newest detector's test file (test_scanners_t5.py in PR 5.2). T1's
+# registry-presence is covered there.
 # ─────────────────────────────────────────────────────────────────────
-def test_get_all_detectors_returns_t1_only_in_pr_5_1() -> None:
-    """As of PR 5.1 the registry has exactly one detector. This test
-    will be updated when T2/T5 land in PR 5.2/5.3 — its purpose is to
-    make scope changes visible in the diff."""
-    detectors = get_all_detectors()
-    assert len(detectors) == 1
-    assert detectors[0].name == "t1.prompt_injection"
-    assert detectors[0].threat_category == "T1"
+def test_t1_is_present_in_the_registry() -> None:
+    """Lighter version — just verify T1 is still registered, regardless
+    of how many other detectors join it."""
+    names = [d.name for d in get_all_detectors()]
+    assert "t1.prompt_injection" in names
 
 
 def test_detector_protocol_conformance() -> None:
