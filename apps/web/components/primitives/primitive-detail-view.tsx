@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { AttestationBadge } from "@/components/primitives/attestation-badge"
 import { TrustBadge } from "@/components/primitives/trust-badge"
 import { ScoreBadge } from "@/components/primitives/score-badge"
 import { CompatibilityTags } from "@/components/primitives/compatibility-tags"
@@ -94,6 +95,9 @@ export function PrimitiveDetailView({
                   {primitive.fileName}
                 </h1>
                 <TrustBadge status={primitive.status} />
+                {/* Sigstore signing status (Phase 4 PR #5). Polls while
+                    the worker is in-flight; reads from the live API. */}
+                <AttestationBadge slug={primitive.slug} semver={primitive.version} />
                 {/* Live-data signal — a quiet 1ch indicator. Hidden when
                     the API is reachable (live === default expectation);
                     visible only when degraded so it reads as a problem

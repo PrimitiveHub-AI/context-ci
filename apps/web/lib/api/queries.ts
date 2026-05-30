@@ -17,6 +17,7 @@ import { useQuery, type UseQueryResult } from "@tanstack/react-query"
 
 import {
   api,
+  type AttestationOut,
   type OrganizationMembershipOut,
   type PrimitiveListParams,
   type PrimitivePage,
@@ -108,6 +109,47 @@ export function usePipelineStages(
       api.listPipelineStages(slug, semver, { signal, orgSlug: activeOrgSlug }),
     staleTime: STALE_TIME_MS,
     enabled: Boolean(slug && semver),
+  })
+}
+
+/**
+ * Attestation lifecycle hook.
+ *
+ * Polls while the Procrastinate task is in-flight (`pending`/`signing`)
+ * so the badge transitions from shimmer → signed/failed without a page
+ * refresh. Stops polling once the row reaches a terminal state.
+ *
+ * Returns the full AttestationOut shape per AttestationBadge's needs.
+ * 404 (no attestation row — legacy primitive without one) bubbles up as
+ * a query error; the badge's `unsigned` empty-state distinguishes that
+ * case from `null` data.
+ */
+export function useAttestation(
+  slug: string,
+  semver: string,
+): UseQueryResult<AttestationOut> {
+  const { activeOrgSlug } = useActiveOrg()
+  return useQuery({
+    queryKey: ["attestation", activeOrgSlug, slug, semver],
+    queryFn: ({ signal }) =>
+      api.getAttestation(slug, semver, { signal, orgSlug: activeOrgSlug }),
+    enabled: Boolean(slug && semver),
+    // Stop polling once we've reached a terminal state. Both `pending`
+    // and `signing` are in-flight — Procrastinate flips signing→signed
+    // (or →failed) within seconds in dev.
+    refetchInterval: (query) => {
+      const status = query.state.data?.status
+      if (status === "signed" || status === "failed") return false
+      return 5_000
+    },
+    staleTime: 0, // always fetch fresh — status drives UI affordance
+    retry: (count, err) => {
+      // 404 = no attestation row exists (legacy primitive); don't retry.
+      // Other errors retry up to 2 times to absorb transient network blips.
+      const msg = err instanceof Error ? err.message : ""
+      if (msg.includes("404")) return false
+      return count < 2
+    },
   })
 }
 
