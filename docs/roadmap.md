@@ -16,8 +16,9 @@ stacked, post-Step-7-OIDC. The end-to-end Sign-in flow is live.
 | 2 — Architecture cleanup + monorepo | ✓ shipped | `v0.2.0-arch` |
 | 3 — Backend bootstrap + first endpoints | ✓ shipped | branches stacked, pre-merge |
 | 3.5 — Real OIDC + auth polish | ✓ shipped | branches stacked, pre-merge |
-| **4 — Sigstore signing + Procrastinate workers** | ◐ NEXT | target Q1 2026 |
-| 5 — Context CI v1: 10 stages, 10 threats | ◯ planned | target Q1 2026 |
+| 4 — Sigstore signing + Procrastinate workers | ◐ in progress | target Q1 2026 |
+| **5 — Context CI v1: 10 stages, 10 threats** | ◐ in progress | target Q1 2026 |
+| **5.5 — Runtime Trust API (bundle spec + endpoints + CLI + verify lib + MCP)** | ◐ in progress | target Q1-Q2 2026 |
 | 6 — Marketplace + search + downloads + reviews | ◯ planned | target Q2 2026 |
 | 7 — Enterprise: self-host Sigstore, MinIO, schema-per-tenant | ◯ planned | target Q2 2026 |
 | 8 — Observability + analytics | ◯ planned | target Q2-Q3 2026 |
@@ -122,6 +123,64 @@ safety claim.
 authored as part of the test suite) gets blocked at the right stage and
 NEVER reaches `Trusted`. The attestation predicate truthfully records
 WHY it was blocked.
+
+### Phase 5.5 — Runtime Trust API (Q1-Q2 2026, in progress)
+
+**Goal:** Turn PrimitiveHub from a destination (humans browse the
+registry) into infrastructure (AI agents query it at runtime to
+verify their context). The cryptography we built in Phase 4 + the
+validation we built in Phase 5 become directly consumable by Claude
+Code, Cursor, Copilot, Aider, and any MCP-speaking agent.
+
+Rationale: see `docs/innovation/runtime-trust-api.md`. The "Snyk
+play" — be the verifier on top of every registry, not the only
+registry. Vendor-absorption hedge.
+
+**Ships (PR-by-PR):**
+
+- **PR 5.5.1** ✓ `feat/api-bundle-spec-and-trust-endpoint` — bundle
+  format spec (`docs/spec.md` § 10), wire-contract ADR-0013, two
+  HTTP endpoints (`/api/v1/trust/{slug}/versions/{semver}` +
+  `/api/v1/trust/by-digest/{digest_hex}`), 6 tests, full IDOR
+  posture matches the rest of the registry. Auth required for now;
+  public-anonymous lookup ships in 5.5.2.
+- **PR 5.5.2** `feat/api-public-trust-lookup` — `public_read`
+  Postgres role + visibility-gated query path; trust endpoints serve
+  unauthenticated reads of primitives in registries with
+  `visibility=public`. CDN-cacheable. The Snyk-overlay shape goes
+  fully public.
+- **PR 5.5.3** `feat/phub-cli-fetch-verify-cache` — `phub` CLI MVP.
+  `phub fetch <slug>@<semver>` pulls + verifies + caches; `phub
+  verify <file>` validates a local primitive against its bundle;
+  `phub cache prune` housekeeping. Reads bundles from the trust
+  endpoints.
+- **PR 5.5.4** `feat/context-ci-verify-oss-library` — `context-ci-
+  verify` open-source library (Python + TypeScript), MIT licensed,
+  no PrimitiveHub runtime dependency. Verifies any bundle against
+  any Sigstore trust root. The distribution-moat artifact.
+- **PR 5.5.5** `feat/primitivehub-mcp-server` —
+  `@primitivehub/mcp-server`. Thin shim over the HTTP API; exposes
+  `primitivehub.search` / `primitivehub.fetch` / `primitivehub.verify`
+  tools to Claude Code / Cursor / any MCP-speaking agent. `claude
+  mcp add primitivehub` becomes a one-line install.
+
+**Locked architectural commitments:**
+
+- Bundle is **self-contained** — verification works offline against
+  bundled Sigstore trust roots (ADR-0013).
+- Media type `application/vnd.primitivehub.bundle+json` is the
+  registered wire format; third parties can produce conformant
+  bundles.
+- Content-addressed (`/trust/by-digest/<hex>`) is the canonical
+  lookup; slug-based (`/trust/{slug}/versions/{semver}`) is
+  convenience. By-digest bundles cache `immutable`; by-slug max-age 24h.
+- `context-ci-verify` library has no runtime dependency on
+  PrimitiveHub — it verifies bundles wherever they came from.
+
+**Success metric:** an external developer who has never used
+PrimitiveHub's web UI can `pip install context-ci-verify`, paste a
+bundle JSON, and verify a primitive's signature + Context CI verdicts
+without any network call to primitivehub.ai.
 
 ### Phase 6 — Marketplace + search + downloads + reviews (Q2 2026)
 

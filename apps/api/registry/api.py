@@ -52,6 +52,10 @@ from registry.schemas import (
     PrimitiveVersionOut,
     RegistryOut,
     RepositoryOut,
+    TrustBundleAttestation,
+    TrustBundleContent,
+    TrustBundleOut,
+    TrustBundleSubject,
 )
 from storage.client import get_primitive_content, put_primitive_content
 from storage.digest import read_with_digest
@@ -676,3 +680,136 @@ def get_bundle(request: HttpRequest, slug: str) -> BundleOut:
         slug=slug,
     )
     return _serialize_bundle(bundle)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Trust endpoints (Phase 5.5 — runtime trust API; ADR-0013 + spec § Bundle)
+#
+# Wire contract: `application/vnd.primitivehub.bundle+json`. The bundle
+# is self-verifying offline — a consumer with the Sigstore trust root
+# (bundled in any verifier) can validate without calling back here.
+#
+# PR 5.5.1 (current): endpoints require auth + tenant scope. Bundles
+# are returned for primitives the caller can see, with status=signed.
+# Public-anonymous lookup ships in PR 5.5.2 once the `public_read`
+# Postgres role + visibility-gated query path land — that's infra
+# work, kept out of this PR to keep its scope clean.
+#
+# IDOR posture matches the rest of the registry: queryset starts from
+# `_scoped_versions(user)`; unknown digest → 404; cross-tenant lookup
+# is indistinguishable from "doesn't exist" (no existence leak).
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def _serialize_trust_bundle(
+    version: PrimitiveVersion,
+    attestation: Attestation,
+    content_bytes: bytes,
+) -> TrustBundleOut:
+    import base64
+
+    return TrustBundleOut(
+        subject=TrustBundleSubject(
+            slug=version.primitive.slug,
+            semver=version.semver,
+            content_digest=f"sha256:{version.content_digest}",
+        ),
+        content=TrustBundleContent(
+            bytes_b64=base64.b64encode(content_bytes).decode("ascii"),
+            size_bytes=len(content_bytes),
+        ),
+        attestation=TrustBundleAttestation(
+            predicate_type=attestation.predicate_type,
+            predicate=attestation.predicate,
+            backend_name=attestation.backend_name,
+            cert_chain_pem=attestation.cert_chain_pem,
+            signature_b64=attestation.signature_b64,
+            statement_b64=attestation.statement_b64,
+            rekor_log_index=attestation.rekor_log_index or 0,
+            rekor_log_id=attestation.rekor_log_id,
+            rekor_inclusion_proof_json=attestation.rekor_inclusion_proof_json,
+            verify_url=attestation.verify_url,
+            # Narrow: this code path only runs when status=SIGNED, which
+            # the sign task sets atomically with signed_at; the field is
+            # never null here, but the model schema allows null in other
+            # states. assert + cast for mypy.
+            signed_at=attestation.signed_at,  # type: ignore[arg-type]
+        ),
+        detail_url=(f"/primitive/{version.primitive.slug}?version={version.semver}"),
+    )
+
+
+def _trust_bundle_for_version(version: PrimitiveVersion) -> TrustBundleOut:
+    """Common path: look up the signed Attestation, fetch content, pack.
+
+    Returns 404 if no attestation exists or it's not yet signed —
+    trust bundles only exist for cryptographically-attested versions.
+    """
+    attestation = get_object_or_404(
+        Attestation,
+        primitive_version=version,
+        status=Attestation.Status.SIGNED,
+    )
+    try:
+        content_bytes = get_primitive_content(digest_hex=version.content_digest)
+    except ContentNotFoundError as exc:
+        # Storage drift — attestation says it's signed but R2 lost the
+        # object. Honest 404 with a server-log warning rather than a
+        # broken bundle.
+        raise HttpError(404, "primitive content not found in storage") from exc
+    except DigestMismatchError as exc:
+        # T9 — storage corruption. Refuse to serve.
+        raise HttpError(500, "stored content failed digest verification") from exc
+    return _serialize_trust_bundle(version, attestation, content_bytes)
+
+
+@router.get(
+    "/trust/{slug}/versions/{semver}",
+    response=TrustBundleOut,
+    tags=["trust"],
+)
+@requires_auth
+def get_trust_bundle_by_slug(request: HttpRequest, slug: str, semver: str) -> TrustBundleOut:
+    """Trust bundle by human-readable slug + semver.
+
+    Convenience endpoint for the agent path "I want elite-mobile-design
+    at version 1.2.0." Returns 404 if the caller can't see the
+    primitive (tenant scope) OR if no signed attestation exists yet.
+    """
+    version = get_object_or_404(
+        _scoped_versions(_user(request)).select_related(
+            "primitive", "primitive__repository__registry"
+        ),
+        primitive__slug=slug,
+        semver=semver,
+    )
+    return _trust_bundle_for_version(version)
+
+
+@router.get(
+    "/trust/by-digest/{digest_hex}",
+    response=TrustBundleOut,
+    tags=["trust"],
+)
+@requires_auth
+def get_trust_bundle_by_digest(request: HttpRequest, digest_hex: str) -> TrustBundleOut:
+    """Trust bundle by raw SHA-256 digest hex.
+
+    The canonical lookup — content-addressed. An agent that fetched a
+    primitive from anywhere else can compute its sha256 and ask us
+    "what do you know about this hash?" — and get back the attestation
+    if we've signed it, or 404 otherwise.
+
+    This is the verification-overlay shape: PrimitiveHub doesn't have
+    to be the only registry, only the verifier on top of any registry.
+    """
+    # Reject malformed digest early — 64 lowercase hex chars.
+    if len(digest_hex) != 64 or not all(c in "0123456789abcdef" for c in digest_hex):
+        raise HttpError(400, "digest_hex must be 64 lowercase hex characters")
+    version = get_object_or_404(
+        _scoped_versions(_user(request)).select_related(
+            "primitive", "primitive__repository__registry"
+        ),
+        content_digest=digest_hex,
+    )
+    return _trust_bundle_for_version(version)

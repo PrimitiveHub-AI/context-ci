@@ -153,3 +153,84 @@ class PrimitivePage(CamelSchema):
     items: list[PrimitiveOut]
     next_cursor: str | None = None
     page_size: int
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Trust bundle (Phase 5.5 — runtime trust API)
+# ─────────────────────────────────────────────────────────────────────
+#
+# `BundleOut` is the canonical artifact returned by /api/v1/trust/*
+# endpoints. It bundles:
+#   - the primitive content bytes (base64),
+#   - the Sigstore bundle (cert chain + signature + Rekor inclusion
+#     proof) — sufficient for OFFLINE verification,
+#   - the Context CI verdicts from the attestation predicate.
+#
+# A consumer (CLI, MCP server, custom agent) can verify a bundle WITHOUT
+# calling back to PrimitiveHub: the Sigstore trust root is bundled in
+# every verifier; the inclusion proof is in the bundle; the digest
+# binds the content. This is the wire contract for the
+# `application/vnd.primitivehub.bundle+json` media type defined in
+# `docs/spec.md` § Bundle and ADR-0013.
+
+
+class TrustBundleSubject(CamelSchema):
+    """The primitive being attested — name + digest."""
+
+    slug: str
+    semver: str
+    content_digest: str  # "sha256:<hex>"
+
+
+class TrustBundleContent(CamelSchema):
+    """The actual primitive bytes, base64-encoded.
+
+    Stored separately from the attestation so a consumer that already
+    trusts a cached copy (digest match) can skip re-downloading.
+    """
+
+    bytes_b64: str
+    size_bytes: int
+    media_type: str = "text/markdown; charset=utf-8"
+
+
+class TrustBundleAttestation(CamelSchema):
+    """The cryptographic attestation — Sigstore bundle + Context CI
+    verdicts. Field shapes mirror AttestationOut; this is a subset
+    focused on what a verifier needs.
+    """
+
+    predicate_type: str
+    predicate: dict[str, Any]
+    backend_name: str
+    cert_chain_pem: str
+    signature_b64: str
+    statement_b64: str
+    rekor_log_index: int
+    rekor_log_id: str
+    rekor_inclusion_proof_json: str
+    verify_url: str
+    signed_at: datetime
+
+
+class TrustBundleOut(CamelSchema):
+    """The trust bundle — what /api/v1/trust/* returns.
+
+    Self-contained: a verifier with the Sigstore trust root can
+    validate this bundle without further network calls. The wire
+    contract is locked in `docs/spec.md` § Bundle (ADR-0013).
+
+    Naming note: there's also a `BundleOut` in this module for
+    marketplace bundles (curated collections of primitives). They are
+    UNRELATED — different domain, different consumers. Renaming the
+    marketplace one would touch the web app + tests; leaving them
+    distinct via the `Trust` prefix is the lower-risk move.
+    """
+
+    bundle_version: str = "0.1"
+    subject: TrustBundleSubject
+    content: TrustBundleContent
+    attestation: TrustBundleAttestation
+    # Convenience back-link to the human-browsable detail page on
+    # this PrimitiveHub instance; consumers may ignore this.
+    detail_url: str | None = None

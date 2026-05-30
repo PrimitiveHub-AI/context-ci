@@ -41,6 +41,7 @@ Links to primitives, threat-model entries, vendor docs, prior ADRs.
 
 | # | Title | Status |
 |---|---|---|
+| [0013](./0013-trust-bundle-format.md) | Trust Bundle format: `application/vnd.primitivehub.bundle+json` | Accepted |
 | [0012](./0012-detector-protocol.md) | Detector Protocol for Context CI | Accepted |
 | [0011](./0011-sigstore-backend-abstraction.md) | Sigstore backend abstraction: public / staging / self-hosted | Accepted |
 | [0010](./0010-token-storage-httponly-cookies.md) | Token storage: httpOnly cookies + same-origin proxy | Accepted |

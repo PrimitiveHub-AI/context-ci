@@ -514,7 +514,114 @@ Public PrimitiveHub displays primitives at Levels 0, 1, and 2 distinctly. A
 Level 2 designation requires a positive human review by a reviewer whose OIDC
 identity is bound to one of the documented PrimitiveHub reviewer roles.
 
-## 10. Open issues deferred to future versions
+## 10. Trust Bundle (the runtime wire format)
+
+A **Trust Bundle** is the canonical artifact returned by PrimitiveHub's
+runtime trust API (`/api/v1/trust/*`) and consumed by verifiers (CLI,
+MCP server, custom agents). The bundle is **self-contained**: a
+consumer with the Sigstore trust root can validate it offline without
+calling back to PrimitiveHub.
+
+### 10.1 Media type
+
+`application/vnd.primitivehub.bundle+json` — a registered media type
+for the bundle format. Servers MUST emit this Content-Type; consumers
+SHOULD accept-negotiate it.
+
+### 10.2 Bundle structure
+
+```json
+{
+  "bundleVersion": "0.1",
+  "subject": {
+    "slug": "elite-mobile-design",
+    "semver": "1.2.0",
+    "contentDigest": "sha256:abc123..."
+  },
+  "content": {
+    "bytesB64": "<base64-encoded primitive content>",
+    "sizeBytes": 4123,
+    "mediaType": "text/markdown; charset=utf-8"
+  },
+  "attestation": {
+    "predicateType": "https://primitivehub.ai/context-ci/v0.1/Attestation",
+    "predicate": { ... validation[] block + summary ... },
+    "backendName": "public",
+    "certChainPem": "-----BEGIN CERTIFICATE-----\n...",
+    "signatureB64": "<base64 raw signature>",
+    "statementB64": "<base64 in-toto Statement bytes>",
+    "rekorLogIndex": 18234567,
+    "rekorLogId": "<hex SHA-256 of Rekor public key>",
+    "rekorInclusionProofJson": "{\"logIndex\":...,\"rootHash\":...}",
+    "verifyUrl": "https://search.sigstore.dev/?logIndex=18234567",
+    "signedAt": "2026-05-30T12:34:56Z"
+  },
+  "detailUrl": "/primitive/elite-mobile-design?version=1.2.0"
+}
+```
+
+### 10.3 Verification procedure
+
+A consumer with the appropriate Sigstore trust root performs these
+steps, all OFFLINE:
+
+1. **Re-hash the content.** Decode `content.bytesB64`; compute
+   sha256(); confirm it equals `subject.contentDigest`. If not,
+   refuse. (T9 defense at the consumer — storage corruption surfaced
+   immediately.)
+2. **Parse the in-toto Statement.** Decode `attestation.statementB64`;
+   confirm the statement's subject digest matches step 1.
+3. **Verify the signature.** Use `attestation.certChainPem` +
+   `attestation.signatureB64` to verify the signature over the
+   Statement, against the Sigstore trust root.
+4. **Verify the cert.** Walk the cert chain to a Fulcio root; confirm
+   `notBefore`/`notAfter`; confirm OIDC subject claim matches
+   expectations (if the consumer has a policy on who can sign).
+5. **Verify the Rekor entry.** Parse `attestation.rekorInclusionProofJson`;
+   confirm the entry's hash matches the Statement + cert; confirm the
+   inclusion proof against the Rekor log's signed checkpoint
+   (bundled with the trust root). If `rekorLogIndex` is reachable,
+   optionally re-confirm online — but the proof alone is sufficient.
+6. **Read the Context CI verdicts.** From
+   `attestation.predicate.validation[]`, apply the consumer's policy:
+   refuse if any verdict has `severity == "fail"` (default), or apply
+   per-detector override rules (advanced consumers).
+
+If all 6 steps pass, the primitive is **cryptographically trusted**.
+
+### 10.4 Endpoints
+
+| Endpoint | Purpose | Auth |
+|---|---|---|
+| `GET /api/v1/trust/{slug}/versions/{semver}` | Lookup by human name | Yes (PR 5.5.1); anonymous (PR 5.5.2+) for public registries |
+| `GET /api/v1/trust/by-digest/{digest_hex}` | Lookup by SHA-256 hex digest — the canonical content-addressed lookup | Yes (PR 5.5.1); anonymous (PR 5.5.2+) |
+
+The by-digest endpoint is the **verification-overlay shape**: any
+consumer holding a primitive sha256 can ask "what does PrimitiveHub
+know about this hash?" without needing to know its slug or where it
+came from.
+
+### 10.5 Behavior
+
+- `404` if no signed attestation exists for the requested primitive.
+  Trust bundles ONLY exist for primitives the signer has cryptographically
+  attested.
+- `400` on malformed digest input (not 64 lowercase hex chars).
+- `500` on a digest mismatch between attestation and stored content
+  (T9 — the registry SHOULD never serve a corrupt bundle; explicit
+  failure beats silent corruption).
+
+### 10.6 Cache discipline
+
+Bundles for signed primitives are immutable — `digest` ↔ `attestation`
+is a content-addressed mapping. Servers SHOULD set
+`Cache-Control: public, max-age=31536000, immutable` on by-digest
+responses. By-slug responses MAY be cached up to 24h (the slug → digest
+mapping can change on a new version release).
+
+See ADR-0013 for the design rationale and version-bump policy.
+
+## 11. Open issues deferred to future versions
 
 The following are acknowledged limitations of v0.1 and are tracked for v0.2
 or later:
@@ -540,7 +647,7 @@ or later:
 - **i18n.** All current scanners assume English-language primitive bodies.
   Multi-language support is a v0.3+ concern.
 
-## 11. References
+## 12. References
 
 - [in-toto Attestation Spec](https://github.com/in-toto/attestation)
 - [SLSA v1.0](https://slsa.dev/spec/v1.0/)
