@@ -50,9 +50,13 @@ from django.db import connection, transaction
 from django.utils import timezone
 from procrastinate.contrib.django import app
 
+from scanners.registry import get_all_detectors
+from scanners.types import DetectorContext
 from signing.backends import get_backend
 from signing.exceptions import SigningError
 from signing.statement import build_statement
+from storage.client import get_primitive_content
+from storage.exceptions import ContentNotFoundError, DigestMismatchError
 
 if TYPE_CHECKING:
     from registry.models import Attestation, PrimitiveVersion
@@ -137,11 +141,60 @@ def _sign_version_inner(
     version: PrimitiveVersion = attestation.primitive_version
     primitive = version.primitive
 
+    # ── Run Context CI detectors against the content ──────────────
+    # The scanners produce structured Verdicts; we merge them into
+    # the attestation predicate's `validation[]` block before signing.
+    # The cryptographic attestation thus binds the signer to ALL
+    # detector results (pass + fail), making the attestation a
+    # truthful claim about safety, not just provenance.
+    #
+    # Phase 5 PR 5.1: detectors RECORD verdicts but do NOT yet block
+    # signing on failure — the FAIL-blocks-Trusted policy lands in
+    # PR 5.4 (pipeline orchestration). Recording without blocking lets
+    # us validate the detector outputs on real uploads first.
+    try:
+        content_bytes = get_primitive_content(digest_hex=version.content_digest)
+    except (ContentNotFoundError, DigestMismatchError) as exc:
+        attestation.status = attestation_cls.Status.FAILED
+        attestation.failure_reason = f"could not fetch content for scanning: {exc}"
+        attestation.save(update_fields=["status", "failure_reason"])
+        log.warning(
+            "sign_version: content fetch failed for version_id=%s: %s",
+            primitive_version_id,
+            exc,
+        )
+        return {
+            "ok": False,
+            "skipped": False,
+            "reason": "content_fetch_failed",
+            "detail": str(exc),
+        }
+
+    detector_ctx = DetectorContext(
+        primitive_slug=primitive.slug,
+        semver=version.semver,
+        content=content_bytes.decode("utf-8", errors="replace"),
+        raw_bytes=content_bytes,
+    )
+    verdicts = [d.run(detector_ctx) for d in get_all_detectors()]
+    # Augment the predicate with scanner output, in the order detectors
+    # run (which is threat-category order per scanners/registry.py).
+    augmented_predicate = dict(attestation.predicate or {})
+    augmented_predicate["validation"] = [v.as_predicate_dict() for v in verdicts]
+    augmented_predicate["validation_summary"] = {
+        "total": len(verdicts),
+        "passed": sum(1 for v in verdicts if v.passed),
+        "failed": sum(1 for v in verdicts if not v.passed),
+    }
+    # Persist the predicate change so a re-run sees the same values.
+    attestation.predicate = augmented_predicate
+    attestation.save(update_fields=["predicate"])
+
     try:
         statement_bytes = build_statement(
             subject_name=primitive.slug,
             subject_sha256_hex=version.content_digest,
-            predicate=attestation.predicate or {},
+            predicate=augmented_predicate,
         )
         backend = get_backend()
         result = backend.sign(statement_bytes, identity_token=identity_token)

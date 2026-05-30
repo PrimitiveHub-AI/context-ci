@@ -68,35 +68,52 @@ generation, webhook delivery) moves off the request thread.
 the maintainer can paste into the appropriate Rekor search UI
 (sigstage.dev for dev; sigstore.dev for prod) and verify.
 
-### Phase 5 — Context CI v1: 10 stages, 10 threats (Q1 2026)
+### Phase 5 — Context CI v1: 10 stages, 10 threats (Q1 2026, in progress)
 
 **Goal:** The 10 supply-chain attack categories in `docs/threat-model.md`
 each have a working detector. A primitive run through the pipeline
-produces a structured verdict per category.
+produces a structured verdict per category. The cryptographic
+attestation from Phase 4 now binds the signer to the FULL validation
+result — "Trusted" stops being a sticker and becomes a verifiable
+safety claim.
 
-**Ships:**
-- `apps/scanners/` (new repo or new app — TBD; sibling OSS repo is the
-  current plan per `docs/README.md`): one detector per category.
-  - T1 prompt-injection-in-markdown
-  - T2 Unicode-steganography
-  - T3 encoded-payloads
-  - T4 remote-content-fetch
-  - T5 unsafe-shell-install
-  - T6 credential-exfiltration-via-instruction
-  - T7 typosquatting + impersonation
-  - T8 fake-citation
-  - T9 copyright-contaminated (initial pass; full lineage in Phase 11)
-  - T10 context-bloat
-- Pipeline stage rows materialize per primitive version
-  (`validation.PipelineStage`).
-- Attestation predicate's `validation` section enumerates all 10
-  stages with verdicts.
-- Failing detectors produce reviewer-actionable diff hints, not just
-  pass/fail.
+**Ships (PR-by-PR):**
+
+- **PR 5.1** ✓ `feat/api-scanners-and-t1-prompt-injection` — scanner
+  scaffold (`apps/api/scanners/`), `Detector` Protocol + `Verdict`
+  dataclass (ADR-0012), T1 prompt-injection detector with 4 pattern
+  families (override / role-hijack / hidden-instructions /
+  exfil-hint), 24 unit tests, sign-task wiring (detectors run before
+  signing; verdicts merged into attestation predicate).
+- **PR 5.2** `feat/api-t5-unsafe-shell-install` — most-cited threat in
+  the supply-chain narrative; killer demo content (Shai-Hulud vector).
+- **PR 5.3** `feat/api-t2-unicode-steganography` — zero-width chars,
+  RTL overrides, lookalike Cyrillic. The "didn't think of that"
+  factor for the paper.
+- **PR 5.4** `feat/api-pipeline-orchestration` — materialize
+  `validation.PipelineStage` rows from the predicate; gate
+  `verdict=Trusted` on all-pass; parallel detector execution.
+- **PR 5.5** `feat/api-malicious-primitive-test-suite` — one
+  purposely-evil primitive per category; proves detectors catch them;
+  becomes the launch demo + paper evaluation set.
+- **PR 5.6** `feat/api-t3-t4-t6-t7-t8-t9-t10` — remaining 7 detectors,
+  batched 2-3 per micro-PR.
+- **PR 5.7** `feat/web-pipeline-stage-live` — UI surfaces live
+  `validation.PipelineStage` rows on `/primitive/[slug]` (currently
+  mocked).
+
+**Locked architectural commitments:**
+- Detector Protocol is stateless + pure (ADR-0012) — parallelism is
+  safe by construction.
+- Verdicts serialize directly into `attestation.predicate.validation[]`
+  via `Verdict.as_predicate_dict()`; no separate serializer.
+- Detector versions are recorded — a verifier can tell if a stale
+  detector produced the verdict.
 
 **Success metric:** A purposely-malicious primitive (one per category,
 authored as part of the test suite) gets blocked at the right stage and
-NEVER reaches `Trusted`.
+NEVER reaches `Trusted`. The attestation predicate truthfully records
+WHY it was blocked.
 
 ### Phase 6 — Marketplace + search + downloads + reviews (Q2 2026)
 
