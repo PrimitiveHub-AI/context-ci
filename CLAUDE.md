@@ -160,12 +160,60 @@ if more than 10 match, the change is too broad — split it.
 | Picking which primitives apply to your change | [`apps/web/content/primitives/primitive-cross-reference-index.md`](./apps/web/content/primitives/primitive-cross-reference-index.md) — feature → primitives lookup, bounded by `feedback-bloat-control` |
 | Before ANY new feature: scan for recurring bug classes | [`docs/bug-patterns.md`](./docs/bug-patterns.md) — generalized catalog (the instance log is `docs/bugs.md`) |
 
+### Demo content primitives (registry-facing, NOT project cognition)
+
+The following `.md` files in `apps/web/content/primitives/` are **demo
+registry entries**, not cognition for Claude to load. They ship as
+example primitives in the public registry surface
+(`/primitive/[slug]`) and are reachable by users browsing PrimitiveHub.
+They are NOT to be confused with the cognition primitives above.
+
+| Demo primitive | Purpose | Loaded by Claude? |
+|---|---|---|
+| [`apps/web/content/primitives/elite-mobile-design.md`](./apps/web/content/primitives/elite-mobile-design.md) | Domain example: mobile design primitive in the registry | NO — registry content only |
+| [`apps/web/content/primitives/secure-code-review.md`](./apps/web/content/primitives/secure-code-review.md) | Domain example: secure-code-review primitive in the registry | NO — registry content only |
+
+When **adding a new** `.md` file under `apps/web/content/primitives/`:
+
+1. If it's project cognition (telling Claude how to think about our
+   stack), add it to one of the rows in **Frontend / Backend /
+   Infrastructure / Meta** above. This is non-negotiable — orphaned
+   cognition primitives never get loaded and become dead weight.
+2. If it's registry-facing demo content, add it to this **Demo content
+   primitives** table.
+3. Update `feedback-bloat-control` if the new entry shifts what should
+   typically be loaded.
+4. Update `primitive-cross-reference-index` to map the relevant
+   surfaces to the new primitive (if cognition).
+
 **These primitives reference each other.** Loading `frontend-design-elite`
 references the demo-data discipline from `feedback-no-fake-numbers`
 memory; loading `tailwind-v4-mastery` references the actual
 `apps/web/app/globals.css`; loading `nextjs-16-app-router` references the
 server-split pattern already shipped. Read them as a connected system, not
 as isolated docs.
+
+## Auto-memory rules (full enforcement map)
+
+These live in `/home/primitive/.claude/projects/-srv-primitivehub-app/memory/`
+and are surfaced via `MEMORY.md`. Every rule below is consulted at the
+moment the relevant condition triggers — nothing here is decorative.
+
+| Rule | Triggers when… | Load it for |
+|---|---|---|
+| [`feedback-pnpm`](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/feedback_pnpm.md) | Adding/removing JS dependencies, lockfile work | Package management |
+| [`feedback-containerize`](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/feedback_containerize.md) | Spinning up any new service or dev workflow | Service orchestration |
+| [`feedback-localhost-only`](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/feedback_localhost_only.md) | Any port binding in compose / app config | Pre-launch network surface |
+| [`feedback-no-fake-numbers`](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/feedback_no_fake_numbers.md) | Any numeric / metric in UI or copy | Paper-grade truth discipline |
+| [`feedback-load-primitives`](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/feedback_load_primitives.md) | Start of any non-trivial feature | Knowing what to read first |
+| [`feedback-audit-methodology`](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/feedback_audit_methodology.md) | Before marking a feature "done" | 5-layer audit gate |
+| [`feedback-self-audit`](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/feedback_self_audit.md) | Before reporting work complete | Universal + per-domain audit checklist |
+| [`feedback-bloat-control`](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/feedback_bloat_control.md) | Picking primitives for a feature | 5-10 primitive cap |
+| [`feedback-priority-stack`](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/feedback_priority_stack.md) | Two primitives give conflicting guidance | Conflict tiebreaker |
+| [`feedback-never-delete-held-code`](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/feedback_never_delete_held_code.md) | Encountering `HELD` markers in code | Don't delete staged work |
+| [`user-workflow`](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/user_workflow.md) | User pastes a prompt from another AI assistant | Evaluation-before-execution workflow |
+| [`project-primitivehub`](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/project_primitivehub.md) | Any strategic question | Project identity + phase plan |
+| [`project-launch-posture`](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/project_launch_posture.md) | Anything touching public-facing surface | Pre-launch posture |
 
 ## Hard rules
 
