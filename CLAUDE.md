@@ -49,6 +49,7 @@ for the full picture. **Read both before responding to a strategic question.**
 │       ├── storage/       boto3 R2 client + content-addressed digest helpers
 │       ├── validation/    ReviewItem + PipelineStage (Context CI surface)
 │       ├── jobs/          Procrastinate tasks (Phase 4 PR #1 — substrate)
+│       ├── signing/       Sigstore backend abstraction (Phase 4 PR #2 — ADR-0011)
 │       ├── tests/         pytest suite (Postgres-only, --reuse-db)
 │       ├── scripts/check_schema.py  schema invariant guard
 │       └── Dockerfile     multi-stage (uv → slim runtime)
@@ -262,9 +263,12 @@ This wording is load-bearing for the paper's correctness.
 - **Object storage:** Cloudflare R2 (v1); MinIO swap-in for enterprise
   self-host (Phase 7). Object key = `sha256:<hex>` always.
 - **Auth / identity:** Authentik (OIDC, self-hosted, containerized)
-- **Signing:** Public Sigstore (Phase 4); self-hosted Sigstore (Phase 7
-  for private registries — public Rekor's transparency log would
-  publicly disclose private-registry author identities)
+- **Signing:** Backend-abstracted (ADR-0011). Public Sigstore for the v1
+  public registry; Sigstore staging (sigstage.dev) for dev/CI;
+  self-hosted Sigstore for Phase 7 enterprise private registries
+  (public Rekor's transparency log would publicly disclose
+  private-registry author identities). One env var (`SIGSTORE_BACKEND`)
+  swaps backends; the sign-call code never branches.
 - **Multi-tenancy:** Shared schema + `organization_id` + Postgres RLS
 - **CI:** GitHub Actions → GHCR
 - **Deployment:** Hetzner CX22+ (8GB) + Docker Compose

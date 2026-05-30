@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "registry",
     "storage",
     "validation",
+    "signing",
     "jobs",
 ]
 
@@ -187,6 +188,27 @@ PRIMITIVE_MAX_BYTES = env("PRIMITIVE_MAX_BYTES", default=1024 * 1024, cast=int)
 # migrate procrastinate`). Worker: `python manage.py procrastinate worker`.
 # Defaults are correct for our setup; PROCRASTINATE_* overrides only when
 # we need to deviate (e.g. dedicated DB alias for the queue in Phase 7).
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Sigstore signing pipeline (ADR-0011 — backend abstraction)
+# ─────────────────────────────────────────────────────────────────────────────
+# Selects which Sigstore deployment we sign against:
+#   public       — production public Sigstore (sigstore.dev)
+#   staging      — Sigstore staging (sigstage.dev) — dev default
+#   self-hosted  — operator's own deployment (Phase 7 enterprise)
+#   noop         — deterministic fake; tests only
+# Misconfigured deploys raise UnknownBackendError at first sign() call.
+# See apps/api/signing/ for the implementation; ADR-0011 for rationale.
+SIGSTORE_BACKEND = env("SIGSTORE_BACKEND", default="staging")
+
+# self-hosted backend requires these THREE (validated at get_backend()).
+# Empty defaults are fine since they're only consulted when
+# SIGSTORE_BACKEND=self-hosted.
+SIGSTORE_SELF_HOSTED_TRUST_CONFIG_PATH = env("SIGSTORE_SELF_HOSTED_TRUST_CONFIG_PATH", default="")
+SIGSTORE_SELF_HOSTED_REKOR_URL = env("SIGSTORE_SELF_HOSTED_REKOR_URL", default="")
+SIGSTORE_SELF_HOSTED_VERIFY_URL_TEMPLATE = env(
+    "SIGSTORE_SELF_HOSTED_VERIFY_URL_TEMPLATE", default=""
+)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CORS — the web app (localhost:3000 in dev) calls the api (localhost:8000).
