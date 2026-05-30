@@ -89,9 +89,15 @@ safety claim.
   detector. 4 pattern families: shell-pipe-from-network (`curl | sh`
   + 4 variants), npx-arbitrary-install, pip-arbitrary-install,
   install-instruction-to-agent. 21 unit tests. Registry now has T1 + T5.
-- **PR 5.3** `feat/api-t2-unicode-steganography` — zero-width chars,
-  RTL overrides, lookalike Cyrillic. The "didn't think of that"
-  factor for the paper.
+- **PR 5.3** ✓ `feat/api-t2-unicode-steganography` — the "didn't think
+  of that" detector. 4 families: zero-width-invisible (ZWSP/ZWNJ/ZWJ/WJ/
+  BOM), bidi-control (LRO/RLO/LRE/RLE/PDF/LRI/RLI/FSI/PDI), tag-character
+  (U+E0000-U+E007F), mixed-script-confusable (Latin+Cyrillic / Latin+Greek
+  homoglyphs). 24 unit tests. **Launch-demo trifecta complete:** T1
+  (prompt injection) + T5 (Shai-Hulud) + T2 (steganography). Registry
+  now [T1, T2, T5] in threat-category order. Ironic self-test: ruff's
+  RUF001/002/003 caught the same payloads my detector catches — same
+  defense family.
 - **PR 5.4** `feat/api-pipeline-orchestration` — materialize
   `validation.PipelineStage` rows from the predicate; gate
   `verdict=Trusted` on all-pass; parallel detector execution.
