@@ -206,11 +206,27 @@ class Attestation(models.Model):
     Predicate type: https://primitivehub.ai/context-ci/v0.1/Attestation
     Predicate payload: see docs/spec.md §5.3.
 
-    Signature: Ed25519 via Sigstore (Phase 4). Until then, the envelope is
-    null and `signed_at` stays null.
+    Status state machine (Phase 4 PR #4):
+        pending  → row exists, no sign attempted yet
+        signing  → task picked up, sign() in flight
+        signed   → cryptographic fields populated, signed_at set
+        failed   → sign() raised; failure_reason set; attempts > 0;
+                   manual retry or admin intervention from here.
+
+    Signature is via Sigstore keyless OIDC (Fulcio + Rekor). The backend
+    (public / staging / self-hosted / noop) is selected by
+    `SIGSTORE_BACKEND` env var per ADR-0011; the active backend's `name`
+    is stored on `backend_name` so verifiers know which trust root to
+    use.
     """
 
     PREDICATE_TYPE = "https://primitivehub.ai/context-ci/v0.1/Attestation"
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        SIGNING = "signing", "Signing"
+        SIGNED = "signed", "Signed"
+        FAILED = "failed", "Failed"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     organization = models.ForeignKey(
@@ -223,15 +239,83 @@ class Attestation(models.Model):
     predicate = models.JSONField(help_text="In-toto Statement predicate payload (Spec §5.3).")
     threat_model_version = models.CharField(max_length=16, default="0.1")
     spec_version = models.CharField(max_length=16, default="0.1")
+
+    # ── State machine ────────────────────────────────────────────────
+    status = models.CharField(
+        max_length=16,
+        choices=Status.choices,
+        default=Status.PENDING,
+        help_text="Lifecycle state. Transitions: pending → signing → signed | failed.",
+    )
+    attempts = models.PositiveSmallIntegerField(
+        default=0,
+        help_text="How many sign attempts have been made. Bumped on each task run.",
+    )
+    failure_reason = models.TextField(
+        blank=True,
+        help_text="Populated when status=failed. The user-visible reason. "
+        "Full traceback goes to logs, not here.",
+    )
+    idempotency_key = models.CharField(
+        max_length=80,
+        unique=True,
+        blank=True,
+        help_text="Per-attestation idempotency key. Set at row creation; "
+        "re-enqueueing for the same key is a no-op at the task layer.",
+    )
+
+    # ── Sigstore signing fields (ADR-0011 — backend abstraction) ─────
+    backend_name = models.CharField(
+        max_length=32,
+        blank=True,
+        help_text="Which SigstoreBackend produced this (public/staging/self-hosted/noop). "
+        "Stored so a verifier knows which trust root to use.",
+    )
+    cert_chain_pem = models.TextField(
+        blank=True,
+        help_text="PEM-encoded leaf cert + chain from Fulcio. Empty until status=signed.",
+    )
+    signature_b64 = models.TextField(
+        blank=True,
+        help_text="Base64-encoded raw signature over the in-toto Statement.",
+    )
+    statement_b64 = models.TextField(
+        blank=True,
+        help_text="Base64-encoded in-toto Statement bytes that the cert binds to. "
+        "Stored for offline re-verification.",
+    )
+    rekor_log_index = models.BigIntegerField(
+        null=True,
+        blank=True,
+        help_text="Rekor transparency-log entry index. Stable across CT log restructurings.",
+    )
+    rekor_log_id = models.CharField(
+        max_length=128,
+        blank=True,
+        help_text="Hex SHA-256 of Rekor's public key. Identifies WHICH Rekor.",
+    )
+    rekor_inclusion_proof_json = models.TextField(
+        blank=True,
+        help_text="JSON-serialized inclusion proof; lets third parties verify offline.",
+    )
+    verify_url = models.URLField(
+        max_length=400,
+        blank=True,
+        help_text="Human-readable URL to inspect the Rekor entry in the appropriate UI.",
+    )
+
+    # ── Legacy / supplementary (kept for back-compat) ────────────────
     signature_envelope = models.TextField(
         blank=True,
-        help_text="DSSE envelope (base64). Null until Sigstore signing wires in Phase 4.",
+        help_text="DSSE envelope. Reserved for future use (DSSE wrapping ships post-PR #4).",
     )
     rekor_entry_id = models.CharField(
         max_length=200,
         blank=True,
-        help_text="Sigstore Rekor transparency log entry ID.",
+        help_text="Sigstore Rekor entry UUID. Convenience field; rekor_log_index is the "
+        "canonical identifier.",
     )
+
     signed_at = models.DateTimeField(blank=True, null=True)
     recorded_at = models.DateTimeField(auto_now_add=True)
 
@@ -240,6 +324,10 @@ class Attestation(models.Model):
         indexes = [
             models.Index(fields=["organization"]),
             models.Index(fields=["-recorded_at"]),
+            # PR #4: query "find pending attestations to retry" + "find a
+            # specific Rekor entry by log_index".
+            models.Index(fields=["status"], name="registry_at_status_idx"),
+            models.Index(fields=["rekor_log_index"], name="registry_at_rekoridx_idx"),
         ]
 
     def __str__(self) -> str:

@@ -47,9 +47,11 @@ generation, webhook delivery) moves off the request thread.
   `SigningResult` field extraction (parses `Bundle.to_json()` not
   `_inner`; future-proof against sigstore-python internal refactors).
   34 mocked unit tests; 1 gated integration test against sigstage.
-- **PR #4** `feat/api-sign-on-upload` — wires `get_backend()` into the
+- **PR #4** ✓ `feat/api-sign-on-upload` — wires `get_backend()` into the
   upload endpoint via a Procrastinate task. Attestation state machine
-  (`pending → signing → signed | failed`).
+  (`pending → signing → signed | failed`). Idempotency-keyed task; GET
+  `/attestation` endpoint surfaces the full Sigstore field set. 7 new
+  e2e tests; 93/93 total green.
 - **PR #5** `feat/web-attestation-badge-and-rekor-link` — UI surface for
   attestation status + Rekor entry link.
 

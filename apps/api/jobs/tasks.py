@@ -25,6 +25,12 @@ from typing import Any
 from django.db import connection, transaction
 from procrastinate.contrib.django import app
 
+# Procrastinate's Django integration auto-discovers `tasks.py` per app.
+# Real tasks larger than the smoke ping live in dedicated modules
+# (sign_tasks.py, future validate_tasks.py, etc.) — re-export here so
+# they register at worker startup.
+from .sign_tasks import sign_version  # noqa: F401 — task registration
+
 _SQL_SET_TENANT = "SET LOCAL primitivehub.current_organization = %s"
 
 

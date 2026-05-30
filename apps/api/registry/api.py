@@ -342,12 +342,30 @@ def get_attestation(request: HttpRequest, slug: str, semver: str) -> Attestation
         semver=semver,
     )
     attestation = get_object_or_404(Attestation, primitive_version=version)
+    return _serialize_attestation(attestation)
+
+
+def _serialize_attestation(attestation: Attestation) -> AttestationOut:
+    """Pack an Attestation model into the wire schema. Empty signing
+    fields surface as `null` per AttestationOut's defaults — the web
+    app reads `status` to decide which UI affordance to show."""
     return AttestationOut(
         id=str(attestation.id),
+        status=attestation.status,
+        attempts=attestation.attempts,
+        failure_reason=attestation.failure_reason or None,
         predicate_type=attestation.predicate_type,
         predicate=attestation.predicate,
         threat_model_version=attestation.threat_model_version,
         spec_version=attestation.spec_version,
+        backend_name=attestation.backend_name or None,
+        cert_chain_pem=attestation.cert_chain_pem or None,
+        signature_b64=attestation.signature_b64 or None,
+        statement_b64=attestation.statement_b64 or None,
+        rekor_log_index=attestation.rekor_log_index,
+        rekor_log_id=attestation.rekor_log_id or None,
+        rekor_inclusion_proof_json=attestation.rekor_inclusion_proof_json or None,
+        verify_url=attestation.verify_url or None,
         rekor_entry_id=attestation.rekor_entry_id or None,
         signed_at=attestation.signed_at,
         recorded_at=attestation.recorded_at,
@@ -477,6 +495,12 @@ def upload_primitive_version(request: HttpRequest, slug: str) -> tuple[int, Prim
     except StorageUnavailableError as exc:
         raise HttpError(503, "storage temporarily unavailable") from exc
 
+    # Bearer access token forwards to the signing task — Fulcio binds
+    # the resulting cert to the user's OIDC identity (Option A from the
+    # PR #4 plan: individual attribution over service-account signing).
+    # Empty in DEV_AUTH_BYPASS mode; the noop backend doesn't need it.
+    identity_token = _extract_bearer_token(request)
+
     with transaction.atomic():
         version = PrimitiveVersion.objects.create(
             organization=primitive.organization,
@@ -494,7 +518,53 @@ def upload_primitive_version(request: HttpRequest, slug: str) -> tuple[int, Prim
             use_when=use_when_list,
             do_not_use_when=do_not_use_when_list,
         )
+
+        # Create Attestation row in pending state. The Procrastinate
+        # task fills in the signing fields when it picks up the job.
+        # idempotency_key binds task → row so re-enqueues are no-ops
+        # at the task layer (see jobs/sign_tasks.py).
+        idempotency_key = f"sign:{version.id}"
+        Attestation.objects.create(
+            organization=primitive.organization,
+            primitive_version=version,
+            predicate={
+                # Phase 5 fills the real Context CI predicate. For now,
+                # a minimal placeholder so the in-toto Statement validates.
+                "version_digest": digest_hex,
+                "spec_version": "0.1",
+                "submitted_at": version.submitted_at.isoformat(),
+            },
+            status=Attestation.Status.PENDING,
+            idempotency_key=idempotency_key,
+        )
+
+    # Enqueue OUTSIDE the transaction — defer() commits immediately to
+    # the procrastinate_jobs table; if the outer txn rolls back, we'd
+    # leave a phantom job. (Procrastinate has a Django-aware connector
+    # that handles this automatically, but explicit ordering is safer.)
+    from jobs.sign_tasks import sign_version
+
+    sign_version.defer(
+        organization_id=str(primitive.organization.id),
+        primitive_version_id=str(version.id),
+        identity_token=identity_token,
+        idempotency_key=idempotency_key,
+    )
+
     return 201, _serialize_version(version)
+
+
+def _extract_bearer_token(request: HttpRequest) -> str:
+    """Pull the bearer access token out of the Authorization header.
+
+    Empty string when there's no header (e.g. DEV_AUTH_BYPASS mode); the
+    noop backend doesn't need it, and real backends will fail loudly with
+    a SigningFailedError that the user sees as `failure_reason`.
+    """
+    header = request.headers.get("Authorization", "")
+    if not header.lower().startswith("bearer "):
+        return ""
+    return header.split(" ", 1)[1].strip()
 
 
 @router.get("/primitives/{slug}/versions/{semver}/content")
