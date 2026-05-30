@@ -25,7 +25,7 @@ services:
     image: ${WEB_IMAGE:-ghcr.io/devxyzx/primitivehub-web:latest}
     restart: unless-stopped
     ports:
-      - "${WEB_PORT:-3000}:3000"
+      - "127.0.0.1:${WEB_PORT:-3000}:3000"
     environment:
       NODE_ENV: production
       HOSTNAME: 0.0.0.0
@@ -45,7 +45,7 @@ services:
     image: ${API_IMAGE:-ghcr.io/devxyzx/primitivehub-api:latest}
     restart: unless-stopped
     ports:
-      - "${API_PORT:-8000}:8000"
+      - "127.0.0.1:${API_PORT:-8000}:8000"
     environment:
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-dev-secret-not-for-production}
       DEBUG: ${DEBUG:-False}
@@ -117,7 +117,7 @@ services:
       AUTHENTIK_BOOTSTRAP_PASSWORD: ${AUTHENTIK_BOOTSTRAP_PASSWORD:-changeme-on-first-login}
       AUTHENTIK_BOOTSTRAP_EMAIL: ${AUTHENTIK_BOOTSTRAP_EMAIL:-admin@cyberorca.sa}
     ports:
-      - "${AUTHENTIK_PORT:-9000}:9000"
+      - "127.0.0.1:${AUTHENTIK_PORT:-9000}:9000"
     depends_on:
       postgres:
         condition: service_healthy
