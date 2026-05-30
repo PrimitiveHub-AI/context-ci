@@ -26,6 +26,39 @@
 
 ## Active log (most recent first)
 
+### 24. Local Authentik not on sigstage Fulcio allowlist — 2026-05-30
+
+**Phase:** 4 (Sigstore keyless signing, PR #3)
+**Symptom:** SigstageBackend.sign() called with a local Authentik OIDC
+token returns 400 from sigstage Fulcio with "unsupported issuer". The
+identical code path works against public Sigstore when the token is
+from an allowlisted issuer (Google, GitHub Actions, AWS, etc.).
+**Root cause:** Sigstore Fulcio (both production and staging) maintains
+an allowlist of acceptable OIDC issuers. Our local Authentik at
+`http://authentik-server:9000/application/o/primitivehub/` is not
+allowlisted, and Fulcio requires HTTPS-public issuers anyway.
+sigstage's allowlist (https://github.com/sigstore/fulcio/blob/main/
+config/identity/staging/config.yaml) is broader than production's but
+still finite.
+**Fix:** **Pending.** Three options, deferred to Phase 4 follow-up:
+  1. Submit our public-facing Authentik (post-launch HTTPS) to
+     sigstage's allowlist via PR.
+  2. For dev/CI signing tests, use a GitHub Actions ambient OIDC
+     token (sigstage allowlists `https://token.actions.githubusercontent.com`).
+  3. Phase 7 self-hosted Sigstore controls its own allowlist;
+     enterprise customers won't hit this.
+For Phase 4 PR #3 today: the integration test (`tests/test_signing_
+integration.py`) is `pytest.mark.integration` and skipped by default.
+Operators run it manually with a `SIGSTAGE_OIDC_TOKEN` from an
+allowlisted issuer.
+**Prevention:** ADR-0011 documents the constraint; Phase 4 PR #3's
+integration test refuses to run without SIGSTAGE_OIDC_TOKEN; apps/api/
+README.md explains how to obtain one.
+**Lesson:** OIDC-based services with finite issuer allowlists need to
+be checked against your IdP's issuer string BEFORE designing the
+auth flow. "We use OIDC" isn't enough — Fulcio cares about WHICH
+issuer.
+
 ### 1. OIDC same-issuer breaks compose-dev networking — 2026-05-30
 
 **Phase:** 3.5 (OIDC login, Step 7)

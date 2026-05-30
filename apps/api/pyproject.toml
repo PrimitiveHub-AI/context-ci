@@ -144,8 +144,15 @@ addopts = [
     "--cov=apps",
     "--cov=primitivehub_api",
     "--cov-report=term-missing:skip-covered",
+    # Skip @pytest.mark.integration by default — those tests hit real
+    # external services (sigstage Fulcio + Rekor) and need network +
+    # an operator-provided OIDC token. Opt in with `pytest -m integration`.
+    "-m", "not integration",
 ]
 asyncio_mode = "auto"
+markers = [
+    "integration: hits real external services (sigstage Fulcio + Rekor). Slow, needs network, gated by SIGSTAGE_OIDC_TOKEN env. Run with `pytest -m integration`.",
+]
 
 [tool.coverage.run]
 source = ["apps", "primitivehub_api"]

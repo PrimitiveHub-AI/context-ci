@@ -28,7 +28,6 @@ from signing.backends import (
 )
 from signing.exceptions import (
     BackendConfigurationError,
-    SigningFailedError,
     StatementValidationError,
     UnknownBackendError,
 )
@@ -179,28 +178,20 @@ class TestNoopBackend:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Real backends — sign() is not wired yet, construction must succeed
+# Real backends — construction + verify_url. The sign() path is exercised
+# via mocks in test_signing_real_backends.py (network-free) and against
+# real sigstage in test_signing_integration.py (network, gated by marker).
 # ─────────────────────────────────────────────────────────────────────────────
 class TestRealBackends:
-    """These tests prove the abstraction composes against the real
-    sigstore-python library. They don't make network calls — they
-    only verify the SigningContext can be CONSTRUCTED. If any of
-    these fail, the API-shape assumption in backends.py is wrong
-    and PR #3 will not be able to wire sign()."""
-
-    def test_public_backend_signer_raises_with_pr3_pointer(self) -> None:
+    def test_public_backend_constants(self) -> None:
         backend = PublicSigstoreBackend()
         assert backend.name == "public"
         assert "sigstore.dev" in backend.rekor_url
-        with pytest.raises(SigningFailedError, match="PR #3"):
-            backend.sign(b"x", identity_token="t")
 
-    def test_staging_backend_signer_raises_with_pr3_pointer(self) -> None:
+    def test_staging_backend_constants(self) -> None:
         backend = SigstageBackend()
         assert backend.name == "staging"
         assert "sigstage.dev" in backend.rekor_url
-        with pytest.raises(SigningFailedError, match="PR #3"):
-            backend.sign(b"x", identity_token="t")
 
     def test_verify_url_uses_log_index(self) -> None:
         public = PublicSigstoreBackend()

@@ -144,11 +144,29 @@ the surface stays stable.
 - `apps/api/tests/test_signing_abstraction.py` — 28 tests covering
   factory, noop, statement builder, real-backend construction
 
+## Operator-visible constraint: sigstage Fulcio allowlist
+
+sigstage's Fulcio maintains an allowlist of OIDC issuers it will mint
+certs for. Our local Authentik (`http://authentik-server:9000`) is
+NOT on it, and Fulcio requires HTTPS-public issuers anyway. Three
+follow-up paths (none blocking this ADR):
+
+1. Submit our public-facing Authentik (post-launch HTTPS) to
+   sigstage's allowlist via PR.
+2. For dev/CI integration tests, use an ambient OIDC credential from
+   an allowlisted issuer (GitHub Actions, GCP, AWS).
+3. Phase 7 self-hosted Sigstore controls its own allowlist —
+   enterprise customers don't hit this.
+
+Tracked in `docs/bugs.md` #24. PR #3's integration test refuses to
+run without `SIGSTAGE_OIDC_TOKEN` from an allowlisted issuer.
+
 ## What ships in subsequent PRs
 
-- **Phase 4 PR #3** (`feat/api-sigstore-keyless-signing`) — fill in
+- **Phase 4 PR #3** ✓ (`feat/api-sigstore-keyless-signing`) — fills in
   `sign()` on public/staging/self-hosted using `sigstore-python`'s
-  `SigningContext`. Bundle extraction → `SigningResult` fields.
+  `SigningContext`. Bundle extraction → `SigningResult` fields. Live
+  integration test gated by sigstage allowlist constraint above.
 - **Phase 4 PR #4** (`feat/api-sign-on-upload`) — wire `get_backend()`
   into the upload endpoint via a Procrastinate task. Attestation state
   machine.

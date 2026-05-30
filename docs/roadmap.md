@@ -42,9 +42,11 @@ generation, webhook delivery) moves off the request thread.
 - **PR #2** ✓ `feat/api-sigstore-backend-abstraction` — `SigstoreBackend`
   Protocol + 4 backends (`public` / `staging` / `self-hosted` / `noop`);
   in-toto Statement builder; env-driven factory (ADR-0011).
-- **PR #3** `feat/api-sigstore-keyless-signing` — fills in `sign()` on
+- **PR #3** ✓ `feat/api-sigstore-keyless-signing` — fills in `sign()` on
   real backends using `sigstore-python`'s `SigningContext`. Bundle →
-  `SigningResult` field extraction. Integration test against sigstage.
+  `SigningResult` field extraction (parses `Bundle.to_json()` not
+  `_inner`; future-proof against sigstore-python internal refactors).
+  34 mocked unit tests; 1 gated integration test against sigstage.
 - **PR #4** `feat/api-sign-on-upload` — wires `get_backend()` into the
   upload endpoint via a Procrastinate task. Attestation state machine
   (`pending → signing → signed | failed`).
