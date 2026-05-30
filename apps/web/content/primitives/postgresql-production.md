@@ -1,12 +1,12 @@
 ---
 spec_version: "0.1"
 name: postgresql-production
-version: 0.1.0
+version: 0.2.0
 type: architecture
 domain: backend
-author: PrimitiveHub Labs (synthesized 2026-05-29 from PG 16+ production knowledge)
+author: PrimitiveHub Labs (synthesized 2026-05-29 from PG 16+ production knowledge; v0.2.0 adds fillfactor/HOT updates, lateral joins for top-N, SKIP LOCKED for queues, pg_repack vs VACUUM FULL, EXISTS over COUNT)
 license: CC-BY-4.0
-tokens: 3800
+tokens: 4200
 token_budget: 5500
 risk_level: low
 content_digest: sha256:9c6cabc7d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a5
@@ -111,6 +111,24 @@ streaming replica when scale warrants).
 - **Covering**: `CREATE INDEX ON tbl (id) INCLUDE (name, email)`.
   Enables index-only scan.
 - **`CREATE INDEX CONCURRENTLY`** in production. Avoids table lock.
+- **GIN `jsonb_path_ops`**: smaller + faster than default GIN for
+  containment-only (`@>`) queries; loses key-existence (`?`) support.
+- **BRIN**: tiny index for append-only time-series where on-disk order
+  correlates with the indexed column. Useful for audit logs;
+  irrelevant for the registry tables.
+
+### Update-heavy table tuning
+
+- **`fillfactor = 90` for hot tables.** Leaves room for HOT (Heap-Only
+  Tuple) updates — Postgres can update a row in-place without index
+  maintenance if (a) no indexed column changed AND (b) the new tuple
+  fits on the same page. Set per table: `ALTER TABLE tbl SET (fillfactor
+  = 90)`. Reduces bloat for update-heavy workloads.
+- **Avoid updating indexed columns** — kills HOT.
+- **Wide-row hot column split**: if a row has a frequently-updated
+  field alongside many static fields, consider splitting (sometimes
+  worth a separate table keyed by the same id) to minimize the bloat
+  surface.
 
 ## Decision Rules
 
@@ -179,6 +197,23 @@ END $$;
 - Monitor via `pg_stat_progress_create_index`.
 - On failure, leaves INVALID index. Find + drop, then retry.
 
+## Bloat removal — pg_repack over VACUUM FULL
+
+- **`VACUUM`** (regular) reclaims space FOR REUSE inside the table.
+  Non-blocking. Run regularly via autovacuum.
+- **`VACUUM FULL`** rewrites the table to release space TO THE OS. Takes
+  an `ACCESS EXCLUSIVE` lock — blocks all reads + writes. **Avoid in
+  production.**
+- **`pg_repack`** (extension) does what VACUUM FULL does but without the
+  table lock — creates a shadow table, copies live rows, swaps. Online,
+  safe. Install when a tenant-scoped table accumulates significant bloat
+  and we need to release space.
+- **`REINDEX CONCURRENTLY`** (PG12+) rebuilds bloated indexes online.
+
+For PrimitiveHub: VACUUM via autovacuum is sufficient at current scale.
+Plan to install `pg_repack` when `pg_stat_user_tables.n_dead_tup` shows
+sustained high dead-tuple ratios on the larger tables.
+
 ## VACUUM Discipline
 
 - Regular VACUUM is **non-blocking**.
@@ -216,6 +251,57 @@ statement_timeout = '30s'
 lock_timeout = '10s'
 idle_in_transaction_session_timeout = '60s'
 ```
+
+## Query Patterns
+
+### Cursor pagination (not OFFSET)
+```sql
+-- BAD — scans + discards rows
+SELECT * FROM tbl ORDER BY id OFFSET 10000 LIMIT 20;
+
+-- GOOD — constant-time per page
+SELECT * FROM tbl WHERE id > $last_id ORDER BY id LIMIT 20;
+```
+PrimitiveHub's `primitivehub_api/pagination.py` implements this over
+`(created_at, id)`.
+
+### EXISTS over COUNT
+```sql
+-- BAD — counts every matching row to ask "any?"
+SELECT * FROM users WHERE (SELECT COUNT(*) FROM orders WHERE user_id = users.id) > 0;
+
+-- GOOD — short-circuits on first match
+SELECT * FROM users WHERE EXISTS (SELECT 1 FROM orders WHERE user_id = users.id);
+```
+
+### Approximate counts for large tables
+```sql
+SELECT reltuples::bigint FROM pg_class WHERE relname = 'tablename';
+```
+For "total rows in this table" displays where exact count is too
+expensive.
+
+### `SELECT ... FOR UPDATE SKIP LOCKED` for task queues
+```sql
+SELECT * FROM jobs WHERE status = 'pending'
+ORDER BY created_at FOR UPDATE SKIP LOCKED LIMIT 10;
+```
+Multiple workers can claim jobs concurrently without lock contention.
+Procrastinate uses this pattern internally — relevant when reading its
+internals or building a custom queue.
+
+### Lateral joins (top-N per group)
+```sql
+-- "Most recent 3 versions per primitive"
+SELECT p.slug, v.semver, v.submitted_at
+FROM registry_primitive p
+CROSS JOIN LATERAL (
+    SELECT semver, submitted_at FROM registry_primitive_version
+    WHERE primitive_id = p.id ORDER BY submitted_at DESC LIMIT 3
+) v;
+```
+Avoids GROUP BY + window-function complexity. Performant when paired
+with an index on `(primitive_id, submitted_at DESC)`.
 
 ## Monitoring Queries
 

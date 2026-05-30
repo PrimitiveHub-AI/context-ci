@@ -134,6 +134,8 @@ if more than 10 match, the change is too broad — split it.
 | Any chart, score badge, attestation timeline, threat-model panel | [`apps/web/content/primitives/tufte-data-visualization.md`](./apps/web/content/primitives/tufte-data-visualization.md) |
 | Designing `/registry`, `/validation`, future founder/admin dashboards | [`apps/web/content/primitives/dashboard-information-design.md`](./apps/web/content/primitives/dashboard-information-design.md) |
 | Any interactive component (focus, keyboard, ARIA, contrast, motion) | [`apps/web/content/primitives/accessibility-wcag22.md`](./apps/web/content/primitives/accessibility-wcag22.md) |
+| Any React 19 / TanStack Query / hook / effect / SSR hydration work | [`apps/web/content/primitives/react-19-patterns.md`](./apps/web/content/primitives/react-19-patterns.md) |
+| Any Framer Motion / `motion/react` animation work | [`apps/web/content/primitives/framer-motion-discipline.md`](./apps/web/content/primitives/framer-motion-discipline.md) |
 
 ### Backend (`apps/api/`)
 
@@ -144,6 +146,19 @@ if more than 10 match, the change is too broad — split it.
 | Postgres queries, indexes, migrations, EXPLAIN diagnosis | [`apps/web/content/primitives/postgresql-production.md`](./apps/web/content/primitives/postgresql-production.md) |
 | Django models, Ninja endpoints, Procrastinate tasks, IDOR prevention | [`apps/web/content/primitives/django-ninja-production.md`](./apps/web/content/primitives/django-ninja-production.md) |
 | Caching, rate limiting, Valkey, Next.js `"use cache"` | [`apps/web/content/primitives/valkey-caching-patterns.md`](./apps/web/content/primitives/valkey-caching-patterns.md) |
+
+### Infrastructure
+
+| Touching… | Load these primitives |
+|---|---|
+| Any Dockerfile / compose.yaml / compose overlay / env_file wiring | [`apps/web/content/primitives/docker-compose-discipline.md`](./apps/web/content/primitives/docker-compose-discipline.md) |
+
+### Meta
+
+| Touching… | Load these primitives |
+|---|---|
+| Picking which primitives apply to your change | [`apps/web/content/primitives/primitive-cross-reference-index.md`](./apps/web/content/primitives/primitive-cross-reference-index.md) — feature → primitives lookup, bounded by `feedback-bloat-control` |
+| Before ANY new feature: scan for recurring bug classes | [`docs/bug-patterns.md`](./docs/bug-patterns.md) — generalized catalog (the instance log is `docs/bugs.md`) |
 
 **These primitives reference each other.** Loading `frontend-design-elite`
 references the demo-data discipline from `feedback-no-fake-numbers`
