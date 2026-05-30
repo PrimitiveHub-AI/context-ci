@@ -19,11 +19,17 @@ Phase 3 — **bootstrap**. The bones exist:
 
 What's NOT in this PR (each lands separately):
 
-- Business endpoints (primitive upload, version listing, attestation lookup) — Phase 4
-- Sigstore signing wiring — Phase 4
-- Procrastinate worker process — Phase 4
-- Content-addressed storage (R2 client) — `feat/content-addressed-storage`
-- API integration on the frontend (kill the mock data) — `feat/api-integration`
+- Sigstore signing wiring — Phase 4 PRs #2-#4
+- Sign-on-upload pipeline — Phase 4 PR #3
+- Web attestation badge + Rekor link — Phase 4 PR #5
+
+What landed in Phase 3.5 (now on main):
+
+- Business endpoints (orgs, registry, bundles, contributors, reviews, pipeline) ✓
+- Content-addressed storage (R2 client) ✓
+- Postgres RLS enforced + Postgres-only tests ✓
+- OIDC login flow (Authentik wiring, httpOnly cookies, token refresh) ✓
+- Procrastinate worker process + tenant-aware ping task ✓ — Phase 4 PR #1
 
 ## Local development
 
@@ -70,6 +76,36 @@ uv run ruff check .                            # lint
 uv run ruff format .                           # auto-format
 uv run mypy primitivehub_api apps              # type check
 ```
+
+## Background jobs (Procrastinate)
+
+Phase 4 PR #1 added the worker substrate. Tasks live in
+`apps/api/<app>/tasks.py`; the worker container long-polls Postgres for
+queued jobs.
+
+```bash
+# Container approach (canonical):
+docker compose up -d api-worker                        # start the worker
+docker compose logs -f api-worker                      # tail job logs
+docker compose exec api python manage.py procrastinate worker --queues=default  # ad-hoc
+
+# Enqueue a smoke task:
+docker compose exec api python manage.py shell -c \
+  "from jobs.tasks import ping; ping.defer(message='smoke')"
+```
+
+**Tenant-context discipline:** worker tasks run outside the request
+cycle, so `TenantContextMiddleware` does NOT fire. Every tenant-scoped
+task MUST set `primitivehub.current_organization` inside its own
+`transaction.atomic()` before touching tenant data — otherwise RLS
+denies every row and the task silently produces empty results. See
+`jobs/tasks.py::ping` for the canonical pattern.
+
+**Anonymous-volume gotcha:** if you add a new service that reuses
+`primitivehub-api:dev`, use
+`docker compose up -d --renew-anon-volumes <service>` the first time —
+otherwise the new service starts with a stale `/opt/venv`. See
+`docs/bugs.md` #23.
 
 ## Cryptographic posture
 

@@ -39,9 +39,7 @@ def _set_tenant(org_id: str | None) -> None:
         if org_id is None:
             cursor.execute("RESET primitivehub.current_organization")
         else:
-            cursor.execute(
-                "SET LOCAL primitivehub.current_organization = %s", [org_id]
-            )
+            cursor.execute("SET LOCAL primitivehub.current_organization = %s", [org_id])
 
 
 @pytest.fixture
@@ -61,18 +59,14 @@ def two_orgs_with_primitives(db):
     OrganizationMember.objects.create(
         organization=alice_org, user=alice, roles=[Role.MAINTAINER.value]
     )
-    OrganizationMember.objects.create(
-        organization=bob_org, user=bob, roles=[Role.MAINTAINER.value]
-    )
+    OrganizationMember.objects.create(organization=bob_org, user=bob, roles=[Role.MAINTAINER.value])
 
     def _make(org, slug):
         import hashlib
 
         digest = hashlib.sha256(slug.encode()).hexdigest()
         registry = Registry.objects.create(organization=org, slug=slug, name=slug)
-        repo = Repository.objects.create(
-            organization=org, registry=registry, slug=slug, name=slug
-        )
+        repo = Repository.objects.create(organization=org, registry=registry, slug=slug, name=slug)
         primitive = Primitive.objects.create(
             organization=org,
             repository=repo,

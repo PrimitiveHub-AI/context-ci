@@ -26,6 +26,53 @@
 
 ## Active log (most recent first)
 
+### 23. Docker anonymous volumes don't auto-refresh when image content changes — 2026-05-30
+
+**Phase:** 4 (Procrastinate worker, PR #1)
+**Symptom:** Adding a new service that reuses the same image (api-worker
+reusing primitivehub-api:dev) failed with `ModuleNotFoundError: No
+module named 'corsheaders'` at startup, even though the api container
+imports it fine.
+**Root cause:** Compose mounts `- /opt/venv` as an anonymous volume.
+On first `docker compose up`, Docker creates the anonymous volume and
+populates it from the image. On subsequent `--force-recreate`, the
+anonymous volume is RETAINED — only the container is replaced. If the
+image's `/opt/venv` content changed (deps added since the volume was
+first populated), the running container sees the stale volume content,
+not the new image content. The api container's anon volume was created
+months ago with corsheaders inside; api-worker created a fresh anon
+volume, but from the same stale image-layer offset, missing corsheaders.
+Worse, `docker compose build` succeeded — the issue only shows at run.
+**Fix:** Use `--renew-anon-volumes` flag on `docker compose up`. The
+worker came up green immediately after.
+**Prevention:** Code comment in `compose.override.yaml` next to every
+anonymous-volume mount explaining the renew flag. New entry in
+`docker-compose-discipline` primitive § "When to use `--renew-anon-
+volumes`".
+**Lesson:** Anonymous volumes survive `--force-recreate`. To pick up
+new image content in a volume-mounted path, use `--renew-anon-volumes`.
+
+### 22. Pre-existing model/index naming drift (accounts + orgs) — 2026-05-30
+
+**Phase:** 4 (discovered during PR #1 — Procrastinate worker)
+**Symptom:** `python manage.py migrate` reports "Your models in app(s):
+'accounts', 'orgs' have changes that are not yet reflected in a
+migration". Specifically: User manager rename, and 4 index renames
+across User + OrganizationMember.
+**Root cause:** Index `name=` was not explicitly set in early
+migrations, so Django auto-generated names. Subsequent Django version
+updates produced different auto-name hashes, so `makemigrations` thinks
+the indexes need to be renamed (no real schema change).
+**Fix:** **Pending** — will land in its own micro-PR (`fix/api-migration-
+drift-accounts-orgs`) that pins explicit index `name=` values via a
+no-op migration. Holding the fix out of the Procrastinate PR keeps PR
+scope clean per `docs/principles.md` § "One logical change per PR".
+**Prevention:** Lint rule + ADR (deferred): "every Index/Constraint
+declaration must specify an explicit `name=`". Tracking issue in
+roadmap.
+**Lesson:** Auto-generated index names are a deferred bill — they break
+silently across Django version bumps. Always name your indexes.
+
 ### 1. OIDC same-issuer breaks compose-dev networking — 2026-05-30
 
 **Phase:** 3.5 (OIDC login, Step 7)

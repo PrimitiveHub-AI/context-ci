@@ -1,7 +1,7 @@
 ---
 spec_version: "0.1"
 name: docker-compose-discipline
-version: 0.1.0
+version: 0.1.1
 type: engineering
 domain: infrastructure
 author: PrimitiveHub Labs (synthesized 2026-05-30 from production Docker patterns + maintainer experience)
@@ -125,6 +125,14 @@ override).
 - **IF an `.env` file changes THEN** `docker compose up -d --no-deps
   --force-recreate <service>`. `restart` alone does NOT re-read
   env_file. (`docs/bugs.md` #3.)
+- **IF you add a new service that mounts an anonymous volume from a
+  shared image (e.g. `- /opt/venv`) AND the image's content at that
+  path changed since the volume was first populated THEN** include
+  `--renew-anon-volumes` on `docker compose up`. Anonymous volumes
+  SURVIVE `--force-recreate` — only the container is replaced; the
+  stale volume content persists. Symptom: `ModuleNotFoundError` for
+  a dep that the image clearly installs and other services using
+  the same image import fine. (`docs/bugs.md` #23.)
 - **IF a port is bound for a non-public service THEN** prefix with
   `127.0.0.1:`. Never `0.0.0.0` or bare port. Pre-launch posture is
   absolute (see `feedback-localhost-only` memory rule).

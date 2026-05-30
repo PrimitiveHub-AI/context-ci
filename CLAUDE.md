@@ -39,19 +39,22 @@ for the full picture. **Read both before responding to a strategic question.**
 │   │   ├── scripts/       check-data.mjs runtime invariant guard
 │   │   ├── Dockerfile     multi-stage; built by CI
 │   │   └── package.json   web app dependencies
-│   └── api/               Django 5 + Django Ninja backend (Phase 3 bootstrap)
+│   └── api/               Django 5 + Django Ninja backend (Phase 3.5 shipped)
 │       ├── pyproject.toml uv-managed Python 3.13 project
 │       ├── manage.py
 │       ├── primitivehub_api/   Django project package (settings, urls, api composition)
-│       ├── accounts/      custom User + OIDC middleware
+│       ├── accounts/      custom User + OIDC middleware + tenant middleware
 │       ├── orgs/          Organization + Member + Role
 │       ├── registry/      Registry → Repository → Primitive → Version → Attestation
-│       ├── tests/         pytest suite
+│       ├── storage/       boto3 R2 client + content-addressed digest helpers
+│       ├── validation/    ReviewItem + PipelineStage (Context CI surface)
+│       ├── jobs/          Procrastinate tasks (Phase 4 PR #1 — substrate)
+│       ├── tests/         pytest suite (Postgres-only, --reuse-db)
 │       ├── scripts/check_schema.py  schema invariant guard
 │       └── Dockerfile     multi-stage (uv → slim runtime)
 ├── infra/
 │   └── postgres/init-multi-db.sh   Postgres initdb hook (primitivehub + authentik dbs)
-├── compose.yaml           base compose (orchestrates web + api + postgres + valkey + authentik)
+├── compose.yaml           base compose (web + api + api-worker + postgres + valkey + authentik)
 ├── compose.override.yaml  dev overlay (auto-loaded)
 ├── compose.prod.yaml      prod overlay
 ├── docs/
@@ -67,9 +70,10 @@ for the full picture. **Read both before responding to a strategic question.**
 └── .github/workflows/     CI (paths: apps/web/**)
 ```
 
-**Phase 3 bones are now in `apps/api/`.** Phase 4 wires Sigstore + Procrastinate
-workers; Phase 5+ adds scanners. New services land as siblings of `apps/web/`
-and `apps/api/`.
+**Phase 3.5 is shipped on main** (orgs + registry + storage + bundles +
+reviews + OIDC + RLS hardening + auth polish + Procrastinate worker
+substrate). **Phase 4 is in progress** — PR #1 (Procrastinate worker)
+landed; PR #2-5 wire Sigstore signing on top. Phase 5+ adds scanners.
 
 ## Canonical documents (treat as authoritative)
 
@@ -319,7 +323,7 @@ All Python commands run from `apps/api/` via `uv`.
 
 - `uv run ruff check .` must pass — Python lint (S = security, B = bugbear, DJ = Django).
 - `uv run ruff format --check .` must pass — formatter is non-negotiable.
-- `uv run mypy primitivehub_api apps` must pass — strict typing on (django-stubs plugin enabled).
+- `uv run mypy primitivehub_api accounts orgs registry storage validation jobs` must pass — strict typing on (django-stubs plugin enabled). The flat-layout means there's no `apps/` subdir to globally target; list the Django apps explicitly.
 - `uv run python scripts/check_schema.py` must pass — schema invariant guard.
 - `uv run python manage.py check --fail-level WARNING` must pass — Django system check.
 - `uv run pytest` must pass — smoke + business tests. **Tests run against

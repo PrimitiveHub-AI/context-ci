@@ -71,6 +71,46 @@ services:
       start_period: 30s
     networks: [primitivehub_net]
 
+  # ── Background worker (Procrastinate, ADR-0004) ───────────────────────────
+  # Long-polls Postgres for queued tasks. Same image + same env as `api` —
+  # only the entrypoint differs. Runs migrations on startup so a fresh
+  # cluster comes up green without manual steps.
+  api-worker:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+      target: runner
+    image: ${API_IMAGE:-ghcr.io/devxyzx/primitivehub-api:latest}
+    restart: unless-stopped
+    command:
+      - "sh"
+      - "-c"
+      - |
+        python manage.py migrate procrastinate --noinput && \
+        exec python manage.py procrastinate worker --queues=default
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-dev-secret-not-for-production}
+      DEBUG: ${DEBUG:-False}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,api}
+      DATABASE_URL: postgres://primitivehub:${POSTGRES_PASSWORD:-dev_password}@postgres:5432/primitivehub
+      VALKEY_URL: redis://valkey:6379/0
+      OIDC_ISSUER: ${OIDC_ISSUER:-http://authentik-server:9000/application/o/primitivehub/}
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE:-primitivehub-api}
+      DEV_AUTH_BYPASS: ${DEV_AUTH_BYPASS:-False}
+      # S3 / R2 credentials inherited via env_file in compose.override.yaml
+      # (workers will need R2 read for signing Phase 4 PR #3).
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      # Returns exit 0 if Postgres + procrastinate schema are reachable.
+      test: ["CMD", "python", "manage.py", "procrastinate", "healthchecks"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks: [primitivehub_net]
+
   # ── Truth DB ──────────────────────────────────────────────────────────────
   postgres:
     image: postgres:17-alpine

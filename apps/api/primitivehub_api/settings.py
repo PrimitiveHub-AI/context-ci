@@ -40,12 +40,17 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     # Third-party
     "corsheaders",
+    # Procrastinate must be listed BEFORE apps that define tasks so its
+    # management commands (procrastinate worker / healthchecks / schema)
+    # discover and configure the App before our tasks register.
+    "procrastinate.contrib.django",
     # Project apps
     "accounts",
     "orgs",
     "registry",
     "storage",
     "validation",
+    "jobs",
 ]
 
 MIDDLEWARE = [
@@ -172,6 +177,16 @@ S3_REGION = env("S3_REGION", default="auto")  # "auto" works with R2
 # primitive (10 KiB typical, 100 KiB extreme); raise only if a real
 # primitive needs it.
 PRIMITIVE_MAX_BYTES = env("PRIMITIVE_MAX_BYTES", default=1024 * 1024, cast=int)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Background jobs (Procrastinate — Postgres-backed queue, ADR-0004)
+# ─────────────────────────────────────────────────────────────────────────────
+# `procrastinate.contrib.django` auto-discovers tasks.py in every app in
+# INSTALLED_APPS and uses the default DATABASE connection. The Django
+# migrations install the procrastinate schema (run with `python manage.py
+# migrate procrastinate`). Worker: `python manage.py procrastinate worker`.
+# Defaults are correct for our setup; PROCRASTINATE_* overrides only when
+# we need to deviate (e.g. dedicated DB alias for the queue in Phase 7).
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CORS — the web app (localhost:3000 in dev) calls the api (localhost:8000).
