@@ -28,29 +28,41 @@ stacked, post-Step-7-OIDC. The end-to-end Sign-in flow is live.
 
 ## Phase-by-phase
 
-### Phase 4 — Sigstore signing + Procrastinate workers (Q1 2026)
+### Phase 4 — Sigstore signing + Procrastinate workers (Q1 2026, in progress)
 
 **Goal:** Every primitive publish produces a real Sigstore signature on
 a real Rekor log entry. Async work (validation runs, attestation
 generation, webhook delivery) moves off the request thread.
 
-**Ships:**
-- `apps/api/signing/` — Sigstore keyless client (Fulcio OIDC flow +
-  Rekor log entry submission), ed25519-signed in-toto DSSE envelopes.
-- `apps/api/jobs/` — Procrastinate task definitions. Tasks: validate,
-  attest, notify, reindex.
-- Publish path: `POST /primitives/{slug}/versions` → enqueue validate →
-  enqueue attest (depends on validate) → enqueue notify (depends on
-  attest).
+**Ships (PR-by-PR):**
+
+- **PR #1** ✓ `feat/api-procrastinate-worker` — Procrastinate worker
+  substrate + tenant-aware `ping` task; api-worker compose service;
+  Postgres-backed queue.
+- **PR #2** ✓ `feat/api-sigstore-backend-abstraction` — `SigstoreBackend`
+  Protocol + 4 backends (`public` / `staging` / `self-hosted` / `noop`);
+  in-toto Statement builder; env-driven factory (ADR-0011).
+- **PR #3** `feat/api-sigstore-keyless-signing` — fills in `sign()` on
+  real backends using `sigstore-python`'s `SigningContext`. Bundle →
+  `SigningResult` field extraction. Integration test against sigstage.
+- **PR #4** `feat/api-sign-on-upload` — wires `get_backend()` into the
+  upload endpoint via a Procrastinate task. Attestation state machine
+  (`pending → signing → signed | failed`).
+- **PR #5** `feat/web-attestation-badge-and-rekor-link` — UI surface for
+  attestation status + Rekor entry link.
+
+**Locked architectural commitments:**
+- Backend abstraction (one env var swap) so Phase 7 isn't a migration.
+- In-toto Statement predicateType locked to
+  `https://primitivehub.ai/context-ci/v0.1/Attestation` per docs/spec.md.
 - Idempotency keys on every external side effect (Sigstore, webhook,
   email).
 - "Trusted" badge requires `attestation.signed_at IS NOT NULL` AND a
-  valid Rekor entry; UI surface enforces this.
-- Tests: signing a real primitive, verifying the signature, replaying
-  the verification against Rekor.
+  valid Rekor entry.
 
 **Success metric:** A primitive published in dev produces a Rekor entry
-the maintainer can paste into <https://search.sigstore.dev/> and see.
+the maintainer can paste into the appropriate Rekor search UI
+(sigstage.dev for dev; sigstore.dev for prod) and verify.
 
 ### Phase 5 — Context CI v1: 10 stages, 10 threats (Q1 2026)
 

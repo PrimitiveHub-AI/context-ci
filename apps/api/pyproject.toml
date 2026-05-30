@@ -17,14 +17,14 @@ dependencies = [
     "psycopg[binary,pool]>=3.2",
     "dj-database-url>=2.3",
     # Cache + sessions
-    "redis>=5.2",                # wire-compatible with Valkey
+    "redis>=5.2", # wire-compatible with Valkey
     "django-redis>=5.4",
     # OIDC / auth
     "pyjwt[crypto]>=2.10",
     "cryptography>=44.0",
-    "httpx>=0.27",               # for OIDC discovery + JWKS fetch
+    "httpx>=0.27", # for OIDC discovery + JWKS fetch
     # Object storage
-    "boto3>=1.35",               # S3-compatible client (R2 in prod, MinIO option for self-host)
+    "boto3>=1.35", # S3-compatible client (R2 in prod, MinIO option for self-host)
     "boto3-stubs[s3]>=1.35",
     # Background jobs (Phase 4 wires these; declared now for lockfile stability)
     "procrastinate[django]>=2.15",
@@ -36,7 +36,8 @@ dependencies = [
     # Observability deferred — print-to-stdout + JSON-line logging via structlog for now
     "structlog>=24.4",
     # Cryptographic operations
-    "in-toto-attestation>=0.9",   # canonical statement helpers
+    "in-toto-attestation>=0.9",
+    "sigstore>=3.0,<5",
 ]
 
 [dependency-groups]

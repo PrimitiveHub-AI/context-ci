@@ -41,6 +41,7 @@ Links to primitives, threat-model entries, vendor docs, prior ADRs.
 
 | # | Title | Status |
 |---|---|---|
+| [0011](./0011-sigstore-backend-abstraction.md) | Sigstore backend abstraction: public / staging / self-hosted | Accepted |
 | [0010](./0010-token-storage-httponly-cookies.md) | Token storage: httpOnly cookies + same-origin proxy | Accepted |
 | [0009](./0009-oidc-two-issuer-compose-pattern.md) | OIDC two-issuer model in compose-dev | Accepted |
 | [0008](./0008-content-addressed-storage.md) | Object key = SHA-256 digest | Accepted |

@@ -58,9 +58,7 @@ def _resolve_org_for_request(request: HttpRequest, user: User) -> Organization |
             return None
         return org
     # Default: deterministic — first org by slug ascending the user belongs to.
-    return (
-        Organization.objects.filter(members__user=user).order_by("slug").first()
-    )
+    return Organization.objects.filter(members__user=user).order_by("slug").first()
 
 
 class TenantContextMiddleware:
