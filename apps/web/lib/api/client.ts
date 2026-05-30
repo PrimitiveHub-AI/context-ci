@@ -1,0 +1,214 @@
+/**
+ * Typed fetch wrapper for the PrimitiveHub Ninja API.
+ *
+ * Single source of truth for: base URL, default headers, Bearer-token
+ * injection, error → typed-exception conversion.
+ *
+ * In dev: the backend has DEV_AUTH_BYPASS=True and accepts any request as
+ * the configured DEV_OIDC_SUBJECT. No Authorization header is needed.
+ *
+ * In prod: the caller is expected to supply a Bearer token via the
+ * `authToken` option. The real OIDC login flow (Authentik redirect →
+ * callback → token storage) lands in a follow-up Step 5 PR; this client
+ * is the seam where that wires in.
+ */
+
+import type {
+  Bundle,
+  Contributor,
+  PipelineStage,
+  Primitive,
+  ReviewItem,
+} from "@/lib/types"
+
+// Same-origin: the browser hits Next's /api/v1/* proxy route, which
+// attaches the Bearer token from the httpOnly cookie and forwards to
+// the Django backend. Override only when the api is reachable directly
+// (e.g. server-side rendering pre-launch where Next can talk to the
+// container by hostname).
+const DEFAULT_BASE_URL = "/api/v1"
+
+export const apiBaseUrl =
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? DEFAULT_BASE_URL
+
+export class ApiError extends Error {
+  readonly status: number
+  readonly url: string
+
+  constructor(status: number, url: string, message: string) {
+    super(message)
+    this.name = "ApiError"
+    this.status = status
+    this.url = url
+  }
+}
+
+export interface ApiRequestOptions {
+  method?: "GET" | "POST" | "PUT" | "DELETE"
+  body?: unknown
+  searchParams?: Record<string, string | number | undefined>
+  authToken?: string
+  /** Tenant context — sent as `X-Organization-Slug`. The backend
+   *  validates membership and sets `primitivehub.current_organization`
+   *  per request for RLS. Omit to use the backend's default (first org
+   *  by slug ascending). */
+  orgSlug?: string | null
+  signal?: AbortSignal
+}
+
+async function apiFetch<T>(
+  path: string,
+  options: ApiRequestOptions = {},
+): Promise<T> {
+  const { method = "GET", body, searchParams, authToken, orgSlug, signal } = options
+  const url = new URL(`${apiBaseUrl}${path}`)
+  if (searchParams) {
+    for (const [key, value] of Object.entries(searchParams)) {
+      if (value !== undefined) url.searchParams.set(key, String(value))
+    }
+  }
+
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+  }
+  if (body !== undefined && !(body instanceof FormData)) {
+    headers["Content-Type"] = "application/json"
+  }
+  if (authToken) {
+    headers.Authorization = `Bearer ${authToken}`
+  }
+  if (orgSlug) {
+    headers["X-Organization-Slug"] = orgSlug
+  }
+
+  const response = await fetch(url.toString(), {
+    method,
+    headers,
+    body:
+      body === undefined
+        ? undefined
+        : body instanceof FormData
+          ? body
+          : JSON.stringify(body),
+    credentials: "include",
+    signal,
+  })
+
+  if (!response.ok) {
+    let detail = `${response.status} ${response.statusText}`
+    try {
+      const errorJson = await response.json()
+      if (typeof errorJson?.detail === "string") detail = errorJson.detail
+    } catch {
+      // body wasn't JSON; keep the status line
+    }
+    // 401 = session is gone (refresh in the proxy already failed if it
+    // had a refresh_token to try). Bounce to /auth/login carrying the
+    // current path as a return target. Only in a browser context — SSR
+    // throws ApiError so server components can handle it explicitly.
+    if (response.status === 401 && typeof window !== "undefined") {
+      const current = window.location.pathname + window.location.search
+      window.location.href = `/auth/login?return=${encodeURIComponent(current)}`
+    }
+    throw new ApiError(response.status, url.toString(), detail)
+  }
+
+  if (response.status === 204) return undefined as T
+  return (await response.json()) as T
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Endpoint contract — keys camelCase, mirror apps/api/registry/schemas.py.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface PrimitivePage {
+  items: Primitive[]
+  nextCursor: string | null
+  pageSize: number
+}
+
+export interface PrimitiveListParams {
+  cursor?: string
+  pageSize?: number
+  category?: string
+  agent?: string
+  status?: string
+  search?: string
+}
+
+export interface OrganizationOut {
+  id: string
+  slug: string
+  name: string
+  visibility: string
+  createdAt: string
+  memberRoleCount: number
+}
+
+export interface WhoamiResponse {
+  subject: string | null
+  authenticated: boolean
+  devBypass: boolean
+  user: {
+    id: string
+    subject: string
+    email: string
+    displayName: string
+  } | null
+  activeOrganization: string | null
+}
+
+export interface OrganizationMembershipOut {
+  organization: OrganizationOut
+  roles: string[]
+  joinedAt: string
+}
+
+export const api = {
+  listOrganizations: (options: ApiRequestOptions = {}) =>
+    apiFetch<OrganizationMembershipOut[]>("/organizations", options),
+
+  listPrimitives: (
+    params: PrimitiveListParams = {},
+    options: ApiRequestOptions = {},
+  ) =>
+    apiFetch<PrimitivePage>("/primitives", {
+      ...options,
+      searchParams: {
+        cursor: params.cursor,
+        page_size: params.pageSize,
+        category: params.category,
+        agent: params.agent,
+        status: params.status,
+        search: params.search,
+      },
+    }),
+
+  getPrimitive: (slug: string, options: ApiRequestOptions = {}) =>
+    apiFetch<Primitive>(`/primitives/${encodeURIComponent(slug)}`, options),
+
+  listBundles: (options: ApiRequestOptions = {}) =>
+    apiFetch<Bundle[]>("/bundles", options),
+
+  getBundle: (slug: string, options: ApiRequestOptions = {}) =>
+    apiFetch<Bundle>(`/bundles/${encodeURIComponent(slug)}`, options),
+
+  listReviews: (options: ApiRequestOptions = {}) =>
+    apiFetch<ReviewItem[]>("/reviews", options),
+
+  listPipelineStages: (
+    slug: string,
+    semver: string,
+    options: ApiRequestOptions = {},
+  ) =>
+    apiFetch<PipelineStage[]>(
+      `/primitives/${encodeURIComponent(slug)}/versions/${encodeURIComponent(semver)}/pipeline-stages`,
+      options,
+    ),
+
+  listContributors: (options: ApiRequestOptions = {}) =>
+    apiFetch<Contributor[]>("/contributors", options),
+
+  whoami: (options: ApiRequestOptions = {}) =>
+    apiFetch<WhoamiResponse>("/whoami", options),
+}

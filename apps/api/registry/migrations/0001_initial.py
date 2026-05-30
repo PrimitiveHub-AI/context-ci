@@ -317,9 +317,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "predicate",
-                    models.JSONField(
-                        help_text="In-toto Statement predicate payload (Spec §5.3)."
-                    ),
+                    models.JSONField(help_text="In-toto Statement predicate payload (Spec §5.3)."),
                 ),
                 ("threat_model_version", models.CharField(default="0.1", max_length=16)),
                 ("spec_version", models.CharField(default="0.1", max_length=16)),

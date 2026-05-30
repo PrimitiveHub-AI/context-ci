@@ -20,7 +20,7 @@ import uuid
 from django.conf import settings
 from django.db import models
 
-from apps.orgs.models import Organization
+from orgs.models import Organization
 
 
 class Registry(models.Model):
@@ -62,9 +62,7 @@ class Repository(models.Model):
     organization = models.ForeignKey(
         Organization, on_delete=models.CASCADE, related_name="repositories"
     )
-    registry = models.ForeignKey(
-        Registry, on_delete=models.CASCADE, related_name="repositories"
-    )
+    registry = models.ForeignKey(Registry, on_delete=models.CASCADE, related_name="repositories")
     slug = models.SlugField(max_length=64)
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
@@ -108,16 +106,12 @@ class Primitive(models.Model):
     organization = models.ForeignKey(
         Organization, on_delete=models.CASCADE, related_name="primitives"
     )
-    repository = models.ForeignKey(
-        Repository, on_delete=models.CASCADE, related_name="primitives"
-    )
+    repository = models.ForeignKey(Repository, on_delete=models.CASCADE, related_name="primitives")
     slug = models.SlugField(max_length=64)
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     category = models.CharField(max_length=32, choices=Category.choices)
-    risk_level = models.CharField(
-        max_length=8, choices=RiskLevel.choices, default=RiskLevel.LOW
-    )
+    risk_level = models.CharField(max_length=8, choices=RiskLevel.choices, default=RiskLevel.LOW)
     deprecated_at = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -161,9 +155,7 @@ class PrimitiveVersion(models.Model):
     organization = models.ForeignKey(
         Organization, on_delete=models.CASCADE, related_name="primitive_versions"
     )
-    primitive = models.ForeignKey(
-        Primitive, on_delete=models.CASCADE, related_name="versions"
-    )
+    primitive = models.ForeignKey(Primitive, on_delete=models.CASCADE, related_name="versions")
     semver = models.CharField(max_length=64)
     content_digest = models.CharField(max_length=80, unique=True)
     storage_key = models.CharField(max_length=80, unique=True)
@@ -171,15 +163,17 @@ class PrimitiveVersion(models.Model):
     token_budget = models.PositiveIntegerField()
     license = models.CharField(max_length=64)
     spec_version = models.CharField(max_length=16, default="0.1")
+    # Primitive Spec v0.1 §3 frontmatter — surfaced to API consumers.
+    compatible_agents = models.JSONField(default=list)
+    use_when = models.JSONField(default=list)
+    do_not_use_when = models.JSONField(default=list)
     submitted_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
         related_name="submitted_versions",
     )
     submitted_at = models.DateTimeField(auto_now_add=True)
-    verdict = models.CharField(
-        max_length=16, choices=Verdict.choices, default=Verdict.SUBMITTED
-    )
+    verdict = models.CharField(max_length=16, choices=Verdict.choices, default=Verdict.SUBMITTED)
     attested_at = models.DateTimeField(blank=True, null=True)
     quality_score = models.PositiveSmallIntegerField(blank=True, null=True)
     safety_score = models.PositiveSmallIntegerField(blank=True, null=True)
@@ -226,9 +220,7 @@ class Attestation(models.Model):
         PrimitiveVersion, on_delete=models.CASCADE, related_name="attestation"
     )
     predicate_type = models.CharField(max_length=200, default=PREDICATE_TYPE)
-    predicate = models.JSONField(
-        help_text="In-toto Statement predicate payload (Spec §5.3)."
-    )
+    predicate = models.JSONField(help_text="In-toto Statement predicate payload (Spec §5.3).")
     threat_model_version = models.CharField(max_length=16, default="0.1")
     spec_version = models.CharField(max_length=16, default="0.1")
     signature_envelope = models.TextField(
@@ -252,3 +244,37 @@ class Attestation(models.Model):
 
     def __str__(self) -> str:
         return f"attestation:{self.primitive_version}"
+
+
+class Bundle(models.Model):
+    """A curated collection of primitives, marketed as a single install.
+
+    Many-to-many with Primitive (cross-org membership isn't allowed — a
+    Bundle's primitives must share its organization, enforced by the
+    serializer + tested in test_bundles_api.py).
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name="bundles")
+    slug = models.SlugField(max_length=64)
+    name = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    use_case = models.CharField(max_length=300, blank=True)
+    primitives = models.ManyToManyField(Primitive, related_name="bundles", blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "registry_bundle"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "slug"], name="registry_bundle_org_slug_unique"
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["organization"]),
+            models.Index(fields=["-created_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.organization.slug}/bundle:{self.slug}"

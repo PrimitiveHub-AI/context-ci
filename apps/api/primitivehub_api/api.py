@@ -11,12 +11,35 @@ from datetime import UTC, datetime
 from typing import Any
 
 from django.conf import settings
-from django.db import connection
 from django.core.cache import cache
+from django.db import connection
 from ninja import NinjaAPI, Schema
+from ninja.renderers import JSONRenderer
 
-# Future: from apps.orgs.api import router as orgs_router
-# Future: from apps.registry.api import router as registry_router
+from accounts.api import router as accounts_router
+from orgs.api import router as orgs_router
+from registry.api import router as registry_router
+from validation.api import router as validation_router
+
+
+class CamelJSONRenderer(JSONRenderer):
+    """JSON renderer that dumps Pydantic Schema instances by_alias=True.
+
+    Schemas defined with `alias_generator=to_camel` emit camelCase keys on
+    the wire while keeping snake_case in Python. The default Ninja renderer
+    ignores the alias config, so we override it here.
+    """
+
+    def render(self, request: Any, data: Any, *, response_status: int) -> bytes:
+        if hasattr(data, "model_dump"):
+            data = data.model_dump(by_alias=True)
+        elif isinstance(data, list):
+            data = [
+                item.model_dump(by_alias=True) if hasattr(item, "model_dump") else item
+                for item in data
+            ]
+        result: bytes = super().render(request, data, response_status=response_status)
+        return result
 
 
 class HealthResponse(Schema):
@@ -39,6 +62,7 @@ api = NinjaAPI(
     ),
     docs_url="/docs",
     openapi_url="/openapi.json",
+    renderer=CamelJSONRenderer(),
 )
 
 
@@ -53,7 +77,7 @@ def healthz(request: Any) -> HealthResponse:
             cursor.execute("SELECT 1")
             cursor.fetchone()
         checks["db"] = "ok"
-    except Exception as exc:  # noqa: BLE001 — surface any DB problem to the response
+    except Exception as exc:
         checks["db"] = f"error: {exc.__class__.__name__}"
 
     # Cache (Valkey) — set + get a probe key
@@ -61,7 +85,7 @@ def healthz(request: Any) -> HealthResponse:
         cache.set("healthz:probe", "ok", timeout=10)
         cached_value = cache.get("healthz:probe")
         checks["cache"] = "ok" if cached_value == "ok" else "degraded"
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         checks["cache"] = f"error: {exc.__class__.__name__}"
 
     overall = "ok" if all(v == "ok" for v in checks.values()) else "degraded"
@@ -77,19 +101,33 @@ def healthz(request: Any) -> HealthResponse:
 
 @api.get("/whoami", tags=["meta"])
 def whoami(request: Any) -> dict[str, Any]:
-    """Return the OIDC subject the request carries, or null if unauthenticated.
+    """Return the active session — subject, profile, and any active tenant.
 
-    Useful in Phase 3 for confirming the auth middleware + Authentik wiring
-    actually work end-to-end without needing a real protected endpoint yet.
+    The frontend calls this on bootstrap to learn (a) whether a session is
+    active and (b) display details to render the navbar. Returns
+    `authenticated: false` for anonymous requests instead of 401 so the
+    frontend can call it speculatively without setting up auth headers.
     """
     subject = getattr(request, "oidc_subject", None)
+    user = getattr(request, "user", None) if subject else None
+    profile: dict[str, Any] | None = None
+    if user is not None:
+        profile = {
+            "id": str(user.id),
+            "subject": subject,
+            "email": user.email or "",
+            "displayName": user.display_name or user.email or subject or "",
+        }
     return {
         "subject": subject,
         "authenticated": subject is not None,
-        "dev_bypass": bool(settings.DEV_AUTH_BYPASS),
+        "devBypass": bool(settings.DEV_AUTH_BYPASS),
+        "user": profile,
+        "activeOrganization": getattr(request, "tenant_org_id", None),
     }
 
 
-# Phase 4+ sub-routers register here:
-# api.add_router("/orgs", orgs_router)
-# api.add_router("/primitives", registry_router)
+api.add_router("", orgs_router)
+api.add_router("", registry_router)
+api.add_router("", validation_router)
+api.add_router("", accounts_router)

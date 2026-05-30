@@ -55,9 +55,15 @@ for the full picture. **Read both before responding to a strategic question.**
 ├── compose.override.yaml  dev overlay (auto-loaded)
 ├── compose.prod.yaml      prod overlay
 ├── docs/
-│   ├── README.md          doc index
-│   ├── spec.md            Primitive Spec v0.1
-│   └── threat-model.md    10 supply-chain attack categories
+│   ├── README.md          doc index (canonical refs + strategic foundation)
+│   ├── vision.md          WHY this exists — 1/3/10-year north star
+│   ├── positioning.md     WHO we are not — vs GitHub, HF, npm, …
+│   ├── principles.md      WHAT is non-negotiable — 18 beliefs
+│   ├── roadmap.md         WHEN we ship — Phase 1 through Phase 12+
+│   ├── bugs.md            WHAT broke + root cause + prevention
+│   ├── decisions/         HOW we built it — ADRs (0001-NNNN)
+│   ├── spec.md            Primitive Spec v0.1 (canonical, paper-cited)
+│   └── threat-model.md    10 supply-chain attack categories (canonical)
 └── .github/workflows/     CI (paths: apps/web/**)
 ```
 
@@ -72,12 +78,40 @@ and `apps/api/`.
 | [`DESIGN.md`](./DESIGN.md) | Unified design doctrine for the whole project. Visual theme, palette + roles, typography, components, layout principles. Supersedes scattered taste references. |
 | [`docs/threat-model.md`](./docs/threat-model.md) | 10 supply-chain attack categories Context CI is designed to detect. Cited by the paper. |
 | [`docs/spec.md`](./docs/spec.md) | Primitive Spec v0.1: frontmatter, body sections, content addressing, in-toto Attestation predicate, Sigstore signing model, SLSA mapping. |
-| [`docs/README.md`](./docs/README.md) | Doc index + planned OSS sibling repos. |
+| [`docs/README.md`](./docs/README.md) | Doc index + planned OSS sibling repos + the relationship diagram for the whole strategic doc layer. |
 
 When you write code that touches any of: cryptographic vocabulary,
 attestation, signing, primitive validation, or the threat model — **read
 the relevant docs/* first.** The spec is the contract; the threat model
 is the justification.
+
+## Strategic foundation (read before any non-trivial work)
+
+The team-facing strategic layer that frames every decision:
+
+| Path | What it answers |
+|---|---|
+| [`docs/vision.md`](./docs/vision.md) | **WHY** — the agent-context-as-supply-chain thesis. 1 / 3 / 10-year horizon. The North Star. |
+| [`docs/positioning.md`](./docs/positioning.md) | **WHO we are NOT** — competitive landscape vs GitHub, HF, npm, MCP Registry, vendor skill registries. |
+| [`docs/principles.md`](./docs/principles.md) | **WHAT is non-negotiable** — 18 beliefs the project ships against. |
+| [`docs/roadmap.md`](./docs/roadmap.md) | **WHEN** — Phase 1 through Phase 12+ with target windows, ship lists, success metrics. |
+| [`docs/bugs.md`](./docs/bugs.md) | **WHAT broke** — every load-bearing bug + root cause + prevention. Grep before re-deriving. AI-hallucination log at the bottom. |
+| [`docs/decisions/`](./docs/decisions/) | **HOW we built it** — Architecture Decision Records. One file per load-bearing choice with status, alternatives, consequences. |
+
+**Discipline:**
+- Before proposing a new feature: skim `vision.md` + `principles.md`
+  to check alignment.
+- Before adopting a third-party library: skim `positioning.md` for
+  competitor signal + write an ADR if the choice is load-bearing.
+- After fixing a bug: add an entry to `bugs.md` (with root cause +
+  prevention) BEFORE the fix merges. No silent fixes.
+- Before re-deriving a known failure: grep `bugs.md` for the symptom.
+- Before debating an architecture pattern: search `decisions/` for an
+  existing ADR. If you disagree, propose superseding it; do not
+  silently violate.
+
+These documents are the institutional memory. Treat them with the
+same discipline as the codebase.
 
 ## Expert primitives — load these before non-trivial work
 
@@ -100,6 +134,8 @@ if more than 10 match, the change is too broad — split it.
 | Any chart, score badge, attestation timeline, threat-model panel | [`apps/web/content/primitives/tufte-data-visualization.md`](./apps/web/content/primitives/tufte-data-visualization.md) |
 | Designing `/registry`, `/validation`, future founder/admin dashboards | [`apps/web/content/primitives/dashboard-information-design.md`](./apps/web/content/primitives/dashboard-information-design.md) |
 | Any interactive component (focus, keyboard, ARIA, contrast, motion) | [`apps/web/content/primitives/accessibility-wcag22.md`](./apps/web/content/primitives/accessibility-wcag22.md) |
+| Any React 19 / TanStack Query / hook / effect / SSR hydration work | [`apps/web/content/primitives/react-19-patterns.md`](./apps/web/content/primitives/react-19-patterns.md) |
+| Any Framer Motion / `motion/react` animation work | [`apps/web/content/primitives/framer-motion-discipline.md`](./apps/web/content/primitives/framer-motion-discipline.md) |
 
 ### Backend (`apps/api/`)
 
@@ -111,12 +147,73 @@ if more than 10 match, the change is too broad — split it.
 | Django models, Ninja endpoints, Procrastinate tasks, IDOR prevention | [`apps/web/content/primitives/django-ninja-production.md`](./apps/web/content/primitives/django-ninja-production.md) |
 | Caching, rate limiting, Valkey, Next.js `"use cache"` | [`apps/web/content/primitives/valkey-caching-patterns.md`](./apps/web/content/primitives/valkey-caching-patterns.md) |
 
+### Infrastructure
+
+| Touching… | Load these primitives |
+|---|---|
+| Any Dockerfile / compose.yaml / compose overlay / env_file wiring | [`apps/web/content/primitives/docker-compose-discipline.md`](./apps/web/content/primitives/docker-compose-discipline.md) |
+
+### Meta
+
+| Touching… | Load these primitives |
+|---|---|
+| Picking which primitives apply to your change | [`apps/web/content/primitives/primitive-cross-reference-index.md`](./apps/web/content/primitives/primitive-cross-reference-index.md) — feature → primitives lookup, bounded by `feedback-bloat-control` |
+| Before ANY new feature: scan for recurring bug classes | [`docs/bug-patterns.md`](./docs/bug-patterns.md) — generalized catalog (the instance log is `docs/bugs.md`) |
+
+### Demo content primitives (registry-facing, NOT project cognition)
+
+The following `.md` files in `apps/web/content/primitives/` are **demo
+registry entries**, not cognition for Claude to load. They ship as
+example primitives in the public registry surface
+(`/primitive/[slug]`) and are reachable by users browsing PrimitiveHub.
+They are NOT to be confused with the cognition primitives above.
+
+| Demo primitive | Purpose | Loaded by Claude? |
+|---|---|---|
+| [`apps/web/content/primitives/elite-mobile-design.md`](./apps/web/content/primitives/elite-mobile-design.md) | Domain example: mobile design primitive in the registry | NO — registry content only |
+| [`apps/web/content/primitives/secure-code-review.md`](./apps/web/content/primitives/secure-code-review.md) | Domain example: secure-code-review primitive in the registry | NO — registry content only |
+
+When **adding a new** `.md` file under `apps/web/content/primitives/`:
+
+1. If it's project cognition (telling Claude how to think about our
+   stack), add it to one of the rows in **Frontend / Backend /
+   Infrastructure / Meta** above. This is non-negotiable — orphaned
+   cognition primitives never get loaded and become dead weight.
+2. If it's registry-facing demo content, add it to this **Demo content
+   primitives** table.
+3. Update `feedback-bloat-control` if the new entry shifts what should
+   typically be loaded.
+4. Update `primitive-cross-reference-index` to map the relevant
+   surfaces to the new primitive (if cognition).
+
 **These primitives reference each other.** Loading `frontend-design-elite`
 references the demo-data discipline from `feedback-no-fake-numbers`
 memory; loading `tailwind-v4-mastery` references the actual
 `apps/web/app/globals.css`; loading `nextjs-16-app-router` references the
 server-split pattern already shipped. Read them as a connected system, not
 as isolated docs.
+
+## Auto-memory rules (full enforcement map)
+
+These live in `/home/primitive/.claude/projects/-srv-primitivehub-app/memory/`
+and are surfaced via `MEMORY.md`. Every rule below is consulted at the
+moment the relevant condition triggers — nothing here is decorative.
+
+| Rule | Triggers when… | Load it for |
+|---|---|---|
+| [`feedback-pnpm`](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/feedback_pnpm.md) | Adding/removing JS dependencies, lockfile work | Package management |
+| [`feedback-containerize`](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/feedback_containerize.md) | Spinning up any new service or dev workflow | Service orchestration |
+| [`feedback-localhost-only`](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/feedback_localhost_only.md) | Any port binding in compose / app config | Pre-launch network surface |
+| [`feedback-no-fake-numbers`](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/feedback_no_fake_numbers.md) | Any numeric / metric in UI or copy | Paper-grade truth discipline |
+| [`feedback-load-primitives`](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/feedback_load_primitives.md) | Start of any non-trivial feature | Knowing what to read first |
+| [`feedback-audit-methodology`](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/feedback_audit_methodology.md) | Before marking a feature "done" | 5-layer audit gate |
+| [`feedback-self-audit`](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/feedback_self_audit.md) | Before reporting work complete | Universal + per-domain audit checklist |
+| [`feedback-bloat-control`](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/feedback_bloat_control.md) | Picking primitives for a feature | 5-10 primitive cap |
+| [`feedback-priority-stack`](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/feedback_priority_stack.md) | Two primitives give conflicting guidance | Conflict tiebreaker |
+| [`feedback-never-delete-held-code`](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/feedback_never_delete_held_code.md) | Encountering `HELD` markers in code | Don't delete staged work |
+| [`user-workflow`](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/user_workflow.md) | User pastes a prompt from another AI assistant | Evaluation-before-execution workflow |
+| [`project-primitivehub`](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/project_primitivehub.md) | Any strategic question | Project identity + phase plan |
+| [`project-launch-posture`](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/project_launch_posture.md) | Anything touching public-facing surface | Pre-launch posture |
 
 ## Hard rules
 
@@ -168,6 +265,39 @@ This wording is load-bearing for the paper's correctness.
 - **CI:** GitHub Actions → GHCR
 - **Deployment:** Hetzner CX22+ (8GB) + Docker Compose
 
+## Dev host minimum (load-bearing — read before diagnosing slow auth/build)
+
+The full stack (web dev + api + postgres + valkey + authentik-server +
+authentik-worker) needs **≥8 GB RAM + swap** to run together without
+memory pressure. Resident set sizes under typical load:
+
+- web (Next.js dev): ~1 GB     — heaviest; stop when not actively building UI
+- authentik-server: ~340 MB
+- authentik-worker: ~440 MB
+- api (Django + uv): ~150 MB
+- postgres: ~100 MB
+- valkey: ~10 MB
+- **Total + host overhead: ~2.5–3 GB resident, peaks higher under load.**
+
+If the dev host is below this:
+
+- **Symptom**: Authentik login spinner, slow `next dev` HMR, postgres
+  pg_repack stalls, OOM-killed `next-server` workers.
+- **First triage**: `free -h`. If `available` < 500 MB while load is
+  light, the host is too small — don't blame the application code.
+- **Fast mitigations** (in order of cost):
+  1. `docker compose stop web` while doing auth/admin work
+     (frees ~1 GB instantly).
+  2. Add swap: `sudo fallocate -l 4G /swapfile && sudo chmod 600
+     /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile`
+     (persist via `/etc/fstab`).
+  3. Upgrade the host to ≥8 GB before claiming the stack "works on this
+     box".
+
+Do NOT diagnose Authentik login issues, Next compilation hangs, or
+postgres connection storms without first confirming the host has
+headroom — half the apparent bugs are actually memory exhaustion.
+
 ## Build hygiene
 
 ### Frontend (`apps/web/`)
@@ -192,10 +322,21 @@ All Python commands run from `apps/api/` via `uv`.
 - `uv run mypy primitivehub_api apps` must pass — strict typing on (django-stubs plugin enabled).
 - `uv run python scripts/check_schema.py` must pass — schema invariant guard.
 - `uv run python manage.py check --fail-level WARNING` must pass — Django system check.
-- `uv run pytest` must pass — smoke + business tests.
+- `uv run pytest` must pass — smoke + business tests. **Tests run against
+  Postgres**, not sqlite. The `primitivehub_test` database is provisioned
+  by `infra/postgres/init-multi-db.sh` (one-time on fresh clusters; for
+  existing clusters, run the script's SQL manually). pytest-django uses
+  `--reuse-db` so the test database persists across runs and keeps the
+  `test_bypass_rls` role grants. Tests bypass RLS in their fixture
+  setup via `SET ROLE test_bypass_rls`; the dedicated
+  `test_rls_actually_isolates.py` resets back to `primitivehub_app`
+  (NOSUPERUSER, NOBYPASSRLS) to prove RLS enforces. **sqlite is
+  forbidden for tests** — it skips RLS migrations and would hide
+  tenant-isolation regressions.
 - Migrations: hand-edited migrations are committed; never use `--squash` on
-  released migrations. RLS migrations use `RunPython` with a no-op on
-  non-Postgres backends so sqlite-based tests still work.
+  released migrations. RLS migrations have an `if vendor != "postgresql"`
+  early-return for `dumpdata`/`inspectdb` against foreign backends only;
+  production and tests are Postgres.
 - Container builds: `docker compose build api` from the repo root.
 
 ## Workflow

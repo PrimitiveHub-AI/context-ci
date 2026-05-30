@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Github, Menu, X, Hexagon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
+import { OrgPicker } from "@/components/org-picker"
+import { UserMenu } from "@/components/user-menu"
+import { useWhoami } from "@/lib/api/queries"
 
 const navLinks = [
   { href: "/registry", label: "Registry" },
@@ -19,6 +22,8 @@ const navLinks = [
 export function Navbar() {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const { data: session } = useWhoami()
+  const authenticated = Boolean(session?.authenticated)
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background/70 backdrop-blur-2xl">
@@ -52,15 +57,25 @@ export function Navbar() {
           </nav>
         </div>
         <div className="hidden items-center gap-1.5 md:flex">
+          <OrgPicker />
           <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground" asChild>
             <a href="https://github.com" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
               <Github className="size-3.5" />
             </a>
           </Button>
           <div className="mx-1.5 h-4 w-px bg-border" />
-          <Button variant="ghost" size="sm" className="text-muted-foreground text-[13px] h-7">
-            Sign in
-          </Button>
+          {authenticated ? (
+            <UserMenu />
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground text-[13px] h-7"
+              asChild
+            >
+              <a href="/auth/login">Sign in</a>
+            </Button>
+          )}
           <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 text-[13px] h-7" asChild>
             <Link href="/registry">Explore Primitives</Link>
           </Button>

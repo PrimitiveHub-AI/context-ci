@@ -9,6 +9,7 @@ import { ScoreBadge } from "@/components/primitives/score-badge"
 import { CompatibilityTags } from "@/components/primitives/compatibility-tags"
 import { PipelineStage } from "@/components/primitives/pipeline-stage"
 import { DemoDataBadge } from "@/components/primitives/demo-data-badge"
+import { usePrimitive } from "@/lib/api/queries"
 import type { Primitive, PipelineStage as PipelineStageType } from "@/lib/types"
 import {
   Copy,
@@ -39,7 +40,24 @@ interface PrimitiveDetailViewProps {
   markdownContent?: string | null
 }
 
-export function PrimitiveDetailView({ primitive, pipelineStages, markdownContent }: PrimitiveDetailViewProps) {
+export function PrimitiveDetailView({
+  primitive: initialPrimitive,
+  pipelineStages,
+  markdownContent,
+}: PrimitiveDetailViewProps) {
+  // Hydrate from the API after mount. Until the query resolves (or if it
+  // errors), the build-time prop is the source of truth — keeps SSG + SEO
+  // intact and the page renders without flicker. If the API returns fresh
+  // data the live value replaces the prop transparently.
+  const liveQuery = usePrimitive(initialPrimitive.slug)
+  const primitive = liveQuery.data ?? initialPrimitive
+  const liveDataState: "loading" | "live" | "stale" =
+    liveQuery.isLoading
+      ? "loading"
+      : liveQuery.isError
+        ? "stale"
+        : "live"
+
   const [activeTab, setActiveTab] = useState<TabName>("Overview")
   const [copied, setCopied] = useState(false)
   const [copiedMd, setCopiedMd] = useState(false)
@@ -76,6 +94,18 @@ export function PrimitiveDetailView({ primitive, pipelineStages, markdownContent
                   {primitive.fileName}
                 </h1>
                 <TrustBadge status={primitive.status} />
+                {/* Live-data signal — a quiet 1ch indicator. Hidden when
+                    the API is reachable (live === default expectation);
+                    visible only when degraded so it reads as a problem
+                    badge, not chrome. */}
+                {liveDataState === "stale" && (
+                  <span
+                    className="font-mono text-[10px] text-amber/80"
+                    title="API unreachable — showing build-time snapshot"
+                  >
+                    snapshot
+                  </span>
+                )}
               </div>
               <p className="text-sm text-muted-foreground max-w-2xl leading-relaxed">{primitive.description}</p>
 

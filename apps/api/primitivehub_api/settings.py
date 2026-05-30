@@ -26,7 +26,7 @@ if env_file.is_file():
 
 SECRET_KEY = env(
     "DJANGO_SECRET_KEY",
-    default="dev-secret-not-for-production-replace-via-env",  # noqa: S105
+    default="dev-secret-not-for-production-replace-via-env",
 )
 DEBUG = env("DEBUG")
 ALLOWED_HOSTS = env("ALLOWED_HOSTS")
@@ -38,14 +38,21 @@ INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.messages",
     "django.contrib.sessions",
+    # Third-party
+    "corsheaders",
     # Project apps
-    "apps.accounts",
-    "apps.orgs",
-    "apps.registry",
+    "accounts",
+    "orgs",
+    "registry",
+    "storage",
+    "validation",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    # CORS must precede CommonMiddleware so it can answer OPTIONS preflight
+    # before any other middleware short-circuits with a redirect.
+    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -53,7 +60,10 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     # PrimitiveHub OIDC: extracts + validates Bearer tokens, attaches request.oidc_subject
-    "apps.accounts.middleware.OIDCAuthenticationMiddleware",
+    "accounts.middleware.OIDCAuthenticationMiddleware",
+    # Tenant context: sets `primitivehub.current_organization` for RLS.
+    # MUST come after OIDC so request.user is populated.
+    "accounts.tenant_middleware.TenantContextMiddleware",
 ]
 
 ROOT_URLCONF = "primitivehub_api.urls"
@@ -95,6 +105,12 @@ DATABASES["default"]["ENGINE"] = "django.db.backends.postgresql"
 DATABASES["default"].setdefault("CONN_MAX_AGE", 60)
 DATABASES["default"].setdefault("OPTIONS", {})
 DATABASES["default"]["OPTIONS"].setdefault("connect_timeout", 5)
+# Every request runs inside a Postgres transaction. Required so the
+# tenant-context middleware can use `SET LOCAL primitivehub.current_organization`
+# — without an open transaction, SET LOCAL is silently a no-op and RLS
+# would never see the org context. The cost (transaction wrap per request)
+# is acceptable for a multi-tenant API where tenant isolation is load-bearing.
+DATABASES["default"]["ATOMIC_REQUESTS"] = True
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -151,6 +167,30 @@ S3_SECRET_ACCESS_KEY = env("S3_SECRET_ACCESS_KEY", default="")
 S3_BUCKET = env("S3_BUCKET", default="primitivehub-primitives")
 S3_REGION = env("S3_REGION", default="auto")  # "auto" works with R2
 
+# Per-request upload guard (size limit for primitive content). Defends
+# against DoS via massive uploads. 1 MiB is generous for a markdown
+# primitive (10 KiB typical, 100 KiB extreme); raise only if a real
+# primitive needs it.
+PRIMITIVE_MAX_BYTES = env("PRIMITIVE_MAX_BYTES", default=1024 * 1024, cast=int)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CORS — the web app (localhost:3000 in dev) calls the api (localhost:8000).
+# In prod they share an origin via reverse proxy; CORS_ALLOWED_ORIGINS stays
+# empty in that case. Pre-launch posture: explicit allow-list, no wildcards.
+# ─────────────────────────────────────────────────────────────────────────────
+CORS_ALLOWED_ORIGINS = env(
+    "CORS_ALLOWED_ORIGINS",
+    cast=list,
+    default=["http://localhost:3000", "http://127.0.0.1:3000"],
+)
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "authorization",
+    "content-type",
+    "x-requested-with",
+]
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Internationalization
 # ─────────────────────────────────────────────────────────────────────────────
@@ -179,7 +219,7 @@ LOGGING = {
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
-            "formatter": "json" if not DEBUG else "json",
+            "formatter": "json",
         },
     },
     "root": {
