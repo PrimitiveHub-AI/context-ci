@@ -1,12 +1,12 @@
 ---
 spec_version: "0.1"
 name: tailwind-v4-mastery
-version: 0.1.0
+version: 0.2.0
 type: design
 domain: frontend
-author: PrimitiveHub Labs (synthesized from public skills + maintainer knowledge)
+author: PrimitiveHub Labs (synthesized from public skills + maintainer knowledge; v0.2.0 enrichment adds @theme inline mechanics, @plugin/@variant, double-wrap gotcha)
 license: CC-BY-4.0
-tokens: 3200
+tokens: 3900
 token_budget: 5000
 risk_level: low
 content_digest: sha256:pending-cci-v0.1-attestation
@@ -55,9 +55,34 @@ should be loaded before any styling work.
 
 - **CSS is the config.** v4 has no `tailwind.config.js` for theme tokens.
   Tokens are declared in `@theme inline { … }` blocks inside the CSS file
-  (typically `app/globals.css`). Concrete example: PrimitiveHub's
-  `app/globals.css` declares `--color-primary`, `--font-sans`, etc. inside
-  `@theme inline`. Do not propose a `tailwind.config.{js,ts}` file.
+  (typically `apps/web/app/globals.css`). Concrete example: PrimitiveHub's
+  `apps/web/app/globals.css` declares `--color-primary`, `--font-sans`,
+  etc. inside `@theme inline`. Do not propose a `tailwind.config.{js,ts}`
+  file.
+
+- **`@theme inline` ≠ `@theme`.** The `inline` keyword is load-bearing.
+  `@theme { --color-primary: oklch(…); }` declares the token AND emits
+  the literal value into the generated CSS — every site that uses
+  `bg-primary` ships with the OKLCH string baked in. `@theme inline`
+  declares the token but keeps it as a CSS variable reference, so a
+  later `:root.dark { --color-primary: …; }` actually overrides it at
+  runtime. **You almost always want `@theme inline`** because that's
+  what makes dark-mode and per-section overrides work. Static-only
+  tokens (spacing, radius, font-family names) can use bare `@theme`,
+  but mixing both in one file is a footgun — pick one mode per token.
+
+- **`@plugin` is the v3-config import path.** Tailwind plugins
+  (`@tailwindcss/typography`, custom plugins) load via
+  `@plugin "@tailwindcss/typography";` at the top of the CSS file —
+  there is no `plugins: []` array anywhere. If you need a plugin's
+  utility (e.g., `prose`), `@plugin` is the only way to register it.
+
+- **`@custom-variant` and `@variant` for selector variants.**
+  `@custom-variant <name> (<selector>)` defines a new variant prefix
+  (we use `@custom-variant dark (&:is(.dark *))`). `@variant <name>
+  { … }` applies a previously-defined variant inside arbitrary CSS —
+  useful for global rules in `@layer base` that need to behave
+  differently under `dark:`.
 
 - **OKLCH for color tokens, not HSL or hex.** v4's defaults and our brand
   palette use OKLCH (`oklch(L C H)` — perceptual lightness, chroma, hue).
@@ -91,8 +116,20 @@ should be loaded before any styling work.
 ## Decision Rules
 
 - **IF the user wants a new color token THEN** add it to `@theme inline`
-  in `app/globals.css` as `--color-<name>: oklch(...)`. Do NOT add to a
-  config file (there isn't one).
+  in `apps/web/app/globals.css` as `--color-<name>: oklch(...)`. Do NOT
+  add to a config file (there isn't one).
+- **IF the token must be runtime-overridable (dark/light/per-section)
+  THEN** it must live in `@theme inline`. If it's a static atom that
+  never changes (radius constants, fixed spacing), bare `@theme` is
+  fine — but never mix the two for the same token across files.
+- **IF a Tailwind plugin is needed (`@tailwindcss/typography`,
+  `@tailwindcss/forms`) THEN** register it with `@plugin "<name>";` at
+  the top of `apps/web/app/globals.css`. There is no `plugins: []`
+  array.
+- **IF a custom variant is needed (e.g., a `data-loading:` prefix) THEN**
+  declare it with `@custom-variant data-loading
+  (&[data-loading="true"]);` once, then use `data-loading:opacity-50`
+  in markup.
 - **IF the user wants to use a Next.js font (Geist, etc.) THEN** wire
   CSS variable in `app/layout.tsx`
   (`variable: "--font-geist-sans"`), reference it in `@theme inline`
@@ -127,6 +164,19 @@ should be loaded before any styling work.
 - **Inline hardcoded font families.** All font tokens flow through
   `@theme inline` → CSS variable → Tailwind class. No raw font-family
   strings in components.
+- **Double-wrapping a CSS variable inside `@theme inline`.** Writing
+  `--color-primary: oklch(var(--brand-primary));` while
+  `--brand-primary` is itself `oklch(0.78 0.14 195)` produces
+  `oklch(oklch(…))` at runtime — invalid CSS that silently falls back
+  to black. Either store the OKLCH literal directly, or store the
+  triplet (`--brand-primary-lch: 0.78 0.14 195;`) and wrap once
+  (`--color-primary: oklch(var(--brand-primary-lch));`).
+- **Putting `:root { … }` overrides inside `@layer base` together with
+  `@theme inline`.** The two have different cascade behavior — `@theme`
+  declarations end up at the root with token priority, while `@layer
+  base :root` declarations land in the base layer. If both define the
+  same variable, the resolved value depends on declaration order in
+  weird ways. Pick one place per variable.
 
 ## Review Checklist
 
@@ -145,7 +195,7 @@ should be loaded before any styling work.
 
 When this primitive is loaded, the agent should:
 
-1. Before proposing a styling change, locate `app/globals.css` and read
+1. Before proposing a styling change, locate `apps/web/app/globals.css` and read
    the existing `@theme inline` block to learn the current token
    inventory.
 2. Match new tokens to the existing OKLCH palette (similar lightness +
@@ -161,7 +211,7 @@ When this primitive is loaded, the agent should:
 
 ## Expected Output Format
 
-Diffs to `app/globals.css` should add tokens at the bottom of the
+Diffs to `apps/web/app/globals.css` should add tokens at the bottom of the
 relevant `@theme inline` block, grouped logically (colors → fonts →
 radii → spacing extensions). Each new token gets a one-line comment if
 its purpose isn't obvious from the name. Component diffs reference the
@@ -173,7 +223,7 @@ inline CSS.
 **Adding a new amber-warning shade tuned to our palette:**
 
 ```css
-/* app/globals.css — inside @theme inline */
+/* apps/web/app/globals.css — inside @theme inline */
 --color-amber-soft: oklch(0.78 0.11 85 / 0.55);
 ```
 
@@ -193,4 +243,4 @@ inline CSS.
 
 - Tailwind v4 documentation: https://tailwindcss.com/docs/v4-beta
 - OKLCH color picker: https://oklch.com/
-- PrimitiveHub's live theme: `app/globals.css` in this repo
+- PrimitiveHub's live theme: `apps/web/app/globals.css` in this repo

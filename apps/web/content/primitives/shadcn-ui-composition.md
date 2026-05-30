@@ -1,12 +1,12 @@
 ---
 spec_version: "0.1"
 name: shadcn-ui-composition
-version: 0.1.0
+version: 0.2.0
 type: design
 domain: frontend
-author: PrimitiveHub Labs (synthesized from shadcn/ui upstream + google-labs-code/stitch-skills shadcn-ui + maintainer knowledge)
+author: PrimitiveHub Labs (synthesized from shadcn/ui upstream + google-labs-code/stitch-skills shadcn-ui + maintainer knowledge; v0.2.0 enrichment adds Radix compound pattern, asChild composition, forceMount with AnimatePresence, data-[state=*] styling, portal gotchas)
 license: CC-BY-4.0
-tokens: 3400
+tokens: 4200
 token_budget: 5000
 risk_level: low
 content_digest: sha256:pending-cci-v0.1-attestation
@@ -89,6 +89,41 @@ of the app composes those primitives into feature components in
   `app/<route>/_components/` if a route owns them. PrimitiveHub uses
   the first two; we haven't needed route-scope yet.
 
+- **Radix compound components: `Root → Trigger → Portal → Content`
+  is the shape.** Every overlay primitive (Dialog, DropdownMenu,
+  Popover, Tooltip, HoverCard) decomposes into the same parts:
+  `Root` (state owner, controlled/uncontrolled), `Trigger` (button
+  that toggles `data-state`), `Portal` (renders into `document.body`,
+  escaping containing blocks), `Content` (the visible surface), plus
+  primitive-specific subparts (`Title`, `Description`, `Item`, etc.).
+  Compose all of them at the call site — the parts are kept separate
+  so you can swap in custom triggers, portal containers, and content
+  shells without forking.
+
+- **`asChild` is the composition primitive.** Setting `<Dialog.Trigger
+  asChild><Button>Open</Button></Dialog.Trigger>` merges the trigger's
+  behavior (ref, event handlers, ARIA, `data-state`) onto the
+  immediate child instead of rendering a wrapper element. Always use
+  `asChild` when you'd otherwise want to control the rendered tag.
+  But the child must be a single React element that accepts a ref —
+  passing a fragment or multiple children silently breaks.
+
+- **State drives styling via `data-state` attributes.** Radix writes
+  `data-state="open" | "closed" | "checked" | "indeterminate"` onto
+  triggers/content/items. Style with Tailwind v4's data-attribute
+  variants: `data-[state=open]:bg-accent`,
+  `data-[state=open]:animate-in`,
+  `data-[state=closed]:animate-out`. This is how shadcn's
+  ship-it animations work — no JS animation library required for the
+  default open/close.
+
+- **Animating with `AnimatePresence` requires `forceMount`.** Radix
+  unmounts `Portal`/`Content` when state goes closed, which removes
+  the node before AnimatePresence can run its exit animation. Pass
+  `forceMount` to both `Portal` and `Content` and gate visibility
+  with the controlled `open` state in the React tree — AnimatePresence
+  then sees the unmount on its own terms.
+
 ## Decision Rules
 
 - **IF adding a new primitive (Button, Card variants, etc.) THEN** use
@@ -114,6 +149,21 @@ of the app composes those primitives into feature components in
 - **IF customizing a primitive's behavior would benefit the whole app
   THEN** edit `components/ui/<primitive>.tsx` directly. Document the
   change in a comment.
+- **IF a Radix Trigger needs to render as your own Button (or any
+  custom element) THEN** use `asChild` and ensure the child is a
+  single React element that forwards refs.
+- **IF styling open/closed/checked states THEN** use Tailwind v4
+  data-attribute variants (`data-[state=open]:…`) against the
+  Radix-written `data-state`. Do not branch on a separate `isOpen`
+  prop you computed yourself.
+- **IF you need to animate the enter/exit of a Radix overlay with
+  Framer Motion's AnimatePresence THEN** pass `forceMount` to BOTH
+  `Portal` and `Content`, control visibility via the `open` prop on
+  `Root`, and conditionally render the `Content`'s motion child inside
+  AnimatePresence.
+- **IF a Radix `Content` element must stay inside a specific layout
+  region (not the body) THEN** pass `container={ref.current}` to
+  `Portal`. This is rare — most overlays should portal to body.
 
 ## Anti-Patterns
 
@@ -131,6 +181,31 @@ of the app composes those primitives into feature components in
   package. shadcn isn't an npm dep; it's a code generator.
 - **Wrapping primitives just to rename props.** If your wrapper only
   renames `variant` to `kind`, drop the wrapper.
+- **Double-wrapping with `asChild` and an extra `<div>` /
+  `motion.div`.** `asChild` is meant to merge onto a single child. If
+  you wrap that child in `<motion.div asChild>`, ref forwarding breaks
+  and ARIA attributes land on the wrong element. Use the Framer
+  Motion component as the direct child of the Radix part, no
+  intermediate `<div>`.
+- **Manually focusing the trigger on close.** Radix already returns
+  focus to the trigger when a Dialog/Popover closes. Re-focusing
+  manually in an `onOpenChange` handler creates double-focus and
+  steals focus from the user's actual next action (often a Tab key
+  follow-up).
+- **Forgetting CSS containing-block effects when portaling.** Radix
+  `Portal` renders to `document.body` precisely to escape
+  `transform`/`filter`/`contain` containing blocks on ancestors —
+  those break `position: fixed`. If you override `container={...}` to
+  a div inside a transformed ancestor, fixed-positioned floating
+  elements (toasts, tooltips) misalign. Default to the body portal.
+- **z-index races between portaled surfaces.** Multiple portaled
+  layers (Dialog + Toaster + DropdownMenu) collide if each picks its
+  own z-index ad-hoc. Establish a small z-scale in the theme
+  (`--z-overlay: 50`, `--z-toast: 100`) and reference it across
+  primitives.
+- **Animating without `forceMount` and wondering why exit transitions
+  don't play.** Radix unmounted the node before the animation could
+  run. `forceMount` is the fix.
 
 ## Review Checklist
 
