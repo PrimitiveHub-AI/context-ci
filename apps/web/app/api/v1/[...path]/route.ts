@@ -1,5 +1,5 @@
 /**
- * Same-origin Django proxy.
+ * Same-origin Django proxy with transparent token refresh.
  *
  * Why a proxy?
  *   The access token lives in an httpOnly cookie (XSS-safe). Client JS
@@ -7,6 +7,18 @@
  *   from the browser. Instead, the browser hits Next.js (same origin →
  *   cookies sent automatically), and Next reads the cookie, attaches
  *   the Bearer header, and forwards to the Django API container.
+ *
+ * Refresh flow
+ *   1. Forward request with current access_token.
+ *   2. If Django returns 401:
+ *      a. Read refresh_token cookie. If absent → 401 bubbles unchanged.
+ *      b. POST refresh_token → Authentik /token. If that fails → 401
+ *         bubbles, client redirects to /auth/login.
+ *      c. If refresh succeeds: forward the original request ONCE more
+ *         with the new access_token. Whatever Django returns this time
+ *         is what the client sees.
+ *   Set-Cookie on the final response updates access_token (and
+ *   refresh_token if Authentik rotated it).
  *
  * Transparency
  *   Status code, response body, and most response headers are passed
@@ -17,7 +29,12 @@
 
 import { NextRequest, NextResponse } from "next/server"
 
-import { COOKIES } from "@/lib/auth/cookies"
+import {
+  ACCESS_TOKEN_OPTIONS,
+  COOKIES,
+  REFRESH_TOKEN_OPTIONS,
+} from "@/lib/auth/cookies"
+import { refreshAccessToken } from "@/lib/auth/refresh"
 
 export const dynamic = "force-dynamic"
 
@@ -47,6 +64,30 @@ const STRIPPED_RESPONSE_HEADERS = new Set([
   "keep-alive",
 ])
 
+interface ProxyAttemptResult {
+  response: Response
+  bodyBuffer: ArrayBuffer | null
+}
+
+/**
+ * Issue the upstream request once. `bodyBuffer` is captured + returned so
+ * we can replay the same body on a retry (Request body streams aren't
+ * re-readable after the first consume).
+ */
+async function attempt(
+  url: URL,
+  method: string,
+  headers: Headers,
+  bodyBuffer: ArrayBuffer | null,
+): Promise<ProxyAttemptResult> {
+  const init: RequestInit = { method, headers, redirect: "manual" }
+  if (bodyBuffer && method !== "GET" && method !== "HEAD") {
+    init.body = bodyBuffer
+  }
+  const response = await fetch(url, init)
+  return { response, bodyBuffer }
+}
+
 async function proxy(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> },
@@ -57,39 +98,72 @@ async function proxy(
     url.searchParams.set(key, value)
   }
 
-  const headers = new Headers()
+  const baseHeaders = new Headers()
   for (const [key, value] of request.headers.entries()) {
-    if (!HOP_BY_HOP_HEADERS.has(key.toLowerCase())) headers.set(key, value)
+    if (!HOP_BY_HOP_HEADERS.has(key.toLowerCase())) baseHeaders.set(key, value)
   }
+
+  // Capture the body once — Next.js request bodies are streams; if we
+  // need to retry after a refresh, we replay this buffer instead of
+  // re-reading the stream.
+  const bodyBuffer =
+    request.method === "GET" || request.method === "HEAD"
+      ? null
+      : await request.arrayBuffer()
 
   const accessToken = request.cookies.get(COOKIES.accessToken)?.value
+  const refreshToken = request.cookies.get(COOKIES.refreshToken)?.value
+
+  const headers = new Headers(baseHeaders)
   if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`)
-  // X-Organization-Slug is sent by the client as a regular header and is
-  // already preserved by the loop above.
 
-  const init: RequestInit = {
-    method: request.method,
-    headers,
-    redirect: "manual",
-  }
-  if (request.method !== "GET" && request.method !== "HEAD") {
-    init.body = await request.arrayBuffer()
-  }
+  let upstreamResult = await attempt(url, request.method, headers, bodyBuffer)
+  let refreshed: Awaited<ReturnType<typeof refreshAccessToken>> = null
 
-  const upstream = await fetch(url, init)
+  // Try ONCE more after a successful refresh. The retry replaces the
+  // first response — its status + body become the user-visible result.
+  if (upstreamResult.response.status === 401 && refreshToken) {
+    refreshed = await refreshAccessToken(refreshToken)
+    if (refreshed) {
+      const retryHeaders = new Headers(baseHeaders)
+      retryHeaders.set("Authorization", `Bearer ${refreshed.accessToken}`)
+      upstreamResult = await attempt(
+        url,
+        request.method,
+        retryHeaders,
+        upstreamResult.bodyBuffer,
+      )
+    }
+  }
 
   const responseHeaders = new Headers()
-  for (const [key, value] of upstream.headers.entries()) {
+  for (const [key, value] of upstreamResult.response.headers.entries()) {
     if (!STRIPPED_RESPONSE_HEADERS.has(key.toLowerCase())) {
       responseHeaders.set(key, value)
     }
   }
 
-  return new NextResponse(upstream.body, {
-    status: upstream.status,
-    statusText: upstream.statusText,
+  const out = new NextResponse(upstreamResult.response.body, {
+    status: upstreamResult.response.status,
+    statusText: upstreamResult.response.statusText,
     headers: responseHeaders,
   })
+
+  if (refreshed) {
+    out.cookies.set(COOKIES.accessToken, refreshed.accessToken, {
+      ...ACCESS_TOKEN_OPTIONS,
+      maxAge: refreshed.expiresIn,
+    })
+    if (refreshed.refreshToken) {
+      out.cookies.set(
+        COOKIES.refreshToken,
+        refreshed.refreshToken,
+        REFRESH_TOKEN_OPTIONS,
+      )
+    }
+  }
+
+  return out
 }
 
 export const GET = proxy

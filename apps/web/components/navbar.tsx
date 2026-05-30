@@ -3,10 +3,11 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Github, Menu, X, Hexagon, LogOut } from "lucide-react"
+import { Github, Menu, X, Hexagon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
 import { OrgPicker } from "@/components/org-picker"
+import { UserMenu } from "@/components/user-menu"
 import { useWhoami } from "@/lib/api/queries"
 
 const navLinks = [
@@ -23,7 +24,6 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const { data: session } = useWhoami()
   const authenticated = Boolean(session?.authenticated)
-  const displayName = session?.user?.displayName
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background/70 backdrop-blur-2xl">
@@ -65,24 +65,7 @@ export function Navbar() {
           </Button>
           <div className="mx-1.5 h-4 w-px bg-border" />
           {authenticated ? (
-            <>
-              {displayName && (
-                <span className="hidden lg:inline text-[12px] text-muted-foreground font-mono">
-                  {displayName}
-                </span>
-              )}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-muted-foreground hover:text-foreground text-[13px] h-7 gap-1.5"
-                asChild
-              >
-                <a href="/auth/logout">
-                  <LogOut className="size-3" />
-                  Sign out
-                </a>
-              </Button>
-            </>
+            <UserMenu />
           ) : (
             <Button
               variant="ghost"

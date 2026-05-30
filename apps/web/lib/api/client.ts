@@ -102,6 +102,14 @@ async function apiFetch<T>(
     } catch {
       // body wasn't JSON; keep the status line
     }
+    // 401 = session is gone (refresh in the proxy already failed if it
+    // had a refresh_token to try). Bounce to /auth/login carrying the
+    // current path as a return target. Only in a browser context — SSR
+    // throws ApiError so server components can handle it explicitly.
+    if (response.status === 401 && typeof window !== "undefined") {
+      const current = window.location.pathname + window.location.search
+      window.location.href = `/auth/login?return=${encodeURIComponent(current)}`
+    }
     throw new ApiError(response.status, url.toString(), detail)
   }
 
