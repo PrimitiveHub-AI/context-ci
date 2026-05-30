@@ -46,6 +46,7 @@ from typing import TYPE_CHECKING, Protocol
 
 from django.conf import settings
 
+from ._bundle import bundle_to_signing_result
 from .exceptions import (
     BackendConfigurationError,
     SigningFailedError,
@@ -54,8 +55,69 @@ from .exceptions import (
 from .types import SigningResult
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from sigstore.models import ClientTrustConfig
     from sigstore.sign import SigningContext
+
+
+def _sign_via_sigstore(
+    *,
+    signing_context: SigningContext,
+    statement_bytes: bytes,
+    identity_token: str,
+    backend_name: str,
+    verify_url_builder: Callable[[int], str],
+) -> SigningResult:
+    """Shared signing path for the three real backends.
+
+    Wraps three failure modes uniformly:
+      * IdentityToken construction fails (token malformed / expired)
+      * Signer raises (Fulcio rejects, Rekor unreachable, network)
+      * Bundle extraction fails (sigstore-python returns a bundle that
+        doesn't match the v0.3 schema — would be a sigstore-python bug)
+
+    All three become `SigningFailedError`; the original exception is
+    preserved via `__cause__` so Procrastinate's retry logic (PR #4)
+    can inspect it to decide whether to retry or give up.
+    """
+    from sigstore.oidc import IdentityToken
+
+    try:
+        token = IdentityToken(identity_token)
+    except Exception as exc:
+        msg = f"OIDC identity token rejected by sigstore: {exc}"
+        raise SigningFailedError(msg) from exc
+
+    try:
+        with signing_context.signer(token) as signer:
+            bundle = signer.sign_artifact(statement_bytes)
+    except Exception as exc:
+        msg = f"sigstore sign_artifact failed: {exc}"
+        raise SigningFailedError(msg) from exc
+
+    # Pull the log_index out of the bundle FIRST so we can build the
+    # verify_url before constructing the SigningResult.
+    # bundle.log_entry → TransparencyLogEntry which has _inner.log_index.
+    # We use the bundle JSON path for stability.
+    import json as _json
+
+    try:
+        bundle_dict = _json.loads(bundle.to_json())
+        first_entry = bundle_dict["verificationMaterial"]["tlogEntries"][0]
+        log_index = int(first_entry["logIndex"])
+    except (KeyError, IndexError, TypeError, ValueError) as exc:
+        msg = f"could not read log_index from bundle for verify_url: {exc}"
+        raise SigningFailedError(msg) from exc
+
+    verify_url = verify_url_builder(log_index)
+
+    return bundle_to_signing_result(
+        bundle=bundle,
+        backend_name=backend_name,
+        statement_bytes=statement_bytes,
+        verify_url=verify_url,
+    )
 
 
 # Backend names accepted in SIGSTORE_BACKEND env. Public is "production"
@@ -121,13 +183,13 @@ class PublicSigstoreBackend:
         return SigningContext.from_trust_config(self._trust_config())
 
     def sign(self, statement_bytes: bytes, *, identity_token: str) -> SigningResult:
-        msg = (
-            "PublicSigstoreBackend.sign() is wired but the call into "
-            "sigstore-python ships in feat/api-sigstore-keyless-signing "
-            "(Phase 4 PR #3). The abstraction landed in isolation so "
-            "it could be reviewed on its own merits."
+        return _sign_via_sigstore(
+            signing_context=self._signing_context(),
+            statement_bytes=statement_bytes,
+            identity_token=identity_token,
+            backend_name=self.name,
+            verify_url_builder=self.verify_url_for_rekor_entry,
         )
-        raise SigningFailedError(msg)
 
     def verify_url_for_rekor_entry(self, log_index: int) -> str:
         return f"{self._verify_search_base}/?logIndex={log_index}"
@@ -152,8 +214,13 @@ class SigstageBackend:
         return SigningContext.from_trust_config(self._trust_config())
 
     def sign(self, statement_bytes: bytes, *, identity_token: str) -> SigningResult:
-        msg = "SigstageBackend.sign() ships in Phase 4 PR #3 — see PublicSigstoreBackend."
-        raise SigningFailedError(msg)
+        return _sign_via_sigstore(
+            signing_context=self._signing_context(),
+            statement_bytes=statement_bytes,
+            identity_token=identity_token,
+            backend_name=self.name,
+            verify_url_builder=self.verify_url_for_rekor_entry,
+        )
 
     def verify_url_for_rekor_entry(self, log_index: int) -> str:
         return f"{self._verify_search_base}/?logIndex={log_index}"
@@ -202,8 +269,13 @@ class SelfHostedSigstoreBackend:
         return SigningContext.from_trust_config(self._trust_config())
 
     def sign(self, statement_bytes: bytes, *, identity_token: str) -> SigningResult:
-        msg = "SelfHostedSigstoreBackend.sign() ships in Phase 4 PR #3."
-        raise SigningFailedError(msg)
+        return _sign_via_sigstore(
+            signing_context=self._signing_context(),
+            statement_bytes=statement_bytes,
+            identity_token=identity_token,
+            backend_name=self.name,
+            verify_url_builder=self.verify_url_for_rekor_entry,
+        )
 
     def verify_url_for_rekor_entry(self, log_index: int) -> str:
         return self._verify_url_template.format(log_index=log_index)

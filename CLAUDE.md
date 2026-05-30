@@ -330,8 +330,10 @@ All Python commands run from `apps/api/` via `uv`.
 - `uv run mypy primitivehub_api accounts orgs registry storage validation jobs` must pass — strict typing on (django-stubs plugin enabled). The flat-layout means there's no `apps/` subdir to globally target; list the Django apps explicitly.
 - `uv run python scripts/check_schema.py` must pass — schema invariant guard.
 - `uv run python manage.py check --fail-level WARNING` must pass — Django system check.
-- `uv run pytest` must pass — smoke + business tests. **Tests run against
-  Postgres**, not sqlite. The `primitivehub_test` database is provisioned
+- `uv run pytest` must pass — smoke + business tests. Default run
+  skips `@pytest.mark.integration` (network-dependent tests against
+  sigstage Fulcio + Rekor; opt-in with `uv run pytest -m integration`
+  + `SIGSTAGE_OIDC_TOKEN` env). **Tests run against Postgres**, not sqlite. The `primitivehub_test` database is provisioned
   by `infra/postgres/init-multi-db.sh` (one-time on fresh clusters; for
   existing clusters, run the script's SQL manually). pytest-django uses
   `--reuse-db` so the test database persists across runs and keeps the

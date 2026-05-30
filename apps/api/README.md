@@ -71,10 +71,11 @@ uv run python manage.py makemigrations         # generate new migrations
 uv run python manage.py createsuperuser        # admin user (asks for OIDC subject)
 uv run python manage.py shell_plus             # if django-extensions is installed
 uv run python scripts/check_schema.py          # schema invariant guard
-uv run pytest                                  # tests
+uv run pytest                                  # tests (skips @pytest.mark.integration)
+uv run pytest -m integration                   # opt-in integration tests
 uv run ruff check .                            # lint
 uv run ruff format .                           # auto-format
-uv run mypy primitivehub_api apps              # type check
+uv run mypy primitivehub_api accounts orgs registry storage validation signing jobs
 ```
 
 ## Background jobs (Procrastinate)
@@ -106,6 +107,30 @@ denies every row and the task silently produces empty results. See
 `docker compose up -d --renew-anon-volumes <service>` the first time —
 otherwise the new service starts with a stale `/opt/venv`. See
 `docs/bugs.md` #23.
+
+## Signing-integration tests (sigstage)
+
+`tests/test_signing_integration.py` is marked `pytest.mark.integration`
+and skipped by default. It hits real sigstage Fulcio + Rekor to prove
+our Bundle → SigningResult extraction matches what sigstore-python
+actually returns. A failure means we'd silently produce broken
+Attestations in production.
+
+To run it, you need a sigstage-allowlisted OIDC ID token:
+
+```bash
+# Option A: GitHub Actions ambient credential (in CI workflow)
+#   (handled by sigstore-python's detect_credential — no manual step)
+
+# Option B: One-off operator verification (local)
+export SIGSTAGE_OIDC_TOKEN=<a token from any sigstage-allowlisted issuer>
+docker compose exec -T api uv run pytest -m integration -v
+```
+
+**Why not our local Authentik?** sigstage's Fulcio maintains an
+allowlist of OIDC issuers; our `http://authentik-server:9000`
+isn't on it (and HTTPS-public reachability would be required
+regardless). See `docs/bugs.md` #24 + ADR-0011.
 
 ## Cryptographic posture
 
