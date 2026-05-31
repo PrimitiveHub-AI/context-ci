@@ -89,8 +89,10 @@ safety claim.
   families (override / role-hijack / hidden-instructions /
   exfil-hint), 24 unit tests, sign-task wiring (detectors run before
   signing; verdicts merged into attestation predicate).
-- **PR 5.2** `feat/api-t5-unsafe-shell-install` — most-cited threat in
-  the supply-chain narrative; killer demo content (Shai-Hulud vector).
+- **PR 5.2** ✓ `feat/api-t5-unsafe-shell-install` — Shai-Hulud
+  detector. 4 pattern families: shell-pipe-from-network (`curl | sh`
+  + 4 variants), npx-arbitrary-install, pip-arbitrary-install,
+  install-instruction-to-agent. 21 unit tests. Registry now has T1 + T5.
 - **PR 5.3** `feat/api-t2-unicode-steganography` — zero-width chars,
   RTL overrides, lookalike Cyrillic. The "didn't think of that"
   factor for the paper.
