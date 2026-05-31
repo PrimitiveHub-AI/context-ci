@@ -50,6 +50,7 @@ for the full picture. **Read both before responding to a strategic question.**
 │       ├── validation/    ReviewItem + PipelineStage (Context CI surface)
 │       ├── jobs/          Procrastinate tasks (Phase 4 PR #1 — substrate)
 │       ├── signing/       Sigstore backend abstraction (Phase 4 PR #2 — ADR-0011)
+│       ├── scanners/      Context CI detectors — T1..T10 (Phase 5 — ADR-0012)
 │       ├── tests/         pytest suite (Postgres-only, --reuse-db)
 │       ├── scripts/check_schema.py  schema invariant guard
 │       └── Dockerfile     multi-stage (uv → slim runtime)

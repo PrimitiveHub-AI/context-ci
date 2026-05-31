@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "storage",
     "validation",
     "signing",
+    "scanners",
     "jobs",
 ]
 
