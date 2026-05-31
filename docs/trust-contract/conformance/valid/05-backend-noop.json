@@ -1,0 +1,27 @@
+{
+  "attestation": {
+    "backendName": "noop",
+    "certChainPem": "-----BEGIN CERTIFICATE-----\nNOOP-BACKEND-DETERMINISTIC-4bb051b8edb0e60c82eaa7924a998323\n-----END CERTIFICATE-----\n",
+    "predicate": {},
+    "predicateType": "https://primitivehub.ai/context-ci/v0.1/Attestation",
+    "rekorInclusionProofJson": "{\"checkpoint\":{\"envelope\":\"noop checkpoint for 4bb051b8edb0e60c\"},\"hashes\":[],\"logIndex\":1269846456,\"rootHash\":\"4bb051b8edb0e60c82eaa7924a998323295ac749c9d9cd591e3f2711626f5aee\",\"treeSize\":1269846457}",
+    "rekorLogId": "9a2db9b1f75038ba28ec1adcc3178d701cd460706c2f714a525fdab06c300100",
+    "rekorLogIndex": 1269846456,
+    "signatureB64": "NGJiMDUxYjhlZGIwZTYwYzgyZWFhNzkyNGE5OTgzMjMyOTVhYzc0OWM5ZDljZDU5MWUzZjI3MTE2MjZmNWFlZQ==",
+    "signedAt": "2026-05-31T00:00:00+00:00",
+    "statementB64": "Ch9odHRwczovL2luLXRvdG8uaW8vU3RhdGVtZW50L3YxElkKC25vb3Atc2lnbmVkGkoKBnNoYTI1NhJAZTI0NTZmMjFkZjEwY2ZiZGVhNjJiOWE0ZjI5NTkyOTgwNmViNjY2NWE2ODUzM2VhMTNmODE0ODY3ZDljYmY4NRozaHR0cHM6Ly9wcmltaXRpdmVodWIuYWkvY29udGV4dC1jaS92MC4xL0F0dGVzdGF0aW9u",
+    "verifyUrl": "noop://entry/1269846456"
+  },
+  "bundleVersion": "0.1",
+  "content": {
+    "bytesB64": "IyBOb29wCg==",
+    "mediaType": "text/markdown; charset=utf-8",
+    "sizeBytes": 7
+  },
+  "detailUrl": "/primitive/noop-signed?version=0.1.0",
+  "subject": {
+    "contentDigest": "sha256:e2456f21df10cfbdea62b9a4f295929806eb6665a68533ea13f814867d9cbf85",
+    "semver": "0.1.0",
+    "slug": "noop-signed"
+  }
+}

@@ -41,6 +41,7 @@ Links to primitives, threat-model entries, vendor docs, prior ADRs.
 
 | # | Title | Status |
 |---|---|---|
+| [0021](./0021-conformance-suite-as-executable-contract.md) | Conformance suite as the executable contract definition | Accepted |
 | [0015](./0015-trust-contract-versioning.md) | Trust Contract v0.1 versioning + deprecation policy | Accepted |
 | [0014](./0014-public-read-rls-policy.md) | Public-read RLS policy (visibility as a first-class concept) | Accepted |
 | [0013](./0013-trust-bundle-format.md) | Trust Bundle format: `application/vnd.primitivehub.bundle+json` (superseded by Trust Contract v0.1 spec; original decision retained for history) | Accepted |

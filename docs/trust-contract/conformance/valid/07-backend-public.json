@@ -1,0 +1,27 @@
+{
+  "attestation": {
+    "backendName": "public",
+    "certChainPem": "-----BEGIN CERTIFICATE-----\nNOOP-BACKEND-DETERMINISTIC-00d94403c11e22366debb2982d39ba79\n-----END CERTIFICATE-----\n",
+    "predicate": {},
+    "predicateType": "https://primitivehub.ai/context-ci/v0.1/Attestation",
+    "rekorInclusionProofJson": "{\"checkpoint\":{\"envelope\":\"noop checkpoint for 00d94403c11e2236\"},\"hashes\":[],\"logIndex\":14238723,\"rootHash\":\"00d94403c11e22366debb2982d39ba796d75f186a33b462ef31c021571d36406\",\"treeSize\":14238724}",
+    "rekorLogId": "e89f02e0aef339d5093c8ad4d6309f602e6e0c697a096f94ff02fcf5fd2037f5",
+    "rekorLogIndex": 14238723,
+    "signatureB64": "MDBkOTQ0MDNjMTFlMjIzNjZkZWJiMjk4MmQzOWJhNzk2ZDc1ZjE4NmEzM2I0NjJlZjMxYzAyMTU3MWQzNjQwNg==",
+    "signedAt": "2026-05-31T00:00:00+00:00",
+    "statementB64": "Ch9odHRwczovL2luLXRvdG8uaW8vU3RhdGVtZW50L3YxElsKDXB1YmxpYy1zaWduZWQaSgoGc2hhMjU2EkBiMTRiM2Y5MjU4Mjc2NjlmOWQ0ZDA1Nzk5NjU3NDZiOGM1NDVmMzIwNzUwOTJiZTBlNTY1YmJlY2UzNzU3NmY0GjNodHRwczovL3ByaW1pdGl2ZWh1Yi5haS9jb250ZXh0LWNpL3YwLjEvQXR0ZXN0YXRpb24=",
+    "verifyUrl": "noop://entry/14238723"
+  },
+  "bundleVersion": "0.1",
+  "content": {
+    "bytesB64": "IyBQdWJsaWMK",
+    "mediaType": "text/markdown; charset=utf-8",
+    "sizeBytes": 9
+  },
+  "detailUrl": "/primitive/public-signed?version=1.0.0",
+  "subject": {
+    "contentDigest": "sha256:b14b3f925827669f9d4d0579965746b8c545f32075092be0e565bbece37576f4",
+    "semver": "1.0.0",
+    "slug": "public-signed"
+  }
+}

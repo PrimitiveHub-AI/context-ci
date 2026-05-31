@@ -38,6 +38,7 @@ dependencies = [
     # Cryptographic operations
     "in-toto-attestation>=0.9",
     "sigstore>=3.0,<5",
+    "jsonschema>=4.26.0",
 ]
 
 [dependency-groups]
