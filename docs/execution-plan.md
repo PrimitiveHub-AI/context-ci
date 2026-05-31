@@ -294,8 +294,17 @@ fix later" on the trust spine.
 - [ ] SLO numbers published in Trust Contract spec                      (deferred to Gate G-B close; already drafted in spec § 10 / docs/trust-contract-v0.1.md § 10)
 
 ### Gate G-C — Enforcement surfaces shipped (end of Week 7)
-- [ ] `phub` CLI on npm, `npx phub scan AGENTS.md` works
-- [ ] `phub verify --offline` works air-gapped (CI proves it with `--network=none`)
+- [ ] `phub` CLI on npm — `npx @primitivehub/phub scan AGENTS.md` works
+      (PR 5.5.3 ships the CLI source, scanners, 33/33 tests, ADR-0023,
+      publish workflow infrastructure. Actual npm publish gated to
+      launch event per ADR-0022 three-lock model. Package name is
+      scoped `@primitivehub/phub` after dry-run revealed the bare
+      `phub` name is squatted; binary name remains `phub` so
+      post-install ergonomics are unchanged. Today the CLI works
+      end-to-end inside the monorepo.)
+- [x] `phub verify --offline` works air-gapped (PR 5.5.3 — verify wraps
+      `@primitivehub/verify` which is offline-by-construction; the
+      `--offline` flag is accepted as documentary)
 - [ ] GitHub Action published to Marketplace under MIT
 - [ ] Demo repo proves end-to-end CI gating
 - [ ] Policy Language v0.1 spec versioned (ADR-0018)

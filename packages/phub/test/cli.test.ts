@@ -1,0 +1,230 @@
+/**
+ * End-to-end CLI tests via main() function (not spawning subprocess).
+ *
+ * Captures stdout/stderr by stubbing process.stdout.write +
+ * process.stderr.write; restores after each test.
+ */
+
+import { mkdtempSync, readFileSync, writeFileSync, existsSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join, dirname } from "node:path"
+import { fileURLToPath } from "node:url"
+
+import { afterEach, beforeEach, describe, expect, it } from "vitest"
+
+import { main } from "../src/cli.js"
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const REPO_ROOT = join(__dirname, "..", "..", "..")
+const VALID_BUNDLE = join(REPO_ROOT, "docs/trust-contract/conformance/valid/01-minimal-valid.json")
+const INVALID_BUNDLE = join(REPO_ROOT, "docs/trust-contract/conformance/invalid/01-digest-mismatch.json")
+const CLEAN_FIXTURE = join(__dirname, "fixtures/clean.md")
+const T1_FIXTURE = join(__dirname, "fixtures/t1-prompt-injection.md")
+
+interface Captured {
+  stdout: string
+  stderr: string
+}
+
+function captureIo(): Captured & { restore(): void } {
+  const origOut = process.stdout.write.bind(process.stdout)
+  const origErr = process.stderr.write.bind(process.stderr)
+  const captured: Captured = { stdout: "", stderr: "" }
+  process.stdout.write = ((chunk: string | Uint8Array) => {
+    captured.stdout += typeof chunk === "string" ? chunk : Buffer.from(chunk).toString()
+    return true
+  }) as typeof process.stdout.write
+  process.stderr.write = ((chunk: string | Uint8Array) => {
+    captured.stderr += typeof chunk === "string" ? chunk : Buffer.from(chunk).toString()
+    return true
+  }) as typeof process.stderr.write
+  return {
+    get stdout() { return captured.stdout },
+    get stderr() { return captured.stderr },
+    restore() {
+      process.stdout.write = origOut
+      process.stderr.write = origErr
+    },
+  }
+}
+
+describe("phub scan", () => {
+  let io: ReturnType<typeof captureIo>
+  beforeEach(() => { io = captureIo() })
+  afterEach(() => { io.restore() })
+
+  it("exit 0 + 'detectors passed' on clean fixture", async () => {
+    const code = await main(["scan", CLEAN_FIXTURE])
+    expect(code).toBe(0)
+    expect(io.stdout).toMatch(/3\/3 detectors passed/)
+    expect(io.stdout).toMatch(/CCI-001/)
+    expect(io.stdout).toMatch(/CCI-002/)
+    expect(io.stdout).toMatch(/CCI-005/)
+  })
+
+  it("exit 1 + structured failure list on T1 fixture", async () => {
+    const code = await main(["scan", T1_FIXTURE])
+    expect(code).toBe(1)
+    expect(io.stdout).toMatch(/\[FAIL\] t1\.prompt_injection \(CCI-001\)/)
+    expect(io.stdout).toMatch(/Review before publishing/)
+  })
+
+  it("emits parseable JSON with --json", async () => {
+    const code = await main(["scan", T1_FIXTURE, "--json"])
+    expect(code).toBe(1)
+    const parsed = JSON.parse(io.stdout)
+    expect(parsed.filename).toBe(T1_FIXTURE)
+    expect(Array.isArray(parsed.verdicts)).toBe(true)
+    expect(parsed.verdicts.length).toBe(3)
+    const t1 = parsed.verdicts.find((v: { cciId: string }) => v.cciId === "CCI-001")
+    expect(t1.passed).toBe(false)
+  })
+
+  it("filters to a single detector via --detector=CCI-001", async () => {
+    const code = await main(["scan", T1_FIXTURE, "--detector=CCI-001", "--json"])
+    expect(code).toBe(1)
+    const parsed = JSON.parse(io.stdout)
+    expect(parsed.verdicts.length).toBe(1)
+    expect(parsed.verdicts[0].cciId).toBe("CCI-001")
+  })
+
+  it("exit 2 when file is missing", async () => {
+    const code = await main(["scan", "/tmp/this-file-does-not-exist.md"])
+    expect(code).toBe(2)
+    expect(io.stderr).toMatch(/cannot read/)
+  })
+
+  it("exit 2 with usage error when <file> is omitted", async () => {
+    const code = await main(["scan"])
+    expect(code).toBe(2)
+    expect(io.stderr).toMatch(/missing <file>/)
+  })
+})
+
+describe("phub verify", () => {
+  let io: ReturnType<typeof captureIo>
+  beforeEach(() => { io = captureIo() })
+  afterEach(() => { io.restore() })
+
+  it("exit 0 on the canonical valid bundle", async () => {
+    const code = await main(["verify", VALID_BUNDLE])
+    expect(code).toBe(0)
+    expect(io.stdout).toMatch(/Trust Bundle verified/)
+  })
+
+  it("exit 1 on the canonical digest-mismatch bundle with DIGEST_MISMATCH code", async () => {
+    const code = await main(["verify", INVALID_BUNDLE])
+    expect(code).toBe(1)
+    expect(io.stdout).toMatch(/DIGEST_MISMATCH/)
+  })
+
+  it("exit 2 on invalid JSON input", async () => {
+    const tmp = mkdtempSync(join(tmpdir(), "phub-verify-"))
+    const bad = join(tmp, "not-json.json")
+    writeFileSync(bad, "this is not json {", "utf8")
+    const code = await main(["verify", bad])
+    expect(code).toBe(2)
+    expect(io.stderr).toMatch(/not valid JSON/)
+  })
+
+  it("rejects invalid --level argument with exit 2", async () => {
+    const code = await main(["verify", VALID_BUNDLE, "--level=nonsense"])
+    expect(code).toBe(2)
+    expect(io.stderr).toMatch(/--level must be one of/)
+  })
+
+  it("--json emits the raw VerificationResult shape", async () => {
+    const code = await main(["verify", INVALID_BUNDLE, "--json"])
+    expect(code).toBe(1)
+    const parsed = JSON.parse(io.stdout)
+    expect(parsed.valid).toBe(false)
+    expect(Array.isArray(parsed.failures)).toBe(true)
+  })
+})
+
+describe("phub init", () => {
+  let io: ReturnType<typeof captureIo>
+  beforeEach(() => { io = captureIo() })
+  afterEach(() => { io.restore() })
+
+  it("writes AGENTS.md in cwd and exits 0", async () => {
+    const tmp = mkdtempSync(join(tmpdir(), "phub-init-"))
+    const origCwd = process.cwd()
+    process.chdir(tmp)
+    try {
+      const code = await main(["init"])
+      expect(code).toBe(0)
+      expect(existsSync(join(tmp, "AGENTS.md"))).toBe(true)
+      const content = readFileSync(join(tmp, "AGENTS.md"), "utf8")
+      expect(content).toMatch(/# AGENTS\.md/)
+    } finally {
+      process.chdir(origCwd)
+    }
+  })
+
+  it("refuses to overwrite existing AGENTS.md without --force", async () => {
+    const tmp = mkdtempSync(join(tmpdir(), "phub-init-"))
+    writeFileSync(join(tmp, "AGENTS.md"), "pre-existing", "utf8")
+    const origCwd = process.cwd()
+    process.chdir(tmp)
+    try {
+      const code = await main(["init"])
+      expect(code).toBe(2)
+      expect(io.stderr).toMatch(/already exists/)
+    } finally {
+      process.chdir(origCwd)
+    }
+  })
+
+  it("overwrites existing AGENTS.md with --force", async () => {
+    const tmp = mkdtempSync(join(tmpdir(), "phub-init-"))
+    writeFileSync(join(tmp, "AGENTS.md"), "pre-existing", "utf8")
+    const origCwd = process.cwd()
+    process.chdir(tmp)
+    try {
+      const code = await main(["init", "--force"])
+      expect(code).toBe(0)
+      const content = readFileSync(join(tmp, "AGENTS.md"), "utf8")
+      expect(content).not.toBe("pre-existing")
+    } finally {
+      process.chdir(origCwd)
+    }
+  })
+})
+
+describe("phub top-level", () => {
+  let io: ReturnType<typeof captureIo>
+  beforeEach(() => { io = captureIo() })
+  afterEach(() => { io.restore() })
+
+  it("prints help with no args (exit 0)", async () => {
+    const code = await main([])
+    expect(code).toBe(0)
+    expect(io.stdout).toMatch(/phub 0\.1\.0/)
+    expect(io.stdout).toMatch(/Commands:/)
+  })
+
+  it("`version` subcommand prints version", async () => {
+    const code = await main(["version"])
+    expect(code).toBe(0)
+    expect(io.stdout.trim()).toBe("0.1.0")
+  })
+
+  it("--help prints help (exit 0)", async () => {
+    const code = await main(["--help"])
+    expect(code).toBe(0)
+    expect(io.stdout).toMatch(/Usage:/)
+  })
+
+  it("exit 2 on unknown command", async () => {
+    const code = await main(["nonsense"])
+    expect(code).toBe(2)
+    expect(io.stderr).toMatch(/unknown command/)
+  })
+
+  it("scan --help (per-command) does not require a file arg", async () => {
+    const code = await main(["scan", "--help"])
+    expect(code).toBe(0)
+    expect(io.stdout).toMatch(/phub scan <file>/)
+  })
+})

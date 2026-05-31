@@ -1,0 +1,70 @@
+name: phub — typecheck + test + dry-run publish
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/phub/**"
+      - "packages/verify/**"     # phub depends on verify; rebuild when verify changes
+      - "apps/api/scanners/**"   # detector-parity: re-run when Python detectors change (ADR-0023 lockstep rule)
+      - ".github/workflows/phub-ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "packages/phub/**"
+      - "packages/verify/**"
+      - "apps/api/scanners/**"
+      - ".github/workflows/phub-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: typecheck + test + build + publish --dry-run
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: |
+            packages/verify/pnpm-lock.yaml
+            packages/phub/pnpm-lock.yaml
+
+      # verify is a file: dep of phub; install + build it first so phub's
+      # @primitivehub/verify import resolves.
+      - name: Install + build verify
+        working-directory: packages/verify
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm typecheck
+          pnpm test
+          pnpm build
+
+      - name: Install phub
+        working-directory: packages/phub
+        run: pnpm install --frozen-lockfile
+
+      - name: TypeScript check
+        working-directory: packages/phub
+        run: pnpm typecheck
+
+      - name: Tests (scanners + CLI)
+        working-directory: packages/phub
+        run: pnpm test
+
+      - name: Build
+        working-directory: packages/phub
+        run: pnpm build
+
+      - name: pnpm publish --dry-run
+        working-directory: packages/phub
+        run: pnpm publish --dry-run --no-git-checks

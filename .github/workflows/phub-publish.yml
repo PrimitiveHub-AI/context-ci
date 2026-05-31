@@ -1,0 +1,95 @@
+# ─────────────────────────────────────────────────────────────────────
+# phub — npm publish workflow
+#
+# Inherits ADR-0022's three-lock model in full. Do NOT add a tag or
+# release trigger before the arXiv paper publishes; see
+# .github/workflows/verify-publish.yml for the full rationale and
+# the launch-day human playbook.
+# ─────────────────────────────────────────────────────────────────────
+name: phub — publish to npm (gated)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_launch:
+        description: "Type 'LAUNCH-CONFIRMED' to proceed. Anything else aborts."
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write  # for npm provenance via OIDC
+
+jobs:
+  guard:
+    name: launch-posture guard
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify launch confirmation input
+        run: |
+          if [ "${{ inputs.confirm_launch }}" != "LAUNCH-CONFIRMED" ]; then
+            echo "::error::Refusing to publish without explicit LAUNCH-CONFIRMED input."
+            echo "::error::Pre-launch posture (CLAUDE.md + ADR-0022) gates this workflow."
+            exit 1
+          fi
+
+  publish:
+    name: publish phub
+    needs: guard
+    runs-on: ubuntu-latest
+    environment: launch  # requires reviewer approval; configure on GitHub side
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: |
+            packages/verify/pnpm-lock.yaml
+            packages/phub/pnpm-lock.yaml
+          registry-url: "https://registry.npmjs.org"
+
+      # phub depends on @primitivehub/verify from npm at publish time.
+      # Pre-launch the file: link is in place; the launch-day playbook
+      # (ADR-0022) flips the dep to ^0.1.0 BEFORE this workflow runs.
+      # If this workflow detects a file: dep, it aborts loudly.
+      - name: Reject file: dep on verify (must be npm-resolved at publish)
+        working-directory: packages/phub
+        run: |
+          if grep -q '"@primitivehub/verify": "file:' package.json; then
+            echo "::error::phub package.json still references @primitivehub/verify via file:"
+            echo "::error::Per ADR-0022 launch-day playbook, swap to ^0.1.0 BEFORE running this workflow."
+            exit 1
+          fi
+
+      - name: Install + build verify (for tests to import the local dist)
+        working-directory: packages/verify
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm test
+          pnpm build
+
+      - name: Install phub
+        working-directory: packages/phub
+        run: pnpm install --frozen-lockfile
+
+      - name: TypeScript check
+        working-directory: packages/phub
+        run: pnpm typecheck
+
+      - name: Tests
+        working-directory: packages/phub
+        run: pnpm test
+
+      - name: Build
+        working-directory: packages/phub
+        run: pnpm build
+
+      - name: Publish to npm (public, with provenance)
+        working-directory: packages/phub
+        run: pnpm publish --access public --provenance --no-git-checks
