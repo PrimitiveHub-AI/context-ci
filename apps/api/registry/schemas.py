@@ -114,13 +114,34 @@ class PrimitiveVersionOut(CamelSchema):
 
 
 class AttestationOut(CamelSchema):
-    """Context CI attestation record (in-toto Statement)."""
+    """Context CI attestation record (in-toto Statement).
+
+    Phase 4 PR #4 added the signing-pipeline fields (status,
+    backend_name, cert, signature, Rekor fields, statement bytes).
+    Empty/null until the Procrastinate sign_version task completes —
+    `status` is the source of truth for "is this signed yet?".
+    """
 
     id: str
+    status: str
+    attempts: int
+    failure_reason: str | None = None
     predicate_type: str
     predicate: dict[str, Any]
     threat_model_version: str
     spec_version: str
+
+    # Sigstore signing fields (populated when status=signed)
+    backend_name: str | None = None
+    cert_chain_pem: str | None = None
+    signature_b64: str | None = None
+    statement_b64: str | None = None
+    rekor_log_index: int | None = None
+    rekor_log_id: str | None = None
+    rekor_inclusion_proof_json: str | None = None
+    verify_url: str | None = None
+
+    # Legacy / supplementary
     rekor_entry_id: str | None = None
     signed_at: datetime | None = None
     recorded_at: datetime
