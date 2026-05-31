@@ -26,6 +26,53 @@
 
 ## Active log (most recent first)
 
+### 25. `phub scan` flags own CLAUDE.md with T5 false positive — 2026-05-31
+
+**Phase:** 5.5 (PR 5.5.3 — `@primitivehub/phub` CLI v0.1)
+**Symptom:** `phub scan /srv/primitivehub/app/CLAUDE.md` exits 1 with
+two `t5.unsafe_shell_install` matches on lines 244 + 246. The matched
+text is `npx skill` and `npx\n   install` — both inside the project's
+own hard-rule prose explicitly *forbidding* npx skill installs as a
+T5 attack vector. There is no actual `curl|bash` or executable install
+instruction in the file.
+**Root cause:** The v0.1 detector regex
+`\bnpx\s+(?:-y\s+|--yes\s+)?(?!--help|--version)[a-zA-Z0-9@/_.-][a-zA-Z0-9@/_.-]+`
+matches any occurrence of "npx" followed by an identifier-shaped word,
+anywhere in a markdown document. It has no awareness of negation
+("**No** npx skill installs"), no awareness of fenced code blocks vs.
+prose, and no awareness of when a document is *teaching about* an
+attack vs. *instructing the agent to execute* it. This is the
+documented v0.1 false-positive case — see
+`apps/api/scanners/t5_unsafe_shell_install.py:37-47` docstring:
+> "A primitive teaching about CI/CD or package management may
+> legitimately show install commands as EXAMPLES. … Markdown-AST
+> awareness in v0.2+ will distinguish code-fence quotes from
+> top-level instructions. For now: false positives are preferable
+> to false negatives."
+**Fix:** **Working-as-intended in v0.1.** No fix lands in this PR.
+The v0.1 product stance is "flag and bounce to manual review" rather
+than risk a missed Shai-Hulud vector — the cost asymmetry of a
+missed attack vs. a false positive is enormous (see same docstring).
+**Prevention (v0.2 work, tracked):** Add markdown-AST aware scanning
+to both the Python and TS detectors. Distinguish:
+  - inline code spans (`` `npx foo` ``) — likely a quote, lower severity
+  - fenced code blocks (```` ```npx foo``` ````) — likely an example, requires inspection
+  - top-level instruction prose ("run `npx foo` to install") — original FAIL severity
+  - negated prose ("never run `npx foo`") — INFO not FAIL
+Implementation needs a real markdown parser (probably `remark`/`mdast`
+on the TS side; `mistune` or `markdown-it-py` on the Python side) and
+matching ASTs on both sides per ADR-0023 lockstep rule.
+**Lesson:** Regex-on-raw-text detectors WILL fire on security-teaching
+content. This is a feature in v0.1 (defense-in-depth via human review)
+and a bug to fix in v0.2 (precision via AST). The detector docstring
+called this out from day one — the system worked exactly as the
+detector author predicted on a real document. Validates both:
+  - The detector is sensitive enough to catch real attacks (good).
+  - The AST work needs to be a v0.2 priority before any wide adoption
+    push (the noise will be unacceptable for users without context).
+The fact that the project's own documentation hits the false positive
+on first run is the strongest possible argument for the v0.2 ramp.
+
 ### 24. Local Authentik not on sigstage Fulcio allowlist — 2026-05-30
 
 **Phase:** 4 (Sigstore keyless signing, PR #3)
