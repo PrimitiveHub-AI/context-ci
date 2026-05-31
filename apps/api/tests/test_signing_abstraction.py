@@ -135,11 +135,14 @@ class TestNoopBackend:
         assert "END CERTIFICATE" in result.cert_chain_pem
         assert result.signature_b64  # non-empty
         assert result.rekor_log_index > 0
-        assert result.rekor_log_id
-        # inclusion proof should parse as JSON
+        # rekor_log_id MUST be 64 lowercase hex per Trust Contract v0.1.
+        assert len(result.rekor_log_id) == 64
+        assert all(c in "0123456789abcdef" for c in result.rekor_log_id)
+        # inclusion proof should parse as JSON with the canonical keys
+        # required by Trust Contract v0.1 § 5.4.
         proof = json.loads(result.rekor_inclusion_proof_json)
-        assert proof["backend"] == "noop"
-        assert proof["verified"] is True
+        for key in ("logIndex", "rootHash", "treeSize", "hashes", "checkpoint"):
+            assert key in proof, f"noop inclusion proof missing canonical key {key!r}"
         # statement bytes are preserved
         assert base64.b64decode(result.statement_b64) == statement
         # verify_url uses the noop template

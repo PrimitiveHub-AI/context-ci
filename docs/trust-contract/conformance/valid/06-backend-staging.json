@@ -1,0 +1,27 @@
+{
+  "attestation": {
+    "backendName": "staging",
+    "certChainPem": "-----BEGIN CERTIFICATE-----\nNOOP-BACKEND-DETERMINISTIC-7cf5b85e889b2029156a80819f79bed5\n-----END CERTIFICATE-----\n",
+    "predicate": {},
+    "predicateType": "https://primitivehub.ai/context-ci/v0.1/Attestation",
+    "rekorInclusionProofJson": "{\"checkpoint\":{\"envelope\":\"noop checkpoint for 7cf5b85e889b2029\"},\"hashes\":[],\"logIndex\":2096478302,\"rootHash\":\"7cf5b85e889b2029156a80819f79bed524535cce28d282e172cf26e963574fb6\",\"treeSize\":2096478303}",
+    "rekorLogId": "3f6f521fe9dd25ec3c65ab770c6e0d6117b95e3ec591e8d2bf6f0cca96cb4edc",
+    "rekorLogIndex": 2096478302,
+    "signatureB64": "N2NmNWI4NWU4ODliMjAyOTE1NmE4MDgxOWY3OWJlZDUyNDUzNWNjZTI4ZDI4MmUxNzJjZjI2ZTk2MzU3NGZiNg==",
+    "signedAt": "2026-05-31T00:00:00+00:00",
+    "statementB64": "Ch9odHRwczovL2luLXRvdG8uaW8vU3RhdGVtZW50L3YxElwKDnN0YWdpbmctc2lnbmVkGkoKBnNoYTI1NhJAN2ZlOGRlN2JhOWUxZjAzNjhiMzAxNDA2OWY2ZDc2OWZkYTM5MzEzODA0NGZkZDJiNjE4YmM2MDQ2NzlmYzMwZBozaHR0cHM6Ly9wcmltaXRpdmVodWIuYWkvY29udGV4dC1jaS92MC4xL0F0dGVzdGF0aW9u",
+    "verifyUrl": "noop://entry/2096478302"
+  },
+  "bundleVersion": "0.1",
+  "content": {
+    "bytesB64": "IyBTdGFnaW5nCg==",
+    "mediaType": "text/markdown; charset=utf-8",
+    "sizeBytes": 10
+  },
+  "detailUrl": "/primitive/staging-signed?version=0.1.0",
+  "subject": {
+    "contentDigest": "sha256:7fe8de7ba9e1f0368b3014069f6d769fda393138044fdd2b618bc604679fc30d",
+    "semver": "0.1.0",
+    "slug": "staging-signed"
+  }
+}

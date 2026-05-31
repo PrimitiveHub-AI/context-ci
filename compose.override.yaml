@@ -47,6 +47,11 @@ services:
       # Anonymous volume: keep container's /opt/venv from being overwritten
       # if the host happens to have one
       - /opt/venv
+      # Trust Contract conformance fixtures live at the repo root —
+      # the api test harness validates against them. Read-only because
+      # the fixtures are version-controlled artifacts edited from the
+      # host, not the container.
+      - ./docs:/repo/docs:ro
 
   api-worker:
     build:

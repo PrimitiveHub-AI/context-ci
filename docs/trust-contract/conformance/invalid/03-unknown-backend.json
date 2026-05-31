@@ -1,0 +1,26 @@
+{
+  "attestation": {
+    "backendName": "bogus",
+    "certChainPem": "-----BEGIN CERTIFICATE-----\nNOOP-BACKEND-DETERMINISTIC-0bfe43a7d8c732d2f55ddaf698b1ee19\n-----END CERTIFICATE-----\n",
+    "predicate": {},
+    "predicateType": "https://primitivehub.ai/context-ci/v0.1/Attestation",
+    "rekorInclusionProofJson": "{\"checkpoint\":{\"envelope\":\"x\"},\"hashes\":[],\"logIndex\":1,\"rootHash\":\"deadbeef\",\"treeSize\":2}",
+    "rekorLogId": "b46a300b07220e2623f2a778a76ac6600d8e599f01fa07ecc1ad33e31b83a225",
+    "rekorLogIndex": 1,
+    "signatureB64": "Zm9v",
+    "signedAt": "2026-05-31T00:00:00+00:00",
+    "statementB64": "Zm9v",
+    "verifyUrl": "noop://entry/1"
+  },
+  "bundleVersion": "0.1",
+  "content": {
+    "bytesB64": "IyBNaW5pbWFsCg==",
+    "mediaType": "text/markdown; charset=utf-8",
+    "sizeBytes": 10
+  },
+  "subject": {
+    "contentDigest": "sha256:10af9d6bbf8461d5ef3b1dbf70d242c9e18b9f9a450168b0caaccdcbc916736e",
+    "semver": "0.1.0",
+    "slug": "minimal-primitive"
+  }
+}

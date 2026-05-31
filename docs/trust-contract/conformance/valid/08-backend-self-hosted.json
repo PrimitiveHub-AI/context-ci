@@ -1,0 +1,27 @@
+{
+  "attestation": {
+    "backendName": "self-hosted",
+    "certChainPem": "-----BEGIN CERTIFICATE-----\nNOOP-BACKEND-DETERMINISTIC-be1b547a31413893d2a036cb9f19fa82\n-----END CERTIFICATE-----\n",
+    "predicate": {},
+    "predicateType": "https://primitivehub.ai/context-ci/v0.1/Attestation",
+    "rekorInclusionProofJson": "{\"checkpoint\":{\"envelope\":\"noop checkpoint for be1b547a31413893\"},\"hashes\":[],\"logIndex\":3189462138,\"rootHash\":\"be1b547a31413893d2a036cb9f19fa822446f593a2379a62ab4fa83327aa58e7\",\"treeSize\":3189462139}",
+    "rekorLogId": "6b74eb636a050201e14966bc437e0ae883b1799a735c441040502362ce9ea785",
+    "rekorLogIndex": 3189462138,
+    "signatureB64": "YmUxYjU0N2EzMTQxMzg5M2QyYTAzNmNiOWYxOWZhODIyNDQ2ZjU5M2EyMzc5YTYyYWI0ZmE4MzMyN2FhNThlNw==",
+    "signedAt": "2026-05-31T00:00:00+00:00",
+    "statementB64": "Ch9odHRwczovL2luLXRvdG8uaW8vU3RhdGVtZW50L3YxEl8KEWVudGVycHJpc2Utc2lnbmVkGkoKBnNoYTI1NhJAYzljMzM5MDAyYWRjMTk1MTMwYmZiMzZlY2VlNDcyNWMwMjQ4ODFiNDBiZTE1NTYyY2ZjNmU0OTA4MjBkZDg1YxozaHR0cHM6Ly9wcmltaXRpdmVodWIuYWkvY29udGV4dC1jaS92MC4xL0F0dGVzdGF0aW9u",
+    "verifyUrl": "noop://entry/3189462138"
+  },
+  "bundleVersion": "0.1",
+  "content": {
+    "bytesB64": "IyBFbnRlcnByaXNlCg==",
+    "mediaType": "text/markdown; charset=utf-8",
+    "sizeBytes": 13
+  },
+  "detailUrl": "/primitive/enterprise-signed?version=2.0.0",
+  "subject": {
+    "contentDigest": "sha256:c9c339002adc195130bfb36ecee4725c024881b40be15562cfc6e490820dd85c",
+    "semver": "2.0.0",
+    "slug": "enterprise-signed"
+  }
+}

@@ -298,6 +298,8 @@ class NoopSigstoreBackend:
     _verify_url_template = "noop://entry/{log_index}"
 
     def sign(self, statement_bytes: bytes, *, identity_token: str) -> SigningResult:
+        import json as _json
+
         digest = hashlib.sha256(statement_bytes).hexdigest()
         # Synthetic but valid-shaped PEM. Useful in tests that parse
         # the field as PEM and want a non-empty value.
@@ -310,13 +312,32 @@ class NoopSigstoreBackend:
         # log_index derived from statement digest so identical statements
         # produce identical results (idempotent test fixtures).
         log_index = int(digest[:8], 16)
+        # rekor_log_id MUST be 64 hex chars per Trust Contract v0.1 § 5.4.
+        # Deterministic synthesis from a fixed namespace + the statement
+        # digest keeps test bundles reproducible AND schema-conformant.
+        fake_log_id = hashlib.sha256(f"noop:rekor-keyid:{digest}".encode("ascii")).hexdigest()
+        # rekor_inclusion_proof_json MUST contain the canonical keys
+        # (logIndex, rootHash, treeSize, hashes, checkpoint) per the
+        # Trust Contract spec. A synthetic but schema-correct value is
+        # what conformance demands.
+        fake_inclusion_proof = _json.dumps(
+            {
+                "logIndex": log_index,
+                "rootHash": digest,  # deterministic from statement
+                "treeSize": log_index + 1,
+                "hashes": [],  # empty proof is valid for a tree of size 1
+                "checkpoint": {"envelope": f"noop checkpoint for {digest[:16]}"},
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        )
         return SigningResult(
             backend_name=self.name,
             cert_chain_pem=fake_cert_pem,
             signature_b64=fake_signature,
             rekor_log_index=log_index,
-            rekor_log_id=f"noop-log-id-{digest[:16]}",
-            rekor_inclusion_proof_json='{"backend": "noop", "verified": true}',
+            rekor_log_id=fake_log_id,
+            rekor_inclusion_proof_json=fake_inclusion_proof,
             statement_b64=base64.b64encode(statement_bytes).decode("ascii"),
             verify_url=self.verify_url_for_rekor_entry(log_index),
         )
