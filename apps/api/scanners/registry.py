@@ -15,6 +15,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from .t1_prompt_injection import T1PromptInjectionDetector
+from .t2_unicode_steganography import T2UnicodeSteganographyDetector
 from .t5_unsafe_shell_install import T5UnsafeShellInstallDetector
 
 if TYPE_CHECKING:
@@ -25,10 +26,12 @@ def get_all_detectors() -> list[Detector]:
     """Return the active detector set in stable category-number order.
 
     Phase 5 fills this list one detector at a time. PR 5.1 shipped T1;
-    PR 5.2 (this) adds T5 (Shai-Hulud); PR 5.3 adds T2 (unicode-steg);
-    the remaining 7 land in PR 5.6.
+    PR 5.2 added T5 (Shai-Hulud); PR 5.3 (this) adds T2 (Unicode-
+    steganography) — the launch-demo trifecta is now complete. The
+    remaining 7 detectors land in PR 5.6.
     """
     return [
         T1PromptInjectionDetector(),
+        T2UnicodeSteganographyDetector(),
         T5UnsafeShellInstallDetector(),
     ]

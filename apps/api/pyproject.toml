@@ -88,6 +88,12 @@ ignore = [
 # REQUIRED_FIELDS, verbose_name_plural) by design — Django reads them at
 # metaclass time. RUF012's ClassVar recommendation doesn't apply.
 "**/models.py" = ["RUF012"]
+# T2 detector tests intentionally contain confusable Cyrillic/Greek
+# codepoints — that's the attack payload being tested. RUF001/002/003
+# is the same defense family; allow these rules on this file only.
+"**/tests/test_scanners_t2.py" = ["RUF001", "RUF002", "RUF003"]
+# T2 detector source contains the codepoints in its lookup tables.
+"**/scanners/t2_unicode_steganography.py" = ["RUF001", "RUF002", "RUF003"]
 
 [tool.ruff.format]
 quote-style = "double"

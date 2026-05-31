@@ -135,13 +135,10 @@ class TestT5Structural:
 
 
 # ─────────────────────────────────────────────────────────────────────
-# Registry integration — now 2 detectors
+# Registry integration — the current full-set assertion lives in the
+# newest detector's test file (test_scanners_t2.py in PR 5.3).
 # ─────────────────────────────────────────────────────────────────────
-def test_get_all_detectors_returns_t1_and_t5_in_pr_5_2() -> None:
-    """As of PR 5.2 the registry has T1 + T5 in threat-category order.
-    Updates each time a new detector lands so PR scope stays visible."""
-    detectors = get_all_detectors()
-    names = [d.name for d in detectors]
-    cats = [d.threat_category for d in detectors]
-    assert names == ["t1.prompt_injection", "t5.unsafe_shell_install"]
-    assert cats == ["T1", "T5"]
+def test_t5_is_present_in_the_registry() -> None:
+    """Lighter check that survives new detectors landing."""
+    names = [d.name for d in get_all_detectors()]
+    assert "t5.unsafe_shell_install" in names
