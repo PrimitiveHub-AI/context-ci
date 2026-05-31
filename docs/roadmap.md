@@ -148,11 +148,17 @@ registry. Vendor-absorption hedge.
   `/api/v1/trust/by-digest/{digest_hex}`), 6 tests, full IDOR
   posture matches the rest of the registry. Auth required for now;
   public-anonymous lookup ships in 5.5.2.
-- **PR 5.5.2** `feat/api-public-trust-lookup` — `public_read`
-  Postgres role + visibility-gated query path; trust endpoints serve
-  unauthenticated reads of primitives in registries with
-  `visibility=public`. CDN-cacheable. The Snyk-overlay shape goes
-  fully public.
+- **PR 5.5.2** ✓ `feat/api-public-trust-lookup` — visibility as a
+  first-class RLS concept (ADR-0014). 5 new RLS policies (one per
+  tenant-scoped registry table) OR with the existing tenant_isolation
+  policies; the same `primitivehub_app` role serves both auth + anon
+  reads. No role switching. Trust endpoints lose `@requires_auth` +
+  gain Cache-Control / Content-Type headers per spec § 10.6. 4 new
+  tests (anonymous public OK, RLS hides private via direct SQL check,
+  cache headers immutable on by-digest + 24h on by-slug). The
+  Snyk-overlay shape is now live: any client anywhere can `GET
+  /api/v1/trust/by-digest/<hex>` and get back a verifiable bundle for
+  any public primitive, no account needed.
 - **PR 5.5.3** `feat/phub-cli-fetch-verify-cache` — `phub` CLI MVP.
   `phub fetch <slug>@<semver>` pulls + verifies + caches; `phub
   verify <file>` validates a local primitive against its bundle;
