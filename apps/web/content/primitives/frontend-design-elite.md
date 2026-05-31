@@ -83,7 +83,7 @@ correct but emotionally generic. This primitive eliminates that.
   short sentence at a time. Bad microcopy is the cheapest credibility
   drain a brand can do to itself.
 
-- **Empty states are the second product.** What does the workbench
+- **Empty states are the second product.** What does the Forge
   show when there are zero lint findings? What does the registry show
   when filters return nothing? Empty states are the moment the user
   doubts the product. Design them as deliberately as the populated

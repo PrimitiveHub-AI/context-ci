@@ -15,6 +15,40 @@
 
 ---
 
+## 0. Product names (canonical)
+
+These are the **canonical** names for every load-bearing PrimitiveHub
+surface. Use them verbatim in code, docs, UI strings, commit messages,
+external copy. Per ADR-0017, brand discipline is enforced at PR review
+time — drift is a defect, not a quirk.
+
+| Surface | Canonical name | Short form | Path / where |
+|---|---|---|---|
+| The product | **PrimitiveHub** | — | — |
+| Authoring surface (markdown editor) | **Primitive Forge** | Forge | `/forge`; navbar label "Forge" |
+| Permanent inspection surface (planned, Phase 5.6) | **Primitive Explorer** | Explorer | `/explorer/...` |
+| Validation pipeline / category framework | **Context CI** | — | `/validation`; the noun the category creates |
+| Threat taxonomy v0.1 | **Context CI Top 10** | Top 10 | `/top-10`; IDs `CCI-001..CCI-010` |
+| Wire format spec | **Trust Contract v0.1** | — | `docs/trust-contract-v0.1.md` |
+| Self-verifying artifact | **Trust Bundle** | bundle | media type `application/vnd.primitivehub.bundle+json` |
+| Manifest format (planned, Phase 5.6) | **CBOM** (Context Bill of Materials) | CBOM | media type `application/vnd.primitivehub.cbom+json` |
+| Verifier library (planned, Phase 5.5.4) | **`@primitivehub/verify`** | verify | npm package |
+| CLI (planned, Phase 5.5.3) | **`phub`** | phub | `npx phub` |
+| MCP server (planned, Phase 5.5.5) | **`@primitivehub/mcp-server`** | mcp | npm package |
+| GitHub Action (planned, Phase 5.5.6) | **`primitivehub/context-ci-action`** | action | Marketplace |
+| The whole runtime trust layer | **Context Firewall** | — | headline product framing |
+
+**Deprecated names — do not use:**
+
+- ~~Workbench~~ / ~~Workbench v2~~ → use **Primitive Forge** / **Forge**
+  (renamed 2026-05-31, ADR-0017)
+
+If you find a deprecated name in code or docs, fix it in the PR you're
+already touching the file in. Don't open a one-line "fix naming" PR
+unless the deprecation note explicitly authorizes it.
+
+---
+
 ## 1. Visual Theme & Atmosphere
 
 PrimitiveHub reads as **trust infrastructure**. The register sits at the

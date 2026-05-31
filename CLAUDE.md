@@ -31,10 +31,10 @@ for the full picture. **Read both before responding to a strategic question.**
 ├── apps/
 │   ├── web/               Next.js 16 frontend
 │   │   ├── app/           App Router pages + route handlers
-│   │   ├── components/    React components (ui / landing / primitives / workbench / contributors)
+│   │   ├── components/    React components (ui / landing / primitives / forge / contributors)
 │   │   ├── content/       per-primitive markdown source
 │   │   ├── hooks/         custom hooks
-│   │   ├── lib/           types, data, workbench utilities
+│   │   ├── lib/           types, data, forge utilities (CodeMirror linter, Primitive Spec parser)
 │   │   ├── public/        static assets (robots.txt, icons, …)
 │   │   ├── scripts/       check-data.mjs runtime invariant guard
 │   │   ├── Dockerfile     multi-stage; built by CI

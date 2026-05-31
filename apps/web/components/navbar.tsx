@@ -13,7 +13,7 @@ import { useWhoami } from "@/lib/api/queries"
 const navLinks = [
   { href: "/registry", label: "Registry" },
   { href: "/bundles", label: "Bundles" },
-  { href: "/workbench", label: "Workbench" },
+  { href: "/forge", label: "Forge" },
   { href: "/validation", label: "Context CI" },
   { href: "/paper", label: "Paper" },
   { href: "/contributors", label: "Contributors" },

@@ -1,17 +1,17 @@
 /**
- * Pure linting logic for the Workbench, validating against the Primitive
+ * Pure linting logic for the Primitive Forge, validating against the Primitive
  * Spec v0.1 (docs/spec.md §2).
  *
  * Returns abstract findings that are mapped to:
  *   - CodeMirror Diagnostics by `codemirror-linter.ts` (inline squiggles + tooltips)
- *   - Right-panel list items by `app/workbench/page.tsx`
+ *   - Right-panel list items by `app/forge/page.tsx`
  *
  * One source of truth so the editor squiggle and the panel entry never disagree.
  */
 
 import { extractFrontmatter, analyzeSections } from "./parse"
 
-export type WorkbenchFinding = {
+export type ForgeFinding = {
   severity: "error" | "warning" | "info"
   message: string
   /** 1-indexed line number where the finding is anchored. Optional. */
@@ -62,8 +62,8 @@ function findLineOfKey(content: string, key: string, maxLine?: number): number |
   return undefined
 }
 
-export function lintWorkbenchContent(content: string): WorkbenchFinding[] {
-  const findings: WorkbenchFinding[] = []
+export function lintForgeContent(content: string): ForgeFinding[] {
+  const findings: ForgeFinding[] = []
   const fm = extractFrontmatter(content)
 
   if (!fm.ok) {
@@ -166,7 +166,7 @@ export function lintWorkbenchContent(content: string): WorkbenchFinding[] {
   if (typeof data.spec_version === "string" && data.spec_version !== "0.1") {
     findings.push({
       severity: "info",
-      message: `Workbench is calibrated to Spec v0.1; you declared "${data.spec_version}"`,
+      message: `Forge is calibrated to Spec v0.1; you declared "${data.spec_version}"`,
       line: findLineOfKey(content, "spec_version", fm.endLine),
       code: "FM-SPEC-VERSION-DRIFT",
     })

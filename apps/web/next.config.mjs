@@ -18,6 +18,16 @@ const nextConfig = {
       },
     ]
   },
+  // Permanent redirect: the authoring surface renamed from "Workbench"
+  // to "Primitive Forge" in PR 5.5.D (ADR-0017). Old bookmarks survive.
+  // Drop this redirect after launch-day cache windows close (≥ 6 months
+  // post-launch is the conservative call).
+  async redirects() {
+    return [
+      { source: "/workbench", destination: "/forge", permanent: true },
+      { source: "/workbench/:path*", destination: "/forge/:path*", permanent: true },
+    ]
+  },
 }
 
 export default nextConfig

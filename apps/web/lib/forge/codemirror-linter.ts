@@ -1,16 +1,16 @@
 /**
- * CodeMirror adapter — maps WorkbenchFinding (line-based) to CodeMirror's
+ * CodeMirror adapter — maps ForgeFinding (line-based) to CodeMirror's
  * Diagnostic (byte-range-based) so the linter results render as inline
  * squiggles and tooltips in the editor.
  */
 
 import type { Diagnostic } from "@codemirror/lint"
 import type { EditorView } from "@codemirror/view"
-import { lintWorkbenchContent } from "./lint"
+import { lintForgeContent } from "./lint"
 
 export function lintFrontmatter(view: EditorView): Diagnostic[] {
   const content = view.state.doc.toString()
-  const findings = lintWorkbenchContent(content)
+  const findings = lintForgeContent(content)
   const totalLines = view.state.doc.lines
 
   return findings.map((f) => {
