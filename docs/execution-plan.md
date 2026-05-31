@@ -282,13 +282,15 @@ fix later" on the trust spine.
 
 ### Gate G-B — Verifier Kernel ready (end of Week 4)
 - [ ] `@primitivehub/verify` published to npm under MIT
-      (PR 5.5.4 ships source + tests + MIT license + ADR-0020; npm
-      publish is a Gate G-B follow-up — needs npm org claim + token
-      automation, kept out of the build-it PR)
-- [x] < 50KB target met; zero runtime deps                              (PR 5.5.4 — 18.7KB JS)
+      (PR 5.5.4 ships source + tests + MIT license + ADR-0020 +
+      publish workflow infrastructure + ADR-0022. Actual publish
+      gated to launch event per ADR-0022 three-lock model —
+      conflicts with pre-launch posture rule in CLAUDE.md.
+      Launch-day playbook documented in ADR-0022.)
+- [x] < 50KB target met; zero runtime deps                              (PR 5.5.4 — 18.7KB JS; CI enforces packed size budget)
 - [x] 100% conformance suite pass (v0.1 steps 1, 2, 7; steps 3-6
       explicitly stubbed per Trust Contract scoping in README + ADR-0020) (PR 5.5.4)
-- [ ] Sample external embed demonstrated (toy app, ≤30 lines)           (Gate G-B follow-up)
+- [x] Sample external embed demonstrated (toy app, ≤30 lines)           (PR 5.5.4 — `examples/verify-embed/` uses file: dep until launch)
 - [ ] SLO numbers published in Trust Contract spec                      (deferred to Gate G-B close; already drafted in spec § 10 / docs/trust-contract-v0.1.md § 10)
 
 ### Gate G-C — Enforcement surfaces shipped (end of Week 7)

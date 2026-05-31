@@ -41,6 +41,7 @@ Links to primitives, threat-model entries, vendor docs, prior ADRs.
 
 | # | Title | Status |
 |---|---|---|
+| [0022](./0022-publishing-deferred-to-launch.md) | `@primitivehub/verify` npm publish deferred to launch (three-lock gate) | Accepted |
 | [0021](./0021-conformance-suite-as-executable-contract.md) | Conformance suite as the executable contract definition | Accepted |
 | [0020](./0020-verify-as-reference-implementation.md) | `@primitivehub/verify` as the TS/JS reference implementation | Accepted |
 | [0017](./0017-workbench-to-primitive-forge-rename.md) | Workbench v2 → Primitive Forge rename | Accepted |

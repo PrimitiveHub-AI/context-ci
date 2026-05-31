@@ -1,0 +1,64 @@
+name: verify — typecheck + test + dry-run publish
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/verify/**"
+      - ".github/workflows/verify-ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "packages/verify/**"
+      - ".github/workflows/verify-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: typecheck + test + build + publish --dry-run
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/verify
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: packages/verify/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: TypeScript check
+        run: pnpm typecheck
+
+      - name: Conformance suite (vitest)
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+      # Asserts package.json files allowlist resolves, exports match dist,
+      # and the final tarball fits Gate G-B size budget. Does not publish.
+      - name: pnpm publish --dry-run
+        run: pnpm publish --dry-run --no-git-checks
+
+      - name: Tarball size budget (Gate G-B: < 50KB packed)
+        run: |
+          tarball=$(pnpm pack 2>&1 | tail -n 1)
+          size=$(stat -c%s "$tarball")
+          echo "Packed tarball: $tarball ($size bytes)"
+          if [ "$size" -gt 51200 ]; then
+            echo "::error::Packed tarball exceeds 50KB Gate G-B budget ($size bytes)"
+            exit 1
+          fi
