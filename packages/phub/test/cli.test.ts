@@ -107,6 +107,39 @@ describe("phub scan", () => {
     expect(code).toBe(2)
   })
 
+  it("--policy <path> can convert exit 1 → exit 0 via allow rule", async () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), "phub-policy-"))
+    const target = join(tmpDir, "CLAUDE.md")
+    writeFileSync(target, "# Doc\n\nDon't run `npx evilpkg` to install.\n", "utf8")
+    const policyPath = join(tmpDir, "policy.yaml")
+    writeFileSync(
+      policyPath,
+      `version: "0.1"
+allow:
+  - reason: "Test fixture documents an attack pattern."
+    files: ["CLAUDE.md"]
+    rules:
+      - id: "CCI-005"
+        detail_tags: ["npx-arbitrary-install"]
+`,
+      "utf8",
+    )
+    const code = await main(["scan", target, "--policy", policyPath])
+    expect(code).toBe(0)
+    expect(io.stdout).toMatch(/permitted by policy/)
+  })
+
+  it("--policy with invalid YAML exits 2 with policy error to stderr", async () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), "phub-policy-bad-"))
+    const bad = join(tmpDir, "bad-policy.yaml")
+    writeFileSync(bad, "strict: false\n", "utf8") // missing required version
+    const target = join(tmpDir, "x.md")
+    writeFileSync(target, "clean\n", "utf8")
+    const code = await main(["scan", target, "--policy", bad])
+    expect(code).toBe(2)
+    expect(io.stderr).toMatch(/policy/)
+  })
+
   it("filters to a single detector via --detector=CCI-001", async () => {
     const code = await main(["scan", T1_FIXTURE, "--detector=CCI-001", "--json"])
     expect(code).toBe(1)

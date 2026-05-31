@@ -1,0 +1,8 @@
+# INVALID — allow.files cannot be empty. Use ["**/*"] for repo-wide
+# (and write a reason explaining why).
+version: "0.1"
+allow:
+  - reason: "Empty files array — schema must reject."
+    files: []
+    rules:
+      - id: "CCI-005"

@@ -71,11 +71,40 @@ Result: 2 of 3 detectors flagged content. Review before publishing.
 | `--json` | off | Emit `{ filename, verdicts: [...] }` JSON for CI consumption |
 | `--sarif` | off | Emit SARIF 2.1.0 for [GitHub Code Scanning](https://docs.github.com/code-security/code-scanning) upload (mutually exclusive with `--json`) |
 | `--detector=<id>` | all | Restrict run; accepts detector name, CCI ID (`CCI-001`), or threat category (`T1`). Repeat for multiple. |
-| `--strict` | off | Treat `warn` verdicts as `fail` (none in v0.1; reserved for future detectors) |
+| `--strict` | off | Treat `warn` verdicts as `fail`. Composes with policy: CLI wins on `true`. |
 | `--no-fail` | off | Suppress finding-exit 1 (still exits 2 on errors). Useful when SARIF upload is the gate. |
+| `--allow-fail=<id>` | none | Allow a detector/CCI/threat ID to fail. Repeatable. Appended to `policy.allow` as a synthetic entry. |
+| `--policy <path>` | auto-discover | Path to `.primitivehub/policy.yaml`. Without this flag: walk cwd → git root looking for `.primitivehub/policy.yaml`, fall back to implicit default. See [Context Policy Language v0.1 spec](../../docs/context-policy-v0.1.md). |
 
-**Exit codes:** `0` = clean, `1` = one or more detectors flagged
-content, `2` = usage error or unreadable file.
+**Exit codes:** `0` = clean (or policy permitted everything), `1` = one
+or more detectors flagged content, `2` = usage error, unreadable file,
+mutually-exclusive flags, or invalid policy file.
+
+### Context Policy Language
+
+Per-file allow exceptions live in `.primitivehub/policy.yaml`. The
+canonical use case (`docs/bugs.md` #25): the project's own `CLAUDE.md`
+legitimately mentions `npx skill installs` in its hard-rule prose
+forbidding the pattern; the T5 v0.1 detector flags it. With policy:
+
+```yaml
+# .primitivehub/policy.yaml
+version: "0.1"
+allow:
+  - reason: "CLAUDE.md teaches T5 attack patterns by design; docs/bugs.md #25."
+    files: ["CLAUDE.md"]
+    rules:
+      - id: "CCI-005"
+        detail_tags: ["npx-arbitrary-install"]
+```
+
+Now `phub scan CLAUDE.md` → exit 0 with `"2 findings permitted by
+policy"` surfaced in output. See
+[Context Policy Language v0.1 spec](../../docs/context-policy-v0.1.md)
+for the full surface (severity overrides, glob patterns, evaluation
+algorithm) and
+[ADR-0018](../../docs/decisions/0018-context-policy-language.md) for
+the rationale.
 
 ### GitHub Code Scanning integration
 

@@ -30,3 +30,26 @@ export { T5UnsafeShellInstallDetector } from "./scanners/t5-unsafe-shell-install
 
 export { renderHumanScanReport, renderHumanVerifyReport } from "./reporters/human.js"
 export { renderSarif } from "./reporters/sarif.js"
+
+export {
+  type Policy,
+  type PolicyAllowEntry,
+  type PolicyAllowRule,
+  type PolicyRuleConfig,
+  type PolicySeverity,
+  IMPLICIT_DEFAULT_POLICY,
+  PolicyLoadError,
+} from "./policy/types.js"
+export {
+  loadPolicyFromString,
+  loadPolicyFromFile,
+  discoverPolicyPath,
+  resolvePolicy,
+} from "./policy/loader.js"
+export {
+  applyPolicy,
+  type AllowedHint,
+  type PolicyAdjustedVerdict,
+  type PolicyEvaluation,
+} from "./policy/evaluator.js"
+export { matchGlob, matchAnyGlob } from "./policy/glob.js"

@@ -47,7 +47,7 @@ detector matches. Runs T1 prompt-injection, T2 Unicode-steganography,
 and T5 unsafe-shell-install detectors in v0.1.
 
 Flags:
-  --json                Output JSON
+  --json                Output JSON (includes policySource + policyAllowed)
   --sarif               Output SARIF 2.1.0 (for GitHub Code Scanning;
                         mutually exclusive with --json)
   --detector=<id>       Restrict to one detector. May be repeated.
@@ -57,11 +57,19 @@ Flags:
   --no-fail             Always exit 0, even when detectors flag content.
                         Useful in CI when SARIF upload is the gate
                         and the scan step shouldn't fail the job.
+  --allow-fail=<id>     Allow a detector/CCI/threat ID to FAIL without
+                        rejecting the scan. May be repeated. Appended
+                        to policy.allow as a synthetic entry.
+  --policy <path>       Path to .primitivehub/policy.yaml. Without this
+                        flag: auto-discover from cwd to git root, then
+                        fall back to implicit default. See
+                        docs/context-policy-v0.1.md.
 
 Exit codes:
-  0   no failures (or --no-fail set)
+  0   no failures (or --no-fail set, or policy suppressed everything)
   1   one or more detectors flagged content
-  2   usage error / file not readable / mutually-exclusive flags
+  2   usage error / file not readable / mutually-exclusive flags /
+      invalid policy file
 `
 
 const VERIFY_HELP = `phub verify <bundle.json>
@@ -113,6 +121,7 @@ const GLOBAL_SPECS: readonly FlagSpec[] = [
   { name: "strict" },
   { name: "allow-fail", takesValue: true, multiple: true },
   { name: "detector", takesValue: true, multiple: true },
+  { name: "policy", takesValue: true },
   { name: "force" },
   { name: "offline" },
 ]
@@ -198,12 +207,16 @@ export async function main(argv: readonly string[]): Promise<number> {
         process.stderr.write("phub scan: --json and --sarif are mutually exclusive.\n")
         return 2
       }
-      const exit = scanCommand(file, {
+      const scanOpts = {
         json: wantsJson,
         sarif: wantsSarif,
         strict: asBool(parsed.flags["strict"]),
         detectors: asStringArray(parsed.flags["detector"]),
-      })
+        allowFail: asStringArray(parsed.flags["allow-fail"]),
+      } as Parameters<typeof scanCommand>[1]
+      const policyPath = asString(parsed.flags["policy"])
+      if (policyPath !== undefined) scanOpts.policyPath = policyPath
+      const exit = scanCommand(file, scanOpts)
       // --no-fail: suppress exit 1 (findings) but preserve exit 2 (errors).
       if (asBool(parsed.flags["no-fail"]) && exit === 1) return 0
       return exit

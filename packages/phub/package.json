@@ -48,7 +48,8 @@
     "node": ">=20"
   },
   "dependencies": {
-    "@primitivehub/verify": "file:../verify"
+    "@primitivehub/verify": "file:../verify",
+    "yaml": "^2.6.0"
   },
   "devDependencies": {
     "@types/node": "^22",

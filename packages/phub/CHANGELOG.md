@@ -8,6 +8,29 @@ wrapper) and Context CI Top 10 version (for the scanner detectors);
 
 ## [Unreleased]
 
+### Added (PR 5.5.X — Context Policy Language v0.1, ADR-0018)
+- **`phub scan --policy <path>`** — load a
+  [Context Policy Language v0.1](../../docs/context-policy-v0.1.md)
+  YAML file. Per-file allow exceptions with required `reason` field,
+  per-rule severity overrides (`error`/`warning`/`note`/`off`), spec-
+  defined glob path matching. Closes the canonical false-positive
+  documented in `docs/bugs.md` #25.
+- **`phub scan --allow-fail=<id>`** (CLI) — appended to
+  `policy.allow` as synthetic entry; composes with `--policy`.
+- **Auto-discovery** of `.primitivehub/policy.yaml` walking cwd → git
+  root. Explicit `--policy <path>` wins.
+- **Human output**: appends "N findings permitted by policy" summary
+  with each unique `[CCI-NNN] reason` line.
+- **JSON output**: adds `policySource`, `policyAllowed` (per-hint
+  records with `reason`), and `summary` block.
+- **SARIF output**: rules disabled by `severity: off` emit no result;
+  allow-permitted hints emit no result. Code Scanning sees post-policy
+  state only.
+- New runtime dep: `yaml` (^2.6.0) — pure-TS, no transitive deps.
+- Programmatic exports: `loadPolicyFromFile`, `loadPolicyFromString`,
+  `applyPolicy`, `resolvePolicy`, `discoverPolicyPath`, `matchGlob`,
+  `matchAnyGlob`, all policy types, `IMPLICIT_DEFAULT_POLICY`.
+
 ### Added (PR 5.5.3.action)
 - `phub scan --sarif` — SARIF 2.1.0 output for GitHub Code Scanning
   upload, with `partialFingerprints` for stable cross-run dedup,

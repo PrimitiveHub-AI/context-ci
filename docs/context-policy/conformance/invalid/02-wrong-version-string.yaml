@@ -1,0 +1,4 @@
+# INVALID — version must be the literal "0.1" in this schema.
+# Older or newer versions get rejected with a specific error message
+# directing the user to upgrade phub or use an older spec.
+version: "0.2"

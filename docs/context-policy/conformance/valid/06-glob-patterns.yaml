@@ -1,0 +1,17 @@
+# Glob patterns: ** for any-depth, * for single-segment. The
+# allow-rule by id matches by detector name (not CCI ID).
+version: "0.1"
+allow:
+  - reason: "All AGENTS.md files at any depth may mention prompt-injection patterns (security docs)."
+    files:
+      - "**/AGENTS.md"
+      - "**/agents.md"
+    rules:
+      - id: "t1.prompt_injection"
+  - reason: "Top-level docs directory: cherry-picked docs may show examples."
+    files:
+      - "docs/*.md"          # docs/foo.md but NOT docs/sub/foo.md
+    rules:
+      - id: "T5"             # threat-category alias works too
+        detail_tags:
+          - "install-instruction-to-agent"

@@ -317,7 +317,13 @@ fix later" on the trust spine.
       CLAUDE.md/README.md/DESIGN.md, uploads SARIF to this repo's
       Code Scanning. End-to-end pipeline proven; this repo IS the
       demo until launch.)
-- [ ] Policy Language v0.1 spec versioned (ADR-0018)
+- [x] Policy Language v0.1 spec versioned (ADR-0018)
+      (PR 5.5.X — `docs/context-policy-v0.1.md` is the spec;
+      `docs/context-policy/conformance/` is the executable contract
+      (8 valid + 5 invalid + 6 scenario fixtures);
+      `packages/phub/src/policy/` is the reference implementation;
+      `phub scan --policy <path>` honors it. Resolves
+      `docs/bugs.md` #25 via per-file allow exceptions today.)
 
 ### Gate G-D — MCP Bridge ready (end of Week 9)
 - [ ] `@primitivehub/mcp-server` published to npm
