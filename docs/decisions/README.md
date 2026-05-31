@@ -41,6 +41,7 @@ Links to primitives, threat-model entries, vendor docs, prior ADRs.
 
 | # | Title | Status |
 |---|---|---|
+| [0014](./0014-public-read-rls-policy.md) | Public-read RLS policy (visibility as a first-class concept) | Accepted |
 | [0013](./0013-trust-bundle-format.md) | Trust Bundle format: `application/vnd.primitivehub.bundle+json` | Accepted |
 | [0012](./0012-detector-protocol.md) | Detector Protocol for Context CI | Accepted |
 | [0011](./0011-sigstore-backend-abstraction.md) | Sigstore backend abstraction: public / staging / self-hosted | Accepted |

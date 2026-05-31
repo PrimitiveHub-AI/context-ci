@@ -593,8 +593,8 @@ If all 6 steps pass, the primitive is **cryptographically trusted**.
 
 | Endpoint | Purpose | Auth |
 |---|---|---|
-| `GET /api/v1/trust/{slug}/versions/{semver}` | Lookup by human name | Yes (PR 5.5.1); anonymous (PR 5.5.2+) for public registries |
-| `GET /api/v1/trust/by-digest/{digest_hex}` | Lookup by SHA-256 hex digest — the canonical content-addressed lookup | Yes (PR 5.5.1); anonymous (PR 5.5.2+) |
+| `GET /api/v1/trust/{slug}/versions/{semver}` | Lookup by human name | Anonymous OK for primitives in public registries (`Registry.visibility = 'public'`); private primitives require auth + tenant scope |
+| `GET /api/v1/trust/by-digest/{digest_hex}` | Lookup by SHA-256 hex digest — the canonical content-addressed lookup | Anonymous OK for public; private requires auth |
 
 The by-digest endpoint is the **verification-overlay shape**: any
 consumer holding a primitive sha256 can ask "what does PrimitiveHub

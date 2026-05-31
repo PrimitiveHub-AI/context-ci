@@ -689,15 +689,18 @@ def get_bundle(request: HttpRequest, slug: str) -> BundleOut:
 # is self-verifying offline — a consumer with the Sigstore trust root
 # (bundled in any verifier) can validate without calling back here.
 #
-# PR 5.5.1 (current): endpoints require auth + tenant scope. Bundles
-# are returned for primitives the caller can see, with status=signed.
-# Public-anonymous lookup ships in PR 5.5.2 once the `public_read`
-# Postgres role + visibility-gated query path land — that's infra
-# work, kept out of this PR to keep its scope clean.
+# PR 5.5.2 (current): endpoints are PUBLIC ANONYMOUS for primitives in
+# registries with `visibility=public`. RLS (migration 0008) does the
+# enforcement: the same `primitivehub_app` role sees own-org rows via
+# tenant_isolation policy when current_org is set, plus public-registry
+# rows via public_read policy regardless. Anonymous request →
+# current_org is NULL → tenant_isolation hides everything → public_read
+# shows only public-registry rows. No application-level visibility
+# filter needed; RLS is the single security boundary (ADR-0014).
 #
-# IDOR posture matches the rest of the registry: queryset starts from
-# `_scoped_versions(user)`; unknown digest → 404; cross-tenant lookup
-# is indistinguishable from "doesn't exist" (no existence leak).
+# IDOR posture is unchanged: cross-tenant private lookups still
+# 404 (no existence leak); the only NEW behavior is that anonymous
+# requests for PUBLIC primitives now succeed instead of getting a 401.
 # ─────────────────────────────────────────────────────────────────────────────
 
 
@@ -763,26 +766,42 @@ def _trust_bundle_for_version(version: PrimitiveVersion) -> TrustBundleOut:
     return _serialize_trust_bundle(version, attestation, content_bytes)
 
 
+def _trust_versions() -> QuerySet[PrimitiveVersion]:
+    """The trust-endpoint queryset. RLS does the visibility filtering —
+    we just return the unfiltered queryset. See migration 0008's truth
+    table for what's visible under which auth state."""
+    return PrimitiveVersion.objects.select_related("primitive", "primitive__repository__registry")
+
+
+# Cache discipline per docs/spec.md § 10.6:
+#   by-digest: bundles are content-addressed + immutable → 1 year max-age
+#   by-slug:   slug→digest mapping changes on new release → 24h max-age
+_BY_DIGEST_CACHE = "public, max-age=31536000, immutable"
+_BY_SLUG_CACHE = "public, max-age=86400"
+
+
 @router.get(
     "/trust/{slug}/versions/{semver}",
     response=TrustBundleOut,
     tags=["trust"],
 )
-@requires_auth
-def get_trust_bundle_by_slug(request: HttpRequest, slug: str, semver: str) -> TrustBundleOut:
-    """Trust bundle by human-readable slug + semver.
+def get_trust_bundle_by_slug(
+    request: HttpRequest, response: HttpResponse, slug: str, semver: str
+) -> TrustBundleOut:
+    """Trust bundle by human-readable slug + semver. Public anonymous.
 
-    Convenience endpoint for the agent path "I want elite-mobile-design
-    at version 1.2.0." Returns 404 if the caller can't see the
-    primitive (tenant scope) OR if no signed attestation exists yet.
+    Returns 404 if no public-registry version with that (slug, semver)
+    pair exists AND the caller can't see a private one in their own
+    org. Authenticated callers see their own-org private primitives
+    via RLS's tenant_isolation policy.
     """
     version = get_object_or_404(
-        _scoped_versions(_user(request)).select_related(
-            "primitive", "primitive__repository__registry"
-        ),
+        _trust_versions(),
         primitive__slug=slug,
         semver=semver,
     )
+    response["Cache-Control"] = _BY_SLUG_CACHE
+    response["Content-Type"] = "application/vnd.primitivehub.bundle+json"
     return _trust_bundle_for_version(version)
 
 
@@ -791,25 +810,26 @@ def get_trust_bundle_by_slug(request: HttpRequest, slug: str, semver: str) -> Tr
     response=TrustBundleOut,
     tags=["trust"],
 )
-@requires_auth
-def get_trust_bundle_by_digest(request: HttpRequest, digest_hex: str) -> TrustBundleOut:
-    """Trust bundle by raw SHA-256 digest hex.
+def get_trust_bundle_by_digest(
+    request: HttpRequest, response: HttpResponse, digest_hex: str
+) -> TrustBundleOut:
+    """Trust bundle by raw SHA-256 digest hex. Public anonymous.
 
     The canonical lookup — content-addressed. An agent that fetched a
-    primitive from anywhere else can compute its sha256 and ask us
-    "what do you know about this hash?" — and get back the attestation
-    if we've signed it, or 404 otherwise.
+    primitive from anywhere can compute its sha256 and ask us "what do
+    you know about this hash?" — and get back the attestation if we've
+    signed it (and the primitive is in a public registry OR the caller
+    can see it via tenant scope), or 404 otherwise.
 
     This is the verification-overlay shape: PrimitiveHub doesn't have
     to be the only registry, only the verifier on top of any registry.
     """
-    # Reject malformed digest early — 64 lowercase hex chars.
     if len(digest_hex) != 64 or not all(c in "0123456789abcdef" for c in digest_hex):
         raise HttpError(400, "digest_hex must be 64 lowercase hex characters")
     version = get_object_or_404(
-        _scoped_versions(_user(request)).select_related(
-            "primitive", "primitive__repository__registry"
-        ),
+        _trust_versions(),
         content_digest=digest_hex,
     )
+    response["Cache-Control"] = _BY_DIGEST_CACHE
+    response["Content-Type"] = "application/vnd.primitivehub.bundle+json"
     return _trust_bundle_for_version(version)
