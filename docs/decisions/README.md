@@ -41,6 +41,7 @@ Links to primitives, threat-model entries, vendor docs, prior ADRs.
 
 | # | Title | Status |
 |---|---|---|
+| [0024](./0024-sarif-and-github-action.md) | SARIF 2.1.0 as canonical CI integration + composite GitHub Action | Accepted |
 | [0023](./0023-phub-cli-and-detector-parity.md) | `phub` CLI as user-facing surface + detector-parity discipline | Accepted |
 | [0022](./0022-publishing-deferred-to-launch.md) | `@primitivehub/verify` npm publish deferred to launch (three-lock gate) | Accepted |
 | [0021](./0021-conformance-suite-as-executable-contract.md) | Conformance suite as the executable contract definition | Accepted |

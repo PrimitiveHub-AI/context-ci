@@ -306,7 +306,17 @@ fix later" on the trust spine.
       `@primitivehub/verify` which is offline-by-construction; the
       `--offline` flag is accepted as documentary)
 - [ ] GitHub Action published to Marketplace under MIT
-- [ ] Demo repo proves end-to-end CI gating
+      (PR 5.5.3.action ships `actions/phub-scan/` composite Action +
+      `phub scan --sarif` + ADR-0024. Action is dogfooded in-tree
+      via `.github/workflows/phub-scan-demo.yml`. Marketplace
+      publication = launch-day move: cut standalone
+      `primitivehub/phub-scan` repo, publish as v0.1.0.)
+- [x] Demo repo proves end-to-end CI gating
+      (PR 5.5.3.action — `.github/workflows/phub-scan-demo.yml`
+      builds verify + phub, runs the local composite action against
+      CLAUDE.md/README.md/DESIGN.md, uploads SARIF to this repo's
+      Code Scanning. End-to-end pipeline proven; this repo IS the
+      demo until launch.)
 - [ ] Policy Language v0.1 spec versioned (ADR-0018)
 
 ### Gate G-D — MCP Bridge ready (end of Week 9)

@@ -69,11 +69,21 @@ Result: 2 of 3 detectors flagged content. Review before publishing.
 | Flag | Default | What it does |
 |---|---|---|
 | `--json` | off | Emit `{ filename, verdicts: [...] }` JSON for CI consumption |
+| `--sarif` | off | Emit SARIF 2.1.0 for [GitHub Code Scanning](https://docs.github.com/code-security/code-scanning) upload (mutually exclusive with `--json`) |
 | `--detector=<id>` | all | Restrict run; accepts detector name, CCI ID (`CCI-001`), or threat category (`T1`). Repeat for multiple. |
 | `--strict` | off | Treat `warn` verdicts as `fail` (none in v0.1; reserved for future detectors) |
+| `--no-fail` | off | Suppress finding-exit 1 (still exits 2 on errors). Useful when SARIF upload is the gate. |
 
 **Exit codes:** `0` = clean, `1` = one or more detectors flagged
 content, `2` = usage error or unreadable file.
+
+### GitHub Code Scanning integration
+
+Pipe the SARIF output into a file and upload via
+[`github/codeql-action/upload-sarif`](https://github.com/github/codeql-action),
+or use the [`primitivehub/phub-scan`](../../actions/phub-scan/)
+composite action which wraps the whole flow (per
+[ADR-0024](../../docs/decisions/0024-sarif-and-github-action.md)).
 
 ## `phub verify`
 

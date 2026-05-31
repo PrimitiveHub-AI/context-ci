@@ -1,0 +1,88 @@
+# ─────────────────────────────────────────────────────────────────────
+# phub-scan-demo: end-to-end proof of actions/phub-scan/ against the
+# project's own AGENTS.md / CLAUDE.md, using the local in-tree build
+# (phub-source: local) instead of npm — required pre-launch because
+# the npm publish is gated per ADR-0022.
+#
+# Demonstrates the full Gate G-C pipeline:
+#   build verify → build phub → run composite action → upload SARIF
+#   → findings visible in the Security → Code scanning tab of this repo.
+#
+# This workflow is the answer to Gate G-C "Demo repo proves end-to-end
+# CI gating" — the demo IS this repo until we cut a standalone
+# primitivehub/example-context-repo at launch.
+#
+# fail-on-findings is FALSE because the project's own CLAUDE.md
+# legitimately mentions npx skill installs in its hard rules (T5
+# false positive documented in docs/bugs.md #25); a true gate awaits
+# v0.2 markdown-AST awareness.
+# ─────────────────────────────────────────────────────────────────────
+name: phub-scan demo (local action)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "actions/phub-scan/**"
+      - "packages/phub/**"
+      - "packages/verify/**"
+      - ".github/workflows/phub-scan-demo.yml"
+      - "AGENTS.md"
+      - "CLAUDE.md"
+  push:
+    branches: [main]
+    paths:
+      - "actions/phub-scan/**"
+      - "packages/phub/**"
+      - "packages/verify/**"
+      - ".github/workflows/phub-scan-demo.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write  # required for SARIF upload to Code Scanning
+
+jobs:
+  demo:
+    name: scan + upload SARIF
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: pnpm
+          cache-dependency-path: |
+            packages/verify/pnpm-lock.yaml
+            packages/phub/pnpm-lock.yaml
+
+      # verify is a file: dep of phub — must be built first so the
+      # @primitivehub/verify import in phub's dist/ resolves.
+      - name: Build @primitivehub/verify
+        working-directory: packages/verify
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      - name: Build @primitivehub/phub
+        working-directory: packages/phub
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      # Use the local composite action against the repo's own files.
+      # fail-on-findings: false because CLAUDE.md hits the documented
+      # T5 v0.1 false positive (docs/bugs.md #25). The SARIF upload
+      # still surfaces every finding in Code Scanning.
+      - name: Run phub-scan on AGENTS.md + CLAUDE.md
+        uses: ./actions/phub-scan
+        with:
+          files: 'CLAUDE.md README.md DESIGN.md'
+          phub-source: 'local'
+          fail-on-findings: 'false'
+          upload-sarif: 'true'

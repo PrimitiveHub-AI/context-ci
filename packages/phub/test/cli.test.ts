@@ -80,6 +80,33 @@ describe("phub scan", () => {
     expect(t1.passed).toBe(false)
   })
 
+  it("emits SARIF 2.1.0 with --sarif", async () => {
+    const code = await main(["scan", T1_FIXTURE, "--sarif"])
+    expect(code).toBe(1)
+    const sarif = JSON.parse(io.stdout)
+    expect(sarif.version).toBe("2.1.0")
+    expect(sarif.runs[0].tool.driver.name).toBe("phub")
+    expect(sarif.runs[0].results.length).toBeGreaterThan(0)
+  })
+
+  it("rejects --json + --sarif together with exit 2", async () => {
+    const code = await main(["scan", T1_FIXTURE, "--json", "--sarif"])
+    expect(code).toBe(2)
+    expect(io.stderr).toMatch(/mutually exclusive/)
+  })
+
+  it("--no-fail converts finding-exit 1 to 0 (preserves SARIF body)", async () => {
+    const code = await main(["scan", T1_FIXTURE, "--sarif", "--no-fail"])
+    expect(code).toBe(0)
+    const sarif = JSON.parse(io.stdout)
+    expect(sarif.runs[0].results.length).toBeGreaterThan(0)
+  })
+
+  it("--no-fail still surfaces exit 2 on usage errors", async () => {
+    const code = await main(["scan", "/tmp/missing-file-xyz.md", "--no-fail"])
+    expect(code).toBe(2)
+  })
+
   it("filters to a single detector via --detector=CCI-001", async () => {
     const code = await main(["scan", T1_FIXTURE, "--detector=CCI-001", "--json"])
     expect(code).toBe(1)

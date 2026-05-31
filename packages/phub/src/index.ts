@@ -29,3 +29,4 @@ export { T2UnicodeSteganographyDetector } from "./scanners/t2-unicode-steganogra
 export { T5UnsafeShellInstallDetector } from "./scanners/t5-unsafe-shell-install.js"
 
 export { renderHumanScanReport, renderHumanVerifyReport } from "./reporters/human.js"
+export { renderSarif } from "./reporters/sarif.js"

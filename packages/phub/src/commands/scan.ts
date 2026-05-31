@@ -3,10 +3,13 @@ import { readFileSync } from "node:fs"
 import { DETECTORS, detectorByName } from "../scanners/registry.js"
 import { Severity, type Verdict } from "../scanners/types.js"
 import { renderHumanScanReport } from "../reporters/human.js"
+import { renderSarif } from "../reporters/sarif.js"
 
 export interface ScanOptions {
   /** Output JSON instead of human-readable text */
   json: boolean
+  /** Output SARIF 2.1.0 (mutually exclusive with json) */
+  sarif: boolean
   /** Restrict to specific detectors (by name, CCI ID, or threat category) */
   detectors?: readonly string[]
   /** Treat WARN as FAIL (default: only FAIL triggers exit 1) */
@@ -46,7 +49,11 @@ export function scanCommand(filename: string, opts: ScanOptions): number {
     return 2
   }
   const result = runScan(filename, content, opts)
-  if (opts.json) {
+  if (opts.sarif) {
+    // SARIF output goes to stdout; human-readable progress to stderr
+    // so callers redirecting stdout into a .sarif file get clean JSON.
+    process.stdout.write(renderSarif(filename, result.verdicts) + "\n")
+  } else if (opts.json) {
     process.stdout.write(JSON.stringify({ filename: result.filename, verdicts: result.verdicts }, null, 2) + "\n")
   } else {
     process.stdout.write(renderHumanScanReport(filename, result.verdicts) + "\n")

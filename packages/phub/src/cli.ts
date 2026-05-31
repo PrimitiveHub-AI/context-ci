@@ -48,15 +48,20 @@ and T5 unsafe-shell-install detectors in v0.1.
 
 Flags:
   --json                Output JSON
+  --sarif               Output SARIF 2.1.0 (for GitHub Code Scanning;
+                        mutually exclusive with --json)
   --detector=<id>       Restrict to one detector. May be repeated.
                         Accepts detector name (t1.prompt_injection),
                         CCI ID (CCI-001), or threat category (T1).
   --strict              Treat WARN verdicts as FAIL (default: only FAIL exits non-zero)
+  --no-fail             Always exit 0, even when detectors flag content.
+                        Useful in CI when SARIF upload is the gate
+                        and the scan step shouldn't fail the job.
 
 Exit codes:
-  0   no failures
+  0   no failures (or --no-fail set)
   1   one or more detectors flagged content
-  2   usage error / file not readable
+  2   usage error / file not readable / mutually-exclusive flags
 `
 
 const VERIFY_HELP = `phub verify <bundle.json>
@@ -100,6 +105,8 @@ Exit codes:
 
 const GLOBAL_SPECS: readonly FlagSpec[] = [
   { name: "json" },
+  { name: "sarif" },
+  { name: "no-fail" },
   { name: "help", alias: "h" },
   { name: "version", alias: "V" },
   { name: "level", takesValue: true },
@@ -185,11 +192,21 @@ export async function main(argv: readonly string[]): Promise<number> {
         process.stderr.write("phub scan: missing <file> argument.\nphub scan <file>\n")
         return 2
       }
-      return scanCommand(file, {
-        json: asBool(parsed.flags["json"]),
+      const wantsJson = asBool(parsed.flags["json"])
+      const wantsSarif = asBool(parsed.flags["sarif"])
+      if (wantsJson && wantsSarif) {
+        process.stderr.write("phub scan: --json and --sarif are mutually exclusive.\n")
+        return 2
+      }
+      const exit = scanCommand(file, {
+        json: wantsJson,
+        sarif: wantsSarif,
         strict: asBool(parsed.flags["strict"]),
         detectors: asStringArray(parsed.flags["detector"]),
       })
+      // --no-fail: suppress exit 1 (findings) but preserve exit 2 (errors).
+      if (asBool(parsed.flags["no-fail"]) && exit === 1) return 0
+      return exit
     }
 
     case "verify": {

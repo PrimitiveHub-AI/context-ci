@@ -8,6 +8,22 @@ wrapper) and Context CI Top 10 version (for the scanner detectors);
 
 ## [Unreleased]
 
+### Added (PR 5.5.3.action)
+- `phub scan --sarif` — SARIF 2.1.0 output for GitHub Code Scanning
+  upload, with `partialFingerprints` for stable cross-run dedup,
+  `properties.threatCategory`/`detailTag` for downstream filtering,
+  and `helpUri` per rule pointing at the Top 10 spec page.
+  Mutually exclusive with `--json`. Per ADR-0024.
+- `phub scan --no-fail` — converts finding-exit 1 → 0 (preserves
+  error-exit 2). Lets CI use SARIF upload as the gate instead of
+  process exit code.
+- `actions/phub-scan/` composite GitHub Action (in-tree pre-launch,
+  to be republished as `primitivehub/phub-scan` at launch).
+- `.github/workflows/phub-scan-demo.yml` — end-to-end CI demo using
+  the local action against the repo's own files; uploads SARIF to
+  this repo's Code Scanning category `phub-context-ci`.
+- Programmatic export: `renderSarif(filename, verdicts) → string`.
+
 ## [0.1.0] — 2026-05-31
 
 **Not yet published to npm.** Per
