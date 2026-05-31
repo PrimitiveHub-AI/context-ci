@@ -82,7 +82,9 @@ landed; PR #2-5 wire Sigstore signing on top. Phase 5+ adds scanners.
 | Path | What it defines |
 |---|---|
 | [`DESIGN.md`](./DESIGN.md) | Unified design doctrine for the whole project. Visual theme, palette + roles, typography, components, layout principles. Supersedes scattered taste references. |
-| [`docs/threat-model.md`](./docs/threat-model.md) | 10 supply-chain attack categories Context CI is designed to detect. Cited by the paper. |
+| [`docs/doctrine.md`](./docs/doctrine.md) | **Operational law.** Mission (operational + philosophical), category statement ("Context Firewall for AI agents"), named enemy ("unverified agent context"), ICP (1/2/3), 10 Operating Laws, decision algorithm, "We are not …" anti-positioning, Layers of the Trust Runtime, north-star metric, locked paper thesis. Versioned per ADR-0025. |
+| [`docs/brand-voice.md`](./docs/brand-voice.md) | Killer phrases (use), banned vocabulary (do not ship), on-voice / off-voice examples, author attribution. Every external sentence passes through this filter. Versioned per ADR-0025. |
+| [`docs/threat-model.md`](./docs/threat-model.md) | 10 supply-chain attack categories Context CI is designed to detect. Cited by the paper. Promoted to Context CI Top 10 v0.1 spec in Week 2 of the execution plan. |
 | [`docs/spec.md`](./docs/spec.md) | Primitive Spec v0.1: frontmatter, body sections, content addressing, in-toto Attestation predicate, Sigstore signing model, SLSA mapping, Trust Bundle wire format. |
 | [`docs/execution-plan.md`](./docs/execution-plan.md) | The 18-week execution arc (2026-06-01 → 2026-09-30) from Phase 5.5 to public launch. Acceptance gates (G-A..G-G), weekly cadence, standards-governance workstreams (Trust Contract / Top 10 / CBOM / Policy Language as versioned public specs), risk register, explicit deferrals. Companion to `docs/roadmap.md` — roadmap is the phase ledger, execution plan is how we ship the next phases. |
 | [`docs/README.md`](./docs/README.md) | Doc index + planned OSS sibling repos + the relationship diagram for the whole strategic doc layer. |
@@ -102,6 +104,7 @@ The team-facing strategic layer that frames every decision:
 | [`docs/positioning.md`](./docs/positioning.md) | **WHO we are NOT** — competitive landscape vs GitHub, HF, npm, MCP Registry, vendor skill registries. |
 | [`docs/principles.md`](./docs/principles.md) | **WHAT is non-negotiable** — 18 beliefs the project ships against. |
 | [`docs/roadmap.md`](./docs/roadmap.md) | **WHEN** — Phase 1 through Phase 12+ with target windows, ship lists, success metrics. |
+| [`docs/okrs/2026-Q3.md`](./docs/okrs/2026-Q3.md) | **WHAT we are measuring this quarter** — 3 Objectives × 3 Key Results, mapped to the gates in `execution-plan.md` and the Operating Laws in `doctrine.md`. If a piece of work doesn't ladder to a KR, it doesn't belong on the quarter. |
 | [`docs/bugs.md`](./docs/bugs.md) | **WHAT broke** — every load-bearing bug + root cause + prevention. Grep before re-deriving. AI-hallucination log at the bottom. |
 | [`docs/decisions/`](./docs/decisions/) | **HOW we built it** — Architecture Decision Records. One file per load-bearing choice with status, alternatives, consequences. |
 
@@ -243,6 +246,21 @@ These are **enforced by user instruction**; not negotiable.
    primitive in `apps/web/content/primitives/`, source deleted*. The npx
    install path is treated as a supply-chain attack vector (T5 in our
    threat model).
+
+## Decision algorithm (from [`docs/doctrine.md`](./docs/doctrine.md))
+
+For any non-trivial decision (PR scope, feature proposal, design
+partner ask, dependency add, marketing copy), ask in order:
+
+1. **Does this serve an Operating Law?** (See `docs/doctrine.md` §
+   "The Operating Laws".) Yes → priority. No → continue.
+2. **Does this serve an active OKR this quarter?** (See
+   `docs/okrs/2026-Q3.md`.) Yes → schedule. No → continue.
+3. **Does this preserve our category position?** ("We are the Context
+   Firewall, not a registry.") Yes → maybe. No → reject.
+
+If a decision cannot pass step 3, the answer is no. Note the decision
+in the relevant ADR or PR description; do not re-litigate next month.
 
 ## Cryptographic vocabulary (locked)
 
