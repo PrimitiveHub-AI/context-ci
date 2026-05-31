@@ -41,8 +41,9 @@ Links to primitives, threat-model entries, vendor docs, prior ADRs.
 
 | # | Title | Status |
 |---|---|---|
+| [0015](./0015-trust-contract-versioning.md) | Trust Contract v0.1 versioning + deprecation policy | Accepted |
 | [0014](./0014-public-read-rls-policy.md) | Public-read RLS policy (visibility as a first-class concept) | Accepted |
-| [0013](./0013-trust-bundle-format.md) | Trust Bundle format: `application/vnd.primitivehub.bundle+json` | Accepted |
+| [0013](./0013-trust-bundle-format.md) | Trust Bundle format: `application/vnd.primitivehub.bundle+json` (superseded by Trust Contract v0.1 spec; original decision retained for history) | Accepted |
 | [0012](./0012-detector-protocol.md) | Detector Protocol for Context CI | Accepted |
 | [0011](./0011-sigstore-backend-abstraction.md) | Sigstore backend abstraction: public / staging / self-hosted | Accepted |
 | [0010](./0010-token-storage-httponly-cookies.md) | Token storage: httpOnly cookies + same-origin proxy | Accepted |

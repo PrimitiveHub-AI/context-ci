@@ -516,6 +516,16 @@ identity is bound to one of the documented PrimitiveHub reviewer roles.
 
 ## 10. Trust Bundle (the runtime wire format)
 
+> **Canonical source moved.** As of 2026-05-31, the Trust Bundle wire
+> format is published as a standalone versioned spec:
+> **[Trust Contract v0.1](./trust-contract-v0.1.md)**. That document
+> is the normative source; this section is a brief overview retained
+> for spec-reader convenience and historical continuity.
+>
+> Versioning + deprecation policy: ADR-0015.
+> Reference implementation: ADR-0020 (planned).
+> Conformance suite: `docs/trust-contract/conformance/` (ships PR 5.5.B).
+
 A **Trust Bundle** is the canonical artifact returned by PrimitiveHub's
 runtime trust API (`/api/v1/trust/*`) and consumed by verifiers (CLI,
 MCP server, custom agents). The bundle is **self-contained**: a
