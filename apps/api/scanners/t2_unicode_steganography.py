@@ -196,7 +196,8 @@ class T2UnicodeSteganographyDetector:
     for invisible/bidi/tag chars, plus word-by-word for mixed scripts."""
 
     name = "t2.unicode_steganography"
-    threat_category = "T2"
+    threat_category = "T2"  # legacy; back-compat
+    cci_id = "CCI-002"  # Context CI Top 10 v0.1 canonical ID (ADR-0016)
     detector_version = "0.1.0"
 
     def run(self, ctx: DetectorContext) -> Verdict:
@@ -216,6 +217,7 @@ class T2UnicodeSteganographyDetector:
             return Verdict(
                 detector_name=self.name,
                 threat_category=self.threat_category,
+                cci_id=self.cci_id,
                 severity=Severity.INFO,
                 passed=True,
                 summary="No Unicode-steganography patterns matched.",
@@ -225,6 +227,7 @@ class T2UnicodeSteganographyDetector:
         return Verdict(
             detector_name=self.name,
             threat_category=self.threat_category,
+            cci_id=self.cci_id,
             severity=Severity.FAIL,
             passed=False,
             summary=(

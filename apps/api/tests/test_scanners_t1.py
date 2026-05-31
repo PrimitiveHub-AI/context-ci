@@ -163,6 +163,8 @@ def test_verdict_as_predicate_dict_has_stable_shape() -> None:
     d = v.as_predicate_dict()
     assert d["detector_name"] == "t1.prompt_injection"
     assert d["threat_category"] == "T1"
+    # CCI ID is the canonical taxonomy reference (ADR-0016).
+    assert d["cci_id"] == "CCI-001"
     assert d["severity"] == "fail"
     assert d["passed"] is False
     assert d["detector_version"] == "0.1.0"
@@ -172,6 +174,30 @@ def test_verdict_as_predicate_dict_has_stable_shape() -> None:
     import json
 
     json.dumps(d)
+
+
+def test_t1_detector_carries_cci_id_class_attr() -> None:
+    """Per ADR-0016, every active detector exposes a stable CCI ID."""
+    d = T1PromptInjectionDetector()
+    assert d.cci_id == "CCI-001"
+
+
+def test_verdict_without_cci_id_omits_key_from_predicate_dict() -> None:
+    """A Verdict whose cci_id is the empty-string default MUST NOT
+    emit the `cci_id` key in the predicate. Forward-compat: v0.x
+    consumers ignore unknown keys, but emitting `"cci_id": ""` would
+    needlessly bloat every legacy attestation."""
+    from scanners.types import Severity, Verdict
+
+    v = Verdict(
+        detector_name="legacy.detector",
+        threat_category="T99",
+        severity=Severity.INFO,
+        passed=True,
+        summary="legacy",
+    )
+    assert v.cci_id == ""
+    assert "cci_id" not in v.as_predicate_dict()
 
 
 # ─────────────────────────────────────────────────────────────────────

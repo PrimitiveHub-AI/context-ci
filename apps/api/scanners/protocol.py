@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 class Detector(Protocol):
-    """One detector for one threat category from docs/threat-model.md.
+    """One detector for one threat category from the Context CI Top 10.
 
     Attributes
     ----------
@@ -29,8 +29,13 @@ class Detector(Protocol):
         depend on it. Never rename a detector — supersede it with a
         new name and bump its `detector_version`.
     threat_category
-        Short code from docs/threat-model.md (`"T1"` through `"T10"`).
-        One detector per category in the v1 pipeline.
+        Legacy short code (`"T1"` through `"T10"`). Kept for back-compat
+        with attestations written before the CCI ID scheme; new
+        consumers SHOULD prefer `cci_id`.
+    cci_id
+        Context CI Top 10 v0.1 stable identifier (`"CCI-001"` through
+        `"CCI-010"`). The canonical taxonomy reference per ADR-0016.
+        Empty string for detectors that haven't been mapped yet (rare).
     detector_version
         Semver. Bumped whenever the detection algorithm changes
         materially. Lets verifiers tell "was this signed by a stale
@@ -47,6 +52,7 @@ class Detector(Protocol):
 
     name: str
     threat_category: str
+    cci_id: str
     detector_version: str
 
     def run(self, ctx: DetectorContext) -> Verdict: ...

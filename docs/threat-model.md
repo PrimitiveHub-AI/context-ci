@@ -92,6 +92,17 @@ We do **not** model:
 
 ## 3. Threat categories
 
+> **Canonical taxonomy moved.** As of 2026-05-31, the ten categories
+> are published as a standalone versioned spec with stable identifiers
+> CCI-001 through CCI-010: **[Context CI Top 10
+> v0.1](./context-ci-top-10-v0.1.md)**. That document is the
+> normative source; the per-category subsections below are retained
+> here for historical context and reader convenience.
+>
+> Versioning + ID-stability policy: ADR-0016.
+> The mapping `CCI-NNN ↔ T<n> (legacy code) ↔ detector_name` lives
+> in `context-ci-top-10-v0.1.md` § 5.
+
 Each category below specifies: description, realistic scenario, why traditional
 supply-chain controls do not detect it, related real-world incidents,
 PrimitiveHub's detection approach in Context CI, and known limitations of that

@@ -155,7 +155,8 @@ class T5UnsafeShellInstallDetector:
     """
 
     name = "t5.unsafe_shell_install"
-    threat_category = "T5"
+    threat_category = "T5"  # legacy; back-compat
+    cci_id = "CCI-005"  # Context CI Top 10 v0.1 canonical ID (ADR-0016)
     detector_version = "0.1.0"
 
     def run(self, ctx: DetectorContext) -> Verdict:
@@ -173,6 +174,7 @@ class T5UnsafeShellInstallDetector:
             return Verdict(
                 detector_name=self.name,
                 threat_category=self.threat_category,
+                cci_id=self.cci_id,
                 severity=Severity.INFO,
                 passed=True,
                 summary="No unsafe-shell-install patterns matched.",
@@ -182,6 +184,7 @@ class T5UnsafeShellInstallDetector:
         return Verdict(
             detector_name=self.name,
             threat_category=self.threat_category,
+            cci_id=self.cci_id,
             severity=Severity.FAIL,
             passed=False,
             summary=(
