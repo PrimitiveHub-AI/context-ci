@@ -1,0 +1,52 @@
+{
+  "name": "@primitivehub/verify",
+  "version": "0.1.0",
+  "description": "Offline-first verifier for PrimitiveHub Trust Bundles. Zero runtime deps. Conformant to Trust Contract v0.1.",
+  "license": "MIT",
+  "author": "PrimitiveHub Labs / CyberOrca Labs",
+  "homepage": "https://primitivehub.ai",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DevXYZx/primitivehub.git",
+    "directory": "packages/verify"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "schema",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "typescript": "5.7.3",
+    "vitest": "^2.1.0"
+  },
+  "keywords": [
+    "primitivehub",
+    "trust-bundle",
+    "sigstore",
+    "in-toto",
+    "verifier",
+    "context-ci",
+    "ai-context",
+    "attestation"
+  ]
+}

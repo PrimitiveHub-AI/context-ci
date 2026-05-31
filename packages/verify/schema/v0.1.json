@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://primitivehub.ai/schemas/trust-bundle/v0.1.json",
+  "title": "PrimitiveHub Trust Bundle v0.1",
+  "type": "object",
+  "required": ["bundleVersion", "subject", "content", "attestation"],
+  "additionalProperties": false,
+  "properties": {
+    "bundleVersion": { "const": "0.1" },
+    "subject": {
+      "type": "object",
+      "required": ["slug", "semver", "contentDigest"],
+      "additionalProperties": false,
+      "properties": {
+        "slug":          { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,127}$" },
+        "semver":        { "type": "string", "minLength": 1 },
+        "contentDigest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+      }
+    },
+    "content": {
+      "type": "object",
+      "required": ["bytesB64", "sizeBytes", "mediaType"],
+      "additionalProperties": false,
+      "properties": {
+        "bytesB64":  { "type": "string" },
+        "sizeBytes": { "type": "integer", "minimum": 0 },
+        "mediaType": { "type": "string", "minLength": 1 }
+      }
+    },
+    "attestation": {
+      "type": "object",
+      "required": [
+        "predicateType", "predicate", "backendName",
+        "certChainPem", "signatureB64", "statementB64",
+        "rekorLogIndex", "rekorLogId", "rekorInclusionProofJson",
+        "verifyUrl", "signedAt"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "predicateType":           { "type": "string", "format": "uri" },
+        "predicate":               { "type": "object" },
+        "backendName":             { "enum": ["public", "staging", "self-hosted", "noop"] },
+        "certChainPem":            { "type": "string", "minLength": 1 },
+        "signatureB64":            { "type": "string", "minLength": 1 },
+        "statementB64":            { "type": "string", "minLength": 1 },
+        "rekorLogIndex":           { "type": "integer", "minimum": 0 },
+        "rekorLogId":              { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "rekorInclusionProofJson": { "type": "string", "minLength": 1 },
+        "verifyUrl":               { "type": "string", "format": "uri-reference" },
+        "signedAt":                { "type": "string", "format": "date-time" }
+      }
+    },
+    "detailUrl": { "type": "string", "format": "uri-reference" }
+  }
+}

@@ -42,6 +42,7 @@ Links to primitives, threat-model entries, vendor docs, prior ADRs.
 | # | Title | Status |
 |---|---|---|
 | [0021](./0021-conformance-suite-as-executable-contract.md) | Conformance suite as the executable contract definition | Accepted |
+| [0020](./0020-verify-as-reference-implementation.md) | `@primitivehub/verify` as the TS/JS reference implementation | Accepted |
 | [0017](./0017-workbench-to-primitive-forge-rename.md) | Workbench v2 → Primitive Forge rename | Accepted |
 | [0016](./0016-context-ci-top-10-versioning.md) | Context CI Top 10 v0.1 — taxonomy as versioned public spec | Accepted |
 | [0015](./0015-trust-contract-versioning.md) | Trust Contract v0.1 versioning + deprecation policy | Accepted |
