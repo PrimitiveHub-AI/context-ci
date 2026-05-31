@@ -83,7 +83,8 @@ landed; PR #2-5 wire Sigstore signing on top. Phase 5+ adds scanners.
 |---|---|
 | [`DESIGN.md`](./DESIGN.md) | Unified design doctrine for the whole project. Visual theme, palette + roles, typography, components, layout principles. Supersedes scattered taste references. |
 | [`docs/threat-model.md`](./docs/threat-model.md) | 10 supply-chain attack categories Context CI is designed to detect. Cited by the paper. |
-| [`docs/spec.md`](./docs/spec.md) | Primitive Spec v0.1: frontmatter, body sections, content addressing, in-toto Attestation predicate, Sigstore signing model, SLSA mapping. |
+| [`docs/spec.md`](./docs/spec.md) | Primitive Spec v0.1: frontmatter, body sections, content addressing, in-toto Attestation predicate, Sigstore signing model, SLSA mapping, Trust Bundle wire format. |
+| [`docs/execution-plan.md`](./docs/execution-plan.md) | The 18-week execution arc (2026-06-01 → 2026-09-30) from Phase 5.5 to public launch. Acceptance gates (G-A..G-G), weekly cadence, standards-governance workstreams (Trust Contract / Top 10 / CBOM / Policy Language as versioned public specs), risk register, explicit deferrals. Companion to `docs/roadmap.md` — roadmap is the phase ledger, execution plan is how we ship the next phases. |
 | [`docs/README.md`](./docs/README.md) | Doc index + planned OSS sibling repos + the relationship diagram for the whole strategic doc layer. |
 
 When you write code that touches any of: cryptographic vocabulary,

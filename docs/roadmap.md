@@ -4,6 +4,13 @@
 > phase scope changes, or when a new phase is added. Phases land in
 > order; later phases may move based on what shipping earlier ones
 > teaches us.
+>
+> **Companion:** [`docs/execution-plan.md`](./execution-plan.md) is the
+> 18-week execution arc (Phases 5.5 → 10, dated 2026-06-01 → 2026-09-30)
+> with explicit acceptance gates, weekly cadence, standards-governance
+> work (Trust Contract / Top 10 / CBOM specs), workstreams, and a risk
+> register. This roadmap is the phase ledger; the execution plan is how
+> we ship the next phases.
 
 ## Where we are right now
 
