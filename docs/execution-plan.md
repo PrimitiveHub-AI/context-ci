@@ -272,12 +272,13 @@ A phase does not roll over until ALL of its gates pass. No "ship it and
 fix later" on the trust spine.
 
 ### Gate G-A — Standards Lock complete (end of Week 2)
-- [ ] `docs/trust-contract-v0.1.md` published with versioning policy
-- [ ] Conformance suite ≥30 golden + ≥10 adversarial bundles, all green
-- [ ] `docs/context-ci-top-10-v0.1.md` published with CCI-001 … CCI-010
-- [ ] Forge rename committed; "Workbench v2" no longer appears in code
-- [ ] ADRs 0015, 0016, 0017 landed
-- [ ] CLAUDE.md updated to reference these specs
+- [x] `docs/trust-contract-v0.1.md` published with versioning policy   (PR 5.5.A)
+- [/] Conformance suite — 12 golden + 3 adversarial bundles green
+      (PR 5.5.B); growth to ≥30 + ≥10 rolling through Week 2
+- [x] `docs/context-ci-top-10-v0.1.md` published with CCI-001 … CCI-010 (PR 5.5.C)
+- [x] Forge rename committed; "Workbench v2" no longer appears in code (PR 5.5.D)
+- [x] ADRs 0015, 0016, 0017, 0021 landed
+- [x] CLAUDE.md updated to reference these specs                        (PR 5.5.A + 5.5.D)
 
 ### Gate G-B — Verifier Kernel ready (end of Week 4)
 - [ ] `@primitivehub/verify` published to npm under MIT

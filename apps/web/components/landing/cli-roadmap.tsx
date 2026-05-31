@@ -9,7 +9,7 @@ const commands = [
     output: `✓ Created secure-code-review.md
 ✓ Spec v0.1 scaffold (8 required sections)
 ✓ tokens: 0 / 6000  (heuristic; real count after CI)
-→ Open in the Workbench: phub edit secure-code-review.md`,
+→ Open in the Forge: phub edit secure-code-review.md`,
   },
   {
     cmd: "phub validate ./secure-code-review.md",

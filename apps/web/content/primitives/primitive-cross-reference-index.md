@@ -54,7 +54,7 @@ keywords: [index, reference, lookup, primitive-map, bloat-control]
 | `/bundles` page | `react-19-patterns`, `frontend-design-elite`, `shadcn-ui-composition` |
 | `/contributors` (queue + list) | `react-19-patterns`, `frontend-design-elite`, `dashboard-information-design`, `accessibility-wcag22` |
 | `/validation` (pipeline visualization) | `frontend-design-elite`, `tufte-data-visualization`, `dashboard-information-design`, `accessibility-wcag22`, `framer-motion-discipline` |
-| `/workbench` (markdown editor) | `nextjs-16-app-router`, `react-19-patterns`, `frontend-design-elite`, `accessibility-wcag22` |
+| `/forge` (Primitive Forge — markdown editor / authoring surface) | `nextjs-16-app-router`, `react-19-patterns`, `frontend-design-elite`, `accessibility-wcag22` |
 | `/auth/login` + `/auth/callback` + `/auth/logout` | `nextjs-16-app-router`, `security-engineering-supplychain` |
 | Navbar + user dropdown + org picker | `shadcn-ui-composition`, `frontend-design-elite`, `react-19-patterns`, `accessibility-wcag22` |
 | Sign-in / OIDC flow review | `security-engineering-supplychain`, ADR-0007, ADR-0009, ADR-0010 |

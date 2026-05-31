@@ -515,7 +515,7 @@ export const primitives: Primitive[] = [
     compatibleAgents: ["Claude Code", "Cursor", "Codex", "v0", "Windsurf"],
     license: "CC-BY-4.0", lastUpdated: "2026-05-29",
     useWhen: ["Designing /registry, /validation, /contributors review queue", "Building any future founder, admin, or operational dashboard", "Choosing display media (bullet graph vs gauge, bar vs sparkline)"],
-    doNotUseWhen: ["Marketing pages", "The Workbench (it's an editor, not a dashboard)"],
+    doNotUseWhen: ["Marketing pages", "The Forge (it's an editor, not a dashboard)"],
     riskLevel: "low",
     contentDigest: "sha256:dac0abc7d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a2",
     installCommand: "phub install dashboard-information-design@0.1.0",

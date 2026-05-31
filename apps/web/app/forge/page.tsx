@@ -5,10 +5,10 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { MarkdownEditor } from "@/components/workbench/markdown-editor"
-import { lintFrontmatter } from "@/lib/workbench/codemirror-linter"
-import { lintWorkbenchContent } from "@/lib/workbench/lint"
-import { analyzeSections, estimateTokens, countLines, extractFrontmatter } from "@/lib/workbench/parse"
+import { MarkdownEditor } from "@/components/forge/markdown-editor"
+import { lintFrontmatter } from "@/lib/forge/codemirror-linter"
+import { lintForgeContent } from "@/lib/forge/lint"
+import { analyzeSections, estimateTokens, countLines, extractFrontmatter } from "@/lib/forge/parse"
 import { linter } from "@codemirror/lint"
 import {
   Play,
@@ -77,14 +77,14 @@ When loaded, the agent should:
 3. Report confidence level for each section
 `
 
-export default function WorkbenchPage() {
+export default function ForgePage() {
   const [content, setContent] = useState(sampleMarkdown)
 
   // Live analysis — recomputed on every keystroke (cheap; ~100µs for typical primitives).
   const analysis = useMemo(() => {
     const fm = extractFrontmatter(content)
     const sections = analyzeSections(fm.ok ? fm.body : content)
-    const findings = lintWorkbenchContent(content)
+    const findings = lintForgeContent(content)
     const tokens = estimateTokens(content)
     return {
       tokens,
@@ -131,7 +131,7 @@ export default function WorkbenchPage() {
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-primary mb-1">
-                Primitive Workbench
+                Primitive Forge
               </p>
               <h1 className="text-xl font-bold text-foreground">Primitive Authoring Environment</h1>
               <p className="mt-1 text-xs text-muted-foreground max-w-lg">

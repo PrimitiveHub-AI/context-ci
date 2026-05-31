@@ -221,7 +221,7 @@ ACCESSIBILITY: <colorblind-safe, contrast, ARIA labels>
 
 ## Examples
 
-The Workbench score-row composition is a small-multiple group:
+The Forge score-row composition is a small-multiple group:
 four ScoreBadges side-by-side, all on the same 0–100 scale, with
 identical visual treatment. Tufte-approved.
 

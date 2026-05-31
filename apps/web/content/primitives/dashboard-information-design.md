@@ -24,7 +24,7 @@ use_when:
   - "Deciding what belongs on a single screen and what is drilldown"
 do_not_use_when:
   - "Designing marketing pages (different rules apply)"
-  - "Designing the Workbench (it's an editor, not a dashboard)"
+  - "Designing the Forge (it's an editor, not a dashboard)"
   - "Designing single-purpose forms"
 attestation: cci-v0.1
 description: "Stephen Few's dashboard doctrine — single-screen control, at-a-glance monitoring, exception highlighting, bullet graphs over gauges, business-function grouping, preattentive encoding."

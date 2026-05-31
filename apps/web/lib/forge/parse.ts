@@ -1,10 +1,10 @@
 /**
- * Live document analysis for the Workbench: extracts the frontmatter,
+ * Live document analysis for the Forge: extracts the frontmatter,
  * detects required and recommended sections, computes a rough token count.
  *
  * Token counting here is intentionally a fast heuristic (`length / 4`) —
  * the *real* canonical token count comes from a tokenizer pass in Context CI
- * (Phase 4). The Workbench shows an estimate so the author can see budget
+ * (Phase 4). The Forge shows an estimate so the author can see budget
  * pressure as they type.
  *
  * Section names are aligned with the Primitive Spec v0.1 — see docs/spec.md.
