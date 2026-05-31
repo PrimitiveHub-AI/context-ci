@@ -161,7 +161,8 @@ class T1PromptInjectionDetector:
     """
 
     name = "t1.prompt_injection"
-    threat_category = "T1"
+    threat_category = "T1"  # legacy code; back-compat with pre-CCI attestations
+    cci_id = "CCI-001"  # Context CI Top 10 v0.1 canonical ID (ADR-0016)
     detector_version = "0.1.0"
 
     def run(self, ctx: DetectorContext) -> Verdict:
@@ -179,6 +180,7 @@ class T1PromptInjectionDetector:
             return Verdict(
                 detector_name=self.name,
                 threat_category=self.threat_category,
+                cci_id=self.cci_id,
                 severity=Severity.INFO,
                 passed=True,
                 summary="No prompt-injection patterns matched.",
@@ -188,6 +190,7 @@ class T1PromptInjectionDetector:
         return Verdict(
             detector_name=self.name,
             threat_category=self.threat_category,
+            cci_id=self.cci_id,
             severity=Severity.FAIL,
             passed=False,
             summary=(

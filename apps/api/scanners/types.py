@@ -69,14 +69,24 @@ class Verdict:
     summary: str
     diff_hints: tuple[DiffHint, ...] = field(default_factory=tuple)
     detector_version: str = "0.1.0"
+    # Context CI Top 10 v0.1 stable identifier (CCI-001..CCI-010).
+    # Per ADR-0016 this is the canonical taxonomy reference; the legacy
+    # `threat_category` field stays for back-compat with existing
+    # database attestations. New code SHOULD prefer `cci_id`.
+    # Empty string when the detector predates the CCI scheme; only
+    # detectors that explicitly opt in via their `cci_id` class attr
+    # populate this. See `docs/context-ci-top-10-v0.1.md` § 5.
+    cci_id: str = ""
 
     def as_predicate_dict(self) -> dict[str, object]:
         """Serialize for the attestation predicate's `validation[]` block.
 
         Stable shape — verifiers depend on it. Adding fields is backward-
-        compatible; renaming or removing is not.
+        compatible; renaming or removing is not. `cci_id` is the v0.1
+        addition (ADR-0016); v0.x consumers ignore unknown keys, so this
+        is non-breaking.
         """
-        return {
+        payload: dict[str, object] = {
             "detector_name": self.detector_name,
             "threat_category": self.threat_category,
             "severity": self.severity.value,
@@ -93,6 +103,9 @@ class Verdict:
                 for h in self.diff_hints
             ],
         }
+        if self.cci_id:
+            payload["cci_id"] = self.cci_id
+        return payload
 
 
 @dataclass(frozen=True, slots=True)
