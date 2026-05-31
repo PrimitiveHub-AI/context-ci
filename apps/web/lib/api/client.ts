@@ -164,6 +164,38 @@ export interface OrganizationMembershipOut {
   joinedAt: string
 }
 
+/**
+ * Mirrors apps/api/registry/schemas.py::AttestationOut.
+ *
+ * `status` is the source of truth — the UI reads this to decide which
+ * affordance to render (pending shimmer, full Trusted pill, failed
+ * warning, missing-attestation empty state). All cryptographic fields
+ * stay null until status === "signed".
+ */
+export type AttestationStatus = "pending" | "signing" | "signed" | "failed"
+
+export interface AttestationOut {
+  id: string
+  status: AttestationStatus
+  attempts: number
+  failureReason: string | null
+  predicateType: string
+  predicate: Record<string, unknown>
+  threatModelVersion: string
+  specVersion: string
+  backendName: string | null
+  certChainPem: string | null
+  signatureB64: string | null
+  statementB64: string | null
+  rekorLogIndex: number | null
+  rekorLogId: string | null
+  rekorInclusionProofJson: string | null
+  verifyUrl: string | null
+  rekorEntryId: string | null
+  signedAt: string | null
+  recordedAt: string
+}
+
 export const api = {
   listOrganizations: (options: ApiRequestOptions = {}) =>
     apiFetch<OrganizationMembershipOut[]>("/organizations", options),
@@ -203,6 +235,16 @@ export const api = {
   ) =>
     apiFetch<PipelineStage[]>(
       `/primitives/${encodeURIComponent(slug)}/versions/${encodeURIComponent(semver)}/pipeline-stages`,
+      options,
+    ),
+
+  getAttestation: (
+    slug: string,
+    semver: string,
+    options: ApiRequestOptions = {},
+  ) =>
+    apiFetch<AttestationOut>(
+      `/primitives/${encodeURIComponent(slug)}/versions/${encodeURIComponent(semver)}/attestation`,
       options,
     ),
 

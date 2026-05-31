@@ -52,8 +52,12 @@ generation, webhook delivery) moves off the request thread.
   (`pending → signing → signed | failed`). Idempotency-keyed task; GET
   `/attestation` endpoint surfaces the full Sigstore field set. 7 new
   e2e tests; 93/93 total green.
-- **PR #5** `feat/web-attestation-badge-and-rekor-link` — UI surface for
-  attestation status + Rekor entry link.
+- **PR #5** ✓ `feat/web-attestation-badge-and-rekor-link` — UI surface
+  for attestation status. `<AttestationBadge>` renders 4 states
+  (signed/pending/failed/unsigned) as subtle inline pills (Tufte
+  restraint — trust whispered, not shouted). `useAttestation()` polls
+  while in-flight via TanStack Query. Rekor verify-link opens in new
+  tab with log_index displayed.
 
 **Locked architectural commitments:**
 - Backend abstraction (one env var swap) so Phase 7 isn't a migration.
