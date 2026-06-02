@@ -3,7 +3,7 @@
 > **Version:** v0.1
 > **Last reviewed:** 2026-05-31
 > **Owner:** mhm
-> **Change policy:** See [ADR-0025](./decisions/0025-doctrine-versioning-policy.md). Killer-phrase additions and banned-vocabulary additions are non-breaking. Banned-vocabulary removals are breaking.
+> **Change policy:** See [ADR-0019](./decisions/0019-doctrine-versioning-policy.md). Killer-phrase additions and banned-vocabulary additions are non-breaking. Banned-vocabulary removals are breaking.
 >
 > **Status:** The doctrine made readable. Every external sentence about PrimitiveHub passes through this filter.
 
@@ -47,7 +47,7 @@ in PR descriptions, in the paper.
   browser."
 - **No context without verification** — the operating-law mnemonic.
 
-Additions to this list are non-breaking per ADR-0025.
+Additions to this list are non-breaking per ADR-0019.
 
 ## Banned vocabulary (do not ship)
 
@@ -81,7 +81,7 @@ or the paper. They are auto-rejected at review.
 - **unlock** (as a verb for capability) — empty.
 - **end-to-end** (without specifying which two ends) — vague.
 
-Removals from this list are breaking per ADR-0025.
+Removals from this list are breaking per ADR-0019.
 
 ## Cryptographic vocabulary (locked — mirrored in CLAUDE.md)
 

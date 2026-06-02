@@ -1,4 +1,4 @@
-# ADR-0025: Doctrine versioning policy
+# ADR-0019: Doctrine versioning policy
 
 **Status:** Accepted
 **Date:** 2026-05-31
@@ -44,7 +44,7 @@ Each file carries:
 Version: vX.Y
 Last reviewed: YYYY-MM-DD
 Owner: mhm
-Change policy: See ADR-0025.
+Change policy: See ADR-0019.
 ```
 
 ### Breaking vs non-breaking changes

@@ -3,7 +3,7 @@
 > **Version:** v0.1
 > **Last reviewed:** 2026-05-31
 > **Owner:** mhm
-> **Change policy:** See [ADR-0025](./decisions/0025-doctrine-versioning-policy.md). Breaking changes require a `doctrine-rfc` issue with ≥48h review.
+> **Change policy:** See [ADR-0019](./decisions/0019-doctrine-versioning-policy.md). Breaking changes require a `doctrine-rfc` issue with ≥48h review.
 >
 > **Status:** This is the operational law of the project. It is short on purpose. Every line is load-bearing.
 >
@@ -109,7 +109,7 @@ not a tradeoff to discuss — it is rejected on sight.
     "revolutionary." See [`brand-voice.md`](./brand-voice.md).
 
 The Operating Laws version with this document. Changes require a
-`doctrine-rfc` issue per ADR-0025.
+`doctrine-rfc` issue per ADR-0019.
 
 ## Decision algorithm
 
@@ -150,7 +150,7 @@ The category is defined by what we refuse to be.
 - We are **not** a pretty frontend around files.
 
 Additions to this list are non-breaking. Removals require a
-`doctrine-rfc` per ADR-0025.
+`doctrine-rfc` per ADR-0019.
 
 ## Layers of the Trust Runtime
 
@@ -230,7 +230,7 @@ doctrine made readable.
 - Every external piece of copy passes the decision algorithm and the
   brand-voice rules.
 - Future AI contributors read this file via CLAUDE.md auto-load.
-- Doctrine changes are PRs, reviewed against ADR-0025.
+- Doctrine changes are PRs, reviewed against ADR-0019.
 
 This file is short on purpose. If it grows past ~300 lines, something
 has been added that should be in an ADR, a principle, or a primitive,

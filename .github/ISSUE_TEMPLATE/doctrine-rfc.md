@@ -7,7 +7,7 @@ assignees: ''
 ---
 
 <!--
-This template enforces ADR-0025 (doctrine versioning policy).
+This template enforces ADR-0019 (doctrine versioning policy).
 Breaking changes require ≥48h review window + named human reviewer ack
 before the PR can merge. Non-breaking changes do NOT require this RFC —
 they can land in a normal PR.
@@ -34,7 +34,7 @@ vX.(Y+1)  OR  v(X+1).0
 
 ## Is this breaking or non-breaking?
 
-Per ADR-0025, a change is **breaking** if it:
+Per ADR-0019, a change is **breaking** if it:
 
 - [ ] Adds, removes, or rewords an Operating Law
 - [ ] Changes the named category statement
@@ -47,7 +47,7 @@ Per ADR-0025, a change is **breaking** if it:
 - [ ] Removes a banned-vocabulary entry from `brand-voice.md`
 - [ ] Mid-quarter KR change
 
-Per ADR-0025, a change is **non-breaking** if it:
+Per ADR-0019, a change is **non-breaking** if it:
 
 - [ ] Tightens wording without changing meaning
 - [ ] Adds examples or case studies
