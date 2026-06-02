@@ -403,9 +403,24 @@ so future sessions don't invert dependencies or double-build.
 
 ### Gate G-D — MCP Bridge ready (end of Week 9)
 - [ ] `@primitivehub/mcp-server` published to npm
-- [ ] `claude mcp add primitivehub` is one line
-- [ ] Three worked examples (Claude Code, Cursor, Aider)
-- [ ] Zero custom trust logic in MCP package — provable by code review
+      (PR 5.5.5 ships the package source + 22/22 tests + ADR-0031 +
+      publish workflow infrastructure. Actual npm publish gated to
+      launch event per ADR-0022 three-lock model. Today the server
+      works end-to-end inside the monorepo.)
+- [x] `claude mcp add primitivehub` is one line
+      (PR 5.5.5 — `examples/claude-code.json` registers the server
+      with `command: npx + args: [@primitivehub/mcp-server]`. Same
+      shape works post-launch on `claude mcp add` invocation.)
+- [x] Three worked examples (Claude Code, Cursor, Aider)
+      (PR 5.5.5 — `packages/mcp-server/examples/{claude-code.json,
+      cursor-mcp.json, aider.conf.yml}` + examples/README.md with
+      pre-launch local-path swap-in instructions.)
+- [x] Zero custom trust logic in MCP package — provable by code review
+      (PR 5.5.5 + ADR-0031 § 2 rule #1. Every tool in
+      `packages/mcp-server/src/tools/*.ts` is a one-function-call
+      wrapper over verify or phub exports. No validation paths,
+      no schema validation, no policy evaluation logic in this
+      package — every trust decision is delegated.)
 
 ### Gate G-E — Forge + Explorer ready (end of Week 13)
 - [ ] Forge round-trip: write → scan → publish → fetch → verify works

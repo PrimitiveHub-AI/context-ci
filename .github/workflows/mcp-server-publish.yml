@@ -1,0 +1,100 @@
+# ─────────────────────────────────────────────────────────────────────
+# @primitivehub/mcp-server — npm publish workflow
+#
+# Inherits ADR-0022's three-lock model. Do NOT add a tag/release
+# trigger before the arXiv paper publishes. See
+# .github/workflows/verify-publish.yml for the rationale and the
+# launch-day human playbook.
+# ─────────────────────────────────────────────────────────────────────
+name: mcp-server — publish to npm (gated)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_launch:
+        description: "Type 'LAUNCH-CONFIRMED' to proceed. Anything else aborts."
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  guard:
+    name: launch-posture guard
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify launch confirmation input
+        run: |
+          if [ "${{ inputs.confirm_launch }}" != "LAUNCH-CONFIRMED" ]; then
+            echo "::error::Refusing to publish without explicit LAUNCH-CONFIRMED input."
+            echo "::error::Pre-launch posture (CLAUDE.md + ADR-0022) gates this workflow."
+            exit 1
+          fi
+
+  publish:
+    name: publish @primitivehub/mcp-server
+    needs: guard
+    runs-on: ubuntu-latest
+    environment: launch
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: |
+            packages/verify/pnpm-lock.yaml
+            packages/phub/pnpm-lock.yaml
+            packages/mcp-server/pnpm-lock.yaml
+          registry-url: "https://registry.npmjs.org"
+
+      # Refuse to publish if file: deps on verify or phub are still in
+      # package.json — these MUST be swapped to ^0.1.0 before launch
+      # per the ADR-0022 playbook.
+      - name: Reject file: deps (must be npm-resolved at publish)
+        working-directory: packages/mcp-server
+        run: |
+          if grep -E '"@primitivehub/(verify|phub)": "file:' package.json; then
+            echo "::error::mcp-server package.json still has file: deps."
+            echo "::error::Per ADR-0022 launch-day playbook, swap to ^0.1.0 BEFORE running this workflow."
+            exit 1
+          fi
+
+      - name: Build verify (for tests)
+        working-directory: packages/verify
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      - name: Build phub (for tests)
+        working-directory: packages/phub
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      - name: Install mcp-server
+        working-directory: packages/mcp-server
+        run: pnpm install --frozen-lockfile
+
+      - name: TypeScript check
+        working-directory: packages/mcp-server
+        run: pnpm typecheck
+
+      - name: Tests
+        working-directory: packages/mcp-server
+        run: pnpm test
+
+      - name: Build
+        working-directory: packages/mcp-server
+        run: pnpm build
+
+      - name: Publish to npm (public, with provenance)
+        working-directory: packages/mcp-server
+        run: pnpm publish --access public --provenance --no-git-checks
