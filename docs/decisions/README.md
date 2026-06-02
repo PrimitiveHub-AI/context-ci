@@ -44,6 +44,7 @@ Links to primitives, threat-model entries, vendor docs, prior ADRs.
 | [0031](./0031-mcp-server-as-transport.md) | `@primitivehub/mcp-server` as the MCP transport layer (Gate G-D opener) | Accepted |
 | [0030](./0030-fp-resolution-and-av-vendor-parallel.md) | False-positive resolution methodology + AV-vendor product-family framing | Accepted |
 | [0029](./0029-mcp-runtime-gate.md) | MCP runtime gate — `verify_before_load` composite tool (closes active-surfaces arc) | Accepted |
+| [0028](./0028-phub-install.md) | `phub install <slug@semver>` — safe-install (closes the five-surface arc) | Accepted |
 | [0027](./0027-phub-watch.md) | `phub watch` — active runtime guardian (the third active surface) | Accepted |
 | [0026](./0026-phub-lock-format-and-drift-detection.md) | `phub.lock` format + drift detection (`--check-lock` / `--update-lock`) | Accepted |
 | [0025](./0025-active-posture-and-phub-audit.md) | Active posture + `phub audit` (the five-surface arc) | Accepted |

@@ -8,6 +8,47 @@ wrapper) and Context CI Top 10 version (for the scanner detectors);
 
 ## [Unreleased]
 
+### Added (PR 5.7.4 — `phub install`, ADR-0028)
+- **`phub install <slug@semver>`** — safe-install for context primitives.
+  Replaces `curl|bash` / `npx <pkg>` (T5 attack class) with a
+  verify-then-write pipeline. Three sources, mutually exclusive:
+    - positional `<slug@semver>` (registry, default
+      `https://registry.primitivehub.ai`)
+    - `--bundle <path>` (local Trust Bundle JSON)
+    - `--url <url>` (arbitrary HTTP source)
+- **Pipeline** — classify source → fetch bundle text → JSON.parse →
+  `verifyBundle` (level=policy by default) → safety-check
+  classification + path + media type → write content → update lock.
+- **Path layout** — `<workspace>/.primitivehub/installed/primitives/<slug>/<semver>/primitive.<ext>`.
+  The `primitives/` segment makes the audit classifier rule
+  (`**/primitives/**`) match installed artifacts so re-audit
+  discovers them.
+- **Walker change** — `KEEP_DOT_DIRS` gains `.primitivehub` so audit
+  descends into the install tree. Zero regression on existing audit/
+  lock/watch tests.
+- **Lock attestation widened** — `LockAttestation` now includes
+  `url:<url>` and `local:<path>` alongside `unattested` /
+  `rekor:<idx>` / `registry:<slug>@<semver>`. Dev-mode escape hatches
+  documented as "do not merge to main" in production.
+- **Safety rules at writer** — refuses subject.slug containing `..`,
+  path traversal at any level, unknown media types (whitelist:
+  text/markdown, text/plain, application/json), content > 16 MB,
+  size mismatch vs declared `content.sizeBytes`, and writes that
+  escape the workspace root.
+- **Stable refusal codes** — `NO_SOURCE`, `AMBIGUOUS_SOURCE`,
+  `INVALID_SLUG_SEMVER`, `UNSAFE_SLUG`, `BUNDLE_NOT_FOUND`,
+  `FETCH_TIMEOUT`, `FETCH_HTTP_ERROR`, `BUNDLE_PARSE_ERROR`,
+  `BUNDLE_REJECTED`, `UNKNOWN_MEDIA_TYPE`, `PATH_TRAVERSAL`,
+  `ALREADY_INSTALLED`, etc. CI consumers branch on the code.
+- **Flags** — `--registry <url>`, `--install-dir <rel>`,
+  `--lock-path <path>`, `--no-lock`, `--force`, `--level`,
+  `--fetch-timeout-ms`, `--json`.
+- **Programmatic exports** — `installCommand`, `runInstall`,
+  `parseSlugSemver`, `classifySource`, `fetchBundleText`,
+  `planInstallTarget`, `writeBundleContent`, error classes, types.
+- Zero new runtime deps — uses Node's built-in `fetch` with
+  AbortController-based timeouts.
+
 ### Added (PR 5.7.5 — `verifyBeforeLoad` reference for ADR-0029)
 - **`verifyBeforeLoad(opts)`** — composite runtime-gate function.
   Combines `runAudit({lockMode:"check"})` + per-path lock entry lookup

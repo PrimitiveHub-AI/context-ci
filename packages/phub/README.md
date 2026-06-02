@@ -38,11 +38,13 @@ ergonomics are unchanged. See
 ## Subcommands
 
 ```text
-phub audit [<path>]       # discover + classify + scan every artifact under <path>
-phub watch [<path>]       # daemonized audit — runs on every fs event (ADR-0027)
-phub scan <file>          # T1/T2/T5 detectors on a single file (v0.1)
-phub verify <bundle.json> # @primitivehub/verify wrapper
-phub init                 # write starter AGENTS.md
+phub audit [<path>]               # discover + classify + scan every artifact under <path>
+phub watch [<path>]               # daemonized audit — runs on every fs event (ADR-0027)
+phub install <slug@semver> | --bundle <p> | --url <u>
+                                  # safe-install — verify, write, lock (ADR-0028)
+phub scan <file>                  # T1/T2/T5 detectors on a single file (v0.1)
+phub verify <bundle.json>         # @primitivehub/verify wrapper
+phub init                         # write starter AGENTS.md
 ```
 
 `phub audit` is the **active surface**

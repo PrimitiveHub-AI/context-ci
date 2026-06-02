@@ -404,8 +404,20 @@ so future sessions don't invert dependencies or double-build.
       Quarantine accepted as a documentary marker; real file moves
       deferred to v0.2. AV-product-family on-access-guard row from
       ADR-0030 § 3 is now shipped.)
-- [ ] PR 5.7.4 — `phub install <slug@semver>` safe-install
-      (future ADR-0028; closes the T5 attack class operationally)
+- [x] PR 5.7.4 — `phub install <slug@semver>` safe-install (ADR-0028)
+      (Three source modes (positional slug@semver, --bundle, --url)
+      with pipeline: classify → fetch → JSON.parse → verifyBundle →
+      writer safety rules → write → lock update. Stable refusal
+      codes; 22 new tests covering parseSlugSemver / classifySource /
+      --bundle happy + ALREADY_INSTALLED + --force + bundle rejected
+      + --no-lock / --url + slug@semver via local http fixture +
+      writer-direct safety. LockAttestation widened to include
+      url:* and local:* alongside registry:*. Walker's KEEP_DOT_DIRS
+      gains .primitivehub so installed primitives are discoverable
+      by re-audit. 200/200 phub tests total. Replaces the T5
+      attack class operationally — `npx evil@latest` becomes
+      `phub install evil@latest`. Closes the active-surfaces arc:
+      audit + lock + watch + runtime gate + install all ship.)
 - [x] PR 5.7.5 — MCP runtime gate `verify_before_load` (ADR-0029)
       (Composite MCP tool combining `check_lock` + scanner +
       optional `verify_bundle`. 8 stable refusal codes plus

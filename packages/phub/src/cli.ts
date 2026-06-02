@@ -13,6 +13,7 @@
 import { parseArgs, UsageError, type FlagSpec } from "./argv.js"
 import { auditCommand } from "./commands/audit.js"
 import { initCommand } from "./commands/init.js"
+import { installCommand } from "./commands/install.js"
 import { scanCommand } from "./commands/scan.js"
 import { verifyCommand } from "./commands/verify.js"
 import { watchCommand } from "./commands/watch.js"
@@ -29,6 +30,8 @@ Commands:
                        (default: current directory). The first active surface — ADR-0025.
   watch [path]         Daemonized filesystem guardian — runs audit on every fs event.
                        ADR-0027. --once for a single audit + exit.
+  install <slug@semver>  Safe-install a context primitive — verify + write + lock.
+                       ADR-0028. Also: --bundle <path> | --url <url>.
   scan <file>          Scan a markdown file for Context CI Top 10 patterns (T1/T2/T5 in v0.1)
   verify <bundle>      Verify a Trust Bundle JSON file (wraps @primitivehub/verify)
   init                 Write a starter AGENTS.md in the current directory
@@ -203,6 +206,39 @@ Exit codes:
   2   usage error / unreadable root / invalid policy
 `
 
+const INSTALL_HELP = `phub install <slug@semver> | --bundle <path> | --url <url>
+
+Safe-install a context primitive. Replaces the T5 attack class
+(curl|bash, npx <evil>, pip install <url>) with a verify-then-write
+pipeline. ADR-0028.
+
+Three sources, mutually exclusive:
+  positional <slug@semver>    Fetch from a registry (default https://registry.primitivehub.ai)
+  --bundle <path>             Use a local Trust Bundle JSON file
+  --url <url>                 Fetch a Trust Bundle from an arbitrary URL
+
+Flags:
+  --registry <base-url>       Override the default registry. Required pre-launch.
+  --install-dir <rel>         Where installed primitives land under the workspace.
+                              Default: .primitivehub/installed
+  --lock-path <path>          Lock file to update. Default <workspace>/.primitivehub/phub.lock.
+  --no-lock                   Don't update the lock (useful for ephemeral installs).
+  --force                     Overwrite an existing install path.
+  --level=<level>             Verification level (structural | policy | full). Default 'policy'.
+  --fetch-timeout-ms <N>      HTTP timeout for --url / registry sources. Default 10000.
+  --json                      Emit JSON instead of human-readable output.
+
+Lock attestation written by source:
+  positional <slug@semver>    'registry:<slug>@<semver>'
+  --bundle <path>             'local:<path>'
+  --url <url>                 'url:<url>'
+
+Exit codes:
+  0   installed successfully + lock updated
+  1   refused (e.g. ALREADY_INSTALLED — pass --force to overwrite)
+  2   bundle rejected / source error / write error / usage error
+`
+
 const INIT_HELP = `phub init
 
 Write a starter AGENTS.md template into the current directory.
@@ -239,6 +275,12 @@ const GLOBAL_SPECS: readonly FlagSpec[] = [
   { name: "debounce", takesValue: true },
   { name: "quarantine" },
   { name: "max-runtime-sec", takesValue: true },
+  { name: "bundle", takesValue: true },
+  { name: "url", takesValue: true },
+  { name: "registry", takesValue: true },
+  { name: "install-dir", takesValue: true },
+  { name: "no-lock" },
+  { name: "fetch-timeout-ms", takesValue: true },
 ]
 
 function printHelp(command?: string): void {
@@ -248,6 +290,9 @@ function printHelp(command?: string): void {
       return
     case "watch":
       process.stdout.write(WATCH_HELP)
+      return
+    case "install":
+      process.stdout.write(INSTALL_HELP)
       return
     case "scan":
       process.stdout.write(SCAN_HELP)
@@ -481,6 +526,52 @@ export async function main(argv: readonly string[]): Promise<number> {
         force: asBool(parsed.flags["force"]),
         cwd: process.cwd(),
       })
+    }
+
+    case "install": {
+      if (asBool(parsed.flags["help"])) {
+        printHelp("install")
+        return 0
+      }
+      let fetchTimeoutMs: number | undefined
+      try {
+        fetchTimeoutMs = asPositiveInt(parsed.flags["fetch-timeout-ms"], "fetch-timeout-ms")
+      } catch (err) {
+        if (err instanceof UsageError) {
+          process.stderr.write(`phub install: ${err.message}\n`)
+          return 2
+        }
+        throw err
+      }
+      const slugSemverArg = parsed.positionals[0]
+      const installOpts = {
+        json: asBool(parsed.flags["json"]),
+        force: asBool(parsed.flags["force"]),
+        noLock: asBool(parsed.flags["no-lock"]),
+      } as Parameters<typeof installCommand>[0]
+      const bundlePath = asString(parsed.flags["bundle"])
+      const bundleUrl = asString(parsed.flags["url"])
+      const registry = asString(parsed.flags["registry"])
+      const installDir = asString(parsed.flags["install-dir"])
+      const lockPath = asString(parsed.flags["lock-path"])
+      const levelArg = asString(parsed.flags["level"])
+      if (slugSemverArg !== undefined) installOpts.slugSemver = slugSemverArg
+      if (bundlePath !== undefined) installOpts.bundlePath = bundlePath
+      if (bundleUrl !== undefined) installOpts.bundleUrl = bundleUrl
+      if (registry !== undefined) installOpts.registry = registry
+      if (installDir !== undefined) installOpts.installRootRel = installDir
+      if (lockPath !== undefined) installOpts.lockPath = lockPath
+      if (fetchTimeoutMs !== undefined) installOpts.fetchTimeoutMs = fetchTimeoutMs
+      if (levelArg !== undefined) {
+        if (levelArg !== "structural" && levelArg !== "policy" && levelArg !== "full") {
+          process.stderr.write(
+            `phub install: --level must be one of structural|policy|full (got ${JSON.stringify(levelArg)})\n`,
+          )
+          return 2
+        }
+        installOpts.level = levelArg
+      }
+      return await installCommand(installOpts)
     }
 
     default:

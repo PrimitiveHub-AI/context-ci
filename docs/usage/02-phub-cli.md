@@ -385,6 +385,127 @@ ADR (restore protocol, metadata format, rename handling).
 
 ---
 
+## `install`
+
+Safe-install a context primitive. Replaces the T5 attack class
+(`curl|bash`, `npx <pkg>`, `pip install <url>`) with a
+**verify-then-write** pipeline. Per [ADR-0028](../decisions/0028-phub-install.md)
+this is the fifth and final active surface from
+[ADR-0025](../decisions/0025-active-posture-and-phub-audit.md).
+
+```
+phub install <slug@semver>      [--registry <base-url>]   # registry source
+phub install --bundle <path>                              # local bundle
+phub install --url <url>                                  # arbitrary HTTP source
+   [common flags] [--install-dir <rel>] [--lock-path <path>] [--no-lock]
+                  [--force] [--level=<level>] [--fetch-timeout-ms <N>] [--json]
+```
+
+### Three sources, mutually exclusive
+
+| Source | Use case | Lock `attestation` |
+|---|---|---|
+| `phub install foo@1.0.0` | Default: fetch from a registry | `registry:foo@1.0.0` |
+| `phub install --bundle ./b.json` | Local file (CI artifact, teammate hand-off) | `local:<absolute path>` |
+| `phub install --url <url>` | Direct URL (custom hosting, dev sandbox) | `url:<URL>` |
+
+Passing more than one → exit 2 with `AMBIGUOUS_SOURCE`. Passing none → exit 2 with `NO_SOURCE`.
+
+### Pipeline
+
+```text
+1. Classify source                  → BundleSource
+2. Fetch bundle JSON text
+3. Parse JSON                       (BUNDLE_PARSE_ERROR on fail)
+4. verifyBundle(bundle, {level})    (BUNDLE_REJECTED on fail)
+5. Plan install target              (UNKNOWN_MEDIA_TYPE / UNSAFE_COMPONENT / PATH_TRAVERSAL)
+6. Write bundle.content to disk     (ALREADY_INSTALLED unless --force)
+7. Update .primitivehub/phub.lock   (skipped with --no-lock)
+```
+
+### Install layout
+
+```
+<workspace>/.primitivehub/installed/primitives/<slug>/<semver>/primitive.<ext>
+```
+
+The `primitives/` segment makes installed artifacts match the
+existing audit classifier rule (`**/primitives/**`) so `phub audit
+--check-lock` discovers them and detects drift on subsequent edits.
+
+### Flags
+
+| Flag | Default | What it does |
+|---|---|---|
+| `--registry <url>` | `https://registry.primitivehub.ai` | Override the registry for positional source. Required pre-launch. |
+| `--bundle <path>` | — | Local Trust Bundle JSON file. |
+| `--url <url>` | — | HTTP source. Any 2xx response is treated as bundle JSON. |
+| `--install-dir <rel>` | `.primitivehub/installed/primitives` | Override the install root, relative to workspace. |
+| `--lock-path <path>` | `<workspace>/.primitivehub/phub.lock` | Lock file to update. |
+| `--no-lock` | off | Skip the lock-update step (ephemeral installs). |
+| `--force` | off | Overwrite an existing install path. Without this, re-install fails with `ALREADY_INSTALLED`. |
+| `--level=<level>` | `policy` | Verification depth (`structural` / `policy` / `full`). Same semantics as `phub verify`. |
+| `--fetch-timeout-ms <N>` | `10000` | HTTP fetch timeout for `--url` / registry sources. |
+| `--json` | off | Emit JSON instead of human-readable output. |
+
+### Examples
+
+**Install a local bundle into the current workspace:**
+
+```bash
+phub install --bundle ./team-bundle.json
+# [install] source=bundle-path attestation=local:./team-bundle.json
+# [install] subject=team-skill@1.2.3
+# [install] verified at level=policy
+# [install] wrote 4321 bytes → .primitivehub/installed/primitives/team-skill/1.2.3/primitive.md
+# [install] lock updated: ./.primitivehub/phub.lock
+```
+
+**Install from a registry — the canonical safe-install ergonomics:**
+
+```bash
+phub install secure-code-review@1.0.0
+# defaults --registry=https://registry.primitivehub.ai post-launch.
+```
+
+**Install + immediately audit-check the result:**
+
+```bash
+phub install --bundle ./b.json
+phub audit --check-lock
+# → "1/1 artifacts clean. Lock match: no drift." exit 0
+```
+
+**Try a bundle ephemerally (no lock side-effect):**
+
+```bash
+phub install --bundle ./b.json --no-lock --install-dir /tmp/sandbox
+```
+
+**Force-reinstall an existing version:**
+
+```bash
+phub install secure-code-review@1.0.0 --force
+```
+
+### Exit codes
+
+| Code | Meaning |
+|---|---|
+| `0` | Installed + (default) lock updated successfully. |
+| `1` | Refused soft: `ALREADY_INSTALLED`. Pass `--force` to overwrite. |
+| `2` | Source error / bundle rejected / writer safety refused / usage error. |
+
+### Production-hygiene rule (per ADR-0028 § 5)
+
+A CI-gated production project should **reject PRs that introduce
+`local:*` or `url:*` attestations into the committed
+`.primitivehub/phub.lock`**. Only `registry:<slug>@<semver>` (and
+eventually `rekor:<log-index>`) should land on `main`. The `local:`
+and `url:` prefixes are dev-mode escape hatches.
+
+---
+
 ## `verify`
 
 Verifies a [Trust Contract v0.1](../trust-contract-v0.1.md) bundle

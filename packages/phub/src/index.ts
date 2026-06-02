@@ -33,6 +33,27 @@ export {
   type WatcherOptions,
 } from "./audit/watcher.js"
 export {
+  installCommand,
+  runInstall,
+  type InstallOptions,
+  type InstallResult,
+} from "./commands/install.js"
+export {
+  classifySource,
+  fetchBundleText,
+  parseSlugSemver,
+  InstallSourceError,
+  type BundleSource,
+  type ResolveOptions,
+} from "./install/source.js"
+export {
+  planInstallTarget,
+  writeBundleContent,
+  InstallWriteError,
+  type BundleHeader,
+  type InstallTarget,
+} from "./install/writer.js"
+export {
   type AuditResult,
   type AuditedArtifact,
   type AuditSummary,

@@ -37,7 +37,21 @@ export const LOCK_SCHEMA_URL = "https://primitivehub.ai/phub-lock/v0.1.json"
  * `registry:<slug>@<semver>` via Trust API + phub install
  * integration (ADR-0028 planned).
  */
-export type LockAttestation = "unattested" | `rekor:${string}` | `registry:${string}`
+/**
+ * Attestation states recorded in `LockedArtifact.attestation`.
+ *
+ * - `unattested`          — artifact discovered by `phub audit`; no provenance.
+ * - `rekor:<log-index>`   — verified against a Sigstore Rekor transparency log entry. (v0.2)
+ * - `registry:<slug>@<v>` — installed via `phub install <slug@semver>` from a registry (ADR-0028).
+ * - `url:<url>`           — installed via `phub install --url <url>` (ADR-0028; non-registry HTTP source).
+ * - `local:<path>`        — installed via `phub install --bundle <path>` (ADR-0028; local bundle file).
+ */
+export type LockAttestation =
+  | "unattested"
+  | `rekor:${string}`
+  | `registry:${string}`
+  | `url:${string}`
+  | `local:${string}`
 
 export interface LockedArtifact {
   attestation: LockAttestation

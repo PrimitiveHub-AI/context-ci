@@ -40,7 +40,16 @@ export const SKIP_DIRS: ReadonlySet<string> = new Set([
  * meaningful agent-context artifacts. Any other dot-prefixed directory
  * is silently skipped.
  */
-export const KEEP_DOT_DIRS: ReadonlySet<string> = new Set([".claude", ".cursor", ".github"])
+export const KEEP_DOT_DIRS: ReadonlySet<string> = new Set([
+  ".claude",
+  ".cursor",
+  ".github",
+  // ADR-0028: `phub install` writes verified primitives into
+  // `.primitivehub/installed/primitives/...` and re-audit must
+  // discover them so drift detection survives reinstall + edit
+  // attacks.
+  ".primitivehub",
+])
 
 export interface WalkOptions {
   /** Hard cap on directory depth. 0 = root only. Default 12. */
