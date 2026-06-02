@@ -267,11 +267,35 @@ Conformance suite (`docs/context-policy/conformance/`):
   `.primitivehub/policy.yaml` for the project's own monorepo
   (resolves the `CLAUDE.md` T5 false positive permanently;
   documents how to scope detectors across the apps + docs trees).
+  *Landed 2026-06-01:* see `.primitivehub/policy.yaml` at the repo
+  root + the FP-001/FP-002 ledger entries in
+  `docs/false-positive-resolution.md` § 6.
+
+## False-positive resolution methodology (2026-06-01 supplement)
+
+The Context Policy Language gives operators the *mechanism* to allow
+false positives narrowly. It does NOT specify the *process* for
+deciding when an allow is warranted, what justification is required,
+or when the allow expires. That process discipline lives in
+[`docs/false-positive-resolution.md`](../false-positive-resolution.md):
+
+- The four resolution paths (true positive / domain WAI /
+  detector defect / escalate) every finding MUST be classified into.
+- The append-only `FP-NNN` ledger that every `allow:` entry MUST
+  reference via its `reason:` field.
+- The quarterly + minor-version-bump re-review cadence that
+  prevents allowlist rot.
+
+A policy entry without a matching ledger entry is a defect under this
+ADR. CI gates of `.primitivehub/policy.yaml` in PR review SHOULD
+check for the FP-NNN reference + the corresponding section in
+`docs/false-positive-resolution.md`.
 
 ## References
 
 - `docs/context-policy-v0.1.md` — the spec
 - `docs/context-policy/conformance/` — the executable contract
+- `docs/false-positive-resolution.md` — methodology + ledger (companion process doc)
 - `packages/phub/src/policy/` — reference implementation
 - `docs/bugs.md` #25 — the canonical motivating false positive
 - ADR-0015 — versioning + deprecation model

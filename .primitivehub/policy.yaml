@@ -1,0 +1,53 @@
+# PrimitiveHub project — Context Policy v0.1
+#
+# Spec: docs/context-policy-v0.1.md (ADR-0018)
+# Methodology + ledger: docs/false-positive-resolution.md
+#
+# DISCIPLINE
+# Every `allow:` entry below MUST reference an `FP-NNN` ledger ID
+# in docs/false-positive-resolution.md §6. Adding an entry here
+# without a matching ledger entry IN THE SAME COMMIT is a defect.
+# See §5 of the methodology doc for the quick reference.
+#
+# Re-review cadence: quarterly + on every Top 10 minor-version bump.
+# See §4 of the methodology doc.
+
+version: "0.1"
+strict: false
+
+allow:
+  # FP-001 — CLAUDE.md teaches the T5 attack vector by name.
+  # See docs/false-positive-resolution.md §6 → FP-001.
+  - reason: |
+      FP-001 — CLAUDE.md hard-rule #6 explicitly documents
+      `npx skill installs` as a T5 supply-chain attack vector and
+      names `npx @primitivehub/phub audit` as the local enforcement
+      surface for the rule. The detector is doing its job; the
+      content is the project's own threat-model documentation.
+      Canonical WAI per docs/bugs.md #25. Path B (domain WAI) per
+      docs/false-positive-resolution.md §1.
+      Re-review: 2026-09-01. ADR-0018, ADR-0023, ADR-0025.
+    files:
+      - "CLAUDE.md"
+    rules:
+      - id: "CCI-005"
+        detail_tags:
+          - "npx-arbitrary-install"
+
+  # FP-002 — shadcn primitive documents the canonical shadcn/ui install command.
+  # See docs/false-positive-resolution.md §6 → FP-002.
+  - reason: |
+      FP-002 — apps/web/content/primitives/shadcn-ui-composition.md
+      is a cognition primitive teaching shadcn/ui composition. Line
+      130 mentions `npx shadcn@latest add Button` — the canonical
+      install command published by the shadcn/ui project's own
+      documentation. Reference material describing a third-party
+      tool's documented entry point, not an executable installer.
+      Path B (domain WAI) per docs/false-positive-resolution.md §1.
+      Re-review: 2026-09-01. ADR-0018, ADR-0025.
+    files:
+      - "apps/web/content/primitives/shadcn-ui-composition.md"
+    rules:
+      - id: "CCI-005"
+        detail_tags:
+          - "npx-arbitrary-install"
