@@ -1,0 +1,31 @@
+{
+  "name": "allow-resolves-finding",
+  "description": "Canonical CLAUDE.md case: T5 hit on npx-arbitrary-install, allow entry matches, finding is suppressed, exit code is 0.",
+  "policy_yaml": "version: \"0.1\"\nallow:\n  - reason: \"CLAUDE.md teaches T5 attack patterns by design; docs/bugs.md #25.\"\n    files: [\"CLAUDE.md\"]\n    rules:\n      - id: \"CCI-005\"\n        detail_tags: [\"npx-arbitrary-install\"]\n",
+  "filename": "CLAUDE.md",
+  "verdicts": [
+    {
+      "detectorName": "t5.unsafe_shell_install",
+      "threatCategory": "T5",
+      "cciId": "CCI-005",
+      "severity": "fail",
+      "passed": false,
+      "summary": "Matched 1 unsafe-shell-install pattern; this is the Shai-Hulud supply-chain vector.",
+      "detectorVersion": "0.1.0",
+      "diffHints": [
+        {
+          "line": 244,
+          "snippet": "npx skill",
+          "suggestion": "Remove or rephrase (npx-arbitrary-install); this is the Shai-Hulud vector — remote code fetched and executed without verification.",
+          "detailTag": "npx-arbitrary-install"
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "exitCode": 0,
+    "suppressedFindingsCount": 1,
+    "survivingFailVerdicts": 0,
+    "allowReasons": ["CLAUDE.md teaches T5 attack patterns by design; docs/bugs.md #25."]
+  }
+}

@@ -1,0 +1,85 @@
+# ─────────────────────────────────────────────────────────────────────
+# @primitivehub/verify — npm publish workflow
+#
+# DELIBERATELY workflow_dispatch ONLY. Do NOT add a tag or release
+# trigger before the arXiv paper publishes.
+#
+# CLAUDE.md launch-posture rule (load-bearing):
+#   "No public deploys, no social posts, no domain references anywhere
+#    indexable until the paper publishes."
+#
+# An npm package at @primitivehub/verify is publicly indexable and
+# reveals the brand on npmjs.com search within hours. Until paper-day,
+# the only correct firing of this workflow is a deliberate human
+# action with full awareness of the launch event. See ADR-0022.
+#
+# One-time setup required before this can run (human-only actions):
+#   1. Claim the @primitivehub npm org (https://www.npmjs.com/org/create)
+#   2. Configure Trusted Publishing on the org pointing at this repo +
+#      workflow file path (no long-lived NPM_TOKEN secret needed).
+#   3. Add `environment: launch` protection on GitHub Actions so a
+#      reviewer approval is required before this can complete.
+# ─────────────────────────────────────────────────────────────────────
+name: verify — publish to npm (gated)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_launch:
+        description: "Type 'LAUNCH-CONFIRMED' to proceed. Anything else aborts."
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write  # for npm provenance via OIDC
+
+jobs:
+  guard:
+    name: launch-posture guard
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify launch confirmation input
+        run: |
+          if [ "${{ inputs.confirm_launch }}" != "LAUNCH-CONFIRMED" ]; then
+            echo "::error::Refusing to publish without explicit LAUNCH-CONFIRMED input."
+            echo "::error::Pre-launch posture (CLAUDE.md + ADR-0022) gates this workflow."
+            exit 1
+          fi
+
+  publish:
+    name: publish @primitivehub/verify
+    needs: guard
+    runs-on: ubuntu-latest
+    environment: launch  # requires reviewer approval; configure on GitHub side
+    defaults:
+      run:
+        working-directory: packages/verify
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: packages/verify/pnpm-lock.yaml
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: TypeScript check
+        run: pnpm typecheck
+
+      - name: Conformance suite (vitest) — must be green to publish
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+      - name: Publish to npm (public, with provenance)
+        run: pnpm publish --access public --provenance --no-git-checks

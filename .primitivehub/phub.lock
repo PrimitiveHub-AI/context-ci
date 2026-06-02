@@ -1,0 +1,129 @@
+{
+  "$schema": "https://primitivehub.ai/phub-lock/v0.1.json",
+  "artifacts": [
+    {
+      "attestation": "unattested",
+      "classification": "claude-md",
+      "digest": "sha256:f3e36ce80b08dcbaacc7cb872dc8b49b75cb8adc989d0156520e700529970a03",
+      "path": "CLAUDE.md"
+    },
+    {
+      "attestation": "unattested",
+      "classification": "primitive",
+      "digest": "sha256:0059fac41e29122595827621b8483343b637a4a32617f90b45b2964805777672",
+      "path": "apps/web/content/primitives/accessibility-wcag22.md"
+    },
+    {
+      "attestation": "unattested",
+      "classification": "primitive",
+      "digest": "sha256:e479beef6a377b78c51fe7ec6a11089537b91fb514e899f525ffbf18d2d86203",
+      "path": "apps/web/content/primitives/dashboard-information-design.md"
+    },
+    {
+      "attestation": "unattested",
+      "classification": "primitive",
+      "digest": "sha256:cbe9caf6721e2899c8de4ad763867655be739c7a014045bbe3820d06a5520fdc",
+      "path": "apps/web/content/primitives/ddia-multi-tenant.md"
+    },
+    {
+      "attestation": "unattested",
+      "classification": "primitive",
+      "digest": "sha256:b3a7829907871b5f866bf715dd0d5f6701651b81f1a0c88689949738d0c92961",
+      "path": "apps/web/content/primitives/design-md-spec.md"
+    },
+    {
+      "attestation": "unattested",
+      "classification": "primitive",
+      "digest": "sha256:bfae4d802177d2e4e9035c22b2f53b3d522626e2a225b4d91bf1321c036178dc",
+      "path": "apps/web/content/primitives/django-ninja-production.md"
+    },
+    {
+      "attestation": "unattested",
+      "classification": "primitive",
+      "digest": "sha256:663ad955f451eead659e9ed93e47e90815f9e2fa432bedf1bdc33af5431e4b11",
+      "path": "apps/web/content/primitives/docker-compose-discipline.md"
+    },
+    {
+      "attestation": "unattested",
+      "classification": "primitive",
+      "digest": "sha256:3465b56d68ae2f594af317da575694bad111a0ef55bc9447c5d601b3d0987b8b",
+      "path": "apps/web/content/primitives/elite-mobile-design.md"
+    },
+    {
+      "attestation": "unattested",
+      "classification": "primitive",
+      "digest": "sha256:b018cc834638bea18c8178ffd10c0744658c7b210ab54040d342c18ceca55ea1",
+      "path": "apps/web/content/primitives/framer-motion-discipline.md"
+    },
+    {
+      "attestation": "unattested",
+      "classification": "primitive",
+      "digest": "sha256:2a15378ba99d7207a797c6c638f89fbc06213f4395db841a122790aa42c016e4",
+      "path": "apps/web/content/primitives/frontend-design-elite.md"
+    },
+    {
+      "attestation": "unattested",
+      "classification": "primitive",
+      "digest": "sha256:acc47baa70299dabcc1fcffa03b543ac8da4c45e2a71df8ea20fca1460231c16",
+      "path": "apps/web/content/primitives/nextjs-16-app-router.md"
+    },
+    {
+      "attestation": "unattested",
+      "classification": "primitive",
+      "digest": "sha256:9b0f197a767a469c187625965e7b3aba3a64492aeaee359e7b230a873b79e492",
+      "path": "apps/web/content/primitives/postgresql-production.md"
+    },
+    {
+      "attestation": "unattested",
+      "classification": "primitive",
+      "digest": "sha256:e552be8d25e622f0d3de3e0a1d2616c3eda7c62bfcfc949e911888131de64dda",
+      "path": "apps/web/content/primitives/primitive-cross-reference-index.md"
+    },
+    {
+      "attestation": "unattested",
+      "classification": "primitive",
+      "digest": "sha256:cb9763646bda7a0e5fae5099cb42f952e3817dacc30bda31067fe5015a7d347e",
+      "path": "apps/web/content/primitives/react-19-patterns.md"
+    },
+    {
+      "attestation": "unattested",
+      "classification": "primitive",
+      "digest": "sha256:09291d9e3d6a8293b4d0869426bac160d3520fb9e15e74eb0d5ec693803e11a3",
+      "path": "apps/web/content/primitives/secure-code-review.md"
+    },
+    {
+      "attestation": "unattested",
+      "classification": "primitive",
+      "digest": "sha256:13cb36f4a55617d743d5461f7cbf5aa60b56f5d85f9fd0e4722c41d5d728a315",
+      "path": "apps/web/content/primitives/security-engineering-supplychain.md"
+    },
+    {
+      "attestation": "unattested",
+      "classification": "primitive",
+      "digest": "sha256:33f7d6fe37c8851288a0fb4804bb34dca449fde21c4a670ff732d39d3e061a02",
+      "path": "apps/web/content/primitives/shadcn-ui-composition.md"
+    },
+    {
+      "attestation": "unattested",
+      "classification": "primitive",
+      "digest": "sha256:8549e081f5d963a9b6f756678d94b3e549935b954db3cb564b12972118622853",
+      "path": "apps/web/content/primitives/tailwind-v4-mastery.md"
+    },
+    {
+      "attestation": "unattested",
+      "classification": "primitive",
+      "digest": "sha256:2c99886c4584bd08b078776673709e3aa2253c5fd44fc7dd73164578eb7370d5",
+      "path": "apps/web/content/primitives/tufte-data-visualization.md"
+    },
+    {
+      "attestation": "unattested",
+      "classification": "primitive",
+      "digest": "sha256:3706584c2d09c2a995c809b0a8d1a4882cd118975edd6136c2e1d27107c9fea1",
+      "path": "apps/web/content/primitives/valkey-caching-patterns.md"
+    }
+  ],
+  "generator": "phub@0.1.0",
+  "root": ".",
+  "top10_version": "0.1",
+  "version": "0.1"
+}

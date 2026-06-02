@@ -1,0 +1,31 @@
+{
+  "name": "strict-mode-promotes-warning",
+  "description": "Same policy as scenario 03 but strict=true — warning-level finding now contributes to exit 1.",
+  "policy_yaml": "version: \"0.1\"\nstrict: true\nrules:\n  CCI-002:\n    severity: warning\n",
+  "filename": "AGENTS.md",
+  "verdicts": [
+    {
+      "detectorName": "t2.unicode_steganography",
+      "threatCategory": "T2",
+      "cciId": "CCI-002",
+      "severity": "fail",
+      "passed": false,
+      "summary": "Matched 1 Unicode-steganography pattern.",
+      "detectorVersion": "0.1.0",
+      "diffHints": [
+        {
+          "line": 3,
+          "snippet": "<invisible: ZERO WIDTH SPACE (U+200B)>",
+          "suggestion": "Remove.",
+          "detailTag": "zero-width-invisible"
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "exitCode": 1,
+    "suppressedFindingsCount": 0,
+    "survivingFailVerdicts": 0,
+    "survivingWarningVerdicts": 1
+  }
+}

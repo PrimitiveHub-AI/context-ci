@@ -1,0 +1,83 @@
+name: mcp-server — typecheck + test + dry-run publish
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/mcp-server/**"
+      - "packages/verify/**"
+      - "packages/phub/**"
+      - ".github/workflows/mcp-server-ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "packages/mcp-server/**"
+      - "packages/verify/**"
+      - "packages/phub/**"
+      - ".github/workflows/mcp-server-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: typecheck + test + build + dry-run pack
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: |
+            packages/verify/pnpm-lock.yaml
+            packages/phub/pnpm-lock.yaml
+            packages/mcp-server/pnpm-lock.yaml
+
+      # MCP server depends on verify + phub via file:; build both first.
+      - name: Build verify
+        working-directory: packages/verify
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm test
+          pnpm build
+
+      - name: Build phub
+        working-directory: packages/phub
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm test
+          pnpm build
+
+      - name: Install mcp-server
+        working-directory: packages/mcp-server
+        run: pnpm install --frozen-lockfile
+
+      - name: TypeScript check
+        working-directory: packages/mcp-server
+        run: pnpm typecheck
+
+      - name: Tests
+        working-directory: packages/mcp-server
+        run: pnpm test
+
+      - name: Build
+        working-directory: packages/mcp-server
+        run: pnpm build
+
+      - name: pnpm publish --dry-run
+        working-directory: packages/mcp-server
+        run: pnpm publish --dry-run --no-git-checks
+
+      - name: tools/list smoke (real JSON-RPC over stdio)
+        working-directory: packages/mcp-server
+        run: |
+          response=$(echo '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | node bin/primitivehub-mcp.js)
+          echo "$response" | jq '.result.tools | length' | grep -q 4
+          echo "$response" | jq -r '.result.tools[].name' | sort | diff - <(echo -e "audit_workspace\ncheck_lock\nscan_text\nverify_bundle")

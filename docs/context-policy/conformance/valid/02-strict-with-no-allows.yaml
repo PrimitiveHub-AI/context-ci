@@ -1,0 +1,4 @@
+# strict: true on a clean policy. WARN findings now contribute to
+# exit 1. Useful for promotion-ready repos.
+version: "0.1"
+strict: true

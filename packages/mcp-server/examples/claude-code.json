@@ -1,0 +1,9 @@
+{
+  "_comment": "Drop this snippet's mcpServers block into ~/.claude.json or .claude.json in your project. Then `claude mcp list` shows 'primitivehub' with 4 tools.",
+  "mcpServers": {
+    "primitivehub": {
+      "command": "npx",
+      "args": ["@primitivehub/mcp-server"]
+    }
+  }
+}

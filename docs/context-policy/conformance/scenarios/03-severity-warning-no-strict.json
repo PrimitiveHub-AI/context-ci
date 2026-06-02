@@ -1,0 +1,31 @@
+{
+  "name": "severity-warning-no-strict",
+  "description": "rules.CCI-002.severity=warning + strict=false → finding surfaces but does not contribute to exit code.",
+  "policy_yaml": "version: \"0.1\"\nstrict: false\nrules:\n  CCI-002:\n    severity: warning\n",
+  "filename": "AGENTS.md",
+  "verdicts": [
+    {
+      "detectorName": "t2.unicode_steganography",
+      "threatCategory": "T2",
+      "cciId": "CCI-002",
+      "severity": "fail",
+      "passed": false,
+      "summary": "Matched 1 Unicode-steganography pattern.",
+      "detectorVersion": "0.1.0",
+      "diffHints": [
+        {
+          "line": 3,
+          "snippet": "<invisible: ZERO WIDTH SPACE (U+200B)>",
+          "suggestion": "Remove.",
+          "detailTag": "zero-width-invisible"
+        }
+      ]
+    }
+  ],
+  "expected": {
+    "exitCode": 0,
+    "suppressedFindingsCount": 0,
+    "survivingFailVerdicts": 0,
+    "survivingWarningVerdicts": 1
+  }
+}

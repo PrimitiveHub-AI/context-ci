@@ -87,6 +87,7 @@ landed; PR #2-5 wire Sigstore signing on top. Phase 5+ adds scanners.
 | [`docs/threat-model.md`](./docs/threat-model.md) | 10 supply-chain attack categories Context CI is designed to detect. Cited by the paper. Promoted to Context CI Top 10 v0.1 spec in Week 2 of the execution plan. |
 | [`docs/spec.md`](./docs/spec.md) | Primitive Spec v0.1: frontmatter, body sections, content addressing, in-toto Attestation predicate, Sigstore signing model, SLSA mapping, Trust Bundle wire format. |
 | [`docs/execution-plan.md`](./docs/execution-plan.md) | The 18-week execution arc (2026-06-01 → 2026-09-30) from Phase 5.5 to public launch. Acceptance gates (G-A..G-G), weekly cadence, standards-governance workstreams (Trust Contract / Top 10 / CBOM / Policy Language as versioned public specs), risk register, explicit deferrals. Companion to `docs/roadmap.md` — roadmap is the phase ledger, execution plan is how we ship the next phases. |
+| [`docs/false-positive-resolution.md`](./docs/false-positive-resolution.md) | **Methodology + ledger** for resolving `phub audit` / `phub scan` false positives. The AV-vendor discipline applied to our threat model: four resolution paths (true positive / domain WAI / detector defect / escalate), strict allow-entry format, append-only numbered FP-NNN ledger, quarterly re-review. **Read before adding any `allow:` entry to `.primitivehub/policy.yaml`.** |
 | [`docs/README.md`](./docs/README.md) | Doc index + planned OSS sibling repos + the relationship diagram for the whole strategic doc layer. |
 
 When you write code that touches any of: cryptographic vocabulary,
@@ -245,7 +246,37 @@ These are **enforced by user instruction**; not negotiable.
    `/tmp/primitivehub-skills/`, distilled into a spec-conformant
    primitive in `apps/web/content/primitives/`, source deleted*. The npx
    install path is treated as a supply-chain attack vector (T5 in our
-   threat model).
+   threat model). The project-local enforcement surface for this rule
+   is `npx @primitivehub/phub audit` (PR 5.7.1, ADR-0025) — it walks
+   the working tree, classifies every agent-context artifact, and
+   runs the Top 10 detectors. If you cloned a skill and want to know
+   what it actually contains before reading 14KB of markdown, run
+   `phub audit` first.
+7. **Active by default; passive only by explicit user choice.**
+   Principle 19 + [ADR-0025](./docs/decisions/0025-active-posture-and-phub-audit.md):
+   the project ships *guardians*, not just *linters*. Every new
+   user-facing surface declares itself passive (waits for a target)
+   or active (discovers its own targets) in its design note. Passive
+   tools alone cannot defend against the file you didn't know to scan.
+8. **False-positive triage is mandatory, not optional.**
+   Principle 20 + [ADR-0030](./docs/decisions/0030-fp-resolution-and-av-vendor-parallel.md).
+   When `phub audit` / `phub scan` / the Context CI pipeline flags
+   content, classify the finding using the four-path decision tree
+   in [`docs/false-positive-resolution.md`](./docs/false-positive-resolution.md)
+   § 1 BEFORE proposing any resolution. Adding an `allow:` entry to
+   `.primitivehub/policy.yaml` without a matching `FP-NNN` ledger
+   entry in the same commit is a defect. Path A = edit the content.
+   Path B = narrow allow + ledger entry. Path C = lockstep detector
+   tightening (Python + TS per ADR-0023). Path D = escalate to a
+   security-reviewer, never silently allow.
+9. **PrimitiveHub is "agent-context AV plus registry," not "GitHub
+   for prompts."** [ADR-0030](./docs/decisions/0030-fp-resolution-and-av-vendor-parallel.md)
+   § 3 locks the product-family parallel. When writing copy,
+   answering "what is this?", or shaping a new surface, the AV
+   product-family map (scanner / signature DB / allowlist DB / FP
+   submission portal / on-access guard / runtime gate / cloud lookup
+   / provenance) is the reference frame. The defense layer is the
+   moat, not the storage layer.
 
 ## Decision algorithm (from [`docs/doctrine.md`](./docs/doctrine.md))
 

@@ -1,0 +1,12 @@
+# THE canonical example. Allows CLAUDE.md to trip the T5
+# false-positive documented in docs/bugs.md #25. Reason field is
+# REQUIRED — the team's audit trail for this exception.
+version: "0.1"
+allow:
+  - reason: "CLAUDE.md teaches T5 attack patterns by design; documented in docs/bugs.md #25."
+    files:
+      - "CLAUDE.md"
+    rules:
+      - id: "CCI-005"
+        detail_tags:
+          - "npx-arbitrary-install"

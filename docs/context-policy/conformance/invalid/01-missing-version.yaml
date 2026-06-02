@@ -1,0 +1,4 @@
+# INVALID — version field is mandatory in v0.1.
+# Implementations MUST reject this with a schema error.
+strict: false
+allow: []

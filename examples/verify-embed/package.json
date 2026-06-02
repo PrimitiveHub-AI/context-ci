@@ -1,0 +1,22 @@
+{
+  "name": "verify-embed-example",
+  "version": "0.0.0",
+  "private": true,
+  "description": "30-line embed demonstration for @primitivehub/verify. NOT published.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "verify": "tsx src/embed.ts"
+  },
+  "dependencies": {
+    "@primitivehub/verify": "file:../../packages/verify"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "tsx": "^4.19.0",
+    "typescript": "5.7.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

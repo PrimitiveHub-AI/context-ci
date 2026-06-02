@@ -1,0 +1,9 @@
+{
+  "_comment": "Save this as .cursor/mcp.json in your project root. Cursor's Settings → MCP servers panel will show 'primitivehub' once Cursor restarts.",
+  "mcpServers": {
+    "primitivehub": {
+      "command": "npx",
+      "args": ["-y", "@primitivehub/mcp-server"]
+    }
+  }
+}

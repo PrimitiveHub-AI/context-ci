@@ -26,6 +26,79 @@
 
 ## Active log (most recent first)
 
+### 26. Pre-launch site went public via host-level nginx + Cloudflare A records — 2026-06-02
+
+**Phase:** Pre-launch (Phase 5.5 / Gate G-C, ~16 weeks before target launch)
+**Symptom:** `https://www.primitivehub.ai` and `https://primitivehub.ai` served the production Next.js build over public HTTPS with a valid Let's Encrypt cert. Cloudflare A records for `@` and `www` pointed to the Hetzner host IP `178.105.164.250`. Anyone with the URL could browse every page of the site. The `noindex` defenses still held (`X-Robots-Tag: noindex, nofollow, noarchive, nosnippet, noimageindex`) so search engines stayed out, but the project's pre-launch secrecy invariant was already broken to anyone who knew the domain. Caught when the user did `curl https://www.primitivehub.ai` and saw a 200 from the production build.
+**Root cause:** Three stacked violations of the "localhost-only" rule (CLAUDE.md hard rule #3 + the `feedback-localhost-only` memory), each operating on a different layer:
+  1. **Host-level reverse proxy outside compose.** `/etc/nginx/sites-enabled/primitivehub` listened on `0.0.0.0:80` and `0.0.0.0:443` with a Let's Encrypt cert for `primitivehub.ai` / `www.primitivehub.ai`, proxying `/` to `127.0.0.1:3000`. The prior version of the localhost-only rule explicitly covered compose port specs and direct process binds, but not host-level reverse proxies that bind to a public interface and forward to a localhost upstream. The compose spec for `web` was correctly `127.0.0.1:3000:3000`, so the rule *appeared* to be honoured. The public exposure took a path the rule did not name.
+  2. **Stale container port bindings.** `web` (created 2026-05-30) and `authentik-server` (created 2026-05-29) were started days before `compose.yaml` was fixed to use the `127.0.0.1:` host-IP prefix. `docker compose up -d` does not re-create a container when only its port spec changes — it diffs container config, and port specs aren't in that diff. The running containers retained `HostConfig.PortBindings.HostIp: ""` (== `0.0.0.0`), exposing `178.105.164.250:3000` and `178.105.164.250:9000` directly, *bypassing nginx entirely*. So even if nginx had been stopped, the IP would still have served the site.
+  3. **Public DNS records pointing to the origin.** Cloudflare A records for `primitivehub.ai` and `www.primitivehub.ai` resolved to `178.105.164.250`. Cloudflare's orange-cloud proxy doesn't change this — it makes the *resolver* see Cloudflare, but the cert + origin still need to exist and the proxy chain still hits the host. Setting any A record pointing at the dev/staging host IS a public deploy under the pre-launch posture rule; the orange-cloud proxy is a CDN feature, not a posture.
+**Fix (three-layer kill, executed 2026-06-02):**
+  1. **Cloudflare:** A records for `primitivehub.ai` and `www.primitivehub.ai` deleted. Verified with `dig +short www.primitivehub.ai A` → empty.
+  2. **Host nginx:** `sudo systemctl stop nginx && sudo systemctl disable nginx`. `/etc/nginx/sites-enabled/primitivehub` and the Let's Encrypt cert left on disk — re-launch stays reversible. Verified with `systemctl is-active nginx` → `inactive` and `ss -tlnp | grep -E ':80|:443'` → empty.
+  3. **Compose containers:** `docker compose -f compose.yaml -f compose.prod.yaml up -d --force-recreate --no-deps web authentik-server` forces docker to re-read the port spec from `compose.yaml`. Verified with `docker ps --format '{{.Names}}\t{{.Ports}}'` → `127.0.0.1:3000` and `127.0.0.1:9000`. Dev workflow (VS Code Remote SSH to Hetzner with `-L` port-forward) unaffected — services still listen on `127.0.0.1` inside the host; SSH forwarding still hits them.
+  4. **Firewall (belt-and-braces, pending operator):** `sudo ufw deny 80,443,3000,9000/tcp`. SSH on 22 stays allowed.
+**Prevention:**
+  - **`feedback-localhost-only` memory generalized** — the rule now explicitly covers (1) compose port specs, (2) direct process binds, (3) host-level reverse proxies, (4) public DNS records, (5) firewall, (6) stale container state. A pre-claim audit checklist with six concrete `curl`/`dig`/`docker`/`systemctl` invocations was added; "it's not public" means every line of that checklist returns the safe value.
+  - **CI guard (proposed, separate follow-up PR):** a `scripts/check-port-bindings.sh` (sibling to `apps/web/scripts/check-data.mjs`) greps `compose*.yaml` for any port spec of the form `^\s*-\s*"\d+:\d+"` (port spec without an IP prefix) and exits 1. Wired into the existing CI alongside `pnpm check:data` and `python scripts/check_schema.py`. This catches violation (1) only — violations (2)–(6) are operational, not in-repo, and need different controls.
+  - **Stale-container note added to apps README + CLAUDE.md build-hygiene section** — after editing a port spec in `compose*.yaml`, `docker compose up -d` is not enough; `--force-recreate --no-deps <service>` is required.
+  - **Pre-flight rule for any host-level service:** before adding nginx/traefik/caddy/cloudflared/anything that binds the host network, write an ADR with the launch-posture analysis. Pre-launch, the answer is always "no public bind." This is a new instance of [[project-launch-posture]] discipline.
+**Lesson:** "Localhost-only" is a property of the whole network path, not any single layer. A correctly configured compose port spec is necessary but not sufficient — host-level reverse proxies, DNS records, stale container state, and missing firewall rules can each independently defeat the invariant. Before launch, audit *every* layer that can answer "does my origin IP serve content to the public internet?": (1) compose, (2) direct process binds, (3) host services, (4) DNS, (5) firewall, (6) running-container state. If any one says yes, the site is public. Cloudflare orange-cloud is not a defense — it's a CDN. And `docker compose up -d` is not a port-spec migration tool — it's a config diff. Both are quiet failure modes that look like they're doing the right thing.
+
+### 25. `phub scan` flags own CLAUDE.md with T5 false positive — 2026-05-31
+
+**Phase:** 5.5 (PR 5.5.3 — `@primitivehub/phub` CLI v0.1)
+**Symptom:** `phub scan /srv/primitivehub/app/CLAUDE.md` exits 1 with
+two `t5.unsafe_shell_install` matches on lines 244 + 246. The matched
+text is `npx skill` and `npx\n   install` — both inside the project's
+own hard-rule prose explicitly *forbidding* npx skill installs as a
+T5 attack vector. There is no actual `curl|bash` or executable install
+instruction in the file.
+**Root cause:** The v0.1 detector regex
+`\bnpx\s+(?:-y\s+|--yes\s+)?(?!--help|--version)[a-zA-Z0-9@/_.-][a-zA-Z0-9@/_.-]+`
+matches any occurrence of "npx" followed by an identifier-shaped word,
+anywhere in a markdown document. It has no awareness of negation
+("**No** npx skill installs"), no awareness of fenced code blocks vs.
+prose, and no awareness of when a document is *teaching about* an
+attack vs. *instructing the agent to execute* it. This is the
+documented v0.1 false-positive case — see
+`apps/api/scanners/t5_unsafe_shell_install.py:37-47` docstring:
+> "A primitive teaching about CI/CD or package management may
+> legitimately show install commands as EXAMPLES. … Markdown-AST
+> awareness in v0.2+ will distinguish code-fence quotes from
+> top-level instructions. For now: false positives are preferable
+> to false negatives."
+**Fix:** **Working-as-intended in v0.1.** No fix lands in this PR.
+The v0.1 product stance is "flag and bounce to manual review" rather
+than risk a missed Shai-Hulud vector — the cost asymmetry of a
+missed attack vs. a false positive is enormous (see same docstring).
+**Prevention (v0.2 work, tracked):** Add markdown-AST aware scanning
+to both the Python and TS detectors. Distinguish:
+  - inline code spans (`` `npx foo` ``) — likely a quote, lower severity
+  - fenced code blocks (```` ```npx foo``` ````) — likely an example, requires inspection
+  - top-level instruction prose ("run `npx foo` to install") — original FAIL severity
+  - negated prose ("never run `npx foo`") — INFO not FAIL
+Implementation needs a real markdown parser (probably `remark`/`mdast`
+on the TS side; `mistune` or `markdown-it-py` on the Python side) and
+matching ASTs on both sides per ADR-0023 lockstep rule.
+**Lesson:** Regex-on-raw-text detectors WILL fire on security-teaching
+content. This is a feature in v0.1 (defense-in-depth via human review)
+and a bug to fix in v0.2 (precision via AST). The detector docstring
+called this out from day one — the system worked exactly as the
+detector author predicted on a real document. Validates both:
+  - The detector is sensitive enough to catch real attacks (good).
+  - The AST work needs to be a v0.2 priority before any wide adoption
+    push (the noise will be unacceptable for users without context).
+The fact that the project's own documentation hits the false positive
+on first run is the strongest possible argument for the v0.2 ramp.
+**Operationally resolved (2026-06-01) via ledger entry FP-001 in
+[`docs/false-positive-resolution.md`](./false-positive-resolution.md):
+the project ships its own `.primitivehub/policy.yaml` with a narrow
+`detail_tags: [npx-arbitrary-install]` allow on `CLAUDE.md` so
+`phub audit .` runs clean against the repo. The v0.2 markdown-AST work
+is still the right long-term fix and will retire the allow.**
+
 ### 24. Local Authentik not on sigstage Fulcio allowlist — 2026-05-30
 
 **Phase:** 4 (Sigstore keyless signing, PR #3)
