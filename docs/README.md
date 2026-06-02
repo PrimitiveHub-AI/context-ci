@@ -1,5 +1,10 @@
 # PrimitiveHub Documentation
 
+> **Looking for the user manual?** → [`docs/usage/`](./usage/README.md)
+> covers every shipping surface: phub CLI, Context Policy, phub.lock,
+> GitHub Action, MCP server, verify library, end-to-end recipes,
+> troubleshooting.
+
 The strategic + canonical reference layer for PrimitiveHub. Two
 classes of document live here:
 
