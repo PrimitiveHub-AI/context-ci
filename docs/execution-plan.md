@@ -394,7 +394,16 @@ so future sessions don't invert dependencies or double-build.
       `.primitivehub/phub.lock` is committed (20 artifacts, ~129
       lines). The AV-product-family boot-time-integrity-check row
       from ADR-0030 § 3 is now shipped.
-- [ ] PR 5.7.3 — `phub watch` filesystem daemon (future ADR-0027)
+- [x] PR 5.7.3 — `phub watch` filesystem daemon (ADR-0027)
+      (Daemon mode + `--once` mode + per-path debounce + NDJSON event
+      stream + bounded runtime + reuse runAudit so behavior is
+      provably identical to `phub audit`. Zero new runtime deps —
+      Node's built-in fs.watch with recursive mode. 8 new tests
+      including a subprocess test that spawns the daemon, writes a
+      file, observes the scanned event, and asserts exit 1.
+      Quarantine accepted as a documentary marker; real file moves
+      deferred to v0.2. AV-product-family on-access-guard row from
+      ADR-0030 § 3 is now shipped.)
 - [ ] PR 5.7.4 — `phub install <slug@semver>` safe-install
       (future ADR-0028; closes the T5 attack class operationally)
 - [ ] PR 5.7.5 — MCP runtime gate

@@ -256,6 +256,135 @@ These three are mutually exclusive at CLI parse time.
 
 ---
 
+## `watch`
+
+Daemonized active-surface command. Runs an initial audit, then
+reacts to filesystem events. Per [ADR-0027](../decisions/0027-phub-watch.md)
+this is the "on-access guard" row of the AV-product-family map
+([ADR-0030 § 3](../decisions/0030-fp-resolution-and-av-vendor-parallel.md)).
+
+```
+phub watch [dir] [--once] [--debounce <ms>] [--policy <path>]
+                 [--strict] [--allow-fail=<id>...] [--detector=<id>...]
+                 [--max-files <N>] [--max-depth <N>]
+                 [--max-runtime-sec <N>] [--json]
+                 [--quarantine]
+```
+
+`dir` defaults to `process.cwd()`.
+
+### Modes
+
+| Mode | What it does |
+|---|---|
+| Default (daemon) | Initial audit + fs.watch + re-audit on each debounced event. Exits on SIGINT / SIGTERM. NDJSON or human output. |
+| `--once` | Single audit + emit + exit. Same shape as `phub audit`, useful for tests. |
+
+### Flags
+
+| Flag | Default | What it does |
+|---|---|---|
+| `--once` | off | Single audit + exit (no fs.watch). |
+| `--debounce <ms>` | `200` | Per-path debounce. Coalesces N rapid events on the same path into one emit. |
+| `--max-runtime-sec <N>` | none | Exit cleanly after N seconds. Daemon mode only; tests + CI helper. |
+| `--quarantine` | off | v0.1 marker only — real file moves land in v0.2. |
+| `--json` | off | Emit NDJSON event stream (one JSON object per line). |
+
+All audit flags (`--policy`, `--strict`, `--allow-fail`,
+`--detector`, `--max-files`, `--max-depth`) work identically. SARIF
+is NOT supported (NDJSON is the streaming format).
+
+### NDJSON event kinds
+
+| Kind | When | Payload |
+|---|---|---|
+| `started` | First emit; carries initial audit summary | `{root, mode, policySource, artifactCount, flaggedCount}` |
+| `ready` | After watcher attaches (daemon only) | `{debounceMs, quarantine}` |
+| `fs-event` | One debounced fs.watch event | `{path, rawKind, timestamp}` |
+| `scanned` | After re-audit completes | `{flaggedCount, totalFindings, flagged: [...]}` |
+| `warning` | Watcher error or audit warning | `{message}` |
+| `shutdown` | Daemon stopping (signal or `--max-runtime-sec`) | `{signal, exitCode}` |
+
+### Examples
+
+**Smoke run on the current directory:**
+
+```bash
+phub watch --once
+```
+
+**Start a daemon emitting NDJSON; consume with jq:**
+
+```bash
+phub watch . --json | jq -c 'select(.kind == "scanned") | {flaggedCount: .payload.flaggedCount}'
+```
+
+**Time-bounded daemon (useful for CI):**
+
+```bash
+phub watch . --json --max-runtime-sec 600 > watch.ndjson
+# Run for 10 minutes, emit every event to a file, exit cleanly.
+```
+
+**Filter to one classification family:**
+
+```bash
+phub watch . --detector=CCI-005
+# Only re-emit T5 verdicts; everything else still classified + ignored.
+```
+
+### Exit codes
+
+| Code | Daemon meaning | `--once` meaning |
+|---|---|---|
+| `0` | No re-audit during the daemon's lifetime produced a flagged verdict. | Initial audit was clean. |
+| `1` | At least one re-audit produced a flagged verdict (sticky — does not revert). | Initial audit flagged ≥ 1 artifact. |
+| `2` | Usage error / unreadable root / invalid policy. | Same. |
+
+Daemon exit code is **monotonic** — once 1, stays 1. The daemon's
+run is treated as "did anything dirty happen during this window?"
+not "is the tree currently clean?"
+
+### Output — human mode (excerpt)
+
+```text
+[watch] root=/my/project mode=daemon policy=/my/project/.primitivehub/policy.yaml artifacts=12 flagged=0
+[watch] ready (debounce=200ms)
+[watch] change: /my/project/AGENTS.md
+[watch] scanned: 1 flagged artifact(s), 1 finding(s)
+[watch] shutdown (SIGINT)
+```
+
+### Output — `--json` mode (one event per line)
+
+```json
+{"kind":"started","timestamp":"...","payload":{"root":"...","mode":"daemon","policySource":"...","artifactCount":12,"flaggedCount":0}}
+{"kind":"ready","timestamp":"...","payload":{"debounceMs":200,"quarantine":false}}
+{"kind":"fs-event","timestamp":"...","payload":{"timestamp":"...","path":"/my/project/AGENTS.md","rawKind":"change"}}
+{"kind":"scanned","timestamp":"...","payload":{"flaggedCount":1,"totalFindings":1,"flagged":[{"path":"AGENTS.md","classification":"agents-md","digest":"...","verdicts":[{"cciId":"CCI-001","severity":"fail","summary":"..."}]}]}}
+{"kind":"shutdown","timestamp":"...","payload":{"signal":"SIGINT","exitCode":1}}
+```
+
+### Platform notes
+
+| Platform | Recursive watch | Notes |
+|---|---|---|
+| macOS | yes (FSEvents) | Full support. |
+| Windows | yes (ReadDirectoryChangesW) | Full support. |
+| Linux | yes if Node ≥ 20.6; else non-recursive fallback | Older Node emits a `warning` event but doesn't fail. |
+
+For older Node on Linux, watch will see top-level changes only.
+Upgrade Node, or pair with `phub audit --check-lock` in a periodic
+cron as the fallback.
+
+### Quarantine
+
+`--quarantine` in v0.1 emits a marker in `ready` events but does NOT
+move files. Real file-move semantics land in v0.2 behind a separate
+ADR (restore protocol, metadata format, rename handling).
+
+---
+
 ## `verify`
 
 Verifies a [Trust Contract v0.1](../trust-contract-v0.1.md) bundle

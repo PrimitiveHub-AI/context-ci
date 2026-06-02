@@ -17,6 +17,13 @@ export {
   auditCommand,
   type AuditOptions,
 } from "./commands/audit.js"
+export { watchCommand, type WatchOptions } from "./commands/watch.js"
+export {
+  startWatcher,
+  type Watcher,
+  type WatcherEvent,
+  type WatcherOptions,
+} from "./audit/watcher.js"
 export {
   type AuditResult,
   type AuditedArtifact,

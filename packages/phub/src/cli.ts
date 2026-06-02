@@ -15,6 +15,7 @@ import { auditCommand } from "./commands/audit.js"
 import { initCommand } from "./commands/init.js"
 import { scanCommand } from "./commands/scan.js"
 import { verifyCommand } from "./commands/verify.js"
+import { watchCommand } from "./commands/watch.js"
 
 const VERSION = "0.1.0"
 
@@ -26,6 +27,8 @@ Usage:
 Commands:
   audit [path]         Discover + classify + scan every agent-context artifact under a path
                        (default: current directory). The first active surface — ADR-0025.
+  watch [path]         Daemonized filesystem guardian — runs audit on every fs event.
+                       ADR-0027. --once for a single audit + exit.
   scan <file>          Scan a markdown file for Context CI Top 10 patterns (T1/T2/T5 in v0.1)
   verify <bundle>      Verify a Trust Bundle JSON file (wraps @primitivehub/verify)
   init                 Write a starter AGENTS.md in the current directory
@@ -166,6 +169,40 @@ Exit codes:
       under --check-lock / spec-version mismatch under --check-lock
 `
 
+const WATCH_HELP = `phub watch [dir]
+
+Active filesystem guardian. Reuses the same classifier + detector
+roster + policy + lock comparison as 'phub audit', but reacts to
+fs events instead of running point-in-time.
+
+Two modes:
+  default (daemon)   Run an initial audit, then watch for fs events.
+                     Emits NDJSON (with --json) or human lines per event.
+                     Exits on SIGINT / SIGTERM. Exit code reflects the
+                     worst finding observed.
+  --once             Run a single audit + emit + exit (same shape as
+                     'phub audit'; useful for tests + CI smoke).
+
+Flags:
+  --json                  Emit NDJSON event stream (one JSON object per line)
+  --once                  Single audit + exit (no fs.watch)
+  --debounce <ms>         Per-path debounce in milliseconds (default 200)
+  --policy <path>         Path to .primitivehub/policy.yaml. Auto-discover if absent.
+  --strict                Treat WARN as FAIL.
+  --allow-fail=<id>       Allow detector/CCI/threat ID to FAIL. Repeatable.
+  --detector=<id>         Restrict to a detector. Repeatable.
+  --max-files <N>         Walker cap. Default 10000.
+  --max-depth <N>         Walker cap. Default 16.
+  --max-runtime-sec <N>   Exit cleanly after N seconds (test/CI helper).
+                          Daemon mode default: no limit.
+  --quarantine            v0.1 marker only — real file moves land in v0.2.
+
+Exit codes:
+  0   no flagged artifacts (daemon: at exit time)
+  1   one or more artifacts flagged by their policy-adjusted verdicts
+  2   usage error / unreadable root / invalid policy
+`
+
 const INIT_HELP = `phub init
 
 Write a starter AGENTS.md template into the current directory.
@@ -198,12 +235,19 @@ const GLOBAL_SPECS: readonly FlagSpec[] = [
   { name: "update-lock" },
   { name: "lock-only" },
   { name: "lock-path", takesValue: true },
+  { name: "once" },
+  { name: "debounce", takesValue: true },
+  { name: "quarantine" },
+  { name: "max-runtime-sec", takesValue: true },
 ]
 
 function printHelp(command?: string): void {
   switch (command) {
     case "audit":
       process.stdout.write(AUDIT_HELP)
+      return
+    case "watch":
+      process.stdout.write(WATCH_HELP)
       return
     case "scan":
       process.stdout.write(SCAN_HELP)
@@ -388,6 +432,44 @@ export async function main(argv: readonly string[]): Promise<number> {
         allowFailFor: asStringArray(parsed.flags["allow-fail"]),
         json: asBool(parsed.flags["json"]),
       })
+    }
+
+    case "watch": {
+      if (asBool(parsed.flags["help"])) {
+        printHelp("watch")
+        return 0
+      }
+      let debounceMs: number
+      let maxFiles: number
+      let maxDepth: number
+      let maxRuntimeSec: number | undefined
+      try {
+        debounceMs = asPositiveInt(parsed.flags["debounce"], "debounce") ?? 200
+        maxFiles = asPositiveInt(parsed.flags["max-files"], "max-files") ?? 10000
+        maxDepth = asPositiveInt(parsed.flags["max-depth"], "max-depth") ?? 16
+        maxRuntimeSec = asPositiveInt(parsed.flags["max-runtime-sec"], "max-runtime-sec")
+      } catch (err) {
+        if (err instanceof UsageError) {
+          process.stderr.write(`phub watch: ${err.message}\n`)
+          return 2
+        }
+        throw err
+      }
+      const watchOpts = {
+        json: asBool(parsed.flags["json"]),
+        once: asBool(parsed.flags["once"]),
+        debounceMs,
+        strict: asBool(parsed.flags["strict"]),
+        detectors: asStringArray(parsed.flags["detector"]),
+        allowFail: asStringArray(parsed.flags["allow-fail"]),
+        maxFiles,
+        maxDepth,
+        quarantine: asBool(parsed.flags["quarantine"]),
+      } as Parameters<typeof watchCommand>[1]
+      const policyPath = asString(parsed.flags["policy"])
+      if (policyPath !== undefined) watchOpts.policyPath = policyPath
+      if (maxRuntimeSec !== undefined) watchOpts.maxRuntimeSec = maxRuntimeSec
+      return await watchCommand(parsed.positionals[0], watchOpts)
     }
 
     case "init": {

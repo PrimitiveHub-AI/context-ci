@@ -8,6 +8,33 @@ wrapper) and Context CI Top 10 version (for the scanner detectors);
 
 ## [Unreleased]
 
+### Added (PR 5.7.3 — `phub watch`, ADR-0027)
+- **`phub watch [dir]`** — active runtime guardian. Daemon mode runs
+  an initial audit, then watches the tree via Node's built-in
+  `fs.watch({ recursive: true })`. Each debounced fs event triggers
+  a re-audit; flagged artifacts emit a `scanned` event with the
+  failing CCI IDs. Exits on SIGINT/SIGTERM. Reuses runAudit
+  internals — zero parallel scanning logic per ADR-0023's parity
+  rule.
+- **`--once`** — single audit + emit + exit (same shape as
+  `phub audit`; for tests + CI smoke runs).
+- **`--debounce <ms>`** — per-path debounce (default 200ms). Coalesces
+  editor save-and-replace storms into a single emit per path.
+- **`--max-runtime-sec <N>`** — bounded daemon runtime for tests
+  and time-boxed CI scans. Production daemons usually omit it.
+- **`--quarantine`** — accepted in v0.1 as a documentary marker;
+  actual file-move semantics deferred to v0.2 (separate ADR).
+- **NDJSON stream** with `--json` — one `{kind, timestamp, payload}`
+  JSON object per line. Event kinds: `started` / `ready` /
+  `fs-event` / `scanned` / `warning` / `shutdown`. Streamable
+  via `tail -f | jq`.
+- **Zero new runtime deps** — uses Node's built-in fs.watch.
+  Cross-platform via libuv (macOS FSEvents, Windows
+  ReadDirectoryChangesW, Linux libuv recursive ≥ Node 20.6).
+- **Programmatic API** — `watchCommand`, `WatchOptions`,
+  `startWatcher`, `Watcher`, `WatcherEvent`, `WatcherOptions`.
+
+
 ### Added (PR 5.7.2 — `phub.lock`, the package-lock.json moment for AI cognition, ADR-0026)
 
 The lockfile companion to `phub audit`. Stamps every classified

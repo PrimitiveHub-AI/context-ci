@@ -43,6 +43,7 @@ Links to primitives, threat-model entries, vendor docs, prior ADRs.
 |---|---|---|
 | [0031](./0031-mcp-server-as-transport.md) | `@primitivehub/mcp-server` as the MCP transport layer (Gate G-D opener) | Accepted |
 | [0030](./0030-fp-resolution-and-av-vendor-parallel.md) | False-positive resolution methodology + AV-vendor product-family framing | Accepted |
+| [0027](./0027-phub-watch.md) | `phub watch` — active runtime guardian (the third active surface) | Accepted |
 | [0026](./0026-phub-lock-format-and-drift-detection.md) | `phub.lock` format + drift detection (`--check-lock` / `--update-lock`) | Accepted |
 | [0025](./0025-active-posture-and-phub-audit.md) | Active posture + `phub audit` (the five-surface arc) | Accepted |
 | [0024](./0024-sarif-and-github-action.md) | SARIF 2.1.0 as canonical CI integration + composite GitHub Action | Accepted |

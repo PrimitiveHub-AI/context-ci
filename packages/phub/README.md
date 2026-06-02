@@ -35,10 +35,11 @@ ergonomics are unchanged. See
 [ADR-0023](../../docs/decisions/0023-phub-cli-and-detector-parity.md)
 "Update 2026-05-31" for the discovery + pivot rationale.
 
-## Three subcommands
+## Subcommands
 
 ```text
 phub audit [<path>]       # discover + classify + scan every artifact under <path>
+phub watch [<path>]       # daemonized audit — runs on every fs event (ADR-0027)
 phub scan <file>          # T1/T2/T5 detectors on a single file (v0.1)
 phub verify <bundle.json> # @primitivehub/verify wrapper
 phub init                 # write starter AGENTS.md
@@ -46,8 +47,12 @@ phub init                 # write starter AGENTS.md
 
 `phub audit` is the **active surface**
 ([ADR-0025](../../docs/decisions/0025-active-posture-and-phub-audit.md));
-`phub scan` is its passive counterpart. Use `scan` when you already
-know which file is suspect; use `audit` when you don't.
+`phub watch` is the **daemonized active surface**
+([ADR-0027](../../docs/decisions/0027-phub-watch.md));
+`phub scan` is their passive counterpart. Use `scan` when you already
+know which file is suspect; use `audit` when you don't; use `watch`
+when you want the audit to react to fs events instead of being
+re-invoked.
 
 ## `phub audit`
 
