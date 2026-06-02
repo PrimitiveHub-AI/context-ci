@@ -50,6 +50,7 @@ Links to primitives, threat-model entries, vendor docs, prior ADRs.
 | [0022](./0022-publishing-deferred-to-launch.md) | `@primitivehub/verify` npm publish deferred to launch (three-lock gate) | Accepted |
 | [0021](./0021-conformance-suite-as-executable-contract.md) | Conformance suite as the executable contract definition | Accepted |
 | [0020](./0020-verify-as-reference-implementation.md) | `@primitivehub/verify` as the TS/JS reference implementation | Accepted |
+| [0019](./0019-doctrine-versioning-policy.md) | Doctrine + brand-voice + OKRs versioning policy | Accepted |
 | [0018](./0018-context-policy-language.md) | Context Policy Language v0.1 spec + phub as reference implementation | Accepted |
 | [0017](./0017-workbench-to-primitive-forge-rename.md) | Workbench v2 → Primitive Forge rename | Accepted |
 | [0016](./0016-context-ci-top-10-versioning.md) | Context CI Top 10 v0.1 — taxonomy as versioned public spec | Accepted |
