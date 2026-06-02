@@ -26,6 +26,7 @@ stacked, post-Step-7-OIDC. The end-to-end Sign-in flow is live.
 | 4 — Sigstore signing + Procrastinate workers | ◐ in progress | target Q1 2026 |
 | **5 — Context CI v1: 10 stages, 10 threats** | ◐ in progress | target Q1 2026 |
 | **5.5 — Runtime Trust API (bundle spec + endpoints + CLI + verify lib + MCP)** | ◐ in progress | target Q1-Q2 2026 |
+| **5.7 — Active surfaces (audit / lock / watch / install / runtime gate)** | ◐ in progress | target Q2 2026 (ADR-0025) |
 | 6 — Marketplace + search + downloads + reviews | ◯ planned | target Q2 2026 |
 | 7 — Enterprise: self-host Sigstore, MinIO, schema-per-tenant | ◯ planned | target Q2 2026 |
 | 8 — Observability + analytics | ◯ planned | target Q2-Q3 2026 |
@@ -198,6 +199,82 @@ registry. Vendor-absorption hedge.
 PrimitiveHub's web UI can `pip install context-ci-verify`, paste a
 bundle JSON, and verify a primitive's signature + Context CI verdicts
 without any network call to primitivehub.ai.
+
+### Phase 5.7 — Active surfaces (Q2 2026, in progress)
+
+**Goal:** Convert the CLI + GitHub Action from *passive* (lint a file
+you point at) to *active* (discover every agent-context artifact in a
+project, classify it, scan it, lock it, guard it at runtime). This is
+the half of `docs/vision.md` that turns "context can be inspected,
+verified, attested, and revoked" from a thesis into observable default
+behavior.
+
+Locked in [ADR-0025](./decisions/0025-active-posture-and-phub-audit.md).
+The active-surfaces arc is five PRs; each subsequent surface ships
+under its own ADR (0026–0029) once the foundation lands.
+
+**Ships (PR-by-PR):**
+
+- **PR 5.7.1** ◐ `feat/phub-audit` — `phub audit [<path>]` walks the
+  project, classifies every context artifact (AGENTS.md / CLAUDE.md /
+  `.cursorrules` / `.claude/skills/**` / `**/primitives/**` /
+  `**/mcp.json` / etc.), digests each file (SHA-256), runs the existing
+  T1/T2/T5 detector roster, and emits a project-level report (human /
+  JSON / SARIF). Zero new detectors; orchestration surface only.
+  Foundation for PRs 5.7.2–5.7.5. ADR-0025.
+- **PR 5.7.2** ◐ `feat/phub-lock` — `phub.lock` format
+  ([ADR-0026](./decisions/0026-phub-lock-format-and-drift-detection.md))
+  + `phub audit --check-lock` / `--update-lock` / `--lock-only` /
+  `--lock-path`. Canonical-JSON file at `.primitivehub/phub.lock`
+  records `(path, classification, digest, attestation-status)` for
+  every classified artifact. Reproducibility is the load-bearing
+  property: re-stamping against an unchanged working tree produces a
+  byte-identical file. CI fails on drift via `--check-lock`. Drift
+  categories: added / modified / removed / reclassified. The
+  AV-product-family equivalent of the boot-time integrity check
+  (ADR-0030 § 3). 31 new tests; 159/159 passing.
+- **PR 5.7.3** ◯ `feat/phub-watch` — long-running filesystem watcher;
+  new context artifacts get auto-scanned and quarantined until
+  approved into the lock. Future ADR-0027.
+- **PR 5.7.4** ◯ `feat/phub-install` — `phub install <slug@semver>`.
+  Safe replacement for the `npx … | bash` skill-install attack class
+  (T5). Pulls from the registry, verifies the Trust Bundle,
+  content-addresses the install path, records the install in
+  `phub.lock`. Refuses unattested installs without `--unsafe`.
+  Future ADR-0028.
+- **PR 5.7.5** ◯ `feat/mcp-runtime-gate` — promotes
+  `@primitivehub/mcp-server` (Phase 5.5 PR 5.5.5) to a runtime gate
+  with `primitivehub.verify_before_load(artifact_ref)`. Agent runtimes
+  call it before loading any primitive; refuses-by-default for
+  unattested or revoked content. Already on the Phase 5.5 roadmap as
+  the MCP server; this PR confirms the gate semantics. Future ADR-0029.
+
+**Locked architectural commitments:**
+
+- The walker, classifier, lockfile, and runtime gate all reuse the
+  existing scanner kernel + verifier kernel. NO surface introduces
+  parallel trust logic — the Trust Contract is still the spine
+  (per ADR-0015 and the execution-plan one-line bet).
+- Classification list is versioned alongside the Top 10 (ADR-0016).
+  New artifact classes ship as minor-version bumps because they
+  describe the attack surface, not the implementation.
+- Discovery is deterministic (path-pattern matching, not LLM
+  heuristic) so the audit verdict is auditable.
+- Every active surface integrates the FP-resolution methodology
+  ([ADR-0030](./decisions/0030-fp-resolution-and-av-vendor-parallel.md)
+  + [`docs/false-positive-resolution.md`](./false-positive-resolution.md)).
+  Allow entries in `.primitivehub/policy.yaml` are back-referenced by
+  numbered FP-NNN ledger entries; allowlists decay on a quarterly +
+  Top-10-version-bump re-review cadence. The AV-vendor product-family
+  parallel is the load-bearing framing for the whole active-surfaces
+  arc.
+
+**Success metric:** an operator at any organization can run `npx
+@primitivehub/phub audit` against an unfamiliar repository and get
+back a complete inventory of agent-context artifacts + a verdict on
+each, with no prior knowledge of which files matter. The "find every
+piece of context an agent loads" promise from the vision is reachable
+in one command.
 
 ### Phase 6 — Marketplace + search + downloads + reviews (Q2 2026)
 

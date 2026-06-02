@@ -38,10 +38,127 @@ ergonomics are unchanged. See
 ## Three subcommands
 
 ```text
-phub scan <file>          # T1/T2/T5 detectors (v0.1)
+phub audit [<path>]       # discover + classify + scan every artifact under <path>
+phub scan <file>          # T1/T2/T5 detectors on a single file (v0.1)
 phub verify <bundle.json> # @primitivehub/verify wrapper
 phub init                 # write starter AGENTS.md
 ```
+
+`phub audit` is the **active surface**
+([ADR-0025](../../docs/decisions/0025-active-posture-and-phub-audit.md));
+`phub scan` is its passive counterpart. Use `scan` when you already
+know which file is suspect; use `audit` when you don't.
+
+## `phub audit`
+
+Walks the project, finds every agent-context artifact (AGENTS.md /
+CLAUDE.md / `.cursorrules` / `.windsurfrules` / `.aider.conf.yml` /
+`.github/copilot-instructions.md` /
+`.claude/{skills,agents,commands}/**` / `.cursor/rules/**` /
+`**/primitives/**` / `**/skills/**` / `**/SKILL.md` / `**/prompts/**` /
+`**/mcp.json`), classifies it, digests it (SHA-256), runs the
+detector roster on the text-scannable classes, and emits a
+project-level report. Skips `node_modules/` / `.git/` / `dist/` /
+`build/` / `.next/` / `coverage/` / `target/` / `__pycache__/` /
+`venv/` / `.venv/` / `.tox/` / `.pytest_cache/` / `.cache/` and
+dot-prefixed directories other than `.claude/` / `.cursor/` /
+`.github/`. Does not follow symlinks.
+
+```bash
+npx @primitivehub/phub audit
+```
+
+```text
+phub audit /srv/primitivehub/app
+
+Inventory (7 artifacts, 5 classes):
+  agents-md             1  AGENTS.md
+  claude-md             1  CLAUDE.md
+  claude-skill          2  .claude/skills/code-review.md, .claude/skills/debug.md
+  cursor-rules          1  .cursorrules
+  mcp-config            1  apps/api/mcp.json  (classified, not scanned in v0.1)
+  primitive             1  apps/web/content/primitives/example.md
+
+Findings:
+  [FAIL] .claude/skills/code-review.md (claude-skill)
+    [FAIL] t1.prompt_injection (CCI-001) — Matched 1 prompt-injection pattern; review before signing.
+      L17  Ignore previous instructions
+             Remove or rephrase (override-system-instructions); …
+
+Skipped: 4 skip-list dirs, 2 hidden dirs.
+
+Result: 1 of 7 artifacts flagged. 1 finding total. Review before committing.
+```
+
+| Flag | Default | What it does |
+|---|---|---|
+| `--json` | off | Emit `{ root, artifacts: [...], summary }` JSON for CI consumption. Foundation for the planned `phub.lock`. |
+| `--sarif` | off | Multi-file SARIF 2.1.0 aggregating findings across every artifact. Upload to GitHub Code Scanning the same way as `phub scan --sarif`. Mutually exclusive with `--json`. |
+| `--detector=<id>` | all | Restrict run; accepts detector name, CCI ID (`CCI-001`), or threat category (`T1`). Repeat for multiple. |
+| `--strict` | off | Treat `warn` verdicts as `fail`. |
+| `--no-fail` | off | Always exit 0, even on findings. |
+| `--allow-fail=<id>` | none | Allow a detector/CCI/threat ID to fail. Repeatable. |
+| `--policy <path>` | auto-discover | Path to `.primitivehub/policy.yaml`. |
+| `--max-files=<n>` | 5000 | Hard cap on files visited. |
+| `--max-depth=<n>` | 12 | Hard cap on directory depth. |
+
+**Exit codes:** `0` = clean (or `--no-fail`), `1` = one or more
+artifacts flagged OR drift detected, `2` = usage error / unreadable
+path / invalid policy file / missing lock under `--check-lock` /
+spec-version mismatch under `--check-lock`.
+
+### Lockfile (`.primitivehub/phub.lock`)
+
+`phub.lock` is the package-lock.json equivalent for AI cognition
+([ADR-0026](../../docs/decisions/0026-phub-lock-format-and-drift-detection.md)).
+A canonical-JSON file stamps every classified artifact's
+`(path, classification, digest, attestation-status)`; CI gates on
+drift; PRs that touch agent-context artifacts re-stamp the lock and
+reviewers see the diff.
+
+```bash
+# First time: stamp the lock and commit it.
+npx @primitivehub/phub audit --update-lock
+git add .primitivehub/phub.lock && git commit -m "chore: stamp phub.lock"
+
+# In CI (every PR): fail the build on drift.
+npx @primitivehub/phub audit --check-lock
+
+# After intentional changes to agent-context artifacts: re-stamp.
+npx @primitivehub/phub audit --update-lock
+git add .primitivehub/phub.lock
+```
+
+| Flag | What it does |
+|---|---|
+| `--check-lock` | Compare working tree to lock. Exit 1 on drift OR scanner findings. Exit 2 on missing lock / spec-version mismatch. |
+| `--update-lock` | Write a fresh lock. Scanner findings do NOT block the write. |
+| `--lock-only` | Skip scanners, only stamp the lock. Combined with `--json`, writes the canonical JSON to stdout instead of disk. |
+| `--lock-path <path>` | Override the auto-discovered `.primitivehub/phub.lock` location. |
+
+Drift categories surface in the human reporter and the JSON output:
+
+```
+Drift detected against /your/repo/.primitivehub/phub.lock:
+
+  Added (1):
+    .claude/skills/new-tool.md   (claude-skill, sha256:abc123…)
+  Modified (1):
+    AGENTS.md   sha256:def456… → sha256:ghi789…
+  Removed (1):
+    .cursorrules   (cursor-rules, sha256:jkl012…)
+
+Resolution:
+  - If these changes are intentional, run `phub audit --update-lock`
+    and commit the regenerated .primitivehub/phub.lock.
+  - If a change is unexpected, investigate the source before re-locking.
+```
+
+**Reproducibility:** re-stamping the lock against an unchanged
+working tree produces a byte-identical file. No timestamps; keys
+sorted alphabetically at every level; artifacts sorted
+lexicographically by path. This is the load-bearing property that
+makes the lock reviewable in git diffs.
 
 ## `phub scan`
 
@@ -139,6 +256,50 @@ Trust Bundle verified.
 
 **Exit codes:** `0` = verified at the requested level, `1` = rejected,
 `2` = usage error / parse error.
+
+## When phub flags content — the four-path triage
+
+`phub` is a scanner. Every scanner eventually flags content the
+project legitimately produces. Following the AV-vendor discipline
+([ADR-0030](../../docs/decisions/0030-fp-resolution-and-av-vendor-parallel.md)),
+every flagged finding gets classified into exactly one of four paths
+before you act on it. The full methodology lives in
+[`docs/false-positive-resolution.md`](../../docs/false-positive-resolution.md).
+
+| Path | Meaning | Resolution |
+|---|---|---|
+| **A** | True positive — real risk in the content | **Edit the file.** Re-run audit. No allow entry. |
+| **B** | Domain WAI — content legitimately documents the pattern | **Narrow allow entry + numbered FP-NNN ledger entry, same commit.** |
+| **C** | Detector defect — regex too broad | Lockstep PR tightening Python + TS detectors per [ADR-0023](../../docs/decisions/0023-phub-cli-and-detector-parity.md). No allow. |
+| **D** | Ambiguous | Escalate to security-reviewer. **Do not silently allow.** |
+
+**Hard rule:** every commit that adds an `allow:` entry to
+`.primitivehub/policy.yaml` MUST also append an `FP-NNN` ledger entry
+to `docs/false-positive-resolution.md` § 6 in the same commit. A
+policy entry without a ledger entry is a defect.
+
+Allow-entry format (enforced by ADR-0018 + ADR-0030):
+
+```yaml
+# .primitivehub/policy.yaml
+version: "0.1"
+strict: false
+allow:
+  - reason: |
+      FP-NNN — one-paragraph justification referencing the ledger entry,
+      ADR(s), and bugs.md if applicable. Path B per the methodology.
+      Re-review: YYYY-MM-DD.
+    files:
+      - "narrow/path/to/file.md"   # NOT **/*
+    rules:
+      - id: "CCI-005"               # specific stable ID, NOT "*"
+        detail_tags:
+          - "specific-detail-tag"   # narrower than allowing all of the rule
+```
+
+Re-review cadence is quarterly + on every Top 10 minor-version bump.
+Default per-entry re-review date is +90 days from authorship; stale
+entries get removed at the next walk.
 
 ## `phub init`
 

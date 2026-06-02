@@ -8,6 +8,94 @@ wrapper) and Context CI Top 10 version (for the scanner detectors);
 
 ## [Unreleased]
 
+### Added (PR 5.7.2 — `phub.lock`, the package-lock.json moment for AI cognition, ADR-0026)
+
+The lockfile companion to `phub audit`. Stamps every classified
+artifact's `(path, classification, digest, attestation-status)`
+into a canonical JSON file (`.primitivehub/phub.lock`) committed to
+the repo. CI compares the working tree against the lock; PR diffs
+surface every change to the agent-context surface. Foundation for
+`phub watch` (ADR-0027 planned) + `phub install` (ADR-0028 planned).
+
+- `phub audit --check-lock` — compare the working tree against
+  `.primitivehub/phub.lock` (or `--lock-path`). Exit 1 on drift OR
+  scanner findings; exit 2 if the lock is missing or its
+  `top10_version` differs from the current spec.
+- `phub audit --update-lock` — write a fresh lock. Scanner findings
+  do NOT block the write (the lock pins state, not verdicts).
+- `phub audit --lock-only` — skip the scanner roster, only stamp
+  the lock. Combined with `--json`, writes the canonical JSON to
+  stdout instead of disk (CI-bootstrap path).
+- `phub audit --lock-path <path>` — override auto-discovered
+  location.
+- Drift report (human) — added / modified / removed / reclassified
+  categories with short-digest display. JSON output adds a `lock`
+  object with `mode`, `path`, `hasDrift`, and the full `drift`
+  breakdown.
+- **Reproducibility** — re-stamping the lock against an unchanged
+  working tree produces a byte-identical file. No timestamps;
+  alphabetical keys at every level; lexicographic artifact sort.
+  Unit-tested in `test/audit-lock.test.ts`.
+- Programmatic exports: `lockFromAudit`, `serializeLock`,
+  `parseLock`, `readLock`, `writeLock`, `diffLock`, `isLockDrifted`,
+  `LockParseError`, `LOCK_VERSION`, `LOCK_TOP10_VERSION`,
+  `LOCK_GENERATOR`, `LOCK_SCHEMA_URL`, and the `PhubLock` /
+  `LockedArtifact` / `LockDrift` / `LockAttestation` types.
+- New tests: `test/audit-lock.test.ts` (19 unit tests covering
+  format + diff + reproducibility); extended end-to-end coverage
+  in `test/audit.test.ts` (12 new CLI tests covering all four lock
+  flags + their interactions).
+
+The lockfile is the AV-product-family equivalent of the
+**boot-time integrity check** ([ADR-0030 § 3](../../docs/decisions/0030-fp-resolution-and-av-vendor-parallel.md)).
+*Before this project runs an agent against any of these primitives,
+prove the cognition hasn't changed since I last reviewed it.*
+
+### Added (PR 5.7.1 — the Samurai Cut, ADR-0025)
+
+The first **active surface**. `phub` now defends a whole project, not
+just a file you remembered to point it at.
+
+- `phub audit [<path>]` — walks the project, classifies every
+  agent-context artifact (AGENTS.md / CLAUDE.md / `.cursorrules` /
+  `.windsurfrules` / `.aider.conf.yml` / `.github/copilot-instructions.md`
+  / `.claude/skills|agents|commands/**` / `.cursor/rules/**` /
+  `**/primitives/**` / `**/skills/**` / `**/SKILL.md` /
+  `**/prompts/**` / `**/mcp.json`), digests each file (SHA-256), and
+  runs the existing T1/T2/T5 detector roster on the text-scannable
+  classes. `mcp-config` is classified-but-not-scanned in v0.1 (its
+  detector family lands in a future PR). Default path is
+  `process.cwd()`.
+- `phub audit --sarif` — multi-file SARIF 2.1.0 aggregate that
+  composes with the existing `actions/phub-scan/` GitHub Action.
+- `phub audit --json` — machine-readable inventory + per-artifact
+  digest + verdicts + summary; foundation for the planned `phub.lock`
+  (future ADR-0026).
+- `phub audit --detector=<id>`, `--strict`, `--no-fail`,
+  `--allow-fail=<id>`, `--policy <path>`, `--max-files=<n>`,
+  `--max-depth=<n>` — same flag vocabulary as `phub scan`, plus
+  walker bounds.
+- Walker discipline (per ADR-0025): skips `node_modules/`, `.git/`,
+  `dist/`, `build/`, `.next/`, `coverage/`, `target/`,
+  `__pycache__/`, `venv/`, `.venv/`, `.tox/`, `.pytest_cache/`,
+  `.cache/`, and dot-prefixed directories other than `.claude/`,
+  `.cursor/`, `.github/`. Does NOT follow symlinks. Depth ≤ 12 and
+  file count ≤ 5000 by default (both overridable).
+- Programmatic exports: `runAudit`, `auditCommand`, `classify`,
+  `isTextScannable`, `walk`, `sha256Hex`, `sha256Ref`,
+  `ARTIFACT_CLASSES`, `renderAuditHumanReport`,
+  `renderSarifForArtifacts`, and the `AuditResult` /
+  `AuditedArtifact` / `AuditSummary` / `ArtifactClass` /
+  `WalkOptions` / `WalkResult` types.
+- New tests: `test/audit-classifier.test.ts`,
+  `test/audit-walker.test.ts`, `test/audit.test.ts`.
+
+`phub audit` introduces no new detectors. It is an orchestration
+surface over the existing scanner kernel — the detector-parity rule
+(ADR-0023) is therefore unchanged. PRs 5.7.2 (`phub.lock`), 5.7.3
+(`phub watch`), 5.7.4 (`phub install`), and 5.7.5 (MCP runtime gate)
+build on this foundation under their own ADRs (0026–0029).
+
 ### Added (PR 5.5.X — Context Policy Language v0.1, ADR-0018)
 - **`phub scan --policy <path>`** — load a
   [Context Policy Language v0.1](../../docs/context-policy-v0.1.md)

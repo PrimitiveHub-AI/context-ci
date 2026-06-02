@@ -11,6 +11,7 @@
  */
 
 import { parseArgs, UsageError, type FlagSpec } from "./argv.js"
+import { auditCommand } from "./commands/audit.js"
 import { initCommand } from "./commands/init.js"
 import { scanCommand } from "./commands/scan.js"
 import { verifyCommand } from "./commands/verify.js"
@@ -23,6 +24,8 @@ Usage:
   phub <command> [options] [args]
 
 Commands:
+  audit [path]         Discover + classify + scan every agent-context artifact under a path
+                       (default: current directory). The first active surface — ADR-0025.
   scan <file>          Scan a markdown file for Context CI Top 10 patterns (T1/T2/T5 in v0.1)
   verify <bundle>      Verify a Trust Bundle JSON file (wraps @primitivehub/verify)
   init                 Write a starter AGENTS.md in the current directory
@@ -98,6 +101,71 @@ Exit codes:
   2   usage error / file not readable / JSON parse error
 `
 
+const AUDIT_HELP = `phub audit [<path>]
+
+Discover every agent-context artifact under <path> (default:
+current directory), classify it, digest it (SHA-256), and run the
+Context CI detector roster on the text-scannable classes. Emits a
+project-level report. ADR-0025.
+
+Lockfile integration (ADR-0026) — \`phub.lock\` is the package-lock.json
+equivalent for AI cognition. Stamps every artifact's
+(path, classification, digest, attestation-status) into a canonical
+JSON file that CI can compare the working tree against.
+
+Discovers (the canonical "what counts as a context artifact" list):
+  AGENTS.md, CLAUDE.md (anywhere in the tree)
+  .cursorrules, .windsurfrules, .aider.conf.yml, .aiderignore
+  .github/copilot-instructions.md
+  .claude/{skills,agents,commands}/**/*.md
+  .cursor/rules/**/*.{md,mdc}
+  **/primitives/**/*.md, **/skills/**/*.md, **/SKILL.md, **/prompts/**/*.md
+  **/mcp.json, **/*.mcp.json   (classified, scanner family lands in a future PR)
+
+Skips: node_modules/, .git/, dist/, build/, .next/, coverage/,
+target/, __pycache__/, venv/, .venv/, .tox/, .pytest_cache/, .cache/,
+and dot-prefixed directories other than the meaningful ones
+(.claude/, .cursor/, .github/). Does NOT follow symlinks.
+
+Flags:
+  --json                Output JSON (machine-readable inventory + verdicts)
+  --sarif               Output SARIF 2.1.0 aggregating findings across
+                        every artifact (mutually exclusive with --json).
+                        Upload to GitHub Code Scanning the same way
+                        as 'phub scan --sarif'.
+  --detector=<id>       Restrict to one detector. May be repeated.
+  --strict              Treat WARN verdicts as FAIL
+  --no-fail             Always exit 0, even on findings (SARIF-gate flow)
+  --allow-fail=<id>     Allow a detector/CCI/threat ID to FAIL without
+                        rejecting the audit. Repeatable.
+  --policy <path>       Path to .primitivehub/policy.yaml. Without this
+                        flag: auto-discover then implicit default.
+  --max-files=<n>       Hard cap on files visited (default 5000).
+  --max-depth=<n>       Hard cap on directory depth (default 12).
+
+Lockfile flags (mutually exclusive among each other):
+  --check-lock          Compare the working tree against the lock at
+                        .primitivehub/phub.lock (or --lock-path).
+                        Exit 1 on drift OR scanner findings; exit 2
+                        if the lock is missing or its top10_version
+                        differs from the current spec.
+  --update-lock         Write a fresh lock at .primitivehub/phub.lock
+                        (or --lock-path). Scanner findings do NOT
+                        block the write; the lock pins state, not
+                        verdicts.
+  --lock-only           Skip the scanner roster; only stamp the lock.
+                        Equivalent to --update-lock + skipping scans.
+                        Combined with --json, the lock is written to
+                        stdout instead of disk.
+  --lock-path <path>    Override the auto-discovered lock location.
+
+Exit codes:
+  0   no artifacts flagged, no drift (or --no-fail set)
+  1   one or more artifacts flagged OR drift detected (--check-lock)
+  2   usage error / unreadable path / invalid policy / missing lock
+      under --check-lock / spec-version mismatch under --check-lock
+`
+
 const INIT_HELP = `phub init
 
 Write a starter AGENTS.md template into the current directory.
@@ -124,10 +192,19 @@ const GLOBAL_SPECS: readonly FlagSpec[] = [
   { name: "policy", takesValue: true },
   { name: "force" },
   { name: "offline" },
+  { name: "max-files", takesValue: true },
+  { name: "max-depth", takesValue: true },
+  { name: "check-lock" },
+  { name: "update-lock" },
+  { name: "lock-only" },
+  { name: "lock-path", takesValue: true },
 ]
 
 function printHelp(command?: string): void {
   switch (command) {
+    case "audit":
+      process.stdout.write(AUDIT_HELP)
+      return
     case "scan":
       process.stdout.write(SCAN_HELP)
       return
@@ -141,6 +218,15 @@ function printHelp(command?: string): void {
       process.stdout.write(HELP_TEXT)
       return
   }
+}
+
+function asPositiveInt(v: unknown, flagName: string): number | undefined {
+  if (typeof v !== "string") return undefined
+  const n = Number.parseInt(v, 10)
+  if (!Number.isFinite(n) || n <= 0) {
+    throw new UsageError(`flag --${flagName} requires a positive integer (got ${JSON.stringify(v)})`)
+  }
+  return n
 }
 
 function asString(v: unknown): string | undefined {
@@ -190,6 +276,63 @@ export async function main(argv: readonly string[]): Promise<number> {
     case "help":
       printHelp(parsed.positionals[0])
       return 0
+
+    case "audit": {
+      if (asBool(parsed.flags["help"])) {
+        printHelp("audit")
+        return 0
+      }
+      const wantsJson = asBool(parsed.flags["json"])
+      const wantsSarif = asBool(parsed.flags["sarif"])
+      if (wantsJson && wantsSarif) {
+        process.stderr.write("phub audit: --json and --sarif are mutually exclusive.\n")
+        return 2
+      }
+      let maxFiles: number | undefined
+      let maxDepth: number | undefined
+      try {
+        maxFiles = asPositiveInt(parsed.flags["max-files"], "max-files")
+        maxDepth = asPositiveInt(parsed.flags["max-depth"], "max-depth")
+      } catch (err) {
+        if (err instanceof UsageError) {
+          process.stderr.write(`phub audit: ${err.message}\n`)
+          return 2
+        }
+        throw err
+      }
+      const lockFlagsSet = [
+        asBool(parsed.flags["check-lock"]),
+        asBool(parsed.flags["update-lock"]),
+        asBool(parsed.flags["lock-only"]),
+      ].filter(Boolean).length
+      if (lockFlagsSet > 1) {
+        process.stderr.write(
+          "phub audit: --check-lock, --update-lock, and --lock-only are mutually exclusive.\n",
+        )
+        return 2
+      }
+      let lockMode: "check" | "update" | "lock-only" | "off" = "off"
+      if (asBool(parsed.flags["check-lock"])) lockMode = "check"
+      else if (asBool(parsed.flags["update-lock"])) lockMode = "update"
+      else if (asBool(parsed.flags["lock-only"])) lockMode = "lock-only"
+      const auditOpts: Parameters<typeof auditCommand>[1] = {
+        json: wantsJson,
+        sarif: wantsSarif,
+        strict: asBool(parsed.flags["strict"]),
+        detectors: asStringArray(parsed.flags["detector"]),
+        allowFailFor: asStringArray(parsed.flags["allow-fail"]),
+        maxFiles: maxFiles ?? 5000,
+        maxDepth: maxDepth ?? 12,
+        lockMode,
+      }
+      const policyPath = asString(parsed.flags["policy"])
+      if (policyPath !== undefined) auditOpts.policyPath = policyPath
+      const lockPath = asString(parsed.flags["lock-path"])
+      if (lockPath !== undefined) auditOpts.lockPath = lockPath
+      const exit = auditCommand(parsed.positionals[0], auditOpts)
+      if (asBool(parsed.flags["no-fail"]) && exit === 1) return 0
+      return exit
+    }
 
     case "scan": {
       if (asBool(parsed.flags["help"])) {

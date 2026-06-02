@@ -79,6 +79,65 @@ No single existing platform occupies all four corners.
    open. Anyone can author a primitive that loads in any
    spec-conformant registry.
 
+## The supply-chain stack framing
+
+Every other supply-chain ecosystem walked the same arc. Agent-context
+sits at era 0; PrimitiveHub is built to deliver the whole stack:
+
+| Era | npm | Docker | Python | Agent-context (PrimitiveHub) |
+|---|---|---|---|---|
+| 0 — Install by name | `npm install` | `docker pull` | `pip install` | `phub install` (PR 5.7.4, ADR-0028 planned) |
+| 1 — Lockfile | `package-lock.json` | image digests | `requirements.txt` pins | `phub.lock` (PR 5.7.2, ADR-0026 planned) |
+| 2 — Auditor | `npm audit` | Trivy / Snyk | `pip-audit` | `phub audit` (PR 5.7.1, ADR-0025) |
+| 3 — Provenance / signing | npm Sigstore provenance | cosign + SLSA | PEP 740 | Trust Contract v0.1 + Sigstore (Phase 4 ✓) |
+| 4 — Runtime guard | (immature) | Falco / admission controllers | (immature) | MCP `verify_before_load` (PR 5.7.5, ADR-0029 planned) |
+| 5 — SBOM | CycloneDX everywhere | CycloneDX everywhere | CycloneDX everywhere | CBOM v0.1 (Phase 5.6, ADR-0019 planned) |
+
+The advantage of building this for AI cognition *now*, before any
+incumbent ships it: we author all six rows under one Trust Contract,
+in one coherent spec. The competing platforms will have to retrofit
+five rows on top of an existing storage layer; we ship all five rows
+shaped by row 3 (the cryptographic contract) from day one.
+
+## Product-family parallel — "agent-context AV plus registry"
+
+The category framing locked in
+[ADR-0030](./decisions/0030-fp-resolution-and-av-vendor-parallel.md):
+PrimitiveHub is **not** a registry with a side scanner. It is the
+**AV-product-family equivalent for agent cognition**, with
+cryptographic provenance native to the stack. The mapping:
+
+| AV product family | PrimitiveHub equivalent | State |
+|---|---|---|
+| On-demand scanner (`avscan file.exe`) | `phub scan AGENTS.md` | shipped |
+| Full system scan | `phub audit .` | shipped (ADR-0025) |
+| Signature database | Context CI Top 10 v0.1 | shipped (ADR-0016) |
+| Signature precision tuning | Detector lockstep PRs (Python + TS) | shipped (ADR-0023) |
+| FP submission portal | `docs/false-positive-resolution.md` + FP-NNN ledger | shipped (ADR-0030) |
+| Allowlist / exception DB | `.primitivehub/policy.yaml` `allow:` array | shipped (ADR-0018) |
+| On-access guard | `phub watch` | planned (ADR-0027) |
+| Boot-time integrity check | `phub.lock` + `phub audit --check-lock` | shipped (ADR-0026) |
+| HIPS / behavior blocker at runtime | MCP runtime gate (`verify_before_load`) | planned (ADR-0029) |
+| Cloud lookup / reputation | Trust API by-digest lookup | shipped (ADR-0013) |
+| Provenance / signature attestation | Sigstore-keyless OIDC | shipped (Phase 4) |
+| Quarantine vault | (not adopted — we surface, we don't mutate) | n/a by design |
+
+Why this framing matters strategically: GitHub, Hugging Face,
+Anthropic, OpenAI can each ship a "verified prompt registry" in a
+quarter. None of them can ship the AV-product-family disciplines
+(numbered FP ledger, narrow allowlist with required justification,
+signature precision tuning, periodic re-review, on-access guard,
+runtime gate) in less than the multi-year arc the AV industry already
+walked. The defense layer is the moat, not the storage layer. And the
+defense layer is what we ship from day one.
+
+When asked "what kind of product is this?", the right answer is
+**"agent-context AV plus registry, with cryptographic provenance
+native."** Not "GitHub for prompts." Not "Snyk for skills." The AV
+product family is the closest existing category; our novelty is
+applying it to agent context with spec-first, open-source, attested
+discipline.
+
 ## Where we are intentionally weaker (for now)
 
 - **Hosted compute / model inference.** We host content, not compute.

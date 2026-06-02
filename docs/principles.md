@@ -131,6 +131,52 @@ gap, we document it. When a fix is a workaround and not a root-cause
 fix, we name it as such. Trust the maintainer with the truth; they're
 the only one who can decide what to do with it.
 
+## 19. Active by default; passive only by explicit user choice
+
+A linter waits for the operator to point it at a file. A guardian
+sits with the project and finds the unknown files. The threat model
+in `docs/threat-model.md` describes an attacker hiding in the file
+the operator did NOT remember to scan — a `.cursorrules` copy-pasted
+from a Twitter thread, a `.claude/skills/foo.md` dropped by a
+contractor, an MCP server descriptor checked in two PRs ago. A
+file-at-a-time linter cannot defend against the file you don't know
+about.
+
+Every PrimitiveHub surface MUST therefore declare itself **passive**
+(waits for a target) or **active** (discovers its own targets) in
+its design note. Passive-only surfaces don't ship without a paired
+active companion or an explicit deferral. The five active surfaces
+locked in
+[ADR-0025](./decisions/0025-active-posture-and-phub-audit.md) —
+`phub audit`, `phub.lock`, `phub watch`, `phub install`, the MCP
+runtime gate — are the canonical instances of this principle, but
+the principle is broader than those five: any future tool we ship
+follows it too.
+
+## 20. False positives are a discipline, not a bug report
+
+PrimitiveHub ships scanners. Every scanner eventually flags content
+the project legitimately produces — documentation that *teaches* an
+attack pattern, prose that *describes* an unsafe install, a primitive
+that demonstrates an adversarial input by name. The AV industry spent
+30 years learning how to handle this; we adopt their discipline as
+load-bearing product behavior (per
+[ADR-0030](./decisions/0030-fp-resolution-and-av-vendor-parallel.md)).
+
+Every accepted false positive walks the four-path triage in
+[`docs/false-positive-resolution.md`](./false-positive-resolution.md):
+true positive (fix content), domain WAI (narrow allow + numbered
+ledger entry), detector defect (lockstep PR tightening the regex), or
+escalate to security-reviewer (do not silently allow). Every `allow:`
+entry in `.primitivehub/policy.yaml` carries a `reason:` field
+referencing its `FP-NNN` ledger entry. Allow entries decay — quarterly
++ minor-version-bump re-review prevents allowlist rot.
+
+A policy entry without a matching ledger entry is a defect, not a
+shortcut. Hiding real risk behind a policy file is the worst failure
+mode this product can ship — it's the move that turns a security tool
+into a noisy boy who cried wolf.
+
 ## How to use these
 
 When you're about to write code, ship a feature, draft copy, or make a

@@ -47,6 +47,16 @@ classes of document live here:
   hallucinations are catalogued separately at the bottom. Grep here
   before re-deriving a known symptom.
 
+- **[False-positive resolution](./false-positive-resolution.md)** —
+  Methodology + append-only ledger for handling `phub audit` /
+  `phub scan` false positives. The AV-vendor discipline (ADR-0030)
+  applied to our threat model: four-path triage (true positive /
+  domain WAI / detector defect / escalate), strict allow-entry
+  format, numbered `FP-NNN` ledger, quarterly + version-bump
+  re-review. **Read before adding any `allow:` entry to
+  `.primitivehub/policy.yaml`.** Every policy entry MUST be
+  back-referenced by a ledger entry committed in the same PR.
+
 - **[Decisions](./decisions/)** — Architecture Decision Records. One
   file per load-bearing choice (Django Ninja over DRF, Postgres RLS,
   Cloudflare R2 v1, Authentik for OIDC, content-addressed storage,

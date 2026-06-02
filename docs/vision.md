@@ -55,7 +55,16 @@ Three claims, in order of how much they reshape the world:
    organizational + economic system around signing. PrimitiveHub bakes
    in reviewer reputation, role-bound publishing, governance escalation,
    abuse reporting, and revocation as first-class — not as
-   afterthoughts.
+   afterthoughts. We import 30 years of AV-vendor process discipline
+   (numbered FP ledgers, narrow allowlist entries with required
+   justification, signature precision tuning, periodic re-review)
+   because the FP-handling problem the AV industry already solved is
+   structurally identical to the FP-handling problem an
+   agent-context scanner faces — see
+   [ADR-0030](./decisions/0030-fp-resolution-and-av-vendor-parallel.md).
+   The product family parallel is load-bearing: we are the
+   AV-product-family equivalent for agent cognition, not a registry
+   with a side scanner.
 
 ## What we are NOT
 
@@ -105,6 +114,26 @@ Three claims, in order of how much they reshape the world:
 - The company is a foundational piece of internet infrastructure for
   agentic systems, comparable in scope and trust burden to a CA, a
   package registry, or a CDN.
+
+## Active by default — what shipping the vision means
+
+The vision sentence — "every piece of context an AI agent loads can be
+inspected, verified, attested, and revoked" — has two halves. The
+*passive* half is "given a file, tell me if it's safe." The *active*
+half is "find every piece of context an agent could load, and tell me
+what's safe." A registry that only delivers the passive half is a
+linter; one that delivers both is infrastructure.
+
+We commit to both halves. The five active surfaces locked in
+[ADR-0025](./decisions/0025-active-posture-and-phub-audit.md) —
+`phub audit`, `phub.lock`, `phub watch`, `phub install`, the MCP
+runtime gate — are how the active half ships. Each subsequent feature
+declares itself active or passive in its design note (per
+[Principle 19](./principles.md)). The product does not advance toward
+the 1/3/10-year horizon by stacking passive features; it advances by
+shipping active surfaces that close "context can be inspected,
+verified, attested, and revoked" from a thesis into observable default
+behavior.
 
 ## Posture today
 

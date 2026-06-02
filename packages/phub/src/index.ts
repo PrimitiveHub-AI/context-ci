@@ -12,6 +12,56 @@ export { main } from "./cli.js"
 export { runScan, scanCommand, type ScanOptions, type ScanResult } from "./commands/scan.js"
 export { verifyCommand, type VerifyOptions } from "./commands/verify.js"
 export { initCommand, type InitOptions } from "./commands/init.js"
+export {
+  runAudit,
+  auditCommand,
+  type AuditOptions,
+} from "./commands/audit.js"
+export {
+  type AuditResult,
+  type AuditedArtifact,
+  type AuditSummary,
+} from "./audit/types.js"
+export {
+  classify,
+  isTextScannable,
+  ARTIFACT_CLASSES,
+  type ArtifactClass,
+} from "./audit/classifier.js"
+export {
+  walk,
+  DEFAULT_WALK_OPTIONS,
+  SKIP_DIRS,
+  KEEP_DOT_DIRS,
+  type WalkOptions,
+  type WalkResult,
+  type SkippedEntry,
+  type SkipReason,
+} from "./audit/walker.js"
+export { sha256Hex, sha256Ref } from "./audit/digest.js"
+export {
+  diffLock,
+  isLockDrifted,
+  lockFromAudit,
+  parseLock,
+  readLock,
+  serializeLock,
+  writeLock,
+  LockParseError,
+  LOCK_VERSION,
+  LOCK_TOP10_VERSION,
+  LOCK_GENERATOR,
+  LOCK_SCHEMA_URL,
+  type LockAttestation,
+  type LockDrift,
+  type LockedArtifact,
+  type PhubLock,
+  type DiffAddedEntry,
+  type DiffModifiedEntry,
+  type DiffReclassifiedEntry,
+  type DiffRemovedEntry,
+} from "./audit/lock.js"
+export { type AuditLockState } from "./audit/types.js"
 
 export { DETECTORS, detectorByName } from "./scanners/registry.js"
 export {
@@ -29,7 +79,8 @@ export { T2UnicodeSteganographyDetector } from "./scanners/t2-unicode-steganogra
 export { T5UnsafeShellInstallDetector } from "./scanners/t5-unsafe-shell-install.js"
 
 export { renderHumanScanReport, renderHumanVerifyReport } from "./reporters/human.js"
-export { renderSarif } from "./reporters/sarif.js"
+export { renderAuditHumanReport } from "./reporters/audit-human.js"
+export { renderSarif, renderSarifForArtifacts } from "./reporters/sarif.js"
 
 export {
   type Policy,

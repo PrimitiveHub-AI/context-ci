@@ -23,6 +23,7 @@
 
 import { createHash } from "node:crypto"
 
+import { type AuditResult } from "../audit/types.js"
 import { DETECTORS } from "../scanners/registry.js"
 import { Severity, type Verdict } from "../scanners/types.js"
 
@@ -85,13 +86,7 @@ function ruleNameFromDetector(name: string): string {
   return name.replace(/[^a-zA-Z0-9_]/g, "_")
 }
 
-/**
- * Build a SARIF 2.1.0 document for a single scanned file.
- *
- * Multi-file callers should emit one SARIF per file into a directory
- * and use github/codeql-action/upload-sarif's directory-merge mode.
- */
-export function renderSarif(filename: string, verdicts: readonly Verdict[]): string {
+function buildRuleCatalog(): { rules: object[]; ruleIndexByCciId: Map<string, number> } {
   const rules = DETECTORS.map((d) => {
     const desc = RULE_DESCRIPTIONS[d.cciId]
     return {
@@ -109,7 +104,14 @@ export function renderSarif(filename: string, verdicts: readonly Verdict[]): str
     }
   })
   const ruleIndexByCciId = new Map(DETECTORS.map((d, i) => [d.cciId, i]))
+  return { rules, ruleIndexByCciId }
+}
 
+function resultsForVerdicts(
+  artifactUri: string,
+  verdicts: readonly Verdict[],
+  ruleIndexByCciId: Map<string, number>,
+): object[] {
   const results: object[] = []
   for (const v of verdicts) {
     if (v.passed || v.diffHints.length === 0) continue
@@ -126,7 +128,7 @@ export function renderSarif(filename: string, verdicts: readonly Verdict[]): str
         locations: [
           {
             physicalLocation: {
-              artifactLocation: { uri: filename },
+              artifactLocation: { uri: artifactUri },
               region: {
                 startLine: h.line,
                 snippet: { text: h.snippet },
@@ -144,8 +146,12 @@ export function renderSarif(filename: string, verdicts: readonly Verdict[]): str
       })
     }
   }
+  return results
+}
 
-  const sarif = {
+function wrapSarif(results: object[]): object {
+  const { rules } = buildRuleCatalog()
+  return {
     $schema: SARIF_SCHEMA,
     version: SARIF_VERSION,
     runs: [
@@ -163,6 +169,36 @@ export function renderSarif(filename: string, verdicts: readonly Verdict[]): str
       },
     ],
   }
+}
 
-  return JSON.stringify(sarif, null, 2)
+/**
+ * Build a SARIF 2.1.0 document for a single scanned file.
+ *
+ * Multi-file callers from `phub audit` should use
+ * `renderSarifForArtifacts` to get a single document aggregating
+ * findings across every audited artifact.
+ */
+export function renderSarif(filename: string, verdicts: readonly Verdict[]): string {
+  const { ruleIndexByCciId } = buildRuleCatalog()
+  const results = resultsForVerdicts(filename, verdicts, ruleIndexByCciId)
+  return JSON.stringify(wrapSarif(results), null, 2)
+}
+
+/**
+ * Build a SARIF 2.1.0 document aggregating findings across every
+ * artifact in an `AuditResult`. Each result's `artifactLocation.uri`
+ * is the artifact's path relative to the audit root.
+ *
+ * Multi-artifact upload: GitHub Code Scanning accepts a single SARIF
+ * with results spanning multiple `artifactLocation.uri` values.
+ */
+export function renderSarifForArtifacts(result: AuditResult): string {
+  const { ruleIndexByCciId } = buildRuleCatalog()
+  const allResults: object[] = []
+  for (const a of result.artifacts) {
+    if (!a.scanned) continue
+    const policyVerdicts = a.adjustedVerdicts.map((adj) => adj.verdict)
+    allResults.push(...resultsForVerdicts(a.path, policyVerdicts, ruleIndexByCciId))
+  }
+  return JSON.stringify(wrapSarif(allResults), null, 2)
 }

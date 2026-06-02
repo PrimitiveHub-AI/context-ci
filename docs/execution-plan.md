@@ -28,6 +28,18 @@ Verified AGENTS.md." **We sit in front of every registry, including the
 ones that do not exist yet.** That is the only positioning that survives
 the platforms moving.
 
+**Active by default, not passive.** A linter waits for the operator to
+point it at a known file. A guardian sits with the project and finds
+the unknown files. The five active surfaces locked in
+[ADR-0025](./decisions/0025-active-posture-and-phub-audit.md) —
+`phub audit`, `phub.lock`, `phub watch`, `phub install`, MCP runtime
+gate — turn the Trust Contract from "verifier on demand" into
+"guardian by default." Step 1 (`phub audit`) is the Samurai Cut:
+shipping it converts every already-built piece of the contract
+(verify kernel, scanner ports, SARIF reporter, Top 10 vocabulary)
+from "capable but waiting" into "actively defending a project" in
+one PR.
+
 ## The architectural spine
 
 The Trust Contract v0.1 is the spine. Every surface — HTTP API, CLI,
@@ -325,6 +337,70 @@ fix later" on the trust spine.
       `phub scan --policy <path>` honors it. Resolves
       `docs/bugs.md` #25 via per-file allow exceptions today.)
 
+### Gate G-C.1 — Active posture (the Samurai Cut, ADR-0025)
+
+The cut from passive (lint a file you point at) to active (discover
++ classify + scan + report against an entire project). Closes the
+half of `docs/vision.md` that requires every artifact to be
+*findable* before it can be inspected. Five surfaces locked in
+ADR-0025; the foundation ships first.
+
+- [ ] `phub audit [<path>]` discovers every agent-context artifact
+      under a path, classifies it, digests it (SHA-256), and runs the
+      detector roster. Default path is `process.cwd()`. (PR 5.7.1
+      ships walker + classifier + audit command + reporters
+      (human/JSON/SARIF) + tests.)
+- [ ] `phub audit --sarif` emits a multi-file SARIF 2.1.0 aggregate
+      compatible with the existing `actions/phub-scan/` composite
+      Action.
+- [ ] Classification list documented + versioned alongside the Top 10
+      (ADR-0016 minor-version bump): `agents-md`, `claude-md`,
+      `cursor-rules`, `windsurf-rules`, `aider-config`,
+      `copilot-instructions`, `claude-skill`, `claude-agent`,
+      `claude-command`, `primitive`, `skill`, `prompt`, `mcp-config`.
+- [ ] Walker honors the documented skip-list (`node_modules/`,
+      `.git/`, `dist/`, `build/`, `.next/`, `coverage/`, `target/`,
+      `__pycache__/`, `venv/`, `.venv/`, `.tox/`, `.pytest_cache/`,
+      `.cache/`) and the meaningful-dotfile allowlist
+      (`.cursorrules`, `.windsurfrules`, `.aider.conf.yml`,
+      `.claude/**`, `.cursor/**`, `.github/**`).
+- [ ] Walker is symlink-safe (does not follow), depth-bounded
+      (default 12), and file-bounded (default 5000); both bounds
+      overridable via `--max-depth` / `--max-files`.
+- [ ] Detector-parity rule (ADR-0023) preserved: audit reuses the
+      scanner kernel; no new detectors live in `audit/`.
+- [x] FP-resolution methodology in place (ADR-0030):
+      `docs/false-positive-resolution.md` § 1–§5 + ledger § 6 with
+      starter entries FP-001 / FP-002. Project-level
+      `.primitivehub/policy.yaml` ships with the canonical FP-001
+      (CLAUDE.md teaches T5) + FP-002 (shadcn primitive documents
+      canonical install) allow entries. CLAUDE.md hard-rules #8 + #9
+      lock the discipline for future sessions. `docs/principles.md`
+      Principles 19 + 20 are now load-bearing.
+
+### Gate G-C.2 — Active-surfaces follow-ons (post-G-C.1 foundation)
+
+The remaining four steps of the active-surfaces arc (ADR-0025).
+Each ships under its own ADR; these gates are forward-references
+so future sessions don't invert dependencies or double-build.
+
+- [x] PR 5.7.2 — `phub.lock` format + `phub audit --check-lock` /
+      `--update-lock` / `--lock-only` / `--lock-path`
+      ([ADR-0026](./decisions/0026-phub-lock-format-and-drift-detection.md)).
+      Canonical-JSON file at `.primitivehub/phub.lock` records
+      every classified artifact. Reproducibility (byte-identical
+      re-stamps) is unit-tested. Drift categories: added /
+      modified / removed / reclassified. Project's own
+      `.primitivehub/phub.lock` is committed (20 artifacts, ~129
+      lines). The AV-product-family boot-time-integrity-check row
+      from ADR-0030 § 3 is now shipped.
+- [ ] PR 5.7.3 — `phub watch` filesystem daemon (future ADR-0027)
+- [ ] PR 5.7.4 — `phub install <slug@semver>` safe-install
+      (future ADR-0028; closes the T5 attack class operationally)
+- [ ] PR 5.7.5 — MCP runtime gate
+      `primitivehub.verify_before_load` (future ADR-0029; couples
+      to Gate G-D MCP work)
+
 ### Gate G-D — MCP Bridge ready (end of Week 9)
 - [ ] `@primitivehub/mcp-server` published to npm
 - [ ] `claude mcp add primitivehub` is one line
@@ -430,6 +506,12 @@ Numbered against the next available ADR (0015+ per existing
 | 0019 | CBOM v0.1 as media-type-registered manifest format | Week 12 | Same standards discipline as Trust Contract |
 | 0020 | `@primitivehub/verify` as the reference implementation | Week 4 | Establishes which code defines spec semantics in disputes |
 | 0021 | Conformance suite as the executable contract definition | Week 2 | Same as above, from the test side |
+| 0025 | Active posture + `phub audit` + active-surfaces arc | (landed 2026-05-31) | Names the shift from passive (lint a file you point at) to active (discover + classify + scan an entire project) as a deliberate posture; specifies `phub audit` and forward-references the lock/watch/install/runtime-gate ADRs |
+| 0026 | `phub.lock` format + drift detection | (landed 2026-06-01) | Lockfile contract for cognition artifacts (package-lock.json equivalent); canonical JSON with byte-identical re-stamp reproducibility; AV product-family boot-time-integrity row shipped |
+| 0027 | `phub watch` filesystem daemon | post-0026 | Auto-quarantine new artifacts before they reach an agent |
+| 0028 | `phub install <slug@semver>` safe-install | post-0027 | Replace the `npx ... \| bash` skill-install attack class (T5) operationally |
+| 0029 | MCP runtime gate (`verify_before_load`) | with Gate G-D | Agent runtimes call PrimitiveHub before loading any primitive; refuses-by-default for unattested content |
+| 0030 | FP resolution + the AV-vendor parallel as product discipline | (landed 2026-06-01) | Locks the FP methodology + ledger + four-path triage as load-bearing process; names "agent-context AV plus registry" as the product-family framing |
 
 ---
 
