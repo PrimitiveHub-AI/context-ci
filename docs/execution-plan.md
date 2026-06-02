@@ -406,9 +406,15 @@ so future sessions don't invert dependencies or double-build.
       ADR-0030 § 3 is now shipped.)
 - [ ] PR 5.7.4 — `phub install <slug@semver>` safe-install
       (future ADR-0028; closes the T5 attack class operationally)
-- [ ] PR 5.7.5 — MCP runtime gate
-      `primitivehub.verify_before_load` (future ADR-0029; couples
-      to Gate G-D MCP work)
+- [x] PR 5.7.5 — MCP runtime gate `verify_before_load` (ADR-0029)
+      (Composite MCP tool combining `check_lock` + scanner +
+      optional `verify_bundle`. 8 stable refusal codes plus
+      `BUNDLE_*` codes from verify. Trust-decision logic lives
+      in `@primitivehub/phub` per ADR-0031 § 2 rule #1 — MCP
+      wrapper is pure transport. 21 new tests across phub + mcp.
+      Tool count is 5 now (was 4); schema-stable additive change.
+      Closes the active-surfaces arc's run-time-gating row from
+      ADR-0030 § 3.)
 
 ### Gate G-D — MCP Bridge ready (end of Week 9)
 - [ ] `@primitivehub/mcp-server` published to npm

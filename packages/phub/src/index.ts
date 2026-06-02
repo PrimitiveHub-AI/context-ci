@@ -19,6 +19,14 @@ export {
 } from "./commands/audit.js"
 export { watchCommand, type WatchOptions } from "./commands/watch.js"
 export {
+  verifyBeforeLoad,
+  type VerifyBeforeLoadOptions,
+  type VerifyBeforeLoadResult,
+  type VerifyBeforeLoadReason,
+  type VerifyBeforeLoadReasonCode,
+  type VerifyBeforeLoadChecks,
+} from "./commands/verify-before-load.js"
+export {
   startWatcher,
   type Watcher,
   type WatcherEvent,

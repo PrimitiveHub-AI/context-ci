@@ -8,6 +8,22 @@ Context CI Top 10 version (for `scan_text` / `audit_workspace`);
 
 ## [Unreleased]
 
+### Added (PR 5.7.5 — MCP runtime gate, ADR-0029)
+- **`verify_before_load`** tool — the composite runtime gate. Combines
+  `check_lock` + scanner verdict + optional `verify_bundle` into one
+  call. Returns `{safe, reasons[], checks}`. Refuses-by-default for
+  drift, unattested artifacts (`requireAttestation: true`), scanner
+  findings, missing locks, and invalid bundles. Eight stable refusal
+  codes (`LOCK_MISSING`, `PATH_NOT_IN_LOCK`, `PATH_DIGEST_MISMATCH`,
+  `PATH_FLAGGED_BY_SCANNER`, `PATH_UNATTESTED`, …) plus
+  `BUNDLE_<code>` for every `VerificationErrorCode` from the verify
+  library.
+- Tool count is now **5** (was 4). Per ADR-0031 § 2 rule #2 the
+  surface is additive — no breaking changes to existing tools.
+- Trust-decision logic lives in `@primitivehub/phub` (exported as
+  `verifyBeforeLoad`) per ADR-0031 § 2 rule #1. The MCP wrapper is
+  pure transport.
+
 ## [0.1.0] — 2026-06-02
 
 **Not yet published to npm.** Per

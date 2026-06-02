@@ -6,7 +6,7 @@
 **ADR:** [ADR-0031](../decisions/0031-mcp-server-as-transport.md)
 
 The MCP server exposes PrimitiveHub's verification and scanning to AI
-agents (Claude Code, Cursor, Aider, etc.) as four JSON-RPC tools.
+agents (Claude Code, Cursor, Aider, etc.) as five JSON-RPC tools.
 Pure transport layer — zero custom trust logic. Every tool delegates
 to an existing primitive.
 
@@ -16,7 +16,7 @@ to an existing primitive.
 
 - [Architecture](#architecture)
 - [Install + register](#install--register)
-- [The four tools](#the-four-tools)
+- [The five tools](#the-five-tools)
 - [`verify_bundle`](#verify_bundle)
 - [`scan_text`](#scan_text)
 - [`audit_workspace`](#audit_workspace)
@@ -38,7 +38,8 @@ AI agent (Claude / Cursor / Aider / …)
    │  stdio JSON-RPC
    ▼
 primitivehub-mcp binary
-   ├── verify_bundle    → @primitivehub/verify::verifyBundle()
+   ├── verify_bundle      → @primitivehub/verify::verifyBundle()
+   ├── verify_before_load → @primitivehub/phub::verifyBeforeLoad() + verify_bundle  (ADR-0029 composite gate)
    ├── scan_text        → @primitivehub/phub::runScan()
    ├── audit_workspace  → @primitivehub/phub::runAudit()
    └── check_lock       → @primitivehub/phub::runAudit({lockMode: "check"})
@@ -92,7 +93,7 @@ for ready-made configs for each major host.
 
 ---
 
-## The four tools
+## The five tools
 
 Every tool below returns:
 
@@ -291,6 +292,120 @@ jq -n --arg root "/srv/primitivehub/app" '{
   params:{ name:"check_lock", arguments:{ root:$root } }
 }' | primitivehub-mcp | jq '.result.content[0].text | fromjson | {hasDrift, missing, artifactCount}'
 ```
+
+---
+
+## `verify_before_load`
+
+The composite runtime gate ([ADR-0029](../decisions/0029-mcp-runtime-gate.md)).
+Combines `check_lock` + scanner verdict + optional `verify_bundle`
+into one call. Use this BEFORE loading any agent-context primitive —
+refuses-by-default for drift, unattested artifacts, scanner findings,
+or invalid bundles.
+
+This is the strategic surface — the one-line MCP call that lets an
+AI agent answer "is this primitive safe to load?"
+
+### Input schema
+
+| Field | Type | Required | Default |
+|---|---|---|---|
+| `path` | string | yes | — |
+| `workspace_root` | string | no | server's `cwd` |
+| `policy_path` | string | no | auto-discover |
+| `lock_path` | string | no | auto-discover |
+| `require_attestation` | boolean | no | `false` |
+| `bundle` | string \| object | no | (workspace gate only when absent) |
+| `level` | `"structural"` / `"policy"` / `"full"` | no | `"policy"` |
+
+`require_attestation: true` makes `unattested` lock entries fail —
+useful in production once `phub install` populates `rekor:*` /
+`registry:*` states. Defaults `false` for v0.1 compatibility.
+
+### Output (text content payload)
+
+```json
+{
+  "safe": false,
+  "reasons": [
+    {"code": "PATH_NOT_IN_LOCK", "message": "'CLAUDE.md' is in the working tree but not in the lock"},
+    {"code": "BUNDLE_DIGEST_MISMATCH", "message": "content sha256 does not match subject.contentDigest"}
+  ],
+  "checks": {
+    "workspace": {"root": "...", "absolutePath": "...", "relativePath": "..."},
+    "lock": {"lockPath": "...", "lockExists": true, "specVersionMatch": true,
+             "pathInLock": false, "pathDigestMatch": null, "pathAttestation": null},
+    "artifact": {"discovered": true, "classification": "claude-md", "digest": "...",
+                 "scanned": true, "flagged": false, "verdicts": [...]},
+    "bundle": {"provided": true, "parsed": true, "valid": false,
+               "level": "structural", "failureCodes": [...], "deferredSteps": [...]}
+  }
+}
+```
+
+`isError` mirrors `!safe`.
+
+### Refusal codes (stable across patch releases)
+
+| Code | When |
+|---|---|
+| `LOCK_MISSING` | No `.primitivehub/phub.lock` under workspace root. |
+| `LOCK_SPEC_VERSION_MISMATCH` | Lock's `top10_version` ≠ runtime expectation. |
+| `PATH_NOT_FOUND` | Target path doesn't exist on disk. |
+| `PATH_UNCLASSIFIED` | Path exists but isn't a known artifact class. |
+| `PATH_NOT_IN_LOCK` | Path is in the tree but not in the lock. |
+| `PATH_DIGEST_MISMATCH` | Path is in the lock but content has drifted. |
+| `PATH_UNATTESTED` | `require_attestation: true` and entry is `unattested`. |
+| `PATH_FLAGGED_BY_SCANNER` | Policy-adjusted verdict failed (any CCI ID). |
+| `BUNDLE_PARSE_ERROR` | `bundle` argument can't be JSON-parsed. |
+| `BUNDLE_<verify-error-code>` | Every `VerificationErrorCode` from `@primitivehub/verify` is surfaced with a `BUNDLE_` prefix. |
+
+Agents branch on `reasons[i].code`, not `message`.
+
+### Call (workspace-only)
+
+```bash
+jq -n --arg root "/srv/primitivehub/app" '{
+  jsonrpc:"2.0", id:1, method:"tools/call",
+  params:{ name:"verify_before_load", arguments:{ workspace_root:$root, path:"CLAUDE.md" } }
+}' | primitivehub-mcp | jq '.result.content[0].text | fromjson | {safe, reason_codes: [.reasons[].code]}'
+```
+
+### Call (with bundle)
+
+```bash
+BUNDLE=$(cat /path/to/trust-bundle.json | jq -c .)
+jq -n --arg root "/srv/primitivehub/app" --argjson bundle "$BUNDLE" '{
+  jsonrpc:"2.0", id:1, method:"tools/call",
+  params:{ name:"verify_before_load", arguments:{
+    workspace_root:$root, path:"CLAUDE.md", bundle:$bundle, level:"structural"
+  }}
+}' | primitivehub-mcp | jq '.result.content[0].text | fromjson | {safe, reason_codes: [.reasons[].code]}'
+```
+
+### Use from agent code
+
+Sample agent skill (Claude Code style):
+
+```markdown
+---
+title: Safe primitive load (ADR-0029)
+trigger: before reading any primitive
+---
+
+Call `verify_before_load` with `path` set to the file you're about
+to read.
+
+- If `safe: true`: proceed.
+- If `safe: false`: refuse to read. Tell the user the `reasons[*].code`
+  and `reasons[*].message`. Ask whether to proceed (override) or fix.
+
+Never read the file before getting `safe: true`.
+```
+
+This replaces the multi-step pattern from
+[Recipes § "A runtime-checking agent"](./08-recipes.md#a-runtime-checking-agent)
+with one MCP call.
 
 ---
 

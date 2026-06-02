@@ -26,6 +26,7 @@ import {
 import { AUDIT_WORKSPACE_TOOL, callAuditWorkspace } from "./tools/audit-workspace.js"
 import { CHECK_LOCK_TOOL, callCheckLock } from "./tools/check-lock.js"
 import { SCAN_TEXT_TOOL, callScanText } from "./tools/scan-text.js"
+import { VERIFY_BEFORE_LOAD_TOOL, callVerifyBeforeLoad } from "./tools/verify-before-load.js"
 import { VERIFY_BUNDLE_TOOL, callVerifyBundle } from "./tools/verify-bundle.js"
 
 export const SERVER_NAME = "primitivehub"
@@ -36,6 +37,7 @@ export const TOOLS = [
   SCAN_TEXT_TOOL,
   AUDIT_WORKSPACE_TOOL,
   CHECK_LOCK_TOOL,
+  VERIFY_BEFORE_LOAD_TOOL,
 ] as const
 
 /** Build a configured but not-yet-connected MCP server. */
@@ -64,6 +66,8 @@ export function buildServer(): Server {
         return callAuditWorkspace(rawArgs)
       case "check_lock":
         return callCheckLock(rawArgs)
+      case "verify_before_load":
+        return await callVerifyBeforeLoad(rawArgs)
       default:
         return {
           content: [

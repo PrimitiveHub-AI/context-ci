@@ -8,6 +8,22 @@ wrapper) and Context CI Top 10 version (for the scanner detectors);
 
 ## [Unreleased]
 
+### Added (PR 5.7.5 — `verifyBeforeLoad` reference for ADR-0029)
+- **`verifyBeforeLoad(opts)`** — composite runtime-gate function.
+  Combines `runAudit({lockMode:"check"})` + per-path lock entry lookup
+  + scanner verdict aggregation into one synchronous call. Returns
+  `{safe, reasons[], checks}` with eight stable refusal codes
+  (`LOCK_MISSING`, `PATH_NOT_IN_LOCK`, `PATH_DIGEST_MISMATCH`,
+  `PATH_FLAGGED_BY_SCANNER`, `PATH_UNATTESTED`, etc.).
+- The reference implementation that the MCP server's
+  `verify_before_load` tool (ADR-0029) wraps. Non-MCP consumers
+  (pre-commit hooks, custom GitHub Actions, IDE plugins) can import
+  it directly; cryptographic bundle verification stays in
+  `@primitivehub/verify`.
+- Programmatic exports: `verifyBeforeLoad`, `VerifyBeforeLoadOptions`,
+  `VerifyBeforeLoadResult`, `VerifyBeforeLoadReason`,
+  `VerifyBeforeLoadReasonCode`, `VerifyBeforeLoadChecks`.
+
 ### Added (PR 5.7.3 — `phub watch`, ADR-0027)
 - **`phub watch [dir]`** — active runtime guardian. Daemon mode runs
   an initial audit, then watches the tree via Node's built-in

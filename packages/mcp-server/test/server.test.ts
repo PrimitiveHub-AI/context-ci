@@ -32,15 +32,21 @@ describe("MCP server", () => {
     expect(SERVER_VERSION).toMatch(/^\d+\.\d+\.\d+/)
   })
 
-  it("exposes all 4 v0.1 tools", () => {
+  it("exposes all 5 v0.1 tools (post-ADR-0029)", () => {
     const names = TOOLS.map((t) => t.name).sort()
-    expect(names).toEqual(["audit_workspace", "check_lock", "scan_text", "verify_bundle"])
+    expect(names).toEqual([
+      "audit_workspace",
+      "check_lock",
+      "scan_text",
+      "verify_before_load",
+      "verify_bundle",
+    ])
   })
 
   it("responds to tools/list with every registered tool + schema", async () => {
     const client = await connectInMemory()
     const result = await client.listTools()
-    expect(result.tools.length).toBe(4)
+    expect(result.tools.length).toBe(5)
     for (const tool of result.tools) {
       expect(typeof tool.name).toBe("string")
       expect(typeof tool.description).toBe("string")
