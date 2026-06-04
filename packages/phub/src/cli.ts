@@ -263,6 +263,13 @@ matching lock entry so the CBOM and lock agree on provenance state.
 Flags:
   --output <file>       Write CBOM JSON to <file> instead of stdout.
                         Parent directories are created if missing.
+                        Mutually exclusive with --verify.
+  --verify <cbom-path>  Consumer-side verification (spec § 8).
+                        Parses the stored CBOM, walks the workspace,
+                        diffs the two against the four drift
+                        dimensions (added / removed / modified /
+                        reclassified). Exits 1 on any drift.
+                        Mutually exclusive with --output / --format.
   --format <fmt>        Output format. One of:
                           cbom       Native CBOM v0.1 (default)
                           spdx       SPDX 2.3 JSON projection
@@ -279,9 +286,11 @@ Flags:
   --max-depth=<n>       Hard cap on directory depth (default 12).
 
 Exit codes:
-  0   CBOM emitted successfully
+  0   CBOM emitted (default) / verification passed (--verify) with no drift
+  1   drift detected under --verify
   2   usage error / unreadable path / invalid lock under --lock-path /
-      invalid --format value
+      invalid --format value / unreadable or malformed --verify input /
+      mutually exclusive flags combined
 `
 
 const INIT_HELP = `phub init
@@ -329,6 +338,7 @@ const GLOBAL_SPECS: readonly FlagSpec[] = [
   { name: "output", takesValue: true },
   { name: "subject-name", takesValue: true },
   { name: "format", takesValue: true },
+  { name: "verify", takesValue: true },
 ]
 
 function printHelp(command?: string): void {
@@ -604,6 +614,22 @@ export async function main(argv: readonly string[]): Promise<number> {
           return 2
         }
         cbomOpts.format = formatArg
+      }
+      const verifyArg = asString(parsed.flags["verify"])
+      if (verifyArg !== undefined) {
+        if (formatArg !== undefined) {
+          process.stderr.write(
+            "phub cbom: --verify and --format are mutually exclusive (verify reads a stored CBOM; format selects an emission).\n",
+          )
+          return 2
+        }
+        if (output !== undefined) {
+          process.stderr.write(
+            "phub cbom: --verify and --output are mutually exclusive (verify writes a drift report, not a CBOM).\n",
+          )
+          return 2
+        }
+        cbomOpts.verifyPath = verifyArg
       }
       return cbomCommand(parsed.positionals[0], cbomOpts)
     }

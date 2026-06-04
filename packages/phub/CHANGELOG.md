@@ -8,6 +8,40 @@ wrapper) and Context CI Top 10 version (for the scanner detectors);
 
 ## [Unreleased]
 
+### Added (PR 5.13 — CBOM v0.1 JSON Schema + phub cbom --verify)
+- **`docs/cbom/schema.json`** — canonical JSON Schema Draft 2020-12
+  for the CBOM v0.1 wire format. `$id` is
+  `https://primitivehub.ai/cbom/v0.1.json` (the same URL the CBOM's
+  `$schema` field already declares). Required top-level keys,
+  closed classification enum, `^sha256:[0-9a-f]{64}$` digest
+  pattern, `additionalProperties: false` at every level. Validates
+  the canonical fixture + every freshly-produced CBOM in the test
+  suite. Rejects unknown classifications, malformed digests,
+  missing top-level keys, and stray top-level fields.
+- **`phub cbom --verify <cbom-path>`** — consumer-side verifier
+  from spec § 8. Parses a stored CBOM, walks the workspace using
+  the same classifier + digest kernel, diffs the two across four
+  drift dimensions (`added` / `removed` / `modified` /
+  `reclassified` — same vocabulary as `phub.lock` drift per
+  ADR-0026). Exit 0 on identity, exit 1 on drift, exit 2 on
+  malformed CBOM / unreadable file / wrong format / wrong version.
+  Mutually exclusive with `--format` (verify reads a stored CBOM;
+  format selects an emission) and `--output` (verify writes a
+  drift report, not a CBOM).
+- **Human-readable drift report** — one section per non-empty
+  drift dimension with full path + digest + classification
+  context. Same shape as the audit-human reporter so consumers
+  internalize one drift vocabulary.
+- **Programmatic API:** `verifyCbom`, `parseCbom`,
+  `diffCbomVsWorkspace`, `isCbomDrifted`, `totalDriftCount`,
+  `CbomParseError`, and the `CbomDrift*` types exported from
+  `@primitivehub/phub`.
+- **Test count:** phub suite grows 294 → 319 (25 new
+  cbom-verify tests across schema validation, parse gating, diff
+  logic, verifyCbom happy path, CLI behavior, mutual-exclusion
+  rules).
+- **Dev dep:** `ajv@^8.20.0` for schema-validation tests only.
+
 ### Added (PR 5.11 — CBOM SPDX 2.3 + CycloneDX 1.5 projection exporters)
 - **`phub cbom --format=<fmt>` flag** with three values:
   - `cbom` — Native CBOM v0.1 (default; unchanged behavior).

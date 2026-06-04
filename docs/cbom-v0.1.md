@@ -265,8 +265,10 @@ byte-identical re-stamp property** (§ 5):
 information lives in the native CBOM. Consumers that need the lossless
 view should consume the native format.
 
-A future `phub cbom --verify` flow (planned v0.2) verifies any of the
-three formats against the workspace.
+The reference producer ships `phub cbom --verify <path-to-cbom>` for the
+native format (PR 5.13); SPDX + CycloneDX verification is reserved
+for a future ratchet that defines a lossless round-trip back to the
+native CBOM.
 
 ## 8. Verifying a CBOM against a workspace
 
@@ -281,8 +283,20 @@ A consumer verifies a CBOM by:
    the workspace beyond the CBOM are surfaced as "drift" (same vocabulary
    as `phub.lock` drift checking).
 
-The `phub cbom --verify <path-to-cbom>` flow (planned for v0.2) wraps this
-procedure.
+The drift is reported in four mutually-distinct dimensions (matching
+the `phub.lock` drift terminology from ADR-0026):
+
+- **added** — paths in the workspace that the CBOM doesn't list.
+- **removed** — paths the CBOM lists that the workspace doesn't have.
+- **modified** — paths present in both with different `contentDigest`.
+- **reclassified** — paths present in both with different
+  `classification`.
+
+The `phub cbom --verify <path-to-cbom>` subcommand (PR 5.13) wraps
+this procedure end-to-end. Exit code 0 on no drift; exit 1 on drift;
+exit 2 on usage / malformed CBOM. The same four-column drift summary
+is rendered to stdout. Programmatic API: `verifyCbom({ workspaceRoot,
+cbomPath, cbomContent })` exported from `@primitivehub/phub`.
 
 ## 9. Conformance suite
 
@@ -293,9 +307,10 @@ A CBOM v0.1 implementation is conformant iff:
   byte-for-byte.
 - Re-running the producer against the same fixture (unchanged) yields a
   byte-identical document on the second run.
-- Every emitted CBOM passes JSON-schema validation against
-  `docs/cbom/schema.json` (planned; v0.1 schema validation is structural,
-  via the producer's own assertions).
+- Every emitted CBOM passes JSON Schema validation against
+  [`docs/cbom/schema.json`](./cbom/schema.json) (JSON Schema
+  Draft 2020-12; `$id`
+  `https://primitivehub.ai/cbom/v0.1.json`). Shipped in PR 5.13.
 
 The reference producer is `phub cbom` in this repository. Cross-language
 implementations (a future Python `phub_py cbom` per ADR-0023's lockstep

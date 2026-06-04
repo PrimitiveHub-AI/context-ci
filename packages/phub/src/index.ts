@@ -52,6 +52,21 @@ export {
   type CycloneDxBom,
 } from "./cbom/cyclonedx.js"
 export {
+  CbomParseError,
+  diffCbomVsWorkspace,
+  isCbomDrifted,
+  parseCbom,
+  totalDriftCount,
+  verifyCbom,
+  type CbomDrift,
+  type CbomDriftAdded,
+  type CbomDriftModified,
+  type CbomDriftReclassified,
+  type CbomDriftRemoved,
+  type CbomVerification,
+  type VerifyCbomOptions,
+} from "./cbom/verify.js"
+export {
   verifyBeforeLoad,
   type VerifyBeforeLoadOptions,
   type VerifyBeforeLoadResult,

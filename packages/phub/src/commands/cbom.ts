@@ -19,6 +19,12 @@ import { resolve, relative, sep, join, isAbsolute, dirname } from "node:path"
 
 import { buildCycloneDxBom, serializeCycloneDxBom } from "../cbom/cyclonedx.js"
 import { buildSpdxDocument, serializeSpdx } from "../cbom/spdx.js"
+import {
+  CbomParseError,
+  totalDriftCount,
+  verifyCbom,
+  type CbomDrift,
+} from "../cbom/verify.js"
 import { classify } from "../audit/classifier.js"
 import { sha256Hex } from "../audit/digest.js"
 import {
@@ -281,6 +287,13 @@ export interface CbomCommandOptions extends CbomOptions {
    * are derived from the SHA-256 of the native CBOM bytes.
    */
   format?: CbomOutputFormat
+  /**
+   * Path to a previously-emitted CBOM JSON to verify against the
+   * workspace. When set, the command runs the consumer-side
+   * verification flow from spec § 8 (parse + workspace walk +
+   * diff) instead of emitting a new CBOM.
+   */
+  verifyPath?: string
 }
 
 /**
@@ -297,9 +310,84 @@ export function renderCbom(cbom: Cbom, format: CbomOutputFormat = "cbom"): strin
   return serializeCycloneDxBom(buildCycloneDxBom(cbom, native))
 }
 
+function renderDriftSection<T>(title: string, rows: readonly T[], render: (row: T) => string): string {
+  if (rows.length === 0) return ""
+  const lines = [`  ${title} (${rows.length}):`]
+  for (const r of rows) lines.push(`    - ${render(r)}`)
+  return lines.join("\n") + "\n"
+}
+
+function renderHumanVerifyReport(
+  cbomPath: string,
+  workspaceRoot: string,
+  drift: CbomDrift,
+): string {
+  const total = totalDriftCount(drift)
+  if (total === 0) {
+    return `CBOM verified: workspace at ${workspaceRoot} matches ${cbomPath}.\n`
+  }
+  const sections = [
+    renderDriftSection("Added (in workspace, missing from CBOM)", drift.added, (a) =>
+      `${a.path} [${a.classification}] ${a.contentDigest}`,
+    ),
+    renderDriftSection("Removed (in CBOM, missing from workspace)", drift.removed, (r) =>
+      `${r.path} [${r.classification}] ${r.contentDigest}`,
+    ),
+    renderDriftSection("Modified (digest changed)", drift.modified, (m) =>
+      `${m.path}\n        from ${m.fromDigest}\n        to   ${m.toDigest}`,
+    ),
+    renderDriftSection("Reclassified", drift.reclassified, (r) =>
+      `${r.path} ${r.fromClassification} → ${r.toClassification}`,
+    ),
+  ].join("")
+  return `CBOM drift detected: ${total} change(s) between ${cbomPath} and ${workspaceRoot}.\n${sections}`
+}
+
+function runVerify(target: string, opts: CbomCommandOptions): number {
+  const cbomPath = opts.verifyPath!
+  let content: string
+  try {
+    content = readFileSync(cbomPath, "utf8")
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    process.stderr.write(`phub cbom: cannot read CBOM at ${cbomPath}: ${msg}\n`)
+    return 2
+  }
+  const verifyOpts: Parameters<typeof verifyCbom>[0] = {
+    workspaceRoot: target,
+    cbomPath,
+    cbomContent: content,
+  }
+  if (opts.maxFiles !== undefined) verifyOpts.maxFiles = opts.maxFiles
+  if (opts.maxDepth !== undefined) verifyOpts.maxDepth = opts.maxDepth
+
+  try {
+    const result = verifyCbom(verifyOpts)
+    process.stdout.write(
+      renderHumanVerifyReport(result.cbomPath, result.workspaceRoot, result.drift),
+    )
+    return result.hasDrift ? 1 : 0
+  } catch (err) {
+    if (err instanceof CbomParseError) {
+      process.stderr.write(`phub cbom: invalid CBOM at ${err.source}: ${err.message}\n`)
+      return 2
+    }
+    if (err instanceof LockParseError) {
+      process.stderr.write(`phub cbom: invalid lock at ${err.source}: ${err.message}\n`)
+      return 2
+    }
+    const msg = err instanceof Error ? err.message : String(err)
+    process.stderr.write(`phub cbom: ${msg}\n`)
+    return 2
+  }
+}
+
 /** Top-level dispatch for `phub cbom`. Returns process exit code. */
 export function cbomCommand(rootArg: string | undefined, opts: CbomCommandOptions): number {
   const target = rootArg ?? process.cwd()
+
+  if (opts.verifyPath !== undefined) return runVerify(target, opts)
+
   let cbom: Cbom
   try {
     cbom = buildCbom(target, opts)
