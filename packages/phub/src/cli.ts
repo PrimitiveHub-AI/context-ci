@@ -12,6 +12,7 @@
 
 import { parseArgs, UsageError, type FlagSpec } from "./argv.js"
 import { auditCommand } from "./commands/audit.js"
+import { cbomCommand } from "./commands/cbom.js"
 import { initCommand } from "./commands/init.js"
 import { installCommand } from "./commands/install.js"
 import { scanCommand } from "./commands/scan.js"
@@ -32,6 +33,9 @@ Commands:
                        ADR-0027. --once for a single audit + exit.
   install <slug@semver>  Safe-install a context primitive — verify + write + lock.
                        ADR-0028. Also: --bundle <path> | --url <url>.
+  cbom [path]          Emit a Context Bill of Materials (CBOM v0.1) for the
+                       workspace. ADR-0033. JSON inventory of every
+                       agent-context artifact.
   scan <file>          Scan a markdown file for Context CI Top 10 patterns (T1/T2/T5 in v0.1)
   verify <bundle>      Verify a Trust Bundle JSON file (wraps @primitivehub/verify)
   init                 Write a starter AGENTS.md in the current directory
@@ -239,6 +243,37 @@ Exit codes:
   2   bundle rejected / source error / write error / usage error
 `
 
+const CBOM_HELP = `phub cbom [<path>]
+
+Emit a Context Bill of Materials (CBOM v0.1) for the workspace.
+ADR-0033. The third pillar of the Trust Runtime (alongside the
+Trust Contract and the Context CI Top 10): a vendor-neutral,
+content-addressed inventory of every agent-context artifact loaded
+by the project's AI agents.
+
+The CBOM is canonical-JSON: alphabetic keys at every nesting level,
+2-space indent, trailing newline, no timestamps. Re-running against
+an unchanged workspace yields a byte-identical document (the same
+reproducibility property as phub.lock).
+
+When a phub.lock is present at .primitivehub/phub.lock (or
+--lock-path), each component's attestation field is copied from the
+matching lock entry so the CBOM and lock agree on provenance state.
+
+Flags:
+  --output <file>       Write CBOM JSON to <file> instead of stdout.
+                        Parent directories are created if missing.
+  --lock-path <path>    Override the auto-discovered phub.lock used
+                        for attestation cross-referencing.
+  --subject-name <name> Populate the subject.name field. Default: omitted.
+  --max-files=<n>       Hard cap on files visited (default 5000).
+  --max-depth=<n>       Hard cap on directory depth (default 12).
+
+Exit codes:
+  0   CBOM emitted successfully
+  2   usage error / unreadable path / invalid lock under --lock-path
+`
+
 const INIT_HELP = `phub init
 
 Write a starter AGENTS.md template into the current directory.
@@ -281,6 +316,8 @@ const GLOBAL_SPECS: readonly FlagSpec[] = [
   { name: "install-dir", takesValue: true },
   { name: "no-lock" },
   { name: "fetch-timeout-ms", takesValue: true },
+  { name: "output", takesValue: true },
+  { name: "subject-name", takesValue: true },
 ]
 
 function printHelp(command?: string): void {
@@ -293,6 +330,9 @@ function printHelp(command?: string): void {
       return
     case "install":
       process.stdout.write(INSTALL_HELP)
+      return
+    case "cbom":
+      process.stdout.write(CBOM_HELP)
       return
     case "scan":
       process.stdout.write(SCAN_HELP)
@@ -515,6 +555,36 @@ export async function main(argv: readonly string[]): Promise<number> {
       if (policyPath !== undefined) watchOpts.policyPath = policyPath
       if (maxRuntimeSec !== undefined) watchOpts.maxRuntimeSec = maxRuntimeSec
       return await watchCommand(parsed.positionals[0], watchOpts)
+    }
+
+    case "cbom": {
+      if (asBool(parsed.flags["help"])) {
+        printHelp("cbom")
+        return 0
+      }
+      let maxFiles: number | undefined
+      let maxDepth: number | undefined
+      try {
+        maxFiles = asPositiveInt(parsed.flags["max-files"], "max-files")
+        maxDepth = asPositiveInt(parsed.flags["max-depth"], "max-depth")
+      } catch (err) {
+        if (err instanceof UsageError) {
+          process.stderr.write(`phub cbom: ${err.message}\n`)
+          return 2
+        }
+        throw err
+      }
+      const cbomOpts: Parameters<typeof cbomCommand>[1] = {
+        maxFiles: maxFiles ?? 5000,
+        maxDepth: maxDepth ?? 12,
+      }
+      const lockPath = asString(parsed.flags["lock-path"])
+      if (lockPath !== undefined) cbomOpts.lockPath = lockPath
+      const subjectName = asString(parsed.flags["subject-name"])
+      if (subjectName !== undefined) cbomOpts.subjectName = subjectName
+      const output = asString(parsed.flags["output"])
+      if (output !== undefined) cbomOpts.output = output
+      return cbomCommand(parsed.positionals[0], cbomOpts)
     }
 
     case "init": {

@@ -19,6 +19,23 @@ export {
 } from "./commands/audit.js"
 export { watchCommand, type WatchOptions } from "./commands/watch.js"
 export {
+  buildCbom,
+  cbomCommand,
+  serializeCbom,
+  CBOM_FORMAT,
+  CBOM_VERSION,
+  CBOM_SCHEMA_URL,
+  CBOM_TOOL_NAME,
+  CBOM_TOOL_VERSION,
+  CBOM_TOP_TEN_SPEC_VERSION,
+  CBOM_TOP_TEN_DETECTOR_COUNT,
+  type Cbom,
+  type CbomComponent,
+  type CbomSummary,
+  type CbomOptions,
+  type CbomCommandOptions,
+} from "./commands/cbom.js"
+export {
   verifyBeforeLoad,
   type VerifyBeforeLoadOptions,
   type VerifyBeforeLoadResult,

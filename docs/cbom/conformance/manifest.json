@@ -1,0 +1,13 @@
+{
+  "$comment": "CBOM v0.1 conformance suite (ADR-0033). Each fixture lists its input directory and the expected CBOM JSON. Producers MUST emit a byte-identical document.",
+  "fixtures": [
+    {
+      "id": "minimal-workspace",
+      "description": "Three components: one AGENTS.md, one CLAUDE.md, one primitive with frontmatter name + version. Exercises the optional displayName/primitiveVersion columns and the summary aggregation.",
+      "input_dir": "fixtures/minimal-workspace/input",
+      "expected_cbom": "fixtures/minimal-workspace/expected.cbom.json",
+      "subject_name": "minimal-workspace"
+    }
+  ],
+  "specVersion": "0.1"
+}

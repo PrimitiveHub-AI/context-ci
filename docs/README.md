@@ -28,6 +28,16 @@ classes of document live here:
   Sigstore signing model, verification procedure, SLSA + in-toto
   mapping. Currently `v0.1`.
 
+- **[Context Bill of Materials (CBOM) v0.1](./cbom-v0.1.md)** —
+  The third pillar of the Trust Runtime (alongside the Trust
+  Contract and the Context CI Top 10). Defines the canonical
+  machine-readable inventory artifact for agent-context: top-level
+  JSON shape, component schema, classification vocabulary,
+  reproducibility rules (byte-identical re-stamps), relationship
+  to `phub.lock`, relationship to SPDX/CycloneDX, conformance
+  suite. Reference producer: `phub cbom`
+  ([ADR-0033](./decisions/0033-cbom-v0.1.md)). Currently `v0.1`.
+
 ## Strategic foundation (operational + team-facing)
 
 - **[Vision](./vision.md)** — Why PrimitiveHub exists. The

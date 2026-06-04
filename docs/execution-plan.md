@@ -201,7 +201,7 @@ Trust Bundle as every other client — no parallel validation logic.
 | 5.6.2 | **Forge attestation + policy preview** | Forge | "Will this pass enterprise CI?" indicator. Shows expected attestation predicate + policy evaluation against a sample policy. |
 | 5.6.3 | **Forge one-click publish via Trust Contract** | Forge + API | Publish → bundle generated → signing task fires → attestation surfaces in Forge → primitive immediately verifiable via CLI/MCP/Action. Round-trip tested in pytest. |
 | 5.6.7 | **Primitive Explorer v1** | `apps/web/app/explorer/` | Etherscan-style: `/digest/{sha256}`, `/attestation/{id}`, `/provenance/{slug}`, `/policy/{hash}`. Every primitive has a permanent inspectable page. No auth required for public primitives. Public-anonymous lookup already wired in 5.5.2. |
-| 5.6.5 | **CBOM v0.1 spec + generator** | `docs/cbom-spec-v0.1.md`, `phub cbom` | RFC-style document. Media type `application/vnd.primitivehub.cbom+json`. `phub cbom` emits valid CBOM artifact. References Trust Contract for primitive identity (digest-addressed). Versioned alongside Trust Contract. |
+| 5.6.5 | **CBOM v0.1 spec + generator** | `docs/cbom-v0.1.md`, `phub cbom` | ✓ **Shipped in PR 5.9 (2026-06-04).** Canonical wire-format spec at [`docs/cbom-v0.1.md`](./cbom-v0.1.md), ADR at [`docs/decisions/0033-cbom-v0.1.md`](./decisions/0033-cbom-v0.1.md), reference producer `phub cbom`, byte-identical reproducibility verified via the conformance suite at `docs/cbom/conformance/`. CBOM is the third pillar of the Trust Runtime — Trust Contract + Top 10 + CBOM all now ship as versioned public specs with conformance suites and ratchet discipline. |
 
 **Definition of Done for Weeks 10–13:**
 - An author can write a primitive in Forge → see live scan → publish →

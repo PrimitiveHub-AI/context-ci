@@ -51,12 +51,21 @@ export const SPEC_PAGES: readonly SpecPage[] = [
     version: "0.1",
   },
   {
+    slug: "cbom-v0.1",
+    title: "Context Bill of Materials v0.1",
+    file: "cbom-v0.1.md",
+    description:
+      "The third pillar of the Trust Runtime. The canonical machine-readable inventory artifact for agent-context. Components, classifications, content digests, sizes, attestation pointers. Reference producer: phub cbom.",
+    order: 5,
+    version: "0.1",
+  },
+  {
     slug: "threat-model",
     title: "Threat Model",
     file: "threat-model.md",
     description:
       "The 10 supply-chain attack categories Context CI is designed to detect. Promoted to the Top 10 spec; retained for historical reference.",
-    order: 5,
+    order: 6,
     version: "0.1",
   },
 ] as const

@@ -4,7 +4,7 @@
     {
       "attestation": "unattested",
       "classification": "claude-md",
-      "digest": "sha256:56b8b0bf4eca1c473bc65b19881a913cd6fc2809611e4225f0ecfb7041686dc2",
+      "digest": "sha256:d16f55464993019058d4681f376352b50130064138ee07a5bda477fd946f0f1f",
       "path": "CLAUDE.md"
     },
     {
@@ -120,6 +120,24 @@
       "classification": "primitive",
       "digest": "sha256:3706584c2d09c2a995c809b0a8d1a4882cd118975edd6136c2e1d27107c9fea1",
       "path": "apps/web/content/primitives/valkey-caching-patterns.md"
+    },
+    {
+      "attestation": "unattested",
+      "classification": "agents-md",
+      "digest": "sha256:1a5c3b8a64a01496b86abd532edafb844cfec33d009d11a5f48da33b09542573",
+      "path": "docs/cbom/conformance/fixtures/minimal-workspace/input/AGENTS.md"
+    },
+    {
+      "attestation": "unattested",
+      "classification": "claude-md",
+      "digest": "sha256:fc1491e91af2f898d9470d919f9ca8c9765a891fb920ee5beb187b7d14c25fab",
+      "path": "docs/cbom/conformance/fixtures/minimal-workspace/input/CLAUDE.md"
+    },
+    {
+      "attestation": "unattested",
+      "classification": "primitive",
+      "digest": "sha256:0b64c61d512520fa173b385bbf29a234fd794364a87333b6ee31ef74f726c626",
+      "path": "docs/cbom/conformance/fixtures/minimal-workspace/input/apps/web/content/primitives/example.md"
     }
   ],
   "generator": "phub@0.1.0",

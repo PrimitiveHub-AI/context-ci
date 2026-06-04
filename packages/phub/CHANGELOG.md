@@ -8,6 +8,38 @@ wrapper) and Context CI Top 10 version (for the scanner detectors);
 
 ## [Unreleased]
 
+### Added (PR 5.9 — CBOM v0.1: third pillar of the Trust Runtime)
+- **`phub cbom [<path>]` subcommand** — emits a Context Bill of
+  Materials (CBOM v0.1) for the workspace. Canonical-JSON inventory
+  of every classified agent-context artifact: path, classification,
+  SHA-256 content digest, size in bytes, attestation pointer, and
+  optional `displayName` / `primitiveVersion` parsed from YAML
+  frontmatter. Reproducibility is load-bearing: re-running against
+  an unchanged workspace yields a byte-identical document (no
+  timestamps, alphabetic key sort, lexicographic component order).
+  See [ADR-0033](../../docs/decisions/0033-cbom-v0.1.md) and the
+  wire-format spec at [`docs/cbom-v0.1.md`](../../docs/cbom-v0.1.md).
+- **CLI flags:** `--output <file>` to write to disk instead of
+  stdout, `--lock-path <path>` to override the lock used for
+  attestation cross-referencing, `--subject-name <name>` to
+  populate the `subject.name` field, `--max-files` / `--max-depth`
+  walker caps mirroring `phub audit`.
+- **Lock integration:** when `.primitivehub/phub.lock` is present
+  in the workspace, each component's `attestation` field is copied
+  from the matching lock entry so the CBOM and lock agree on
+  provenance state. Absent lock → all components emit
+  `"unattested"`.
+- **Conformance suite** at `docs/cbom/conformance/` with a
+  `minimal-workspace` fixture (1 AGENTS.md, 1 CLAUDE.md, 1
+  primitive with frontmatter). TS harness
+  (`test/cbom-conformance.test.ts`) verifies byte-identical
+  emission and reproducibility. A future Python `phub_py cbom`
+  (v0.2 candidate) runs the same manifest.
+- **Programmatic API:** `buildCbom`, `serializeCbom`, and the
+  `CBOM_*` constants exported from `@primitivehub/phub`.
+- **Test count:** phub suite grows 235 → 264 (29 new CBOM tests
+  across `cbom.test.ts` + `cbom-conformance.test.ts`).
+
 ### Added (PR 5.6.3 — T9 + T10 detectors; Top 10 complete at 10/10)
 - **T9 / T10** TypeScript detector ports (lockstep with the Python
   implementations per ADR-0023):
