@@ -263,6 +263,15 @@ matching lock entry so the CBOM and lock agree on provenance state.
 Flags:
   --output <file>       Write CBOM JSON to <file> instead of stdout.
                         Parent directories are created if missing.
+  --format <fmt>        Output format. One of:
+                          cbom       Native CBOM v0.1 (default)
+                          spdx       SPDX 2.3 JSON projection
+                          cyclonedx  CycloneDX 1.5 JSON projection
+                        SPDX and CycloneDX are lossy projections for
+                        enterprise SBOM pipelines that already speak
+                        those formats. Both preserve the byte-identical
+                        re-stamp property — URN / namespace fields are
+                        derived from SHA-256 of the native CBOM bytes.
   --lock-path <path>    Override the auto-discovered phub.lock used
                         for attestation cross-referencing.
   --subject-name <name> Populate the subject.name field. Default: omitted.
@@ -271,7 +280,8 @@ Flags:
 
 Exit codes:
   0   CBOM emitted successfully
-  2   usage error / unreadable path / invalid lock under --lock-path
+  2   usage error / unreadable path / invalid lock under --lock-path /
+      invalid --format value
 `
 
 const INIT_HELP = `phub init
@@ -318,6 +328,7 @@ const GLOBAL_SPECS: readonly FlagSpec[] = [
   { name: "fetch-timeout-ms", takesValue: true },
   { name: "output", takesValue: true },
   { name: "subject-name", takesValue: true },
+  { name: "format", takesValue: true },
 ]
 
 function printHelp(command?: string): void {
@@ -584,6 +595,16 @@ export async function main(argv: readonly string[]): Promise<number> {
       if (subjectName !== undefined) cbomOpts.subjectName = subjectName
       const output = asString(parsed.flags["output"])
       if (output !== undefined) cbomOpts.output = output
+      const formatArg = asString(parsed.flags["format"])
+      if (formatArg !== undefined) {
+        if (formatArg !== "cbom" && formatArg !== "spdx" && formatArg !== "cyclonedx") {
+          process.stderr.write(
+            `phub cbom: --format must be one of cbom|spdx|cyclonedx (got ${JSON.stringify(formatArg)})\n`,
+          )
+          return 2
+        }
+        cbomOpts.format = formatArg
+      }
       return cbomCommand(parsed.positionals[0], cbomOpts)
     }
 

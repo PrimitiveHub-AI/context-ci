@@ -222,9 +222,51 @@ container layers) — concepts that do not map cleanly to context artifacts
 (an `AGENTS.md` is not a "package" with a version range and a license).
 Forcing context inventory into SPDX terms would require lossy translation.
 
-v0.2+ MAY ship optional exporters to SPDX 2.3 or CycloneDX 1.5 for
-enterprises whose SBOM pipelines require those formats. The native CBOM
-format remains the canonical wire form; exporters are projections.
+### 7.1 SPDX 2.3 + CycloneDX 1.5 projection exporters
+
+The reference producer (`phub cbom`) ships **lossy projection exporters**
+to SPDX 2.3 and CycloneDX 1.5 for enterprise SBOM pipelines that already
+speak those formats:
+
+```
+phub cbom --format=spdx       # SPDX 2.3 JSON projection
+phub cbom --format=cyclonedx  # CycloneDX 1.5 JSON projection
+phub cbom --format=cbom       # Native CBOM v0.1 (default)
+```
+
+The native CBOM format remains the canonical wire form; SPDX + CycloneDX
+are projections, not parallel formats. **Both projections preserve the
+byte-identical re-stamp property** (§ 5):
+
+- The SPDX `documentNamespace` and the CycloneDX `serialNumber` are
+  derived from the SHA-256 of the native CBOM bytes — same workspace →
+  same URN, every time. No UUIDs, no wall-clock-derived identifiers.
+- All timestamps in the projection bodies (SPDX `creationInfo.created`,
+  SPDX `annotations[*].annotationDate`) are pinned to the stable
+  epoch-zero marker `1970-01-01T00:00:00Z`. SPDX 2.3 requires the
+  `created` field; pinning it to a constant preserves reproducibility
+  while still satisfying the SPDX schema. Consumers that need a real
+  generation timestamp can stamp one externally.
+
+### 7.2 Mapping
+
+| CBOM concept                  | SPDX 2.3                          | CycloneDX 1.5                          |
+|-------------------------------|-----------------------------------|----------------------------------------|
+| Component                     | `File` element                    | `component` with `type: "file"`        |
+| `contentDigest` (sha256)      | `checksums[0]` (SHA256)           | `hashes[0]` (SHA-256)                  |
+| `classification`              | `annotations[]` comment `cbom:classification=...` | `properties[]` `cbom:classification` |
+| `attestation`                 | `annotations[]` comment `cbom:attestation=...`    | `properties[]` `cbom:attestation`    |
+| `displayName` / `primitiveVersion` | `annotations[]` comments         | `properties[]` + `component.version`   |
+| `sizeBytes`                   | (not represented)                 | `properties[]` `cbom:sizeBytes`        |
+| `topTen` pointer              | (not represented)                 | `metadata.properties` + `cbom:topTen:*` |
+| License / copyright           | `NOASSERTION` (license-aware mapping is v0.3) | (not emitted)              |
+
+**Lossy fields.** SPDX doesn't model the Top 10 pointer or sizes; the
+information lives in the native CBOM. Consumers that need the lossless
+view should consume the native format.
+
+A future `phub cbom --verify` flow (planned v0.2) verifies any of the
+three formats against the workspace.
 
 ## 8. Verifying a CBOM against a workspace
 
@@ -270,7 +312,9 @@ discipline) MUST pass the same conformance fixtures.
   that load other primitives. v0.2 candidate.
 - **Signing the CBOM itself** — a CBOM is currently an unsigned JSON
   document. v0.2 wraps it in an in-toto Statement signed via Sigstore.
-- **SPDX 2.3 / CycloneDX 1.5 exporters** — v0.2+.
+- ~~**SPDX 2.3 / CycloneDX 1.5 exporters** — v0.2+.~~ **Shipped in
+  PR 5.11 — see § 7.1.** Both projections preserve byte-identical
+  re-stamps via SHA-256-derived URNs and epoch-zero timestamps.
 - **Cross-workspace deduplication** — a digest-keyed view across multiple
   CBOMs (multi-project audit). v0.3 candidate.
 - **Scanner verdict inclusion** — CBOM v0.1 deliberately omits Top 10

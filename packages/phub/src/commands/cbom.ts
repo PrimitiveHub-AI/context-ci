@@ -17,6 +17,8 @@
 import { readFileSync, lstatSync, existsSync, writeFileSync, mkdirSync } from "node:fs"
 import { resolve, relative, sep, join, isAbsolute, dirname } from "node:path"
 
+import { buildCycloneDxBom, serializeCycloneDxBom } from "../cbom/cyclonedx.js"
+import { buildSpdxDocument, serializeSpdx } from "../cbom/spdx.js"
 import { classify } from "../audit/classifier.js"
 import { sha256Hex } from "../audit/digest.js"
 import {
@@ -264,9 +266,35 @@ function sortKeys(value: unknown): unknown {
   return out
 }
 
+export type CbomOutputFormat = "cbom" | "spdx" | "cyclonedx"
+
 export interface CbomCommandOptions extends CbomOptions {
   /** Write to this file instead of stdout. */
   output?: string
+  /**
+   * Output format. Default `"cbom"` is the canonical wire format
+   * defined in `docs/cbom-v0.1.md`. `"spdx"` and `"cyclonedx"` are
+   * lossy projections for SBOM tooling that already speaks those
+   * formats (ADR-0033 § "Explicit deferrals — relaxed in PR 5.11"
+   * + spec § 7). Both projections preserve the
+   * byte-identical-re-stamp property — the URN / namespace fields
+   * are derived from the SHA-256 of the native CBOM bytes.
+   */
+  format?: CbomOutputFormat
+}
+
+/**
+ * Render a `Cbom` in the requested wire format. Pure function;
+ * exposed for embedders that already hold a `Cbom` in memory.
+ */
+export function renderCbom(cbom: Cbom, format: CbomOutputFormat = "cbom"): string {
+  const native = serializeCbom(cbom)
+  if (format === "cbom") return native
+  if (format === "spdx") {
+    return serializeSpdx(buildSpdxDocument(cbom, native))
+  }
+  // format === "cyclonedx"
+  return serializeCycloneDxBom(buildCycloneDxBom(cbom, native))
 }
 
 /** Top-level dispatch for `phub cbom`. Returns process exit code. */
@@ -285,7 +313,7 @@ export function cbomCommand(rootArg: string | undefined, opts: CbomCommandOption
     return 2
   }
 
-  const serialized = serializeCbom(cbom)
+  const serialized = renderCbom(cbom, opts.format ?? "cbom")
   if (opts.output !== undefined) {
     try {
       mkdirSync(dirname(resolve(opts.output)), { recursive: true })

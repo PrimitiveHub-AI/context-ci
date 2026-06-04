@@ -8,6 +8,47 @@ wrapper) and Context CI Top 10 version (for the scanner detectors);
 
 ## [Unreleased]
 
+### Added (PR 5.11 — CBOM SPDX 2.3 + CycloneDX 1.5 projection exporters)
+- **`phub cbom --format=<fmt>` flag** with three values:
+  - `cbom` — Native CBOM v0.1 (default; unchanged behavior).
+  - `spdx` — SPDX 2.3 JSON projection. Each CBOM component maps to
+    an SPDX `File` element with SHA256 checksum + `NOASSERTION`
+    license. Classification + attestation + displayName +
+    primitiveVersion ride along as SPDX `annotations` with
+    `cbom:`-prefixed `comment` values. Document namespace is
+    derived from SHA-256 of the native CBOM bytes —
+    `https://primitivehub.ai/cbom/<subject>#<hash>` — so same
+    workspace → same namespace, every run. SPDX 2.3 requires
+    `creationInfo.created`; pinned to the stable epoch-zero
+    marker `1970-01-01T00:00:00Z` to preserve byte-identical
+    re-stamps.
+  - `cyclonedx` — CycloneDX 1.5 JSON projection. Each CBOM
+    component maps to a `component` with `type: "file"`, a
+    `bom-ref` of `cbom:<sha256>`, SHA-256 `hashes`, and
+    `properties[]` carrying `cbom:classification`,
+    `cbom:attestation`, `cbom:sizeBytes`, plus `cbom:displayName`
+    when present. `metadata.properties` carries the
+    `cbom:topTen:specVersion` / `cbom:topTen:detectorCount`
+    pointers. `serialNumber` is `urn:cbom:<hash>` derived from
+    the native CBOM bytes.
+- **Native CBOM remains the canonical wire form.** SPDX +
+  CycloneDX are lossy projections (SPDX drops sizes + the topTen
+  pointer; both drop fields with no schema equivalent) — see
+  `docs/cbom-v0.1.md` § 7.2 for the mapping table.
+- **Reproducibility property holds across all three formats.** The
+  conformance suite at `docs/cbom/conformance/` now ships
+  `expected.spdx.json` and `expected.cyclonedx.json` alongside the
+  native `expected.cbom.json`; the TS harness asserts
+  byte-identical emission for each.
+- **Programmatic API:** `buildSpdxDocument`, `serializeSpdx`,
+  `buildCycloneDxBom`, `serializeCycloneDxBom`, and the
+  `renderCbom(cbom, format)` dispatcher exported from
+  `@primitivehub/phub`.
+- **Test count:** phub suite grows 264 → 295 (28 new
+  cbom-exporters tests + 2 new fixture-parity assertions + 1 new
+  manifest re-assertion). Reproducibility verified across formats:
+  re-rendering each yields byte-identical output.
+
 ### Added (PR 5.9 — CBOM v0.1: third pillar of the Trust Runtime)
 - **`phub cbom [<path>]` subcommand** — emits a Context Bill of
   Materials (CBOM v0.1) for the workspace. Canonical-JSON inventory

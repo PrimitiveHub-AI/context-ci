@@ -21,6 +21,7 @@ export { watchCommand, type WatchOptions } from "./commands/watch.js"
 export {
   buildCbom,
   cbomCommand,
+  renderCbom,
   serializeCbom,
   CBOM_FORMAT,
   CBOM_VERSION,
@@ -34,7 +35,22 @@ export {
   type CbomSummary,
   type CbomOptions,
   type CbomCommandOptions,
+  type CbomOutputFormat,
 } from "./commands/cbom.js"
+export {
+  buildSpdxDocument,
+  serializeSpdx,
+  SPDX_VERSION,
+  SPDX_DATA_LICENSE,
+  type SpdxDocument,
+} from "./cbom/spdx.js"
+export {
+  buildCycloneDxBom,
+  serializeCycloneDxBom,
+  CYCLONEDX_SPEC_VERSION,
+  CYCLONEDX_BOM_FORMAT,
+  type CycloneDxBom,
+} from "./cbom/cyclonedx.js"
 export {
   verifyBeforeLoad,
   type VerifyBeforeLoadOptions,

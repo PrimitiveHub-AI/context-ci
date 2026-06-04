@@ -12,7 +12,7 @@ import { fileURLToPath } from "node:url"
 
 import { describe, expect, it } from "vitest"
 
-import { buildCbom, serializeCbom } from "../src/commands/cbom.js"
+import { buildCbom, renderCbom, serializeCbom } from "../src/commands/cbom.js"
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -21,6 +21,8 @@ interface ManifestEntry {
   description: string
   input_dir: string
   expected_cbom: string
+  expected_spdx?: string
+  expected_cyclonedx?: string
   subject_name?: string
 }
 
@@ -73,6 +75,30 @@ describe("CBOM v0.1 conformance suite", () => {
         const b = serializeCbom(buildCbom(inputDir, opts))
         expect(a).toBe(b)
       })
+
+      if (entry.expected_spdx !== undefined) {
+        const expectedSpdxPath = resolve(conformanceDir, entry.expected_spdx)
+        it("SPDX projection matches the expected fixture byte-for-byte", () => {
+          const opts: Parameters<typeof buildCbom>[1] = {}
+          if (entry.subject_name !== undefined) opts.subjectName = entry.subject_name
+          const cbom = buildCbom(inputDir, opts)
+          const actual = renderCbom(cbom, "spdx")
+          const expected = readFileSync(expectedSpdxPath, "utf8")
+          expect(actual).toBe(expected)
+        })
+      }
+
+      if (entry.expected_cyclonedx !== undefined) {
+        const expectedCdxPath = resolve(conformanceDir, entry.expected_cyclonedx)
+        it("CycloneDX projection matches the expected fixture byte-for-byte", () => {
+          const opts: Parameters<typeof buildCbom>[1] = {}
+          if (entry.subject_name !== undefined) opts.subjectName = entry.subject_name
+          const cbom = buildCbom(inputDir, opts)
+          const actual = renderCbom(cbom, "cyclonedx")
+          const expected = readFileSync(expectedCdxPath, "utf8")
+          expect(actual).toBe(expected)
+        })
+      }
     })
   }
 })
