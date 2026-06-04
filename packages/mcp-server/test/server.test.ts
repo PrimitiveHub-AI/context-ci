@@ -65,7 +65,7 @@ describe("MCP server", () => {
     const content = res.content as Array<{ type: string; text: string }>
     const payload = JSON.parse(content[0]!.text)
     expect(payload.exitCode).toBe(0)
-    expect(payload.verdicts.length).toBe(3)
+    expect(payload.verdicts.length).toBe(6)
     await client.close()
   })
 

@@ -112,7 +112,10 @@ export {
 
 export { T1PromptInjectionDetector } from "./scanners/t1-prompt-injection.js"
 export { T2UnicodeSteganographyDetector } from "./scanners/t2-unicode-steganography.js"
+export { T3EncodedPayloadsDetector } from "./scanners/t3-encoded-payloads.js"
+export { T4RemoteFetchDetector } from "./scanners/t4-remote-fetch.js"
 export { T5UnsafeShellInstallDetector } from "./scanners/t5-unsafe-shell-install.js"
+export { T6CredentialExfiltrationDetector } from "./scanners/t6-credential-exfiltration.js"
 
 export { renderHumanScanReport, renderHumanVerifyReport } from "./reporters/human.js"
 export { renderAuditHumanReport } from "./reporters/audit-human.js"

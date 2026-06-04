@@ -120,8 +120,15 @@ describe("T5 unsafe-shell-install detector", () => {
 })
 
 describe("detector registry", () => {
-  it("ships all three v0.1 detectors in stable order", () => {
-    expect(DETECTORS.map((d) => d.cciId)).toEqual(["CCI-001", "CCI-002", "CCI-005"])
+  it("ships all six active detectors in stable category-number order", () => {
+    expect(DETECTORS.map((d) => d.cciId)).toEqual([
+      "CCI-001",
+      "CCI-002",
+      "CCI-003",
+      "CCI-004",
+      "CCI-005",
+      "CCI-006",
+    ])
   })
 
   it("looks up by name, CCI ID, or threat category", () => {

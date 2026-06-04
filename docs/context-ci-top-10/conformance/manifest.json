@@ -1,0 +1,135 @@
+{
+  "version": "0.1",
+  "fixtures": [
+    {
+      "path": "clean/01-empty.md",
+      "primary_cci": "",
+      "expect": "negative"
+    },
+    {
+      "path": "clean/02-minimal-primitive.md",
+      "primary_cci": "",
+      "expect": "negative"
+    },
+    {
+      "path": "clean/03-policy-discussion.md",
+      "primary_cci": "",
+      "expect": "negative"
+    },
+    {
+      "path": "fixtures/CCI-001/01-override.md",
+      "primary_cci": "CCI-001",
+      "expect": "positive",
+      "expected_detail_tags": ["override-system-instructions"]
+    },
+    {
+      "path": "fixtures/CCI-001/02-role-hijack.md",
+      "primary_cci": "CCI-001",
+      "expect": "positive",
+      "expected_detail_tags": ["role-hijack"]
+    },
+    {
+      "path": "fixtures/CCI-001/03-hidden-instructions.md",
+      "primary_cci": "CCI-001",
+      "expect": "positive",
+      "expected_detail_tags": ["hidden-instructions"]
+    },
+    {
+      "path": "fixtures/CCI-001/04-credential-exfil-hint.md",
+      "primary_cci": "CCI-001",
+      "expect": "positive",
+      "expected_detail_tags": ["credential-exfiltration-hint"],
+      "also_fires": ["CCI-006"]
+    },
+    {
+      "path": "fixtures/CCI-002/01-zero-width.md",
+      "primary_cci": "CCI-002",
+      "expect": "positive",
+      "expected_detail_tags": ["zero-width-invisible"]
+    },
+    {
+      "path": "fixtures/CCI-002/02-bidi-control.md",
+      "primary_cci": "CCI-002",
+      "expect": "positive",
+      "expected_detail_tags": ["bidi-control"]
+    },
+    {
+      "path": "fixtures/CCI-002/03-mixed-script-confusable.md",
+      "primary_cci": "CCI-002",
+      "expect": "positive",
+      "expected_detail_tags": ["mixed-script-confusable"]
+    },
+    {
+      "path": "fixtures/CCI-003/01-long-base64.md",
+      "primary_cci": "CCI-003",
+      "expect": "positive",
+      "expected_detail_tags": ["base64-long-blob"]
+    },
+    {
+      "path": "fixtures/CCI-003/02-long-hex.md",
+      "primary_cci": "CCI-003",
+      "expect": "positive",
+      "expected_detail_tags": ["hex-long-blob"]
+    },
+    {
+      "path": "fixtures/CCI-003/03-decode-and-execute.md",
+      "primary_cci": "CCI-003",
+      "expect": "positive",
+      "expected_detail_tags": ["decode-and-execute"]
+    },
+    {
+      "path": "fixtures/CCI-004/01-fetch-and-include.md",
+      "primary_cci": "CCI-004",
+      "expect": "positive",
+      "expected_detail_tags": ["fetch-and-include"]
+    },
+    {
+      "path": "fixtures/CCI-004/02-load-time-fetch.md",
+      "primary_cci": "CCI-004",
+      "expect": "positive",
+      "expected_detail_tags": ["load-time-fetch"]
+    },
+    {
+      "path": "fixtures/CCI-004/03-html-import.md",
+      "primary_cci": "CCI-004",
+      "expect": "positive",
+      "expected_detail_tags": ["agent-side-include"]
+    },
+    {
+      "path": "fixtures/CCI-005/01-curl-pipe-bash.md",
+      "primary_cci": "CCI-005",
+      "expect": "positive",
+      "expected_detail_tags": ["shell-pipe-from-network"]
+    },
+    {
+      "path": "fixtures/CCI-005/02-npx-arbitrary.md",
+      "primary_cci": "CCI-005",
+      "expect": "positive",
+      "expected_detail_tags": ["npx-arbitrary-install"]
+    },
+    {
+      "path": "fixtures/CCI-005/03-install-instruction.md",
+      "primary_cci": "CCI-005",
+      "expect": "positive",
+      "expected_detail_tags": ["install-instruction-to-agent"]
+    },
+    {
+      "path": "fixtures/CCI-006/01-send-secrets.md",
+      "primary_cci": "CCI-006",
+      "expect": "positive",
+      "expected_detail_tags": ["send-secrets-to-destination"]
+    },
+    {
+      "path": "fixtures/CCI-006/02-curl-data-exfil.md",
+      "primary_cci": "CCI-006",
+      "expect": "positive",
+      "expected_detail_tags": ["exfiltrate-via-network"]
+    },
+    {
+      "path": "fixtures/CCI-006/03-hide-in-output.md",
+      "primary_cci": "CCI-006",
+      "expect": "positive",
+      "expected_detail_tags": ["hide-in-output"]
+    }
+  ]
+}

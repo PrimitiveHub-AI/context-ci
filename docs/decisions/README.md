@@ -43,6 +43,7 @@ Links to primitives, threat-model entries, vendor docs, prior ADRs.
 |---|---|---|
 | [0031](./0031-mcp-server-as-transport.md) | `@primitivehub/mcp-server` as the MCP transport layer (Gate G-D opener) | Accepted |
 | [0030](./0030-fp-resolution-and-av-vendor-parallel.md) | False-positive resolution methodology + AV-vendor product-family framing | Accepted |
+| [0032](./0032-scanner-conformance-suite.md) | Scanner conformance suite — cross-language parity enforcement for Python + TS detectors | Accepted |
 | [0029](./0029-mcp-runtime-gate.md) | MCP runtime gate — `verify_before_load` composite tool (closes active-surfaces arc) | Accepted |
 | [0028](./0028-phub-install.md) | `phub install <slug@semver>` — safe-install (closes the five-surface arc) | Accepted |
 | [0027](./0027-phub-watch.md) | `phub watch` — active runtime guardian (the third active surface) | Accepted |

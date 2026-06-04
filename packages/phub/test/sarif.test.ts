@@ -64,8 +64,15 @@ describe("renderSarif structural shape", () => {
     const result = scanFixture("t1-prompt-injection.md")
     const doc = parseSarif(renderSarif("t1-prompt-injection.md", result.verdicts), result.verdicts)
     const rules = doc.runs[0]!.tool.driver.rules
-    expect(rules.length).toBe(3)
-    expect(rules.map((r) => r.id).sort()).toEqual(["CCI-001", "CCI-002", "CCI-005"])
+    expect(rules.length).toBe(6)
+    expect(rules.map((r) => r.id).sort()).toEqual([
+      "CCI-001",
+      "CCI-002",
+      "CCI-003",
+      "CCI-004",
+      "CCI-005",
+      "CCI-006",
+    ])
   })
 
   it("each rule has helpUri pointing to the Top 10 anchor", () => {

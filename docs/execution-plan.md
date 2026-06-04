@@ -89,7 +89,9 @@ Shipped on main:
   cache headers + media-type wire
 
 In flight / planned:
-- Phase 5: T3, T4, T6–T10 detectors (PR 5.4–5.7 in `docs/roadmap.md`)
+- Phase 5: T3, T4, T6 detectors shipped this PR (PR 5.6). T7–T10
+  remain (planned subsequent PRs). Scanner-conformance suite
+  shipped alongside per ADR-0032; cross-language parity now CI-gated.
 - Phase 5.5.3–5.5.5: CLI, verify library, MCP server (planned in
   `docs/roadmap.md`)
 

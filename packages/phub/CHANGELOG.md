@@ -8,6 +8,29 @@ wrapper) and Context CI Top 10 version (for the scanner detectors);
 
 ## [Unreleased]
 
+### Added (PR 5.6 — T3 + T4 + T6 detectors + scanner-conformance suite, ADR-0032)
+- **T3 / T4 / T6** TypeScript detector ports (lockstep with the
+  Python implementations per ADR-0023):
+  - `T3EncodedPayloadsDetector` (CCI-003) — long base64 / hex blobs +
+    decode-and-execute instructions + ROT13 prose.
+  - `T4RemoteFetchDetector` (CCI-004) — fetch-and-include /
+    load-time-fetch / agent-side `<link>` / `<iframe>` / `@import`.
+  - `T6CredentialExfiltrationDetector` (CCI-006) — send-secrets,
+    curl-data-exfil with known secret env vars, hide-in-output,
+    scan-and-send credential file paths.
+- Active detector roster grows from 3 to **6** (T1 / T2 / T3 / T4 /
+  T5 / T6). Detector registration in `src/scanners/registry.ts`
+  preserves stable category-number order; `--json` output remains
+  reproducible.
+- Programmatic exports added to `src/index.ts` for each new detector
+  class.
+- New runtime parity gate: `test/scanner-conformance.test.ts` runs
+  the shared manifest at `docs/context-ci-top-10/conformance/`
+  through the TS roster. 23/23 fixtures pass; manifest covers every
+  active detector.
+- Zero new runtime deps — uses Node's built-in fs/url/path APIs
+  for fixture discovery.
+
 ### Added (PR 5.7.4 — `phub install`, ADR-0028)
 - **`phub install <slug@semver>`** — safe-install for context primitives.
   Replaces `curl|bash` / `npx <pkg>` (T5 attack class) with a

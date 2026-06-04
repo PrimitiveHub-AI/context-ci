@@ -52,11 +52,29 @@ const RULE_DESCRIPTIONS: Record<string, RuleDescription> = {
       "Zero-width characters, bidi-control codepoints, tag-range characters, or mixed-script confusables — content invisible or misleading to human reviewers but visible to the agent's tokenizer. Context CI Top 10 v0.1 — CCI-002.",
     helpUri: "https://primitivehub.ai/top-10#CCI-002",
   },
+  "CCI-003": {
+    shortDescription: "Encoded payload pattern in agent context.",
+    fullDescription:
+      "Long base64 or hex blobs that may decode to executable content, paired with natural-language instructions to decode and execute. Context CI Top 10 v0.1 — CCI-003.",
+    helpUri: "https://primitivehub.ai/top-10#CCI-003",
+  },
+  "CCI-004": {
+    shortDescription: "Remote content fetch at load time.",
+    fullDescription:
+      "Instructions that turn a static primitive into a dynamic loader — fetch-and-include, before-respond fetch, agent-side <link>/<iframe>/@import. Context CI Top 10 v0.1 — CCI-004.",
+    helpUri: "https://primitivehub.ai/top-10#CCI-004",
+  },
   "CCI-005": {
     shortDescription: "Unsafe shell install (Shai-Hulud) pattern in agent context.",
     fullDescription:
       "Instructions to fetch and execute code from the network without verification (curl | bash, npx arbitrary install, pip from URL/git, natural-language install instructions). Context CI Top 10 v0.1 — CCI-005.",
     helpUri: "https://primitivehub.ai/top-10#CCI-005",
+  },
+  "CCI-006": {
+    shortDescription: "Credential exfiltration instruction.",
+    fullDescription:
+      "Instructions directing the agent to access and transmit credentials, tokens, env vars, or secrets to attacker-controlled destinations. Overlaps with CCI-001's exfil-hint family. Context CI Top 10 v0.1 — CCI-006.",
+    helpUri: "https://primitivehub.ai/top-10#CCI-006",
   },
 }
 

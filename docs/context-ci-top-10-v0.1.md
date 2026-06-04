@@ -411,10 +411,10 @@ present (the additive migration path).
 |---|---|---|---|
 | CCI-001 | T1 | `t1.prompt_injection` | `apps/api/scanners/t1_prompt_injection.py` |
 | CCI-002 | T2 | `t2.unicode_steganography` | `apps/api/scanners/t2_unicode_steganography.py` |
-| CCI-003 | T3 | _(reserved)_ | _(planned Phase 5 PR 5.6)_ |
-| CCI-004 | T4 | _(reserved)_ | _(planned Phase 5 PR 5.6)_ |
+| CCI-003 | T3 | `t3.encoded_payloads` | `apps/api/scanners/t3_encoded_payloads.py` |
+| CCI-004 | T4 | `t4.remote_fetch` | `apps/api/scanners/t4_remote_fetch.py` |
 | CCI-005 | T5 | `t5.unsafe_shell_install` | `apps/api/scanners/t5_unsafe_shell_install.py` |
-| CCI-006 | T6 | _(reserved)_ | _(planned Phase 5 PR 5.6)_ |
+| CCI-006 | T6 | `t6.credential_exfiltration` | `apps/api/scanners/t6_credential_exfiltration.py` |
 | CCI-007 | T7 | _(reserved)_ | _(planned Phase 5 PR 5.6)_ |
 | CCI-008 | T8 | _(reserved)_ | _(planned Phase 5 PR 5.6)_ |
 | CCI-009 | T9 | _(reserved)_ | _(planned Phase 5 PR 5.6, partial)_ |

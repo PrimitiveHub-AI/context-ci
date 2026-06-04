@@ -137,13 +137,22 @@ class TestT2Structural:
 
 
 # ─────────────────────────────────────────────────────────────────────
-# Registry — now 3 detectors in the launch-demo trifecta
+# Registry — 6 detectors after PR 5.6 added T3/T4/T6
 # ─────────────────────────────────────────────────────────────────────
-def test_get_all_detectors_returns_t1_t2_t5_in_pr_5_3() -> None:
-    """As of PR 5.3 the registry has [T1, T2, T5] in threat-category
-    order. This is the launch-demo trifecta."""
+def test_get_all_detectors_returns_t1_through_t6_in_stable_order() -> None:
+    """As of PR 5.6 the registry has [T1, T2, T3, T4, T5, T6] in
+    stable category-number order (per ADR-0023 + ADR-0032). The
+    launch-demo trifecta (T1/T2/T5) is now joined by T3 (encoded
+    payloads), T4 (remote fetch), and T6 (credential exfiltration)."""
     detectors = get_all_detectors()
     names = [d.name for d in detectors]
     cats = [d.threat_category for d in detectors]
-    assert names == ["t1.prompt_injection", "t2.unicode_steganography", "t5.unsafe_shell_install"]
-    assert cats == ["T1", "T2", "T5"]
+    assert names == [
+        "t1.prompt_injection",
+        "t2.unicode_steganography",
+        "t3.encoded_payloads",
+        "t4.remote_fetch",
+        "t5.unsafe_shell_install",
+        "t6.credential_exfiltration",
+    ]
+    assert cats == ["T1", "T2", "T3", "T4", "T5", "T6"]
