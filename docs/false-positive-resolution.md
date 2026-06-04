@@ -311,6 +311,20 @@ What would change the answer:
 
 ---
 
+### FP-002 Re-review log
+
+- **2026-06-04 — Resolved via Path C (ADR-0035 v0.2.1).** The v0.2.1
+  CCI-005 detector now consults `analyzeMarkdownContext()` and skips
+  matches that fall inside inline-code spans. The `npx shadcn@latest
+  add Button` mention in `apps/web/content/primitives/shadcn-ui-composition.md:130`
+  sits inside `` ` ` `` and is no longer flagged. The active policy
+  rule for this entry was removed from `.primitivehub/policy.yaml` in
+  the same commit. Corpus measurement confirms: CCI-005 precision
+  ratcheted from 0.667 → 1.000 on the seed corpus; the FP-002-shaped
+  sample (S-014 — "shadcn install in inline code") now correctly
+  passes. The ledger entry stays committed (append-only discipline
+  per ADR-0030 § 1 practice 1); only the policy allow rule was removed.
+
 ### FP-003 — Cognition primitives declare their own CC-BY-4.0 license
 
 - **Date authored:** 2026-06-04
@@ -350,6 +364,18 @@ What would change the answer:
 [ADR-0030](./decisions/0030-fp-resolution-and-av-vendor-parallel.md),
 `bench/corpus/manifest.yaml` (the corpus is the test bed for the v0.2
 tightening).
+
+### FP-003 Re-review log
+
+- **2026-06-04 — Resolved via Path C (ADR-0035 v0.2.1).** The v0.2.1
+  CCI-009 detector now consults `analyzeMarkdownContext()` and skips
+  matches that fall inside the frontmatter block. Every primitive's
+  `license: CC-BY-4.0` frontmatter line is recognized as a declaration
+  (not borrowed content) and no longer flagged. The active policy rule
+  for this entry was removed from `.primitivehub/policy.yaml` in the
+  same commit. Corpus measurement confirms: CCI-009 precision stays at
+  1.000 on the seed corpus with no new FPs introduced. The ledger entry
+  stays committed (append-only discipline per ADR-0030 § 1 practice 1).
 
 ---
 

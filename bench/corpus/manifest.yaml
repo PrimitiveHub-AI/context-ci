@@ -291,17 +291,19 @@ samples:
     cci_id: "CCI-005"
     detail_tags:
       - "shell-pipe-from-network"
-    severity: "medium"
-    expected_verdict: "FAIL"
+    severity: "info"
+    expected_verdict: "PASS"
     contributor: "mhm"
     added: "2026-06-04"
     notes: |
       Threat-model teaching primitive showing the curl|bash pattern
-      INSIDE a code fence with explicit "DO NOT RUN" framing. v0.1
-      detectors are not markdown-AST aware, so the expected verdict
-      is FAIL (the v0.1 stance is "flag and bounce to manual review").
-      When v0.2 ships with AST awareness, this sample's expected
-      verdict ratchets to PASS — and that ratchet is the precision
-      improvement we'll publish in the paper.
+      INSIDE a code fence with explicit "DO NOT RUN" framing.
+      Ratcheted 2026-06-04 with v0.2.1 detector tightening (ADR-0035):
+      the markdown-context analyzer now skips fenced-code matches, so
+      this sample correctly returns PASS. The original v0.1 expected
+      verdict was FAIL ("flag and bounce to manual review"); see the
+      git history for the ratchet trail. The paper cites BOTH (v0.1
+      conservative-FAIL baseline AND v0.2.1 fence-aware baseline) to
+      show the precision improvement the AST work yields.
     incident_reference: null
     parity_status: "pending"

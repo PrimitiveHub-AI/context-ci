@@ -51,6 +51,10 @@ from __future__ import annotations
 
 import re
 
+from .markdown_context import (
+    analyze_markdown_context,
+    is_in_any_code_or_frontmatter,
+)
 from .types import DetectorContext, DiffHint, Severity, Verdict
 
 # ─────────────────────────────────────────────────────────────────────
@@ -157,13 +161,19 @@ class T5UnsafeShellInstallDetector:
     name = "t5.unsafe_shell_install"
     threat_category = "T5"  # legacy; back-compat
     cci_id = "CCI-005"  # Context CI Top 10 v0.1 canonical ID (ADR-0016)
-    detector_version = "0.1.0"
+    detector_version = "0.2.1"
 
     def run(self, ctx: DetectorContext) -> Verdict:
         hints: list[DiffHint] = []
+        # v0.2.1 (ADR-0035): skip matches inside frontmatter, inline
+        # code spans, or fenced code blocks — these are reference /
+        # documentary contexts, not execution instructions.
+        md_ctx = analyze_markdown_context(ctx.content)
 
         for pattern, tag in _COMPILED:
             for match in pattern.finditer(ctx.content):
+                if is_in_any_code_or_frontmatter(match.start(), md_ctx):
+                    continue
                 hints.append(_hint_for_match(ctx.content, match, tag))
                 if len(hints) >= _MAX_HINTS_PER_VERDICT:
                     break

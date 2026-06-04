@@ -34,45 +34,20 @@ allow:
         detail_tags:
           - "npx-arbitrary-install"
 
-  # FP-002 — shadcn primitive documents the canonical shadcn/ui install command.
-  # See docs/false-positive-resolution.md §6 → FP-002.
-  - reason: |
-      FP-002 — apps/web/content/primitives/shadcn-ui-composition.md
-      is a cognition primitive teaching shadcn/ui composition. Line
-      130 mentions `npx shadcn@latest add Button` — the canonical
-      install command published by the shadcn/ui project's own
-      documentation. Reference material describing a third-party
-      tool's documented entry point, not an executable installer.
-      Path B (domain WAI) per docs/false-positive-resolution.md §1.
-      Re-review: 2026-09-01. ADR-0018, ADR-0025.
-    files:
-      - "apps/web/content/primitives/shadcn-ui-composition.md"
-    rules:
-      - id: "CCI-005"
-        detail_tags:
-          - "npx-arbitrary-install"
+  # FP-002 — REMOVED 2026-06-04 via Path C (ADR-0035 v0.2.1).
+  # The v0.2.1 CCI-005 detector now skips matches inside inline-code
+  # spans. The `npx shadcn@latest` mention in the primitive is wrapped
+  # in backticks and no longer trips the detector. See
+  # docs/false-positive-resolution.md § 6 → FP-002 Re-review log for
+  # the closure trail. The ledger entry stays in place (append-only
+  # discipline per ADR-0030 § 1 practice 1); only the active policy
+  # rule was removed.
 
-  # FP-003 — primitives declare their own CC-BY-4.0 license in frontmatter.
-  # See docs/false-positive-resolution.md §6 → FP-003.
-  - reason: |
-      FP-003 — Every cognition primitive in apps/web/content/primitives/
-      declares its OWN license in frontmatter (`license: CC-BY-4.0`).
-      The v0.1 CCI-009 detector matches the literal CC-BY-4.0 string
-      anywhere in the file and warns about downstream attribution risk
-      — applied to a primitive's OWN license declaration, the warning
-      is inverted: the primitive is the SOURCE, not the consumer.
-      The detector cannot distinguish "I declare my license" from
-      "I copied content under this license." Path B (domain WAI) per
-      docs/false-positive-resolution.md §1. The v0.2 Path-C tightening
-      should restrict CCI-009 matching to body-text, exempting the
-      frontmatter block.
-      Re-review: 2026-09-04. ADR-0018, ADR-0030.
-    files:
-      - "apps/web/content/primitives/**/*.md"
-    rules:
-      - id: "CCI-009"
-        detail_tags:
-          - "cc-attribution-required"
+  # FP-003 — REMOVED 2026-06-04 via Path C (ADR-0035 v0.2.1).
+  # The v0.2.1 CCI-009 detector now skips matches inside the
+  # frontmatter block. Every primitive's `license: CC-BY-4.0`
+  # declaration sits in frontmatter and is no longer flagged. See
+  # docs/false-positive-resolution.md § 6 → FP-003 Re-review log.
 
   # FP-004 — CLAUDE.md references CC-BY-4.0 when describing the corpus license.
   # See docs/false-positive-resolution.md §6 → FP-004.

@@ -15,6 +15,10 @@ import {
   type Verdict,
   lineForPosition,
 } from "./types.js"
+import {
+  analyzeMarkdownContext,
+  isInAnyCodeOrFrontmatter,
+} from "./markdown-context.js"
 
 const SHELL_PIPE_PATTERNS: Array<readonly [RegExp, string]> = [
   [
@@ -92,15 +96,23 @@ export class T5UnsafeShellInstallDetector {
   readonly name = "t5.unsafe_shell_install"
   readonly threatCategory = "T5"
   readonly cciId = "CCI-005"
-  readonly detectorVersion = "0.1.0"
+  readonly detectorVersion = "0.2.1"
 
   run(ctx: DetectorContext): Verdict {
     const hints: DiffHint[] = []
+    // v0.2.1 (ADR-0035): skip matches inside frontmatter, inline code
+    // spans, or fenced code blocks — these are reference / documentary
+    // contexts, not execution instructions.
+    const mdCtx = analyzeMarkdownContext(ctx.content)
 
     outer: for (const [pattern, tag] of ALL_PATTERNS) {
       pattern.lastIndex = 0
       let match: RegExpExecArray | null
       while ((match = pattern.exec(ctx.content)) !== null) {
+        if (isInAnyCodeOrFrontmatter(match.index, mdCtx)) {
+          if (match.index === pattern.lastIndex) pattern.lastIndex++
+          continue
+        }
         hints.push(hintForMatch(ctx.content, match, tag))
         if (hints.length >= MAX_HINTS_PER_VERDICT) break outer
         if (match.index === pattern.lastIndex) pattern.lastIndex++

@@ -15,6 +15,7 @@ import {
   type Verdict,
   lineForPosition,
 } from "./types.js"
+import { analyzeMarkdownContext, isInFrontmatter } from "./markdown-context.js"
 
 const VENDORS = [
   "Anthropic",
@@ -152,14 +153,23 @@ export class T7PoisonedNamingDetector {
   readonly name = "t7.poisoned_naming"
   readonly threatCategory = "T7"
   readonly cciId = "CCI-007"
-  readonly detectorVersion = "0.1.0"
+  readonly detectorVersion = "0.2.1"
 
   run(ctx: DetectorContext): Verdict {
     const hints: DiffHint[] = []
+    // v0.2.1 (ADR-0035): skip matches inside frontmatter — vendor
+    // URLs in `references:` lists are not impersonation. Body-text
+    // mentions still flag pending v0.2.2 mention-vs-impersonation work.
+    const mdCtx = analyzeMarkdownContext(ctx.content)
+
     outer: for (const [pattern, tag] of ALL_PATTERNS) {
       pattern.lastIndex = 0
       let match: RegExpExecArray | null
       while ((match = pattern.exec(ctx.content)) !== null) {
+        if (isInFrontmatter(match.index, mdCtx)) {
+          if (match.index === pattern.lastIndex) pattern.lastIndex++
+          continue
+        }
         hints.push(hintForMatch(ctx.content, match, tag))
         if (hints.length >= MAX_HINTS_PER_VERDICT) break outer
         if (match.index === pattern.lastIndex) pattern.lastIndex++
