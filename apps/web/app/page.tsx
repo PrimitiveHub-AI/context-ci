@@ -1,4 +1,5 @@
 import { Hero } from "@/components/landing/hero"
+import { TrustRuntimeSection } from "@/components/landing/trust-runtime-section"
 import { WhySection } from "@/components/landing/why-section"
 import { ConceptSection } from "@/components/landing/concept-section"
 import { FeaturesSection } from "@/components/landing/features-section"
@@ -11,6 +12,7 @@ export default function LandingPage() {
   return (
     <main>
       <Hero />
+      <TrustRuntimeSection />
       <WhySection />
       <ConceptSection />
       <FeaturesSection />
