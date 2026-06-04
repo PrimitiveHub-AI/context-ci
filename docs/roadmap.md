@@ -276,6 +276,19 @@ each, with no prior knowledge of which files matter. The "find every
 piece of context an agent loads" promise from the vision is reachable
 in one command.
 
+**Companion measurement track — Adversarial Corpus v0.1
+(ADR-0032, 2026-06-04):** the active-surfaces arc ships with a
+paper-citable labeled dataset under `bench/corpus/` and cross-
+language precision/recall measurement scripts (`bench/scripts/
+measure.{ts,py}`). v0.1 ships 15 seed samples (CCI-001 + CCI-002 +
+CCI-005); v0.3 launch-day target is 500+ samples across all 10
+Top 10 categories. Cross-language parity (ADR-0023) becomes
+mechanically gated: a regex change on one side that introduces
+parity drift against the corpus cannot merge without the matching
+change on the other side. Risk R-7 (corpus too small for credible
+paper claims) is partially mitigated; the patient labeling
+continues to launch.
+
 ### Phase 6 — Marketplace + search + downloads + reviews (Q2 2026)
 
 **Goal:** The site becomes browseable. `/registry`, `/bundles`,

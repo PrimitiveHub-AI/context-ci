@@ -1,0 +1,24 @@
+{
+  "name": "@primitivehub/bench-measure",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Adversarial corpus measurement harness for PrimitiveHub Context CI scanners (TS side).",
+  "license": "MIT",
+  "scripts": {
+    "measure": "tsx measure.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@primitivehub/phub": "file:../../packages/phub",
+    "yaml": "^2.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "tsx": "^4.19.0",
+    "typescript": "5.7.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

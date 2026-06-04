@@ -72,6 +72,15 @@ classes of document live here:
   `.primitivehub/policy.yaml`.** Every policy entry MUST be
   back-referenced by a ledger entry committed in the same PR.
 
+- **[Corpus v0.1](./corpus-v0.1.md)** — Labeled adversarial corpus
+  used to measure per-detector precision + recall + F1 (ADR-0032).
+  Implementation: [`bench/`](../bench/) at the repo root, with the
+  manifest at `bench/corpus/manifest.yaml` and the measurement
+  scripts in `bench/scripts/{measure.ts,measure.py}`. CC-BY-4.0
+  (corpus content). The single artifact the launch paper's
+  evaluation section will cite by `(corpus_version, top10_version,
+  language, commit_sha)`.
+
 - **[Decisions](./decisions/)** — Architecture Decision Records. One
   file per load-bearing choice (Django Ninja over DRF, Postgres RLS,
   Cloudflare R2 v1, Authentik for OIDC, content-addressed storage,

@@ -507,7 +507,7 @@ Tracked here, not in heads. Each risk has a mitigation. Review monthly.
 | R-4 | Paper not accepted at venue → arXiv preprint only | Medium | Low (arXiv still counts for launch) | Plan for arXiv as the canonical launch artifact. Venue acceptance is bonus. |
 | R-5 | Trust Contract spec drifts between surfaces (verify lib vs API) | Medium | Critical | Conformance suite (Week 1–2). All surfaces run the suite in their own CI. No surface ships without 100% pass. |
 | R-6 | Sigstore public availability incident during launch week | Low | High (signing/verifying breaks publicly) | Status-page commitments include external dependency posture. Internal cache of recent trust roots — verification works offline against bundled roots (ADR-0013). |
-| R-7 | Corpus too small for credible paper claims | Medium | High to paper credibility | Bug bounty for novel labeled primitives (Phase 5.7 work). Academic co-author can mobilize student labelers. |
+| R-7 | Corpus too small for credible paper claims | Medium → reducing | High to paper credibility | **Mitigation in flight (2026-06-04):** corpus v0.1 scaffold landed via ADR-0032 with 15 seed samples + manifest schema + both TS and Python measurement scripts + first baselines committed under `bench/baseline/`. First numbers: CCI-001 + CCI-002 P/R/F1 = 1.0; CCI-005 P 0.667 / R 1.0 / F1 0.8 (FP-001 + FP-002 shapes both caught by the corpus). Volume target: v0.2 = 100+ samples (within 4 weeks); v0.3 = 500+ samples across all 10 categories by launch. Continued mitigation: bug bounty for novel labeled primitives (Phase 5.7 work); academic co-author can mobilize student labelers. |
 | R-8 | Premature public exposure of pre-launch surface | Low (defenses solid) | High (pre-launch posture is absolute) | noindex defenses already live; any new public surface (status page, embed guides) audited for noindex headers before merge. |
 | R-9 | Forge rename leaks into public copy before Week 1–2 lock | Low | Low | Branding-discipline ADR (0017) committed Week 1; no public copy refresh until then. |
 | R-10 | One-engineer bus factor on Trust Contract specs | High (it's mhm) | Critical to launch | Spec text in markdown in-repo (not in heads). Conformance suite is the executable definition. Anyone could pick up and ship from the spec + tests. |
@@ -559,6 +559,8 @@ Numbered against the next available ADR (0015+ per existing
 | 0028 | `phub install <slug@semver>` safe-install | post-0027 | Replace the `npx ... \| bash` skill-install attack class (T5) operationally |
 | 0029 | MCP runtime gate (`verify_before_load`) | with Gate G-D | Agent runtimes call PrimitiveHub before loading any primitive; refuses-by-default for unattested content |
 | 0030 | FP resolution + the AV-vendor parallel as product discipline | (landed 2026-06-01) | Locks the FP methodology + ledger + four-path triage as load-bearing process; names "agent-context AV plus registry" as the product-family framing |
+| 0031 | Pre-launch posture automation — six-layer audit + CI gate | (landed 2026-06-02) | Bug #26 prevention; in-repo Layer-1 CI gate + on-host operational discipline for the other five layers |
+| 0032 | Adversarial corpus v0.1 + detector precision/recall measurement | (landed 2026-06-04) | Paper-citable labeled dataset; cross-language parity gate; mitigation for Risk R-7 |
 
 ---
 

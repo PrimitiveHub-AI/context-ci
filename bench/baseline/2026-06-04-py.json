@@ -1,0 +1,119 @@
+{
+  "version": "0.1",
+  "language": "py",
+  "measured_at": "2026-06-04",
+  "manifest_version": "0.1",
+  "top10_version": "0.1",
+  "samples_total": 15,
+  "per_detector": {
+    "CCI-001": {
+      "tp": 4,
+      "fp": 0,
+      "tn": 4,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 8
+    },
+    "CCI-002": {
+      "tp": 3,
+      "fp": 0,
+      "tn": 4,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "support": 7
+    },
+    "CCI-003": {
+      "tp": 0,
+      "fp": 0,
+      "tn": 4,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "support": 4
+    },
+    "CCI-004": {
+      "tp": 0,
+      "fp": 0,
+      "tn": 4,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "support": 4
+    },
+    "CCI-005": {
+      "tp": 4,
+      "fp": 2,
+      "tn": 2,
+      "fn": 0,
+      "precision": 0.6666666666666666,
+      "recall": 1.0,
+      "f1": 0.8,
+      "support": 8
+    },
+    "CCI-006": {
+      "tp": 0,
+      "fp": 0,
+      "tn": 4,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "support": 4
+    },
+    "CCI-007": {
+      "tp": 0,
+      "fp": 0,
+      "tn": 4,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "support": 4
+    },
+    "CCI-008": {
+      "tp": 0,
+      "fp": 0,
+      "tn": 4,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "support": 4
+    },
+    "CCI-009": {
+      "tp": 0,
+      "fp": 0,
+      "tn": 4,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "support": 4
+    },
+    "CCI-010": {
+      "tp": 0,
+      "fp": 0,
+      "tn": 4,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "support": 4
+    }
+  },
+  "overall": {
+    "precision_macro": 0.8888888888888888,
+    "recall_macro": 1.0,
+    "f1_macro": 0.9333333333333332
+  },
+  "parity": {
+    "agreed_sample_ids": [],
+    "drift_sample_ids": []
+  }
+}
