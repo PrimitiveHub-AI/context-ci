@@ -116,6 +116,8 @@ export { T3EncodedPayloadsDetector } from "./scanners/t3-encoded-payloads.js"
 export { T4RemoteFetchDetector } from "./scanners/t4-remote-fetch.js"
 export { T5UnsafeShellInstallDetector } from "./scanners/t5-unsafe-shell-install.js"
 export { T6CredentialExfiltrationDetector } from "./scanners/t6-credential-exfiltration.js"
+export { T7PoisonedNamingDetector } from "./scanners/t7-poisoned-naming.js"
+export { T8FakeCitationDetector } from "./scanners/t8-fake-citation.js"
 
 export { renderHumanScanReport, renderHumanVerifyReport } from "./reporters/human.js"
 export { renderAuditHumanReport } from "./reporters/audit-human.js"

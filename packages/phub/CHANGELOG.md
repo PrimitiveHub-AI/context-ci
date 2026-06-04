@@ -8,6 +8,31 @@ wrapper) and Context CI Top 10 version (for the scanner detectors);
 
 ## [Unreleased]
 
+### Added (PR 5.6.2 — T7 + T8 detectors)
+- **T7 / T8** TypeScript detector ports (lockstep with the Python
+  implementations per ADR-0023):
+  - `T7PoisonedNamingDetector` (CCI-007) — official-vendor-claim
+    prose, false-affiliation-claim prose, and vendor-typosquat
+    patterns (digit-for-letter substitutions on a 36-vendor list).
+    Slug-similarity + Sigstore identity cross-check are v0.2.
+  - `T8FakeCitationDetector` (CCI-008) — invalid CVE years (future
+    or pre-1999), invalid RFCs (>9999 or 0), invalid arXiv IDs
+    (month out of range or future year), DOI prefixes outside the
+    v0.1 accepted-authorities list (28 publishers), and ungrounded
+    "according to research" / "studies show" / "experts agree"
+    rhetoric without an inline source within 200 characters.
+- Active detector roster grows from 6 to **8** (T1..T8). Stable
+  category-number order preserved.
+- `src/index.ts` exports added for both new detectors.
+- `src/reporters/sarif.ts` RULE_DESCRIPTIONS extended with CCI-007
+  and CCI-008 — shortDescription, fullDescription, helpUri pointing
+  at the Top 10 spec anchor.
+- Six new conformance fixtures (3 per detector) + manifest entries.
+  Both Python and TS harnesses now run 29/29 (was 23).
+- T8 reads the system clock for "current year" cutoffs (CVE / arXiv).
+  Conformance fixtures use year 2099 so positive expectations stay
+  valid indefinitely.
+
 ### Added (PR 5.6 — T3 + T4 + T6 detectors + scanner-conformance suite, ADR-0032)
 - **T3 / T4 / T6** TypeScript detector ports (lockstep with the
   Python implementations per ADR-0023):

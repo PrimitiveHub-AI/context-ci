@@ -130,6 +130,42 @@
       "primary_cci": "CCI-006",
       "expect": "positive",
       "expected_detail_tags": ["hide-in-output"]
+    },
+    {
+      "path": "fixtures/CCI-007/01-official-vendor-claim.md",
+      "primary_cci": "CCI-007",
+      "expect": "positive",
+      "expected_detail_tags": ["official-vendor-claim"]
+    },
+    {
+      "path": "fixtures/CCI-007/02-false-affiliation.md",
+      "primary_cci": "CCI-007",
+      "expect": "positive",
+      "expected_detail_tags": ["false-affiliation-claim"]
+    },
+    {
+      "path": "fixtures/CCI-007/03-vendor-typosquat.md",
+      "primary_cci": "CCI-007",
+      "expect": "positive",
+      "expected_detail_tags": ["vendor-typosquat"]
+    },
+    {
+      "path": "fixtures/CCI-008/01-future-cve.md",
+      "primary_cci": "CCI-008",
+      "expect": "positive",
+      "expected_detail_tags": ["invalid-cve"]
+    },
+    {
+      "path": "fixtures/CCI-008/02-invalid-rfc-and-arxiv.md",
+      "primary_cci": "CCI-008",
+      "expect": "positive",
+      "expected_detail_tags": ["invalid-rfc", "invalid-arxiv"]
+    },
+    {
+      "path": "fixtures/CCI-008/03-vague-citation.md",
+      "primary_cci": "CCI-008",
+      "expect": "positive",
+      "expected_detail_tags": ["vague-citation"]
     }
   ]
 }

@@ -89,9 +89,11 @@ Shipped on main:
   cache headers + media-type wire
 
 In flight / planned:
-- Phase 5: T3, T4, T6 detectors shipped this PR (PR 5.6). T7–T10
-  remain (planned subsequent PRs). Scanner-conformance suite
-  shipped alongside per ADR-0032; cross-language parity now CI-gated.
+- Phase 5: T3, T4, T6 detectors shipped in PR 5.6; T7 (poisoned
+  naming / typosquats) and T8 (fake citations / invalid CVE/RFC/
+  arXiv) shipped in PR 5.6.2. T9 and T10 remain (planned subsequent
+  PRs). Scanner-conformance suite (ADR-0032) grew from 23 to 29
+  fixtures alongside; cross-language parity remains CI-gated.
 - Phase 5.5.3–5.5.5: CLI, verify library, MCP server (planned in
   `docs/roadmap.md`)
 

@@ -137,13 +137,15 @@ class TestT2Structural:
 
 
 # ─────────────────────────────────────────────────────────────────────
-# Registry — 6 detectors after PR 5.6 added T3/T4/T6
+# Registry — 8 detectors after PR 5.6.2 added T7/T8
 # ─────────────────────────────────────────────────────────────────────
-def test_get_all_detectors_returns_t1_through_t6_in_stable_order() -> None:
-    """As of PR 5.6 the registry has [T1, T2, T3, T4, T5, T6] in
-    stable category-number order (per ADR-0023 + ADR-0032). The
-    launch-demo trifecta (T1/T2/T5) is now joined by T3 (encoded
-    payloads), T4 (remote fetch), and T6 (credential exfiltration)."""
+def test_get_all_detectors_returns_t1_through_t8_in_stable_order() -> None:
+    """As of PR 5.6.2 the registry has [T1..T8] in stable category-
+    number order (per ADR-0023 + ADR-0032). The launch-demo trifecta
+    (T1/T2/T5) was joined by T3 (encoded payloads), T4 (remote fetch),
+    and T6 (credential exfiltration) in PR 5.6; T7 (poisoned naming /
+    typosquats) and T8 (fake citations / invalid CVE/RFC/arXiv) ship
+    in this PR. T9 + T10 remain."""
     detectors = get_all_detectors()
     names = [d.name for d in detectors]
     cats = [d.threat_category for d in detectors]
@@ -154,5 +156,7 @@ def test_get_all_detectors_returns_t1_through_t6_in_stable_order() -> None:
         "t4.remote_fetch",
         "t5.unsafe_shell_install",
         "t6.credential_exfiltration",
+        "t7.poisoned_naming",
+        "t8.fake_citation",
     ]
-    assert cats == ["T1", "T2", "T3", "T4", "T5", "T6"]
+    assert cats == ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8"]

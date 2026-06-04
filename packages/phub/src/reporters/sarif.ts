@@ -76,6 +76,18 @@ const RULE_DESCRIPTIONS: Record<string, RuleDescription> = {
       "Instructions directing the agent to access and transmit credentials, tokens, env vars, or secrets to attacker-controlled destinations. Overlaps with CCI-001's exfil-hint family. Context CI Top 10 v0.1 — CCI-006.",
     helpUri: "https://primitivehub.ai/top-10#CCI-006",
   },
+  "CCI-007": {
+    shortDescription: "Poisoned naming / typosquatting / impersonation.",
+    fullDescription:
+      "Prose claims of official vendor affiliation, false endorsement claims, or typosquatted vendor names (digit-for-letter substitutions). Affects how an operator trusts a primitive at install time. Context CI Top 10 v0.1 — CCI-007.",
+    helpUri: "https://primitivehub.ai/top-10#CCI-007",
+  },
+  "CCI-008": {
+    shortDescription: "Fake citations / unresolvable references.",
+    fullDescription:
+      "Mechanical fake-citation checks: future-dated CVE/arXiv IDs, out-of-range RFC numbers, DOI prefixes not in the accepted-authorities list, and 'according to research' rhetoric without an inline source within 200 characters. Context CI Top 10 v0.1 — CCI-008.",
+    helpUri: "https://primitivehub.ai/top-10#CCI-008",
+  },
 }
 
 type SarifLevel = "error" | "warning" | "note"

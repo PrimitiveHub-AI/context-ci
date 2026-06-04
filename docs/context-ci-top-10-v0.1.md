@@ -304,8 +304,10 @@ outside the user's own domain.
 
 **Status:** Active.
 **Severity range:** `warn` to `fail`.
-**Reference implementation:** Not yet shipped (planned Phase 5 PR
-5.6, `cci_id="CCI-007"` reserved).
+**Reference implementation:** [`apps/api/scanners/t7_poisoned_naming.py`](../apps/api/scanners/t7_poisoned_naming.py)
+(`threat_category="T7"`, `cci_id="CCI-007"`). v0.1 ships content-based
+detection (vendor-impersonation prose + digit-for-letter typosquats);
+slug-similarity + Sigstore identity cross-check are v0.2.
 
 **Definition.** A primitive's slug, name, or author claims chosen to
 impersonate a trusted primitive, organization, or author — increasing
@@ -330,8 +332,11 @@ issuer.
 
 **Status:** Active.
 **Severity range:** `warn` to `fail`.
-**Reference implementation:** Not yet shipped (planned Phase 5 PR
-5.6, `cci_id="CCI-008"` reserved).
+**Reference implementation:** [`apps/api/scanners/t8_fake_citation.py`](../apps/api/scanners/t8_fake_citation.py)
+(`threat_category="T8"`, `cci_id="CCI-008"`). v0.1 ships mechanical
+checks (invalid CVE/RFC/arXiv IDs, unknown DOI prefixes, ungrounded
+"according to research" prose); network-resolution of every cited URL
+is Phase 6+ work.
 
 **Definition.** References, quotes, or statistics in the primitive
 body that look authoritative but cite non-existent sources or
@@ -415,8 +420,8 @@ present (the additive migration path).
 | CCI-004 | T4 | `t4.remote_fetch` | `apps/api/scanners/t4_remote_fetch.py` |
 | CCI-005 | T5 | `t5.unsafe_shell_install` | `apps/api/scanners/t5_unsafe_shell_install.py` |
 | CCI-006 | T6 | `t6.credential_exfiltration` | `apps/api/scanners/t6_credential_exfiltration.py` |
-| CCI-007 | T7 | _(reserved)_ | _(planned Phase 5 PR 5.6)_ |
-| CCI-008 | T8 | _(reserved)_ | _(planned Phase 5 PR 5.6)_ |
+| CCI-007 | T7 | `t7.poisoned_naming` | `apps/api/scanners/t7_poisoned_naming.py` |
+| CCI-008 | T8 | `t8.fake_citation` | `apps/api/scanners/t8_fake_citation.py` |
 | CCI-009 | T9 | _(reserved)_ | _(planned Phase 5 PR 5.6, partial)_ |
 | CCI-010 | T10 | _(reserved)_ | _(planned Phase 5 PR 5.6)_ |
 
