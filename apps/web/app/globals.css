@@ -148,3 +148,177 @@
   border-radius: 2px;
   transition: width 0.3s ease;
 }
+
+/* ─────────────────────────────────────────────────────────────────── */
+/* Docs prose styles                                                   */
+/* Hand-rolled Tailwind-v4-compatible prose; no @tailwindcss/typography */
+/* dep. Mirrors the existing oklch color tokens. ADR-0028 docs route.  */
+/* ─────────────────────────────────────────────────────────────────── */
+
+.prose-docs {
+  color: var(--foreground);
+  font-size: 1rem;
+  line-height: 1.7;
+  max-width: 72ch;
+}
+
+.prose-docs h1 {
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  color: var(--foreground);
+}
+.prose-docs h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+  color: var(--foreground);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.5rem;
+}
+.prose-docs h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  color: var(--foreground);
+}
+.prose-docs h4 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: var(--foreground);
+}
+
+.prose-docs p {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: var(--foreground);
+}
+
+.prose-docs a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: opacity 150ms ease;
+}
+.prose-docs a:hover {
+  opacity: 0.8;
+}
+
+.prose-docs strong {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.prose-docs ul,
+.prose-docs ol {
+  margin-top: 0.5rem;
+  margin-bottom: 1.25rem;
+  padding-left: 1.5rem;
+}
+.prose-docs ul {
+  list-style-type: disc;
+}
+.prose-docs ol {
+  list-style-type: decimal;
+}
+.prose-docs li {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+.prose-docs li::marker {
+  color: var(--muted-foreground);
+}
+
+.prose-docs blockquote {
+  border-left: 3px solid var(--primary);
+  padding: 0.25rem 1rem;
+  margin: 1.25rem 0;
+  color: var(--muted-foreground);
+  font-style: italic;
+}
+
+.prose-docs hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2.5rem 0;
+}
+
+/* Inline code */
+.prose-docs code:not(pre code) {
+  font-family: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
+  font-size: 0.875em;
+  background: var(--secondary);
+  color: var(--foreground);
+  padding: 0.125rem 0.375rem;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+}
+
+/* Code blocks — rehype-highlight injects highlight.js classes; the
+   github-dark stylesheet (imported in app/docs/layout.tsx) styles the
+   tokens. Container styling is ours. */
+.prose-docs pre {
+  background: var(--card) !important;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  margin: 1.25rem 0;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+.prose-docs pre code {
+  background: transparent !important;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+  color: inherit;
+}
+
+/* Tables */
+.prose-docs table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  font-size: 0.9rem;
+}
+.prose-docs thead {
+  border-bottom: 2px solid var(--border);
+}
+.prose-docs th {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+.prose-docs td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  color: var(--muted-foreground);
+}
+.prose-docs td code:not(pre code) {
+  white-space: nowrap;
+}
+.prose-docs tr:last-child td {
+  border-bottom: none;
+}
+
+/* Wider docs container — content max-width is on the article, but
+   tables can extend further inside pre/figure wrappers. */
+.prose-docs > pre,
+.prose-docs > table,
+.prose-docs > div > table {
+  max-width: 100%;
+}
