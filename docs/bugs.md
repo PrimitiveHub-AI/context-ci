@@ -26,6 +26,24 @@
 
 ## Active log (most recent first)
 
+### 27. Batch false positives on inter-session detector landings (T7 + T9) — 2026-06-04
+
+**Phase:** 5.6 / 5.6.2 / 5.6.3 (T3 / T4 / T6 / T7 / T8 / T9 / T10 detectors landed across multiple PRs since Phase 5.6 opened).
+**Symptom:** `phub audit . --check-lock` exits 1 with 19 of 23 artifacts flagged, 25 findings total. 18 CCI-009 `cc-attribution-required` hits across every primitive plus `CLAUDE.md`; 6 CCI-007 `vendor-typosquat` hits on `frontend-design-elite.md`. The `verify-before-load.test.ts` "returns safe against the project's own sealed CLAUDE.md" test fails because the flagged scanner findings flip `safe` to `false`.
+**Root cause:** **Two independent causes that landed in the same window.**
+  1. **Detector overbreadth at v0.1.** CCI-009's regex matches the literal `CC-BY-4.0` string anywhere in a file; CCI-007 matches the literal vendor names `Stripe / Vercel / Linear / Sigstore`. Both detectors fire on legitimate references — primitives declaring their OWN license, primitives referencing real vendors as design exemplars. Same structural class as docs/bugs.md #25 (v0.1 detectors prefer false positives to false negatives without markdown-AST awareness).
+  2. **No mid-session FP triage.** PRs 5.6 / 5.6.2 / 5.6.3 each shipped a new detector that fired on already-merged primitives. No PR ran `phub audit --check-lock` against the project itself before merging the detector, so the FP backlog accumulated silently until a session ran a full audit.
+**Fix:** **Path B triage applied per [ADR-0030](./decisions/0030-fp-resolution-and-av-vendor-parallel.md) § 1.** Three new ledger entries (FP-003 / FP-004 / FP-005) in [docs/false-positive-resolution.md § 6](./false-positive-resolution.md) + corresponding allow rules in `.primitivehub/policy.yaml`:
+  - FP-003: `apps/web/content/primitives/**/*.md` × `CCI-009:cc-attribution-required` (primitive self-license declarations)
+  - FP-004: `CLAUDE.md` × `CCI-009:cc-attribution-required` (meta-doc reference to corpus license)
+  - FP-005: `apps/web/content/primitives/frontend-design-elite.md` × `CCI-007:vendor-typosquat` (real vendor names as design exemplars)
+  Re-stamped `.primitivehub/phub.lock` to absorb the inter-session content changes (CBOM/Trust-Runtime PRs added new primitives + edited CLAUDE.md for ADR-0031 + ADR-0032 cross-refs). The failing `verify-before-load` test now passes — scanner findings clean under policy + lock state matches.
+**Prevention:**
+  - **Each detector PR MUST run `phub audit --check-lock` against the project itself before merge** — silent FP accumulation is the discipline gap this incident exposed. Wire into `.github/workflows/phub-ci.yml` as a step on every PR touching `apps/api/scanners/**` or `packages/phub/src/scanners/**`.
+  - **Path-C tightening tracked for CCI-009 and CCI-007** — both detectors should distinguish "frontmatter / declaration / reference" from "body / impersonation / quotation" contexts. v0.2 markdown-AST awareness (per #25 prevention) is the shared substrate; see FP-003 / FP-004 / FP-005 in the methodology ledger for the specific shape each detector's Path-C work needs to take. When the v0.2 detectors ship, the corresponding allow entries are removed in the same lockstep PR.
+  - **Detector-landing PR template** SHOULD include a "Project-level audit run" checklist item alongside the existing test/typecheck items.
+**Lesson:** A growing detector roster + a growing primitive corpus + no inter-PR audit discipline = silent FP backlog. The FP methodology shipped under ADR-0030 *was* the right answer; what was missing is the per-PR enforcement that catches drift before it reaches a quarterly re-review. Detector authors carry FP responsibility, not just precision-against-fixture responsibility.
+
 ### 26. Pre-launch site went public via host-level nginx + Cloudflare A records — 2026-06-02
 
 **Phase:** Pre-launch (Phase 5.5 / Gate G-C, ~16 weeks before target launch)

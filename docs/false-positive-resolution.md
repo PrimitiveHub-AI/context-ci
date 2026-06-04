@@ -308,3 +308,119 @@ What would change the answer:
 [ADR-0018](./decisions/0018-context-policy-language.md),
 [ADR-0025](./decisions/0025-active-posture-and-phub-audit.md),
 [CLAUDE.md](../CLAUDE.md) §"Expert primitives".
+
+---
+
+### FP-003 — Cognition primitives declare their own CC-BY-4.0 license
+
+- **Date authored:** 2026-06-04
+- **Artifact:** `apps/web/content/primitives/**/*.md` (glob — 19 files at time of authorship)
+- **Detector:** CCI-009 / `t9.copyright_contamination` / `cc-attribution-required`
+- **Path:** B (domain WAI)
+- **Re-review date:** 2026-09-04
+
+**Justification.** Every cognition primitive under
+`apps/web/content/primitives/` carries a frontmatter line `license:
+CC-BY-4.0` — the primitive's own published license. The v0.1 CCI-009
+detector matches the literal `CC-BY-4.0` string anywhere in the file
+and emits "downstream licensing risk; add attribution." Applied to a
+primitive's own license declaration the warning is inverted: **the
+primitive is the source, not the consumer**.
+
+The detector cannot distinguish *"I declare my license"* (frontmatter
+or LICENSE-block declaration) from *"I copied content licensed
+under this"* (body-of-text quotation). For a registry whose entire
+purpose is publishing primitives under explicit licenses, every primitive
+will carry this same pattern. Path B with a glob is the right scope —
+narrower (file-by-file) would defeat the whole point.
+
+What would change the answer:
+- Path B → Path C: a v0.2 CCI-009 detector that distinguishes
+  frontmatter-block matches from body-text matches retires this allow.
+  The narrow shape is: skip lines inside `^---$` … `^---$` blocks at
+  the head of the file. Once shipped (lockstep TS + Python per
+  ADR-0023), this entry can be removed.
+- Path B → Path A: if a primitive author starts QUOTING externally-licensed
+  content under CC-BY in the body, the primitive needs an actual
+  attribution line and the allow stops applying to that file. Reviewers
+  catch this in PR review.
+
+**Cross-references:**
+[ADR-0018](./decisions/0018-context-policy-language.md),
+[ADR-0030](./decisions/0030-fp-resolution-and-av-vendor-parallel.md),
+`bench/corpus/manifest.yaml` (the corpus is the test bed for the v0.2
+tightening).
+
+---
+
+### FP-004 — CLAUDE.md mentions CC-BY-4.0 in describing the corpus license
+
+- **Date authored:** 2026-06-04
+- **Artifact:** `CLAUDE.md`
+- **Detector:** CCI-009 / `t9.copyright_contamination` / `cc-attribution-required`
+- **Path:** B (domain WAI)
+- **Re-review date:** 2026-09-04
+
+**Justification.** The canonical-docs table in
+[CLAUDE.md](../CLAUDE.md) describes the Corpus v0.1 row with the phrase
+`CC-BY-4.0 (corpus content)` — meta-documentation about which artifact
+ships under which license. This is the same structural shape as
+FP-003 applied to the project's own meta-docs: the project is the source
+of the corpus, not a consumer of CC-BY content.
+
+What would change the answer: same as FP-003 (a v0.2 detector that
+exempts frontmatter + license-description prose retires this allow).
+
+**Cross-references:**
+[ADR-0018](./decisions/0018-context-policy-language.md),
+[ADR-0030](./decisions/0030-fp-resolution-and-av-vendor-parallel.md).
+
+---
+
+### FP-005 — `frontend-design-elite` references real vendor names as design exemplars
+
+- **Date authored:** 2026-06-04
+- **Artifact:** `apps/web/content/primitives/frontend-design-elite.md`
+- **Detector:** CCI-007 / `t7.poisoned_naming` / `vendor-typosquat`
+- **Path:** B (domain WAI) — leaning toward Path C
+- **Re-review date:** 2026-09-04
+
+**Justification.** The
+[frontend-design-elite](../apps/web/content/primitives/frontend-design-elite.md)
+primitive teaches design taste by naming the design discipline of
+specific vendors as exemplars: **Stripe** (typography + restraint),
+**Vercel** (motion + density), **Linear** (information hierarchy),
+**Sigstore** (trust UX). The v0.1 CCI-007 detector flags every literal
+occurrence of those vendor names as `vendor-typosquat / impersonation`.
+
+This is wrong at the detector level: the primitive is **referencing**
+the real vendors, not **impersonating** them. The detector confuses
+mention with impersonation. Path B is the short-term fix because the
+primitive is correct as written. The deeper fix is Path C — the v0.2
+CCI-007 detector should distinguish:
+
+- *Mention context* — design references, comparisons, quotations:
+  vendor names appearing in prose alongside descriptive language
+  (`"Stripe's typography rhythm"`, `"the Vercel docs convention"`).
+  No CCI-007 hit.
+- *Impersonation context* — install commands, package names, author
+  identity claims, attestation subject lines: vendor names where the
+  primitive is **claiming to be** the vendor. Real CCI-007 hit.
+
+The Path-C tightening also wants context awareness around confusable-
+character matching (Latin-vs-Cyrillic homoglyphs in vendor names — the
+*actual* typosquat attack), distinct from the `Stripe == Stripe` case
+this allow covers.
+
+What would change the answer:
+- Path B → Path A: if a primitive starts naming itself as Stripe (e.g.
+  in an `author:` frontmatter field or a Sigstore subject claim), that
+  IS impersonation and the allow stops applying to that file.
+- Path B → Path C: when CCI-007 v0.2 ships with mention-vs-impersonation
+  context, this allow is removed.
+
+**Cross-references:**
+[ADR-0018](./decisions/0018-context-policy-language.md),
+[ADR-0023](./decisions/0023-phub-cli-and-detector-parity.md) (Path-C
+work requires lockstep TS + Python tightening),
+[ADR-0030](./decisions/0030-fp-resolution-and-av-vendor-parallel.md).
