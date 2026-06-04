@@ -3,9 +3,11 @@ import { notFound } from "next/navigation"
 import ReactMarkdown from "react-markdown"
 
 import { DocsNav } from "../docs-nav"
+import { PageToc } from "@/components/docs/page-toc"
 import { DOC_PAGES, getDocPage } from "@/lib/docs"
 import { preprocessDocMarkdown, readDocSource } from "@/lib/docs/load"
 import { docsRehypePlugins, docsRemarkPlugins } from "@/lib/docs/render-options"
+import { extractToc } from "@/lib/markdown/toc"
 
 export function generateStaticParams() {
   return DOC_PAGES.map((page) => ({ slug: page.slug }))
@@ -37,6 +39,7 @@ export default async function DocSlugPage({
 
   const raw = readDocSource(page.file)
   const source = preprocessDocMarkdown(raw, page.file)
+  const toc = extractToc(source)
 
   const prevIndex = DOC_PAGES.findIndex((p) => p.slug === slug) - 1
   const nextIndex = prevIndex + 2
@@ -63,14 +66,21 @@ export default async function DocSlugPage({
           </nav>
         </header>
 
-        <article className="prose-docs">
-          <ReactMarkdown
-            remarkPlugins={docsRemarkPlugins}
-            rehypePlugins={docsRehypePlugins}
-          >
-            {source}
-          </ReactMarkdown>
-        </article>
+        <div className="grid gap-10 xl:grid-cols-[1fr_220px]">
+          <article className="prose-docs min-w-0">
+            <ReactMarkdown
+              remarkPlugins={docsRemarkPlugins}
+              rehypePlugins={docsRehypePlugins}
+            >
+              {source}
+            </ReactMarkdown>
+          </article>
+          {toc.length > 0 ? (
+            <aside className="hidden xl:block xl:sticky xl:top-24 xl:self-start">
+              <PageToc entries={toc} />
+            </aside>
+          ) : null}
+        </div>
 
         <nav
           aria-label="Page navigation"

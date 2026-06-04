@@ -36,7 +36,7 @@ classes of document live here:
   reproducibility rules (byte-identical re-stamps), relationship
   to `phub.lock`, relationship to SPDX/CycloneDX, conformance
   suite. Reference producer: `phub cbom`
-  ([ADR-0033](./decisions/0033-cbom-v0.1.md)). Currently `v0.1`.
+  ([ADR-0033](./decisions/0033-cbom-v01.md)). Currently `v0.1`.
 
 ## Strategic foundation (operational + team-facing)
 

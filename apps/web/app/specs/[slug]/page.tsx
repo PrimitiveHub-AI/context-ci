@@ -4,8 +4,10 @@ import ReactMarkdown from "react-markdown"
 import { join } from "node:path"
 
 import { SpecsNav } from "../specs-nav"
+import { PageToc } from "@/components/docs/page-toc"
 import { findDocsRoot } from "@/lib/markdown/discovery"
 import { rewriteMarkdownLinks } from "@/lib/markdown/link-rewriter"
+import { extractToc } from "@/lib/markdown/toc"
 import { docsRehypePlugins, docsRemarkPlugins } from "@/lib/docs/render-options"
 import { SPEC_PAGES, getSpecPage, readSpecSource } from "@/lib/specs"
 
@@ -41,6 +43,7 @@ export default async function SpecSlugPage({
 
   const raw = readSpecSource(spec.file)
   const source = rewriteMarkdownLinks(raw, join(DOCS_DIR, spec.file))
+  const toc = extractToc(source)
 
   const idx = SPEC_PAGES.findIndex((p) => p.slug === slug)
   const prev = idx > 0 ? SPEC_PAGES[idx - 1] : undefined
@@ -66,14 +69,21 @@ export default async function SpecSlugPage({
           </nav>
         </header>
 
-        <article className="prose-docs">
-          <ReactMarkdown
-            remarkPlugins={docsRemarkPlugins}
-            rehypePlugins={docsRehypePlugins}
-          >
-            {source}
-          </ReactMarkdown>
-        </article>
+        <div className="grid gap-10 xl:grid-cols-[1fr_220px]">
+          <article className="prose-docs min-w-0">
+            <ReactMarkdown
+              remarkPlugins={docsRemarkPlugins}
+              rehypePlugins={docsRehypePlugins}
+            >
+              {source}
+            </ReactMarkdown>
+          </article>
+          {toc.length > 0 ? (
+            <aside className="hidden xl:block xl:sticky xl:top-24 xl:self-start">
+              <PageToc entries={toc} />
+            </aside>
+          ) : null}
+        </div>
 
         <nav
           aria-label="Page navigation"

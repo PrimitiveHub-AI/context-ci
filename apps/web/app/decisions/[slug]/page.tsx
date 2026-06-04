@@ -3,10 +3,12 @@ import { notFound } from "next/navigation"
 import ReactMarkdown from "react-markdown"
 
 import { DecisionsNav } from "../decisions-nav"
+import { PageToc } from "@/components/docs/page-toc"
 import { ADR_PAGES, getAdrPage } from "@/lib/decisions"
 import { readAdrSource } from "@/lib/decisions/load"
 import { findDocsRoot } from "@/lib/markdown/discovery"
 import { rewriteMarkdownLinks } from "@/lib/markdown/link-rewriter"
+import { extractToc } from "@/lib/markdown/toc"
 import { docsRehypePlugins, docsRemarkPlugins } from "@/lib/docs/render-options"
 import { join } from "node:path"
 
@@ -42,6 +44,7 @@ export default async function AdrSlugPage({
 
   const raw = readAdrSource(adr.file)
   const source = rewriteMarkdownLinks(raw, join(DECISIONS_DIR, adr.file))
+  const toc = extractToc(source)
 
   // Previous / next by ADR number order (newest-first list, so prev =
   // newer ADR, next = older).
@@ -68,14 +71,21 @@ export default async function AdrSlugPage({
           </nav>
         </header>
 
-        <article className="prose-docs">
-          <ReactMarkdown
-            remarkPlugins={docsRemarkPlugins}
-            rehypePlugins={docsRehypePlugins}
-          >
-            {source}
-          </ReactMarkdown>
-        </article>
+        <div className="grid gap-10 xl:grid-cols-[1fr_220px]">
+          <article className="prose-docs min-w-0">
+            <ReactMarkdown
+              remarkPlugins={docsRemarkPlugins}
+              rehypePlugins={docsRehypePlugins}
+            >
+              {source}
+            </ReactMarkdown>
+          </article>
+          {toc.length > 0 ? (
+            <aside className="hidden xl:block xl:sticky xl:top-24 xl:self-start">
+              <PageToc entries={toc} />
+            </aside>
+          ) : null}
+        </div>
 
         <nav
           aria-label="Page navigation"

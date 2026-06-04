@@ -28,6 +28,12 @@ services:
       - ./apps/web:/app
       - /app/node_modules
       - /app/.next
+      # docs/ lives at the repo root; the web app's /docs, /decisions,
+      # /specs, and search palette read from it via findDocsRoot().
+      # The web Dockerfile doesn't bake docs/ into the image (it's
+      # owned by the repo, not the web app), so we mount it read-only
+      # at a sibling path the discovery walker can find from /app.
+      - ./docs:/docs:ro
 
   api:
     build:

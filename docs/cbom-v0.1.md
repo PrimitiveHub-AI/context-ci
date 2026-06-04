@@ -3,7 +3,7 @@
 > **Status:** Draft. The third pillar of the PrimitiveHub Trust Runtime —
 > alongside the [Trust Contract](./trust-contract-v0.1.md) (verification wire
 > format) and the [Context CI Top 10](./context-ci-top-10-v0.1.md) (threat
-> taxonomy + detector roster). Versioned per [ADR-0033](./decisions/0033-cbom-v0.1.md).
+> taxonomy + detector roster). Versioned per [ADR-0033](./decisions/0033-cbom-v01.md).
 > Current version identifier: `0.1`. This identifier appears in every emitted
 > CBOM so downstream consumers can determine which spec edition a CBOM was
 > produced against.
