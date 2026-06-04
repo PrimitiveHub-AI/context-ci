@@ -92,13 +92,13 @@ describe("verify_bundle tool", () => {
 
 /* ─────────────────────────────────────────────────────────────────── */
 describe("scan_text tool", () => {
-  it("passes on clean content (8/8 detectors INFO + isError=false)", () => {
+  it("passes on clean content (10/10 detectors INFO + isError=false)", () => {
     const content = "# Clean primitive\n\nA short note with no attack patterns.\n"
     const res = callScanText({ content, filename: "clean.md" })
     expect(res.isError).toBe(false)
     const payload = JSON.parse(res.content[0]!.text)
     expect(payload.exitCode).toBe(0)
-    expect(payload.verdicts.length).toBe(8)
+    expect(payload.verdicts.length).toBe(10)
     expect(payload.verdicts.every((v: { passed: boolean }) => v.passed)).toBe(true)
   })
 

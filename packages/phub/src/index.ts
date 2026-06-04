@@ -118,6 +118,8 @@ export { T5UnsafeShellInstallDetector } from "./scanners/t5-unsafe-shell-install
 export { T6CredentialExfiltrationDetector } from "./scanners/t6-credential-exfiltration.js"
 export { T7PoisonedNamingDetector } from "./scanners/t7-poisoned-naming.js"
 export { T8FakeCitationDetector } from "./scanners/t8-fake-citation.js"
+export { T9CopyrightContaminationDetector } from "./scanners/t9-copyright-contamination.js"
+export { T10ContextBloatDetector } from "./scanners/t10-context-bloat.js"
 
 export { renderHumanScanReport, renderHumanVerifyReport } from "./reporters/human.js"
 export { renderAuditHumanReport } from "./reporters/audit-human.js"

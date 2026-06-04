@@ -64,7 +64,7 @@ describe("renderSarif structural shape", () => {
     const result = scanFixture("t1-prompt-injection.md")
     const doc = parseSarif(renderSarif("t1-prompt-injection.md", result.verdicts), result.verdicts)
     const rules = doc.runs[0]!.tool.driver.rules
-    expect(rules.length).toBe(8)
+    expect(rules.length).toBe(10)
     expect(rules.map((r) => r.id).sort()).toEqual([
       "CCI-001",
       "CCI-002",
@@ -74,6 +74,8 @@ describe("renderSarif structural shape", () => {
       "CCI-006",
       "CCI-007",
       "CCI-008",
+      "CCI-009",
+      "CCI-010",
     ])
   })
 

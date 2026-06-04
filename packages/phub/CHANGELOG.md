@@ -8,6 +8,33 @@ wrapper) and Context CI Top 10 version (for the scanner detectors);
 
 ## [Unreleased]
 
+### Added (PR 5.6.3 — T9 + T10 detectors; Top 10 complete at 10/10)
+- **T9 / T10** TypeScript detector ports (lockstep with the Python
+  implementations per ADR-0023):
+  - `T9CopyrightContaminationDetector` (CCI-009) — verbatim license
+    boilerplate matching across five families:
+    permissive-license-header (MIT / Apache / BSD / MPL / SPDX),
+    gpl-header (GPL / LGPL / AGPL / SPDX),
+    proprietary-copyright-notice (third-party © + year + "All Rights
+    Reserved"), cc-attribution-required (CC-BY / CC-BY-SA / CC-BY-NC
+    markers), and forum-source-attribution (Stack Overflow, Reddit,
+    Medium, Substack, GitHub references).
+  - `T10ContextBloatDetector` (CCI-010) — mechanical threshold checks:
+    oversized-primitive (> 32K chars), excessive-repetition (> 20% of
+    non-trivial duplicate lines), whitespace-stuffing (> 40% blank
+    lines for primitives with ≥ 100 lines), heading-proliferation
+    (< 500 chars per h2). Thresholds calibrated against the project's
+    own primitives (max ≈ 16K chars) — verified zero false positives
+    on the existing primitive corpus.
+- **Active detector roster grows from 8 to 10 — full Top 10 shipped.**
+  The paper's coverage claim is now mechanically defended at 10/10.
+- `src/index.ts` exports added for both new detectors.
+- `src/reporters/sarif.ts` RULE_DESCRIPTIONS extended with CCI-009
+  and CCI-010 entries (shortDescription, fullDescription, helpUri).
+- Six new conformance fixtures (3 per detector) + manifest entries.
+  Both Python and TS harnesses now run 35/35 (was 29).
+- T10 verdict severity is `warn` per the spec range (`info` to `warn`).
+
 ### Added (PR 5.6.2 — T7 + T8 detectors)
 - **T7 / T8** TypeScript detector ports (lockstep with the Python
   implementations per ADR-0023):

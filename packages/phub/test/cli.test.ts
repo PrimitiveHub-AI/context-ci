@@ -56,7 +56,7 @@ describe("phub scan", () => {
   it("exit 0 + 'detectors passed' on clean fixture", async () => {
     const code = await main(["scan", CLEAN_FIXTURE])
     expect(code).toBe(0)
-    expect(io.stdout).toMatch(/8\/8 detectors passed/)
+    expect(io.stdout).toMatch(/10\/10 detectors passed/)
     expect(io.stdout).toMatch(/CCI-001/)
     expect(io.stdout).toMatch(/CCI-002/)
     expect(io.stdout).toMatch(/CCI-005/)
@@ -75,7 +75,7 @@ describe("phub scan", () => {
     const parsed = JSON.parse(io.stdout)
     expect(parsed.filename).toBe(T1_FIXTURE)
     expect(Array.isArray(parsed.verdicts)).toBe(true)
-    expect(parsed.verdicts.length).toBe(8)
+    expect(parsed.verdicts.length).toBe(10)
     const t1 = parsed.verdicts.find((v: { cciId: string }) => v.cciId === "CCI-001")
     expect(t1.passed).toBe(false)
   })

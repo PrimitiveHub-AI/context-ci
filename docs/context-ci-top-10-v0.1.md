@@ -358,10 +358,14 @@ basic verification list.
 ### CCI-009 — Copyright-contaminated primitives
 
 **Status:** Active.
-**Severity range:** `info` to `warn` in v0.1 (full lineage analysis
-deferred to Phase 11).
-**Reference implementation:** Not yet shipped (planned Phase 5 PR
-5.6, `cci_id="CCI-009"` reserved).
+**Severity range:** `info` to `fail` (full lineage analysis deferred
+to Phase 11).
+**Reference implementation:** [`apps/api/scanners/t9_copyright_contamination.py`](../apps/api/scanners/t9_copyright_contamination.py)
+(`threat_category="T9"`, `cci_id="CCI-009"`). v0.1 ships mechanical
+pattern checks (verbatim MIT / Apache / BSD / MPL / GPL boilerplate,
+third-party copyright notices, Creative Commons attribution markers,
+forum-source attributions). SPDX-corpus similarity fingerprinting is
+Phase 6+ work.
 
 **Definition.** A primitive whose content is verbatim or near-verbatim
 copy of copyrighted material the author lacks rights to publish,
@@ -382,8 +386,13 @@ come from?) lands in Phase 11.
 
 **Status:** Active.
 **Severity range:** `info` to `warn`.
-**Reference implementation:** Not yet shipped (planned Phase 5 PR
-5.6, `cci_id="CCI-010"` reserved).
+**Reference implementation:** [`apps/api/scanners/t10_context_bloat.py`](../apps/api/scanners/t10_context_bloat.py)
+(`threat_category="T10"`, `cci_id="CCI-010"`). v0.1 ships mechanical
+threshold checks (oversized > 32K chars, excessive-repetition > 20%
+of non-trivial duplicate lines, whitespace-stuffing > 40% blank
+lines, heading-proliferation < 500 chars/h2). Thresholds calibrated
+against the project's own primitives (max ≈ 16K chars) to avoid
+false positives on legitimate content-dense primitives.
 
 **Definition.** A primitive whose token count vastly exceeds its
 information content — wasting the consuming agent's context budget,
@@ -422,8 +431,8 @@ present (the additive migration path).
 | CCI-006 | T6 | `t6.credential_exfiltration` | `apps/api/scanners/t6_credential_exfiltration.py` |
 | CCI-007 | T7 | `t7.poisoned_naming` | `apps/api/scanners/t7_poisoned_naming.py` |
 | CCI-008 | T8 | `t8.fake_citation` | `apps/api/scanners/t8_fake_citation.py` |
-| CCI-009 | T9 | _(reserved)_ | _(planned Phase 5 PR 5.6, partial)_ |
-| CCI-010 | T10 | _(reserved)_ | _(planned Phase 5 PR 5.6)_ |
+| CCI-009 | T9 | `t9.copyright_contamination` | `apps/api/scanners/t9_copyright_contamination.py` |
+| CCI-010 | T10 | `t10.context_bloat` | `apps/api/scanners/t10_context_bloat.py` |
 
 ## 6. Verdict integration with Trust Contract v0.1
 

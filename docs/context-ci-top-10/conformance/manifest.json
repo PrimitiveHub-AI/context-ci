@@ -166,6 +166,42 @@
       "primary_cci": "CCI-008",
       "expect": "positive",
       "expected_detail_tags": ["vague-citation"]
+    },
+    {
+      "path": "fixtures/CCI-009/01-permissive-license-header.md",
+      "primary_cci": "CCI-009",
+      "expect": "positive",
+      "expected_detail_tags": ["permissive-license-header"]
+    },
+    {
+      "path": "fixtures/CCI-009/02-gpl-header.md",
+      "primary_cci": "CCI-009",
+      "expect": "positive",
+      "expected_detail_tags": ["gpl-header"]
+    },
+    {
+      "path": "fixtures/CCI-009/03-proprietary-copyright.md",
+      "primary_cci": "CCI-009",
+      "expect": "positive",
+      "expected_detail_tags": ["proprietary-copyright-notice"]
+    },
+    {
+      "path": "fixtures/CCI-010/01-oversized.md",
+      "primary_cci": "CCI-010",
+      "expect": "positive",
+      "expected_detail_tags": ["oversized-primitive"]
+    },
+    {
+      "path": "fixtures/CCI-010/02-whitespace-stuffing.md",
+      "primary_cci": "CCI-010",
+      "expect": "positive",
+      "expected_detail_tags": ["whitespace-stuffing"]
+    },
+    {
+      "path": "fixtures/CCI-010/03-excessive-repetition.md",
+      "primary_cci": "CCI-010",
+      "expect": "positive",
+      "expected_detail_tags": ["excessive-repetition"]
     }
   ]
 }

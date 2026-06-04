@@ -6,20 +6,24 @@ import { T5UnsafeShellInstallDetector } from "./t5-unsafe-shell-install.js"
 import { T6CredentialExfiltrationDetector } from "./t6-credential-exfiltration.js"
 import { T7PoisonedNamingDetector } from "./t7-poisoned-naming.js"
 import { T8FakeCitationDetector } from "./t8-fake-citation.js"
+import { T9CopyrightContaminationDetector } from "./t9-copyright-contamination.js"
+import { T10ContextBloatDetector } from "./t10-context-bloat.js"
 import { type Detector } from "./types.js"
 
 /**
- * Active detector roster — eight of the ten Context CI Top 10 v0.1
- * categories shipped.
+ * Active detector roster — ALL TEN Context CI Top 10 v0.1 categories
+ * shipped. The full taxonomy is now mechanically defended.
  *
- *   T1 prompt injection            (CCI-001)  — launch demo
- *   T2 Unicode steganography       (CCI-002)  — launch demo
- *   T3 encoded payloads            (CCI-003)  — PR 5.6
- *   T4 remote fetch at load        (CCI-004)  — PR 5.6
- *   T5 unsafe shell install        (CCI-005)  — launch demo
- *   T6 credential exfiltration     (CCI-006)  — PR 5.6
- *   T7 poisoned naming             (CCI-007)  — PR 5.6.2
- *   T8 fake citation               (CCI-008)  — PR 5.6.2
+ *   T1  prompt injection            (CCI-001)  — launch demo
+ *   T2  Unicode steganography       (CCI-002)  — launch demo
+ *   T3  encoded payloads            (CCI-003)  — PR 5.6
+ *   T4  remote fetch at load        (CCI-004)  — PR 5.6
+ *   T5  unsafe shell install        (CCI-005)  — launch demo
+ *   T6  credential exfiltration     (CCI-006)  — PR 5.6
+ *   T7  poisoned naming             (CCI-007)  — PR 5.6.2
+ *   T8  fake citation               (CCI-008)  — PR 5.6.2
+ *   T9  copyright contamination     (CCI-009)  — PR 5.6.3 (THIS PR)
+ *   T10 context bloat               (CCI-010)  — PR 5.6.3 (THIS PR)
  *
  * Stable category-number order so `--json` output is reproducible.
  * Adding a new detector = one import + one array entry, lockstep
@@ -35,6 +39,8 @@ export const DETECTORS: readonly Detector[] = [
   new T6CredentialExfiltrationDetector(),
   new T7PoisonedNamingDetector(),
   new T8FakeCitationDetector(),
+  new T9CopyrightContaminationDetector(),
+  new T10ContextBloatDetector(),
 ]
 
 export function detectorByName(name: string): Detector | undefined {

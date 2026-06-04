@@ -88,6 +88,18 @@ const RULE_DESCRIPTIONS: Record<string, RuleDescription> = {
       "Mechanical fake-citation checks: future-dated CVE/arXiv IDs, out-of-range RFC numbers, DOI prefixes not in the accepted-authorities list, and 'according to research' rhetoric without an inline source within 200 characters. Context CI Top 10 v0.1 — CCI-008.",
     helpUri: "https://primitivehub.ai/top-10#CCI-008",
   },
+  "CCI-009": {
+    shortDescription: "Copyright-contaminated primitive content.",
+    fullDescription:
+      "Verbatim license boilerplate (MIT / Apache / BSD / MPL / GPL / LGPL / AGPL), third-party copyright notices, Creative Commons attribution markers, or forum-source attributions inside primitive content — downstream licensing risk for consumers. Context CI Top 10 v0.1 — CCI-009.",
+    helpUri: "https://primitivehub.ai/top-10#CCI-009",
+  },
+  "CCI-010": {
+    shortDescription: "Context bloat — disproportionate context-window consumption.",
+    fullDescription:
+      "Mechanical bloat checks: oversized primitive body (> 32K chars), excessive duplicate-line ratio (> 20%), whitespace stuffing (> 40% blank lines), or heading proliferation (< 500 chars per h2). Bloated primitives crowd out other context, raise inference cost, and (adversarially) hide instructions in noise. Context CI Top 10 v0.1 — CCI-010.",
+    helpUri: "https://primitivehub.ai/top-10#CCI-010",
+  },
 }
 
 type SarifLevel = "error" | "warning" | "note"

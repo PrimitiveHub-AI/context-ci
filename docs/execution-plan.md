@@ -89,11 +89,12 @@ Shipped on main:
   cache headers + media-type wire
 
 In flight / planned:
-- Phase 5: T3, T4, T6 detectors shipped in PR 5.6; T7 (poisoned
-  naming / typosquats) and T8 (fake citations / invalid CVE/RFC/
-  arXiv) shipped in PR 5.6.2. T9 and T10 remain (planned subsequent
-  PRs). Scanner-conformance suite (ADR-0032) grew from 23 to 29
-  fixtures alongside; cross-language parity remains CI-gated.
+- Phase 5: **Top 10 v0.1 shipped at 10/10.** T3 / T4 / T6 in PR 5.6;
+  T7 / T8 in PR 5.6.2; T9 (copyright contamination) + T10 (context
+  bloat) in PR 5.6.3. Scanner-conformance suite (ADR-0032) grew
+  from 23 → 29 → 35 fixtures across the three PRs; cross-language
+  parity remains CI-gated. The paper's "Top 10" coverage claim is
+  mechanically defended end-to-end.
 - Phase 5.5.3–5.5.5: CLI, verify library, MCP server (planned in
   `docs/roadmap.md`)
 
