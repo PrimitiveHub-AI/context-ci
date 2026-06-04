@@ -237,8 +237,17 @@ These are **enforced by user instruction**; not negotiable.
    [feedback-containerize memory](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/feedback_containerize.md).
 2. **pnpm only**, never npm. See
    [feedback-pnpm memory](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/feedback_pnpm.md).
-3. **Localhost-only dev binding** — `127.0.0.1`, never `0.0.0.0`,
-   ever. See [feedback-localhost-only memory](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/feedback_localhost_only.md).
+3. **Localhost-only dev binding — six layers, not one.** `127.0.0.1`,
+   never `0.0.0.0`, ever. The rule covers compose port specs +
+   direct process binds + host-level reverse proxies + public DNS
+   records + firewall state + running-container bindings — see
+   [docs/bugs.md § 26](./docs/bugs.md) for the canonical incident +
+   [ADR-0031](./docs/decisions/0031-pre-launch-posture-automation.md)
+   for the automation contract. Before claiming pre-launch posture
+   is intact, run `scripts/check-pre-launch-posture.sh` on the live
+   host; CI auto-gates layer 1
+   ([.github/workflows/pre-launch-posture.yml](.github/workflows/pre-launch-posture.yml)).
+   See also [feedback-localhost-only memory](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/feedback_localhost_only.md).
 4. **No fake numbers as fact** — every UI metric is either reproducible
    or labeled `<DemoDataBadge>`. See
    [feedback-no-fake-numbers memory](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/feedback_no_fake_numbers.md).

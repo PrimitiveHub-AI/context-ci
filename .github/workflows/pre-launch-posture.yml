@@ -1,0 +1,48 @@
+name: pre-launch posture — compose port bindings (Layer 1)
+
+# Bug #26 (docs/bugs.md § 26) revealed that the pre-launch posture rule
+# can be defeated independently by six different layers — compose port
+# specs, direct process binds, host services, public DNS, firewall
+# state, running-container bindings. Only Layer 1 is knowable from a
+# checkout of the repo; the other five are operational, run by
+# scripts/check-pre-launch-posture.sh against the live host (see
+# ADR-0031).
+#
+# This workflow guards Layer 1 on every PR + push to main.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "compose.yaml"
+      - "compose.override.yaml"
+      - "compose.prod.yaml"
+      - "scripts/check-port-bindings.sh"
+      - "scripts/check-pre-launch-posture.sh"
+      - ".github/workflows/pre-launch-posture.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "compose.yaml"
+      - "compose.override.yaml"
+      - "compose.prod.yaml"
+      - "scripts/check-port-bindings.sh"
+      - "scripts/check-pre-launch-posture.sh"
+      - ".github/workflows/pre-launch-posture.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  layer-1:
+    name: compose port bindings (Layer 1)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ensure scripts are executable
+        run: chmod +x scripts/check-port-bindings.sh scripts/check-pre-launch-posture.sh
+
+      - name: Layer 1 — compose port specs
+        run: scripts/check-pre-launch-posture.sh --ci
