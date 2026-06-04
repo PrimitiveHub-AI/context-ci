@@ -52,36 +52,39 @@ export default function DocsIndexPage() {
           ))}
         </ol>
 
-        <section className="mt-16 rounded-lg border border-border bg-card/50 p-6">
-          <h2 className="text-lg font-semibold text-foreground">
-            Authoritative references
-          </h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            These pages are end-user docs. The wire-format specs, ADRs,
-            and conformance suites live under{" "}
-            <code className="rounded bg-secondary px-1.5 py-0.5 font-mono text-xs">
-              docs/
-            </code>{" "}
-            in the repo:
-          </p>
-          <ul className="mt-3 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
-            <li>
-              <span className="font-mono text-xs">docs/trust-contract-v0.1.md</span> —
-              wire format
-            </li>
-            <li>
-              <span className="font-mono text-xs">docs/context-ci-top-10-v0.1.md</span> —
-              threat taxonomy
-            </li>
-            <li>
-              <span className="font-mono text-xs">docs/context-policy-v0.1.md</span> —
-              policy spec
-            </li>
-            <li>
-              <span className="font-mono text-xs">docs/decisions/*.md</span> —
-              architecture decisions
-            </li>
-          </ul>
+        <section className="mt-16 grid gap-4 sm:grid-cols-2">
+          <Link
+            href="/specs"
+            className="group block rounded-lg border border-border bg-card/50 p-6 transition-all hover:border-primary"
+          >
+            <p className="text-sm font-mono uppercase tracking-wider text-muted-foreground">
+              Canonical
+            </p>
+            <h2 className="mt-2 text-lg font-semibold text-foreground transition-colors group-hover:text-primary">
+              Specifications →
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              Trust Contract v0.1, Context CI Top 10 v0.1, Context Policy
+              Language v0.1, the Primitive Spec, the Threat Model. Citable,
+              versioned, paper-referenced.
+            </p>
+          </Link>
+          <Link
+            href="/decisions"
+            className="group block rounded-lg border border-border bg-card/50 p-6 transition-all hover:border-primary"
+          >
+            <p className="text-sm font-mono uppercase tracking-wider text-muted-foreground">
+              Architecture
+            </p>
+            <h2 className="mt-2 text-lg font-semibold text-foreground transition-colors group-hover:text-primary">
+              Decisions →
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              Every load-bearing architectural choice with context,
+              alternatives, and consequences. ~30 ADRs covering the v0.1
+              surface.
+            </p>
+          </Link>
         </section>
       </main>
     </>

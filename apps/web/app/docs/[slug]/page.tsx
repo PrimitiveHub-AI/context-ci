@@ -36,7 +36,7 @@ export default async function DocSlugPage({
   if (!page) notFound()
 
   const raw = readDocSource(page.file)
-  const source = preprocessDocMarkdown(raw)
+  const source = preprocessDocMarkdown(raw, page.file)
 
   const prevIndex = DOC_PAGES.findIndex((p) => p.slug === slug) - 1
   const nextIndex = prevIndex + 2
