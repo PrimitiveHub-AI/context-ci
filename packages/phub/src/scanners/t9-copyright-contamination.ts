@@ -153,6 +153,82 @@ const SUGGESTION_BY_TAG: Record<string, string> = {
     "Forum / community source link suggests the primitive copies content from a site with attribution requirements (Stack Overflow content is CC-BY-SA; GitHub READMEs carry their own licenses). Verify the upstream license and either inline the attribution or rephrase in the operator's own words.",
 }
 
+// v0.2.3 (2026-06-04) — License-family canonical-position exemption.
+// Lockstep with apps/api/scanners/t9_copyright_contamination.py § v0.2.3.
+//
+// Apache 2.0 / BSD / MIT headers at the top of every file in a
+// normally-licensed repo were generating overwhelming noise on /check's
+// GitHub repo scans. We exempt license-family tags from firing when
+// the match sits in canonical positions:
+//   1. A LICENSE / COPYING / NOTICE / COPYRIGHT file (anywhere in it).
+//   2. A source-code file's top-of-file header region (first 40 lines).
+// proprietary-copyright-notice and forum-source-attribution remain
+// context-unaware — they are meaningful wherever they appear.
+
+const HEADER_REGION_LINES = 40
+
+const LICENSE_FILE_BASENAMES: ReadonlySet<string> = new Set([
+  "license",
+  "license.md",
+  "license.txt",
+  "license.rst",
+  "copying",
+  "copying.md",
+  "copying.txt",
+  "notice",
+  "notice.md",
+  "notice.txt",
+  "copyright",
+  "copyright.md",
+  "copyright.txt",
+])
+
+const SOURCE_FILE_EXTENSIONS: ReadonlySet<string> = new Set([
+  ".py", ".pyi", ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs",
+  ".java", ".kt", ".scala", ".groovy",
+  ".c", ".h", ".cc", ".cpp", ".hpp", ".hh", ".cxx",
+  ".m", ".mm", ".swift",
+  ".go", ".rs", ".rb",
+  ".php", ".pl", ".pm",
+  ".lua", ".sh", ".bash", ".zsh", ".fish", ".ps1",
+  ".sql", ".css", ".scss", ".less",
+  ".vue", ".svelte", ".dart",
+  ".erl", ".ex", ".exs",
+  ".clj", ".cljs", ".hs", ".elm",
+  ".f", ".f90", ".r", ".jl", ".nim", ".zig", ".v",
+])
+
+const HEADER_EXEMPT_TAGS: ReadonlySet<string> = new Set([
+  "permissive-license-header",
+  "gpl-header",
+  "cc-attribution-required",
+])
+
+function isLicenseFile(filePath: string | undefined): boolean {
+  if (!filePath) return false
+  const basename = filePath.split("/").pop()?.toLowerCase() ?? ""
+  if (LICENSE_FILE_BASENAMES.has(basename)) return true
+  const parts = filePath.toLowerCase().split("/").filter(Boolean)
+  return parts.includes("licenses") || parts.includes("license")
+}
+
+function isSourceFile(filePath: string | undefined): boolean {
+  if (!filePath) return false
+  const lowered = filePath.toLowerCase()
+  const dot = lowered.lastIndexOf(".")
+  if (dot < 0) return false
+  return SOURCE_FILE_EXTENSIONS.has(lowered.slice(dot))
+}
+
+function isInHeaderRegion(content: string, offset: number): boolean {
+  // 1-indexed line number.
+  let line = 1
+  for (let i = 0; i < offset && i < content.length; i++) {
+    if (content[i] === "\n") line++
+  }
+  return line <= HEADER_REGION_LINES
+}
+
 function hintForMatch(content: string, match: RegExpExecArray, tag: string): DiffHint {
   return {
     line: lineForPosition(content, match.index),
@@ -166,14 +242,21 @@ export class T9CopyrightContaminationDetector {
   readonly name = "t9.copyright_contamination"
   readonly threatCategory = "T9"
   readonly cciId = "CCI-009"
-  readonly detectorVersion = "0.2.2"
+  readonly detectorVersion = "0.2.3"
 
   run(ctx: DetectorContext): Verdict {
     const hints: DiffHint[] = []
     // v0.2.1 (ADR-0035): skip matches inside frontmatter + inline code.
-    // v0.2.2 (ADR-0036): also skip matches in declaration context —
-    // "CC-BY-4.0 (corpus content)" is documenting, not borrowing.
+    // v0.2.2 (ADR-0036): also skip matches in declaration context.
+    // v0.2.3 (lockstep with Python — 2026-06-04): for license-family
+    // tags only, exempt the canonical positions — LICENSE-named files
+    // and source-file top-of-file header region. Apache 2.0 / BSD /
+    // MIT headers at the top of every file in a normally-licensed
+    // repo were generating overwhelming noise on /check's GitHub
+    // repo scans.
     const mdCtx = analyzeMarkdownContext(ctx.content)
+    const licenseFile = isLicenseFile(ctx.filename)
+    const sourceFile = isSourceFile(ctx.filename)
 
     outer: for (const [pattern, tag] of ALL_PATTERNS) {
       pattern.lastIndex = 0
@@ -184,6 +267,14 @@ export class T9CopyrightContaminationDetector {
           isInInlineCode(match.index, mdCtx) ||
           isInDeclarationContext(ctx.content, match.index, match.index + match[0].length) ||
           isInNegationContext(ctx.content, match.index)
+        ) {
+          if (match.index === pattern.lastIndex) pattern.lastIndex++
+          continue
+        }
+        // License-family canonical-position exemption.
+        if (
+          HEADER_EXEMPT_TAGS.has(tag) &&
+          (licenseFile || (sourceFile && isInHeaderRegion(ctx.content, match.index)))
         ) {
           if (match.index === pattern.lastIndex) pattern.lastIndex++
           continue
