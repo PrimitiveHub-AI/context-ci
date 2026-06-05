@@ -109,7 +109,7 @@ fixes *continuity* and *overwrites*. It does **not** fix *runtime* competition
 
 | Area / files | Session intent | State + next step | Since |
 |---|---|---|---|
-| _(empty — claim before you edit)_ | | | |
+| _`apps/web/components/forge/` — example, replace with your real claim_ | _refactor CVA variants_ | _mid-flight — next: wire the CodeMirror linter_ | _2026-06-05_ |
 
 ### Runtime hygiene (prevents the "competing / crashing" dev process)
 
