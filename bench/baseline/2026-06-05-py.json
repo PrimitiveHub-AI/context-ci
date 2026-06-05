@@ -4,113 +4,113 @@
   "measured_at": "2026-06-05",
   "manifest_version": "0.1",
   "top10_version": "0.1",
-  "samples_total": 18,
+  "samples_total": 38,
   "per_detector": {
     "CCI-001": {
       "tp": 4,
       "fp": 0,
-      "tn": 7,
+      "tn": 13,
       "fn": 0,
       "precision": 1.0,
       "recall": 1.0,
       "f1": 1.0,
-      "support": 11
+      "support": 17
     },
     "CCI-002": {
       "tp": 3,
       "fp": 0,
-      "tn": 7,
+      "tn": 13,
       "fn": 0,
       "precision": 1.0,
       "recall": 1.0,
       "f1": 1.0,
-      "support": 10
+      "support": 16
     },
     "CCI-003": {
-      "tp": 0,
+      "tp": 5,
       "fp": 0,
-      "tn": 7,
-      "fn": 0,
-      "precision": null,
-      "recall": null,
-      "f1": null,
-      "support": 7
+      "tn": 13,
+      "fn": 2,
+      "precision": 1.0,
+      "recall": 0.7142857142857143,
+      "f1": 0.8333333333333333,
+      "support": 20
     },
     "CCI-004": {
-      "tp": 0,
+      "tp": 6,
       "fp": 0,
-      "tn": 7,
-      "fn": 0,
-      "precision": null,
-      "recall": null,
-      "f1": null,
-      "support": 7
+      "tn": 13,
+      "fn": 1,
+      "precision": 1.0,
+      "recall": 0.8571428571428571,
+      "f1": 0.923076923076923,
+      "support": 20
     },
     "CCI-005": {
       "tp": 4,
       "fp": 0,
-      "tn": 7,
+      "tn": 13,
       "fn": 0,
       "precision": 1.0,
       "recall": 1.0,
       "f1": 1.0,
-      "support": 11
+      "support": 17
     },
     "CCI-006": {
       "tp": 0,
       "fp": 0,
-      "tn": 7,
+      "tn": 13,
       "fn": 0,
       "precision": null,
       "recall": null,
       "f1": null,
-      "support": 7
+      "support": 13
     },
     "CCI-007": {
       "tp": 0,
       "fp": 0,
-      "tn": 7,
+      "tn": 13,
       "fn": 0,
       "precision": null,
       "recall": null,
       "f1": null,
-      "support": 7
+      "support": 13
     },
     "CCI-008": {
       "tp": 0,
       "fp": 0,
-      "tn": 7,
+      "tn": 13,
       "fn": 0,
       "precision": null,
       "recall": null,
       "f1": null,
-      "support": 7
+      "support": 13
     },
     "CCI-009": {
       "tp": 0,
       "fp": 0,
-      "tn": 7,
+      "tn": 13,
       "fn": 0,
       "precision": null,
       "recall": null,
       "f1": null,
-      "support": 7
+      "support": 13
     },
     "CCI-010": {
       "tp": 0,
       "fp": 0,
-      "tn": 7,
+      "tn": 13,
       "fn": 0,
       "precision": null,
       "recall": null,
       "f1": null,
-      "support": 7
+      "support": 13
     }
   },
   "overall": {
     "precision_macro": 1.0,
-    "recall_macro": 1.0,
-    "f1_macro": 1.0
+    "recall_macro": 0.9142857142857143,
+    "f1_macro": 0.9512820512820512
   },
   "parity": {
     "agreed_sample_ids": [],

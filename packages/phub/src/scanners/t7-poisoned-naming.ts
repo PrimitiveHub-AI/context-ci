@@ -59,23 +59,31 @@ const VENDORS = [
 const escapeRegex = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 const VENDOR_ALT = VENDORS.map(escapeRegex).join("|")
 
+// Typosquats: digit-for-letter substitutions that produce visually
+// similar names. Each pattern must EXCLUDE the canonical letter — the
+// detector is meant to catch IMITATIONS, not bare mentions. v0.2.3
+// (2026-06-04) fixed character classes that accidentally included the
+// canonical letter and were firing on every legitimate vendor mention
+// (e.g. `[A4O0]nthropic` matched "Anthropic" itself, `[O0]kta` matched
+// "Okta", `M[i1l]crosoft` matched "Microsoft"). Lockstep with
+// apps/api/scanners/t7_poisoned_naming.py per ADR-0023.
 const TYPOSQUAT_PATTERNS: string[] = [
-  String.raw`\bAnthrop1c\b`,
-  String.raw`\b[A4O0]nthropic\b`,
-  String.raw`\b0penAI\b`,
-  String.raw`\b0pen[Aa][Ii]\b`,
-  String.raw`\bOp3nAI\b`,
-  String.raw`\bG0ogle\b`,
-  String.raw`\bGo0gle\b`,
-  String.raw`\bGoog1e\b`,
-  String.raw`\bM1crosoft\b`,
-  String.raw`\bMlcrosoft\b`,
-  String.raw`\bM[i1l]crosoft\b`,
-  String.raw`\bClaud3\b`,
-  String.raw`\bGPT4-?official\b`,
-  String.raw`\bM3ta\b`,
-  String.raw`\b[O0]kta\b(?!\w)`,
-  String.raw`\bSt[r1]ipe\b`,
+  String.raw`\bAnthrop1c\b`,         // 1-for-i in Anthropic
+  String.raw`\b4nthropic\b`,         // 4-for-A in Anthropic
+  String.raw`\b0nthropic\b`,         // 0-for-A (debatable but distinctive)
+  String.raw`\b0penAI\b`,            // 0-for-O in OpenAI
+  String.raw`\b0pen[Aa][Ii]\b`,      // 0-for-O + casing variants
+  String.raw`\bOp3nAI\b`,            // 3-for-e in OpenAI
+  String.raw`\bG0ogle\b`,            // 0-for-o (first o)
+  String.raw`\bGo0gle\b`,            // 0-for-o (second o)
+  String.raw`\bGoog1e\b`,            // 1-for-l in Google
+  String.raw`\bM1crosoft\b`,         // 1-for-i in Microsoft
+  String.raw`\bMlcrosoft\b`,         // l-for-i in Microsoft (visual)
+  String.raw`\bClaud3\b`,            // 3-for-e in Claude
+  String.raw`\bGPT4-?official\b`,    // GPT4-official impersonation
+  String.raw`\bM3ta\b`,              // 3-for-e in Meta
+  String.raw`\b0kta\b(?!\w)`,        // 0-for-O in Okta
+  String.raw`\bSt1ipe\b`,            // 1-for-r in Stripe (visually weak; kept for symmetry)
 ]
 
 const OFFICIAL_CLAIM_PATTERNS: Array<readonly [RegExp, string]> = [
@@ -154,7 +162,7 @@ export class T7PoisonedNamingDetector {
   readonly name = "t7.poisoned_naming"
   readonly threatCategory = "T7"
   readonly cciId = "CCI-007"
-  readonly detectorVersion = "0.2.2"
+  readonly detectorVersion = "0.2.3"
 
   run(ctx: DetectorContext): Verdict {
     const hints: DiffHint[] = []
