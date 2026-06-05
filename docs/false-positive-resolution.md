@@ -956,4 +956,19 @@ related FP-012, FP-013 (same shape on T8).
 
 ### FP-014 Re-review log
 
-_None yet — entry authored 2026-06-05._
+- **2026-06-05 (Round 6, fix 1) — CLOSED.** Resolution shipped as
+  T1 v0.2.1: `is_in_quoted_phrase` predicate promoted to shared
+  semantic-context module
+  ([`apps/api/scanners/semantic_context.py`](../apps/api/scanners/semantic_context.py)
+  + lockstep TS sibling). Wired into T1 alongside the v0.2.0
+  inline-code/fence/frontmatter check, gated on the same
+  `_CONTEXT_AWARE_TAGS` set (override-system-instructions +
+  credential-exfiltration-hint). The richer "≥2 matches in same
+  paragraph" heuristic floated in the original resolution vector
+  was NOT needed — the per-match check matches every S-087 trigger
+  because all four phrases were already individually quoted.
+  Corpus measurement: CCI-001 in-sample F1 0.889 → 1.000 (FP=1 → 0);
+  no other detector moves. Py + TS parity intact per ADR-0023.
+  Predicate is reusable: T8 still carries its private
+  `_is_quoted_trigger_phrase` from v0.2.2 — kept as-is for this PR
+  (no refactor scope) and flagged for the next-touch consolidation.

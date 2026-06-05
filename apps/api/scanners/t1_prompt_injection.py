@@ -48,6 +48,7 @@ from __future__ import annotations
 import re
 
 from .markdown_context import analyze_markdown_context, is_in_any_code_or_frontmatter
+from .semantic_context import is_in_quoted_phrase
 from .types import DetectorContext, DiffHint, Severity, Verdict
 
 # ─────────────────────────────────────────────────────────────────────
@@ -175,7 +176,7 @@ class T1PromptInjectionDetector:
     name = "t1.prompt_injection"
     threat_category = "T1"  # legacy code; back-compat with pre-CCI attestations
     cci_id = "CCI-001"  # Context CI Top 10 v0.1 canonical ID (ADR-0016)
-    detector_version = "0.2.0"
+    detector_version = "0.2.1"
 
     def run(self, ctx: DetectorContext) -> Verdict:
         hints: list[DiffHint] = []
@@ -198,6 +199,17 @@ class T1PromptInjectionDetector:
             for match in pattern.finditer(ctx.content):
                 if tag in _CONTEXT_AWARE_TAGS and is_in_any_code_or_frontmatter(
                     match.start(), md_ctx
+                ):
+                    continue
+                # v0.2.1 (Round 6 — closes FP-014): override-system
+                # matches wrapped in paired "..." / '...' quotes are
+                # defender prose enumerating attacker phrasings. Same
+                # shape as FP-013's CCI-008 closure; predicate promoted
+                # into shared semantic_context (ADR-0036) so opt-in is
+                # uniform across detectors. Lockstep with
+                # packages/phub/src/scanners/t1-prompt-injection.ts §v0.2.1.
+                if tag in _CONTEXT_AWARE_TAGS and is_in_quoted_phrase(
+                    ctx.content, match.start(), match.end()
                 ):
                     continue
                 hints.append(_hint_for_match(ctx.content, match, tag))

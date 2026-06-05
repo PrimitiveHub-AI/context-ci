@@ -167,7 +167,7 @@ def test_verdict_as_predicate_dict_has_stable_shape() -> None:
     assert d["cci_id"] == "CCI-001"
     assert d["severity"] == "fail"
     assert d["passed"] is False
-    assert d["detector_version"] == "0.2.0"
+    assert d["detector_version"] == "0.2.1"
     assert isinstance(d["diff_hints"], list)
     assert d["diff_hints"][0]["detail_tag"] == "override-system-instructions"
     # Round-trip via json to confirm it's actually serializable

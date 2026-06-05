@@ -24,7 +24,7 @@ The corpus is split into an **in-sample** slice (used during detector iteration)
 
 | Detector | Precision | Recall | F1 | TP | FP | TN | FN | Support |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| **CCI-001** | 0.800 | 1.000 | 0.889 | 4 | 1 | 36 | 0 | 41 |
+| **CCI-001** | 1.000 | 1.000 | 1.000 | 4 | 0 | 37 | 0 | 41 |
 | **CCI-002** | 1.000 | 1.000 | 1.000 | 3 | 0 | 37 | 0 | 40 |
 | **CCI-003** | 1.000 | 1.000 | 1.000 | 7 | 0 | 37 | 0 | 44 |
 | **CCI-004** | 1.000 | 1.000 | 1.000 | 7 | 0 | 37 | 0 | 44 |
@@ -35,7 +35,7 @@ The corpus is split into an **in-sample** slice (used during detector iteration)
 | **CCI-009** | 1.000 | 1.000 | 1.000 | 8 | 0 | 37 | 0 | 45 |
 | **CCI-010** | 1.000 | 0.833 | 0.909 | 5 | 0 | 37 | 1 | 43 |
 
-| **Macro avg** | **0.980** | **0.951** | **0.962** | — | — | — | — | — |
+| **Macro avg** | **1.000** | **0.951** | **0.973** | — | — | — | — | — |
 
 #### Holdout (overfit detector, informational only)
 
@@ -62,7 +62,7 @@ The corpus is split into an **in-sample** slice (used during detector iteration)
 
 | Detector | Precision | Recall | F1 | TP | FP | TN | FN | Support |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
-| **CCI-001** | 0.800 | 1.000 | 0.889 | 4 | 1 | 36 | 0 | 41 |
+| **CCI-001** | 1.000 | 1.000 | 1.000 | 4 | 0 | 37 | 0 | 41 |
 | **CCI-002** | 1.000 | 1.000 | 1.000 | 3 | 0 | 37 | 0 | 40 |
 | **CCI-003** | 1.000 | 1.000 | 1.000 | 7 | 0 | 37 | 0 | 44 |
 | **CCI-004** | 1.000 | 1.000 | 1.000 | 7 | 0 | 37 | 0 | 44 |
@@ -73,7 +73,7 @@ The corpus is split into an **in-sample** slice (used during detector iteration)
 | **CCI-009** | 1.000 | 1.000 | 1.000 | 8 | 0 | 37 | 0 | 45 |
 | **CCI-010** | 1.000 | 0.833 | 0.909 | 5 | 0 | 37 | 1 | 43 |
 
-| **Macro avg** | **0.980** | **0.951** | **0.962** | — | — | — | — | — |
+| **Macro avg** | **1.000** | **0.951** | **0.973** | — | — | — | — | — |
 
 #### Holdout (overfit detector, informational only)
 

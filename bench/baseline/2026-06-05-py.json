@@ -8,12 +8,12 @@
   "per_detector": {
     "CCI-001": {
       "tp": 4,
-      "fp": 1,
-      "tn": 36,
+      "fp": 0,
+      "tn": 37,
       "fn": 0,
-      "precision": 0.8,
+      "precision": 1.0,
       "recall": 1.0,
-      "f1": 0.888888888888889,
+      "f1": 1.0,
       "support": 41
     },
     "CCI-002": {
@@ -108,9 +108,9 @@
     }
   },
   "overall": {
-    "precision_macro": 0.9800000000000001,
+    "precision_macro": 1.0,
     "recall_macro": 0.9508333333333333,
-    "f1_macro": 0.962020202020202
+    "f1_macro": 0.9731313131313131
   },
   "parity": {
     "agreed_sample_ids": [],

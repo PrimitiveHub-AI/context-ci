@@ -212,3 +212,28 @@ export function isInDeclarationContext(
   if (DECLARATION_BEFORE_RE.test(before)) return true
   return false
 }
+
+// ----- isInQuotedPhrase ------------------------------------------------------
+
+/**
+ * True iff the match is wrapped by a matching pair of ASCII single or
+ * double quotes immediately adjacent — i.e. the surrounding prose is
+ * DESCRIBING the phrase, not asserting it.
+ *
+ * Closes FP-013 (CCI-008 vague-trigger inside meta-prose) and FP-014
+ * (CCI-001 override-phrase inside defender prose enumerating attacker
+ * phrasings). Both shapes:
+ *
+ *   "ignore previous instructions"   → quoted enumeration of attacker phrases
+ *   'studies show'                   → quoted vague-trigger taxonomy
+ *
+ * Lockstep partner: `apps/api/scanners/semantic_context.py` must
+ * produce identical results for the same input.
+ */
+export function isInQuotedPhrase(content: string, matchStart: number, matchEnd: number): boolean {
+  if (matchStart === 0 || matchEnd >= content.length) return false
+  const before = content[matchStart - 1]
+  const after = content[matchEnd]
+  if (before !== '"' && before !== "'") return false
+  return after === before
+}

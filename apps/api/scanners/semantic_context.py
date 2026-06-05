@@ -162,3 +162,29 @@ def is_in_declaration_context(content: str, match_start: int, match_end: int) ->
     if _DECLARATION_BEFORE_RE.search(before):
         return True
     return False
+
+
+# ----- is_in_quoted_phrase ---------------------------------------------------
+
+def is_in_quoted_phrase(content: str, match_start: int, match_end: int) -> bool:
+    """True iff the match is wrapped by a matching pair of ASCII single or
+    double quotes immediately adjacent — i.e. the surrounding prose is
+    DESCRIBING the phrase, not asserting it.
+
+    Closes FP-013 (CCI-008 vague-trigger inside meta-prose) and FP-014
+    (CCI-001 override-phrase inside defender prose enumerating attacker
+    phrasings). Both shapes:
+
+        "ignore previous instructions"   → quoted enumeration of attacker phrases
+        'studies show'                   → quoted vague-trigger taxonomy
+
+    Lockstep partner: ``packages/phub/src/scanners/semantic-context.ts``
+    must produce identical results for the same input.
+    """
+    if match_start == 0 or match_end >= len(content):
+        return False
+    before = content[match_start - 1]
+    after = content[match_end]
+    if before not in {'"', "'"}:
+        return False
+    return after == before

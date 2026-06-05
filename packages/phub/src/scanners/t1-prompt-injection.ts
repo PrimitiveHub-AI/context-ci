@@ -17,6 +17,7 @@ import {
   lineForPosition,
 } from "./types.js"
 import { analyzeMarkdownContext, isInAnyCodeOrFrontmatter } from "./markdown-context.js"
+import { isInQuotedPhrase } from "./semantic-context.js"
 
 // Pattern families that are commonly quoted in teaching content
 // (cybersecurity skills, primitives explaining attacks). Skip those
@@ -114,7 +115,7 @@ export class T1PromptInjectionDetector {
   readonly name = "t1.prompt_injection"
   readonly threatCategory = "T1"
   readonly cciId = "CCI-001"
-  readonly detectorVersion = "0.2.0"
+  readonly detectorVersion = "0.2.1"
 
   run(ctx: DetectorContext): Verdict {
     const hints: DiffHint[] = []
@@ -126,9 +127,24 @@ export class T1PromptInjectionDetector {
       pattern.lastIndex = 0
       let match: RegExpExecArray | null
       while ((match = pattern.exec(ctx.content)) !== null) {
+        const matchEnd = match.index + match[0].length
         if (
           CONTEXT_AWARE_TAGS.has(tag) &&
           isInAnyCodeOrFrontmatter(match.index, mdCtx)
+        ) {
+          if (match.index === pattern.lastIndex) pattern.lastIndex++
+          continue
+        }
+        // v0.2.1 (Round 6 — closes FP-014): override-system-instructions
+        // matches wrapped in paired "..." / '...' quotes are defender
+        // prose enumerating attacker phrasings (e.g. T1 defense primer
+        // teaching engineers what shapes to refuse). The same pattern
+        // closed FP-013 on CCI-008 (T8 quoted vague-triggers); promoted
+        // into shared semantic-context per ADR-0036 so any future
+        // detector can opt in.
+        if (
+          CONTEXT_AWARE_TAGS.has(tag) &&
+          isInQuotedPhrase(ctx.content, match.index, matchEnd)
         ) {
           if (match.index === pattern.lastIndex) pattern.lastIndex++
           continue
