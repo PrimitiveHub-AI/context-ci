@@ -1,8 +1,9 @@
 # Baseline FLOOR — the regression contract
 
-**Spec:** [docs/decisions/0037-corpus-as-steering-wheel.md](../../docs/decisions/0037-corpus-as-steering-wheel.md)
-**ADR:** ADR-0037
+**Spec:** [ADR-0037 (corpus-as-steering-wheel)](../../docs/decisions/0037-corpus-as-steering-wheel.md)
++ [ADR-0038 (v0.2 expansion + 80/20 holdout split)](../../docs/decisions/0038-corpus-v0_2-expansion-and-holdout-split.md)
 **Enforcement:** [`.github/workflows/scanner-bench.yml`](../../.github/workflows/scanner-bench.yml)
+**Active corpus version:** v0.2 (105 samples: 99 in-sample + 6 holdout)
 
 The most recent committed baseline JSON in this directory is the
 **floor** that the next detector PR must hold. The corpus regression

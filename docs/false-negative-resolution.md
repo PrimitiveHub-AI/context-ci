@@ -185,13 +185,56 @@ Every FN-NNN entry contains:
 
 Same triggers as the FP ledger ([§4 of false-positive-resolution.md](./false-positive-resolution.md)):
 
-1. **Calendar** — quarterly walk of every Path-C entry (the open spec
-   gaps). Path A entries get resolved by a PR; Path B by a relabel
-   commit. Path C lingers until a Top 10 ratchet.
-2. **Top 10 minor-version bump** — every Path-C entry referencing the
-   bumped detector is re-reviewed.
+1. **Calendar — quarterly walk.** Every Path-C entry (the open spec
+   gaps) is re-reviewed every 90 days from authorship. Path A entries
+   get resolved by a PR; Path B by a relabel commit; Path C lingers
+   until a Top 10 ratchet. The walk is calendared, not vibes — set
+   the next review date below the table.
 
-Re-review minutes are appended as a `### Re-review log` subsection.
+   | Quarter | Walks every Path-C FN-NNN, FP-NNN | Owner |
+   |---|---|---|
+   | 2026-Q3 (next: **2026-09-05**) | FN-006..FN-013, FP-012..FP-014 | mhm |
+   | 2026-Q4 (next: 2026-12-05) | all open Path-C entries | mhm |
+   | 2027-Q1 (next: 2027-03-05) | all open Path-C entries | mhm |
+
+   Each walk produces a `### Re-review log` subsection on every
+   touched entry. Entries are never re-numbered or rewritten in
+   place; modifications are append-only.
+
+2. **Top 10 minor-version bump** — every Path-C entry referencing the
+   bumped detector is re-reviewed even if its calendar date hasn't
+   expired. Tightening may have closed the gap.
+
+3. **Corpus expansion (per ADR-0038)** — every new expansion batch
+   re-runs against the existing ledger. Promoted holdout samples or
+   newly-failing detector-changes are appended as new ledger entries.
+
+## §4a — Governance: corpus-vs-detector mapping for OKRs
+
+Each open FN-NNN / FP-NNN entry must ladder to an active
+[OKR Key Result](./okrs/2026-Q3.md) or be explicitly declared as
+"out of scope for the current quarter".
+
+The relevant KR for this discipline is **KR-3.1** — *"5 Top 10
+detectors with precision/recall numbers on a labeled corpus of ≥50
+known-bad + ≥50 known-good + ≥20 ambiguous primitives. Reproducible
+via documented eval harness."*
+
+| Entry | Mapped KR | Status |
+|---|---|---|
+| FN-001..FN-005 | KR-3.1 | Resolved Round 3 (closed). Per-detector P/R reproducible against v0.1 corpus. |
+| FP-012, FP-013 | KR-3.1 | Resolved Round 3 (CCI-008 detector ratchet shipped). |
+| FN-006..FN-013 + FP-014 | KR-3.1 | Documented v0.2 floor; closes via v0.2.3 / v0.2.4 detector ratchets in a future round. |
+
+**Corpus volume vs KR-3.1.** v0.2 corpus is 60 adversarial + 35
+benign + 10 borderline = 105 samples. The KR target is ≥50 + ≥50 +
+≥20. Adversarial cohort is at target; **benign is short by 15;
+borderline is short by 10**. The next corpus expansion (v0.3,
+deferred — see ADR-0038 § "Negative") prioritises closing these gaps
+before launching new detector classes.
+
+If a ledger entry can be neither mapped nor declared out-of-scope,
+the OKR is incomplete or the entry is unowned. Both are defects.
 
 ---
 
@@ -390,3 +433,117 @@ serves as the gate's lock for the v0.2 skip behavior on T4.
 
 **Cross-references:** [ADR-0035](./decisions/0035-markdown-context-awareness-v0_2_1.md),
 related FN-003.
+
+---
+
+## v0.2 corpus expansion — documented gaps (Round 4, 2026-06-05)
+
+Round 4 of the elite-tier path expanded the corpus by 20 samples
+(S-086..S-105) per [ADR-0038](./decisions/0038-corpus-v0_2-expansion-and-holdout-split.md).
+The new samples surfaced **7 false negatives + 1 false positive** the
+v0.1 corpus never exposed. All are Path C (spec gap or detector
+defect deferred to next minor-version detector ratchet). Each
+entry is concise — full root-cause analysis is the responsibility of
+the round that closes the gap.
+
+The v0.2 floor (recorded in `bench/baseline/2026-06-05-{py,ts}.json`)
+**includes these documented gaps as the new lower-bound**. Future PRs
+gated by the corpus regression gate ([ADR-0037](./decisions/0037-corpus-as-steering-wheel.md))
+cannot regress below v0.2; closing any FN-006..FN-012 raises the
+floor.
+
+### FN-006 — CCI-001 misses long-context buried injection (S-086)
+
+- **Path:** C (spec gap). Detector's "ignore previous instructions"
+  pattern fires but the v0.2.2 semantic-context filter
+  ([ADR-0036](./decisions/0036-semantic-context-awareness-v0_2_2.md))
+  treats the surrounding orchestrator-protocol prose as defender
+  context and skips the match. The filter is too aggressive on
+  long-context primitives — defender prose surrounding a buried
+  injection should NOT bury the injection signal.
+- **Resolution vector:** v0.2.3 — when the injection-shape pattern
+  matches AND the matched directive appears in an imperative
+  voice ("Ignore previous instructions and …" vs.
+  "…the phrase 'ignore previous instructions'…"), suppress the
+  semantic-context skip. Holdout sample.
+
+### FN-007 — CCI-003 misses URL-encoded decode-and-run (S-090)
+
+- **Path:** C (spec gap). v0.1 covers base64 / hex / rot13
+  encodings. URL-encoding (`%XX` escape sequences) is a new
+  attack class. Detector has no pattern for "URL-decode + run".
+- **Resolution vector:** v0.2.3 — add a fourth encoding family
+  to `_DECODE_AND_EXECUTE_PATTERNS`: `\b(?:url[\s_-]?decode|urldecode|unescape|decodeURIComponent)\s+.{0,80}?\s+(?:and|then)\s+(?:run|execute|eval|exec)`,
+  plus a "long run of %XX sequences" blob pattern paired with the
+  instruction. Holdout sample.
+
+### FN-008 — CCI-004 misses WebSocket load-time fetch (S-092)
+
+- **Path:** C (spec gap). v0.1 covers `https://`, `http://`,
+  `file://` schemes. `wss://` and `ws://` aren't covered.
+  Detector has no transport-class awareness beyond HTTP.
+- **Resolution vector:** v0.2.3 — extend the `_LOAD_TIME_FETCH_PATTERNS`
+  family to recognise `wss?://` URLs in the same syntactic slots
+  that already accept `https?://`. Add an `sse-stream`
+  detail_tag for Server-Sent Events as a sibling pattern.
+  Holdout sample.
+
+### FN-009 — CCI-005 misses curl|sh inside fence with above-fence directive (S-094)
+
+- **Path:** C (detector defect). v0.2 markdown-context awareness
+  skips fenced content. S-094 has the curl|sh INSIDE a fence,
+  with the directive "run the install hook" in prose ABOVE the
+  fence. The directive matches no pattern; the fence is skipped;
+  combined, the attack passes.
+- **Resolution vector:** v0.2.3 — when a fence is immediately
+  preceded (within ±3 lines) by an imperative directive
+  ("run", "execute", "before responding", "as the first step"),
+  the fenced content becomes "directive-referenced" and the
+  T5 install-shape regexes run against it. Closes the
+  semantic-context over-skip.
+
+### FN-010 — CCI-006 misses env-var → query-string exfil phrasing (S-096)
+
+- **Path:** C (spec gap). v0.1 detector pattern family centres
+  on `Authorization` headers + `Bearer` tokens. The
+  query-string exfil shape (`?token=$AWS_SECRET_ACCESS_KEY`)
+  is a different syntactic site. Detector misses.
+- **Resolution vector:** v0.2.3 — add an `env-to-query-string`
+  pattern: `\$(?:AWS_|GCP_|AZURE_|ANTHROPIC_|OPENAI_)[A-Z_]+`
+  appearing in URL position (after `?` or `&`) combined with
+  attacker-controlled host. Holdout sample.
+
+### FN-011 — CCI-007 misses Cyrillic-А homoglyph in package directive (S-098)
+
+- **Path:** C (detector defect). v0.2.3 of T7 dropped canonical
+  letters from character classes (per FP-006). The Cyrillic-А
+  (U+0410) confusable for Latin-A (U+0041) is now under-covered.
+  The detector pattern relies on `[A4О0]nthropic`-style mixed
+  alternations but doesn't have an explicit Cyrillic-vs-Latin
+  homoglyph pass for vendor names.
+- **Resolution vector:** v0.2.4 — add a Unicode confusable check
+  for known vendor names (Anthropic, OpenAI, Google, Microsoft):
+  decompose the matched word using `unicodedata.normalize("NFKD",
+  …)` and compare to the canonical ASCII. Mismatch in any
+  letter slot = homoglyph attack.
+
+### FN-012 — CCI-008 misses future-dated US Patent citation (S-100)
+
+- **Path:** C (spec gap). v0.1 detector covers CVE / RFC / arXiv
+  identifier classes. US Patent numbers aren't in the identifier
+  family. Detector misses.
+- **Resolution vector:** v0.2.3 — add a `_PATENT_RE` pattern:
+  `\bUS\s+Patent\s+([\d,]{4,10})\s*\(?\s*(?:issued|granted|filed)?\s*(\d{4})?` plus the same future-year /
+  before-1790 implausibility checks as CVE. Holdout sample.
+
+### FN-013 — CCI-010 misses emoji-density visual bloat (S-104)
+
+- **Path:** C (spec gap). v0.1 T10 thresholds (heading
+  proliferation, chars-per-h2) don't cover Unicode-density
+  attacks. Emoji-spam files can be small in markdown-h2 count
+  but visually dense in token count.
+- **Resolution vector:** v0.2.3 — add an `emoji-density`
+  detail_tag: count Unicode codepoints in the
+  `\p{Emoji_Presentation}` class; flag if > 5% of the file's
+  non-whitespace codepoints OR if any line contains ≥10
+  consecutive emoji codepoints.

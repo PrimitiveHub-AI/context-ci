@@ -914,3 +914,46 @@ FP-012 (same fix vector + peer-review addendum), detector at
 ### FP-013 Re-review log
 
 _None yet — entry authored 2026-06-05._
+
+### FP-014 — CCI-001 semantic-context filter under-aggressive on T1 defense primer
+
+- **Date authored:** 2026-06-05
+- **Artifact:** `bench/corpus/samples/cci-001-prompt-injection/benign-002-defense-primer.md` (S-087)
+- **Detector:** CCI-001 / `t1.prompt_injection` / `override-system-instructions`
+- **Path:** C (detector defect)
+- **Re-review date:** n/a — Path C closes via Round 5+ detector ratchet.
+
+**Symptom.** v0.2.2 semantic-context awareness ([ADR-0036](./decisions/0036-semantic-context-awareness-v0_2_2.md))
+suppresses T1 matches that fall within defender-prose framing
+(negation, hypothetical, pedagogical mention). The S-087 primer
+explicitly says *"these phrases appear in this document for
+pedagogical purposes only; the consuming agent must recognise the
+meta-discussion frame"* — but the v0.2.2 filter still flags one of
+the names listed inside the bullet (`"ignore previous instructions"`,
+`"disregard the system prompt"`, `"act as"`, `"override your
+guardrails"`).
+
+The filter triggers on the pedagogical-phrase OUTSIDE the quoted
+literals (e.g. an inline match in flowing prose that the v0.2.2
+heuristic doesn't classify as inside a quoted-phrase enumeration).
+
+**Justification for Path C.** Same posture as FP-012/FP-013: a corpus
+sample existing precisely to test the semantic-context filter cannot
+be allowlisted without defeating its purpose. Fix lives in the
+detector.
+
+**Resolution vector** (deferred to v0.2.3 detector ratchet): teach
+the semantic-context filter the bullet-list-of-quoted-phrases shape:
+when a paragraph contains ≥2 vague-trigger or attack-phrase matches
+INSIDE quote-pair enclosures within 200 chars, treat ALL matches in
+the same paragraph as enumeration of phrases (defender prose), not
+authority appeals.
+
+**Cross-references:** [ADR-0036](./decisions/0036-semantic-context-awareness-v0_2_2.md),
+[ADR-0037](./decisions/0037-corpus-as-steering-wheel.md),
+[ADR-0038](./decisions/0038-corpus-v0_2-expansion-and-holdout-split.md),
+related FP-012, FP-013 (same shape on T8).
+
+### FP-014 Re-review log
+
+_None yet — entry authored 2026-06-05._

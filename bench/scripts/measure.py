@@ -94,7 +94,7 @@ class DetectorStats:
 
 def load_manifest() -> tuple[str, str, list[ManifestSample]]:
     raw = yaml.safe_load(MANIFEST_PATH.read_text(encoding="utf-8"))
-    if raw.get("version") != "0.1":
+    if raw.get("version") not in ("0.1", "0.2"):
         raise RuntimeError(f"unsupported corpus version: {raw.get('version')}")
     samples = [
         ManifestSample(

@@ -120,7 +120,7 @@ const REGRESSION_TOLERANCE = 0.02
 function loadManifest(): Manifest {
   const raw = readFileSync(MANIFEST_PATH, "utf8")
   const doc = parseYaml(raw) as Manifest
-  if (doc.version !== "0.1") {
+  if (doc.version !== "0.1" && doc.version !== "0.2") {
     throw new Error(`unsupported corpus version: ${doc.version}`)
   }
   return doc
@@ -371,7 +371,8 @@ function main(argv: readonly string[]): number {
     return 1
   }
 
-  const perDetectorStats = new Map<string, DetectorStats>()
+  const inSampleStats = new Map<string, DetectorStats>()
+  const holdoutStats = new Map<string, DetectorStats>()
 
   for (const s of manifest.samples) {
     const absPath = join(CORPUS_ROOT, s.path)
@@ -387,18 +388,33 @@ function main(argv: readonly string[]): number {
     for (const d of detectors) {
       verdicts.set(d.cciId, d.run({ content, filename: s.path }))
     }
-    scoreSample(s, verdicts, perDetectorStats)
+    scoreSample(s, verdicts, s.holdout ? holdoutStats : inSampleStats)
   }
 
-  // Finalize per-detector + overall.
-  const perDetector: Record<string, DetectorStats> = {}
-  for (const [cci, st] of perDetectorStats) {
-    finalizeStats(st)
-    perDetector[cci] = st
+  const finalize = (m: Map<string, DetectorStats>): Record<string, DetectorStats> => {
+    const out: Record<string, DetectorStats> = {}
+    for (const [cci, st] of m) {
+      finalizeStats(st)
+      out[cci] = st
+    }
+    return out
   }
+
+  const perDetector = finalize(inSampleStats)
   const overall = macroAverage(perDetector)
+  const inSampleManifest: Manifest = { ...manifest, samples: manifest.samples.filter((s) => !s.holdout) }
+  printReport(inSampleManifest, perDetector, overall)
 
-  printReport(manifest, perDetector, overall)
+  const holdoutSamples = manifest.samples.filter((s) => s.holdout)
+  let holdoutPer: Record<string, DetectorStats> | undefined
+  let holdoutOverall: OverallStats | undefined
+  if (holdoutSamples.length > 0) {
+    holdoutPer = finalize(holdoutStats)
+    holdoutOverall = macroAverage(holdoutPer)
+    const holdoutManifest: Manifest = { ...manifest, samples: holdoutSamples }
+    process.stdout.write(`\n── HOLDOUT (overfit detector, informational only) ──\n\n`)
+    printReport(holdoutManifest, holdoutPer, holdoutOverall)
+  }
 
   const measuredAt = todayISO()
   const currentBaseline: BaselineDoc = {
@@ -407,7 +423,7 @@ function main(argv: readonly string[]): number {
     measured_at: measuredAt,
     manifest_version: manifest.version,
     top10_version: manifest.top10_version,
-    samples_total: manifest.samples.length,
+    samples_total: inSampleManifest.samples.length,
     per_detector: perDetector,
     overall,
     parity: {
@@ -416,6 +432,15 @@ function main(argv: readonly string[]): number {
       agreed_sample_ids: [],
       drift_sample_ids: [],
     },
+    ...(holdoutPer && holdoutOverall
+      ? {
+          holdout: {
+            samples_total: holdoutSamples.length,
+            per_detector: holdoutPer,
+            overall: holdoutOverall,
+          },
+        }
+      : {}),
   }
 
   if (args.writeBaseline) {
