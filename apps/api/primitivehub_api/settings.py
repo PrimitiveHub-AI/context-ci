@@ -53,6 +53,9 @@ INSTALLED_APPS = [
     "signing",
     "scanners",
     "jobs",
+    # Public lookup surface (ADR-0034) — anonymous /api/v1/check endpoint.
+    # No models; rate-limit state lives in Valkey.
+    "checks",
 ]
 
 MIDDLEWARE = [

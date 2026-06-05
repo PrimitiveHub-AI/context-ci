@@ -11,6 +11,7 @@ import { UserMenu } from "@/components/user-menu"
 import { useWhoami } from "@/lib/api/queries"
 
 const navLinks = [
+  { href: "/check", label: "Check" },
   { href: "/registry", label: "Registry" },
   { href: "/bundles", label: "Bundles" },
   { href: "/forge", label: "Forge" },

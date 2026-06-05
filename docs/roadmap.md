@@ -27,6 +27,7 @@ stacked, post-Step-7-OIDC. The end-to-end Sign-in flow is live.
 | **5 — Context CI v1: 10 stages, 10 threats** | ◐ in progress | target Q1 2026 |
 | **5.5 — Runtime Trust API (bundle spec + endpoints + CLI + verify lib + MCP)** | ◐ in progress | target Q1-Q2 2026 |
 | **5.7 — Active surfaces (audit / lock / watch / install / runtime gate)** | ◐ in progress | target Q2 2026 (ADR-0025) |
+| **5.8 — Public `/check` paste-and-verdict lookup surface** | ◐ in progress | target Q2 2026 (ADR-0034) |
 | 6 — Marketplace + search + downloads + reviews | ◯ planned | target Q2 2026 |
 | 7 — Enterprise: self-host Sigstore, MinIO, schema-per-tenant | ◯ planned | target Q2 2026 |
 | 8 — Observability + analytics | ◯ planned | target Q2-Q3 2026 |
@@ -288,6 +289,57 @@ parity drift against the corpus cannot merge without the matching
 change on the other side. Risk R-7 (corpus too small for credible
 paper claims) is partially mitigated; the patient labeling
 continues to launch.
+
+### Phase 5.8 — Public `/check` paste-and-verdict lookup surface (Q2 2026, in progress)
+
+**Goal:** A browser surface at `primitivehub.ai/check` where any
+practitioner can paste a suspicious AI skill / URL / `npx` command
+and get a deterministic Top 10 verdict in under five seconds, with
+no account. The AV-product-family "Cloud lookup / reputation
+service" row (ADR-0030 § 3) upgraded from *digest-only,
+programmatic* (ADR-0013) to *paste-anything, browser*.
+
+Locked in [ADR-0034](./decisions/0034-public-check-lookup-surface.md).
+
+**Ships (one PR):**
+
+- **PR 5.8.1** ◐ `feat/check-public-lookup` — Django `checks` app
+  + `POST /api/v1/check` anonymous endpoint (rate-limited
+  30/5min/IP, 500/day/IP); three input modes: `content` paste,
+  `https://` URL fetch (SSRF-guarded), `npx @scope/name@version`
+  static tarball analysis (never executes the package); Next.js
+  `/check` page with three-tab UI + deterministic trust score
+  (`100 − 25·FAIL − 10·WARN`) + per-detector verdicts with
+  line-numbered diff hints. Zero new detectors; thin surface over
+  the existing Python `get_all_detectors()` set (ADR-0023).
+
+**Locked architectural commitments:**
+
+- **Static analysis only.** The `npx` resolver fetches the
+  registry tarball and unpacks it under hard caps (8 MiB
+  compressed / 64 MiB uncompressed / 4000 entries / 15s) — no
+  `postinstall`, no `require()`, no code execution. AV scanners
+  read bytes; we do the same. (ADR-0034 § 2.)
+- **No persistence of pasted bytes.** Verdict metadata is logged
+  for telemetry; the input itself is scanned and dropped. A user
+  pasting a credential to ask if a skill is exfiltrating
+  credentials does not see their credential become our log entry.
+  (ADR-0034 § 5.)
+- **Trust score is reproducible.** Same content → same score, no
+  ML, no community signal, no vibes number. Honored per
+  `feedback-no-fake-numbers`. (ADR-0034 § 4.)
+- **Anonymous; no login.** The daily-use frame ("is this skill
+  safe?") fails if it requires an account. Abuse is bounded by
+  per-IP rate limits, not by sign-up friction. (ADR-0034 § 5.)
+- **Detectors are the Python set, not a parallel TS path.** The
+  detector pipeline that signs primitives also scores `/check`
+  pastes. One canonical implementation. (ADR-0034 § 6.)
+
+**Success metric:** a practitioner who has never heard of
+PrimitiveHub pastes a real-world malicious skill into `/check`
+and gets back a FAIL verdict naming which Top 10 categories
+fired and where, in under five seconds. The first 30 seconds of
+their PrimitiveHub experience demonstrates the category.
 
 ### Phase 6 — Marketplace + search + downloads + reviews (Q2 2026)
 
