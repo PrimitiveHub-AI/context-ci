@@ -15,6 +15,11 @@ import {
   type Verdict,
   lineForPosition,
 } from "./types.js"
+import {
+  analyzeMarkdownContext,
+  isInAnyCodeOrFrontmatter,
+  type MarkdownContext,
+} from "./markdown-context.js"
 
 const MIN_BASE64_LEN = 80
 const MIN_HEX_LEN = 80
@@ -50,7 +55,7 @@ const ROT13_PATTERNS: Array<readonly [RegExp, string]> = [
 
 const ALL_INSTRUCTION_PATTERNS = [...DECODE_AND_EXECUTE_PATTERNS, ...ROT13_PATTERNS]
 
-function scanLongEncodedBlobs(content: string): DiffHint[] {
+function scanLongEncodedBlobs(content: string, mdCtx: MarkdownContext): DiffHint[] {
   const hints: DiffHint[] = []
   const blobPatterns: Array<readonly [RegExp, string, string]> = [
     [BASE64_RE, "base64-long-blob", "base64"],
@@ -61,6 +66,12 @@ function scanLongEncodedBlobs(content: string): DiffHint[] {
     let match: RegExpExecArray | null
     while ((match = pattern.exec(content)) !== null) {
       if (hints.length >= MAX_HINTS_PER_VERDICT) return hints
+      // v0.2.0 (ADR-0023 lockstep with Python t3 v0.2.0): skip blobs
+      // inside frontmatter / inline code / fenced code blocks.
+      if (isInAnyCodeOrFrontmatter(match.index, mdCtx)) {
+        if (match.index === pattern.lastIndex) pattern.lastIndex++
+        continue
+      }
       const raw = match[0]
       hints.push({
         line: lineForPosition(content, match.index),
@@ -74,13 +85,19 @@ function scanLongEncodedBlobs(content: string): DiffHint[] {
   return hints
 }
 
-function scanInstructions(content: string): DiffHint[] {
+function scanInstructions(content: string, mdCtx: MarkdownContext): DiffHint[] {
   const hints: DiffHint[] = []
   outer: for (const [pattern, tag] of ALL_INSTRUCTION_PATTERNS) {
     pattern.lastIndex = 0
     let match: RegExpExecArray | null
     while ((match = pattern.exec(content)) !== null) {
       if (hints.length >= MAX_HINTS_PER_VERDICT) break outer
+      // v0.2.0 (ADR-0023 lockstep): skip instruction patterns inside
+      // frontmatter / inline code / fenced code blocks.
+      if (isInAnyCodeOrFrontmatter(match.index, mdCtx)) {
+        if (match.index === pattern.lastIndex) pattern.lastIndex++
+        continue
+      }
       hints.push({
         line: lineForPosition(content, match.index),
         snippet: truncateSnippet(match[0]),
@@ -97,14 +114,15 @@ export class T3EncodedPayloadsDetector {
   readonly name = "t3.encoded_payloads"
   readonly threatCategory = "T3"
   readonly cciId = "CCI-003"
-  readonly detectorVersion = "0.1.0"
+  readonly detectorVersion = "0.2.0"
 
   run(ctx: DetectorContext): Verdict {
     const hints: DiffHint[] = []
-    hints.push(...scanLongEncodedBlobs(ctx.content))
+    const mdCtx = analyzeMarkdownContext(ctx.content)
+    hints.push(...scanLongEncodedBlobs(ctx.content, mdCtx))
     if (hints.length < MAX_HINTS_PER_VERDICT) {
       const remaining = MAX_HINTS_PER_VERDICT - hints.length
-      hints.push(...scanInstructions(ctx.content).slice(0, remaining))
+      hints.push(...scanInstructions(ctx.content, mdCtx).slice(0, remaining))
     }
 
     if (hints.length === 0) {

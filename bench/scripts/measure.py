@@ -208,6 +208,7 @@ def measure(samples: list[ManifestSample], detectors: list[Detector]) -> dict[st
             semver="0.0.0",
             content=content,
             raw_bytes=raw_bytes,
+            file_path=s.path,
         )
         verdicts = {d.cci_id: d.run(ctx) for d in detectors}
         score_sample(s, verdicts, stats)

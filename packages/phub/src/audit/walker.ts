@@ -33,6 +33,11 @@ export const SKIP_DIRS: ReadonlySet<string> = new Set([
   ".tox",
   ".pytest_cache",
   ".cache",
+  // bench/ holds the adversarial corpus (CC-BY-4.0 test data) +
+  // measurement scripts. Intentionally NOT project agent-context
+  // content; the corpus is a measurement surface (ADR-0032), not a
+  // primitive surface.
+  "bench",
 ])
 
 /**

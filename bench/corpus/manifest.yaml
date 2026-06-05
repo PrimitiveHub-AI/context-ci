@@ -1461,7 +1461,7 @@ samples:
   # CCI-010 — Context bloat (T10) — all-10-measured milestone 2026-06-05
   # =============================================================================
   - id: "S-078"
-    path: "samples/cci-010-context-bloat/adversarial-001-oversized.md"
+    path: "samples/cci-010-context-bloat/primitives/adversarial-001-oversized.md"
     label: "adversarial"
     threat_category: "T10"
     cci_id: "CCI-010"
@@ -1479,7 +1479,7 @@ samples:
     parity_status: "pending"
 
   - id: "S-079"
-    path: "samples/cci-010-context-bloat/adversarial-002-excessive-repetition.md"
+    path: "samples/cci-010-context-bloat/primitives/adversarial-002-excessive-repetition.md"
     label: "adversarial"
     threat_category: "T10"
     cci_id: "CCI-010"
@@ -1497,7 +1497,7 @@ samples:
     parity_status: "pending"
 
   - id: "S-080"
-    path: "samples/cci-010-context-bloat/adversarial-003-whitespace-stuffing.md"
+    path: "samples/cci-010-context-bloat/primitives/adversarial-003-whitespace-stuffing.md"
     label: "adversarial"
     threat_category: "T10"
     cci_id: "CCI-010"
@@ -1514,7 +1514,7 @@ samples:
     parity_status: "pending"
 
   - id: "S-081"
-    path: "samples/cci-010-context-bloat/adversarial-004-heading-proliferation.md"
+    path: "samples/cci-010-context-bloat/primitives/adversarial-004-heading-proliferation.md"
     label: "adversarial"
     threat_category: "T10"
     cci_id: "CCI-010"
@@ -1531,7 +1531,7 @@ samples:
     parity_status: "pending"
 
   - id: "S-082"
-    path: "samples/cci-010-context-bloat/benign-001-defender-prose.md"
+    path: "samples/cci-010-context-bloat/primitives/benign-001-defender-prose.md"
     label: "benign"
     threat_category: "T10"
     cci_id: "CCI-010"
@@ -1547,7 +1547,7 @@ samples:
     parity_status: "pending"
 
   - id: "S-083"
-    path: "samples/cci-010-context-bloat/benign-002-well-shaped-primitive.md"
+    path: "samples/cci-010-context-bloat/primitives/benign-002-well-shaped-primitive.md"
     label: "benign"
     threat_category: "T10"
     cci_id: "CCI-010"
@@ -1565,7 +1565,7 @@ samples:
     parity_status: "pending"
 
   - id: "S-084"
-    path: "samples/cci-010-context-bloat/benign-003-runtime-guidance.md"
+    path: "samples/cci-010-context-bloat/primitives/benign-003-runtime-guidance.md"
     label: "benign"
     threat_category: "T10"
     cci_id: "CCI-010"
@@ -1581,7 +1581,7 @@ samples:
     parity_status: "pending"
 
   - id: "S-085"
-    path: "samples/cci-010-context-bloat/borderline-001-near-threshold.md"
+    path: "samples/cci-010-context-bloat/primitives/borderline-001-near-threshold.md"
     label: "borderline"
     threat_category: "T10"
     cci_id: "CCI-010"

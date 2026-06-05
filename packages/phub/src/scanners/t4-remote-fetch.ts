@@ -14,6 +14,10 @@ import {
   type Verdict,
   lineForPosition,
 } from "./types.js"
+import {
+  analyzeMarkdownContext,
+  isInAnyCodeOrFrontmatter,
+} from "./markdown-context.js"
 
 const FETCH_AND_INCLUDE_PATTERNS: Array<readonly [RegExp, string]> = [
   [
@@ -83,14 +87,22 @@ export class T4RemoteFetchDetector {
   readonly name = "t4.remote_fetch"
   readonly threatCategory = "T4"
   readonly cciId = "CCI-004"
-  readonly detectorVersion = "0.1.0"
+  readonly detectorVersion = "0.2.0"
 
   run(ctx: DetectorContext): Verdict {
     const hints: DiffHint[] = []
+    // v0.2.0 (ADR-0023 lockstep with Python t4 v0.2.0): skip matches
+    // inside frontmatter, inline code, or fenced code blocks — these
+    // are reference / documentary contexts, not execution instructions.
+    const mdCtx = analyzeMarkdownContext(ctx.content)
     outer: for (const [pattern, tag] of ALL_PATTERNS) {
       pattern.lastIndex = 0
       let match: RegExpExecArray | null
       while ((match = pattern.exec(ctx.content)) !== null) {
+        if (isInAnyCodeOrFrontmatter(match.index, mdCtx)) {
+          if (match.index === pattern.lastIndex) pattern.lastIndex++
+          continue
+        }
         hints.push(hintForMatch(ctx.content, match, tag))
         if (hints.length >= MAX_HINTS_PER_VERDICT) break outer
         if (match.index === pattern.lastIndex) pattern.lastIndex++
