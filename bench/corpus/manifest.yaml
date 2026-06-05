@@ -1103,3 +1103,496 @@ samples:
       future Path-C tightening extends ADR-0035 fence skip to T8.
     incident_reference: null
     parity_status: "pending"
+
+  # =============================================================================
+  # CCI-007 — Poisoned naming (T7) — all-10-measured milestone 2026-06-05
+  # =============================================================================
+  - id: "S-059"
+    path: "samples/cci-007-poisoned-naming/adversarial-001-official-anthropic.md"
+    label: "adversarial"
+    threat_category: "T7"
+    cci_id: "CCI-007"
+    detail_tags:
+      - "official-vendor-claim"
+    severity: "high"
+    expected_verdict: "FAIL"
+    contributor: "mhm"
+    added: "2026-06-05"
+    notes: |
+      Canonical official-vendor-claim — "the official Anthropic
+      primitive". Multiple OFFICIAL_CLAIM regex variants fire on
+      this sample.
+    incident_reference: "synthesized"
+    parity_status: "pending"
+
+  - id: "S-060"
+    path: "samples/cci-007-poisoned-naming/adversarial-002-endorsed-by-stripe.md"
+    label: "adversarial"
+    threat_category: "T7"
+    cci_id: "CCI-007"
+    detail_tags:
+      - "false-affiliation-claim"
+    severity: "high"
+    expected_verdict: "FAIL"
+    contributor: "mhm"
+    added: "2026-06-05"
+    notes: |
+      False-affiliation-claim — "endorsed by Stripe", "as featured by
+      Cloudflare", "in partnership with GitHub". Three FALSE_AFFILIATION
+      regex variants fire on this sample.
+    incident_reference: "synthesized"
+    parity_status: "pending"
+
+  - id: "S-061"
+    path: "samples/cci-007-poisoned-naming/adversarial-003-openai-team-claim.md"
+    label: "adversarial"
+    threat_category: "T7"
+    cci_id: "CCI-007"
+    detail_tags:
+      - "official-vendor-claim"
+    severity: "high"
+    expected_verdict: "FAIL"
+    contributor: "mhm"
+    added: "2026-06-05"
+    notes: |
+      "From the OpenAI team" + "official OpenAI integration sdk" —
+      exercises the team-claim and sdk variant OFFICIAL_CLAIM regexes.
+    incident_reference: "synthesized"
+    parity_status: "pending"
+
+  - id: "S-062"
+    path: "samples/cci-007-poisoned-naming/adversarial-004-typosquat-anthropic.md"
+    label: "adversarial"
+    threat_category: "T7"
+    cci_id: "CCI-007"
+    detail_tags:
+      - "vendor-typosquat"
+    severity: "high"
+    expected_verdict: "FAIL"
+    contributor: "mhm"
+    added: "2026-06-05"
+    notes: |
+      Anthrop1c (1-for-i) + 4nthropic (4-for-A). v0.2.3 tightened
+      typosquat regex set; this sample exercises both surviving
+      Anthropic-family variants.
+    incident_reference: "synthesized"
+    parity_status: "pending"
+
+  - id: "S-063"
+    path: "samples/cci-007-poisoned-naming/adversarial-005-typosquat-multiple.md"
+    label: "adversarial"
+    threat_category: "T7"
+    cci_id: "CCI-007"
+    detail_tags:
+      - "vendor-typosquat"
+    severity: "high"
+    expected_verdict: "FAIL"
+    contributor: "mhm"
+    added: "2026-06-05"
+    notes: |
+      Multiple typosquat family members in one sample: M3ta, G0ogle,
+      M1crosoft, GPT4-official, 0penAI. Exercises five distinct
+      typosquat regex patterns.
+    incident_reference: "synthesized"
+    parity_status: "pending"
+
+  - id: "S-064"
+    path: "samples/cci-007-poisoned-naming/adversarial-006-combined.md"
+    label: "adversarial"
+    threat_category: "T7"
+    cci_id: "CCI-007"
+    detail_tags:
+      - "official-vendor-claim"
+      - "false-affiliation-claim"
+      - "vendor-typosquat"
+    severity: "high"
+    expected_verdict: "FAIL"
+    contributor: "mhm"
+    added: "2026-06-05"
+    notes: |
+      Combined attack: official-Stripe-claim + Auth0-certification +
+      Claud3-typosquat + partnership-with-Vercel + 0kta-typosquat.
+      Exercises all three CCI-007 sub-shapes in one sample.
+    incident_reference: "synthesized"
+    parity_status: "pending"
+
+  - id: "S-065"
+    path: "samples/cci-007-poisoned-naming/benign-002-integration-prose.md"
+    label: "benign"
+    threat_category: "T7"
+    cci_id: "CCI-007"
+    detail_tags: []
+    severity: "info"
+    expected_verdict: "PASS"
+    contributor: "mhm"
+    added: "2026-06-05"
+    notes: |
+      Integration overview — legitimately mentions Anthropic in
+      reference prose ("integrates with", "inspired by"). v0.2.2
+      mention-context check (ADR-0036) downgrades these bare vendor
+      mentions; the official-claim regex doesn't fire because no
+      "official Anthropic primitive" phrase appears.
+    incident_reference: null
+    parity_status: "pending"
+
+  - id: "S-066"
+    path: "samples/cci-007-poisoned-naming/benign-003-defender-prose.md"
+    label: "benign"
+    threat_category: "T7"
+    cci_id: "CCI-007"
+    detail_tags: []
+    severity: "info"
+    expected_verdict: "PASS"
+    contributor: "mhm"
+    added: "2026-06-05"
+    notes: |
+      Defender-side primitive describing the CCI-007 sub-shapes
+      conceptually. Does not include adversarial vendor claims.
+    incident_reference: null
+    parity_status: "pending"
+
+  - id: "S-067"
+    path: "samples/cci-007-poisoned-naming/borderline-001-fenced-example.md"
+    label: "borderline"
+    threat_category: "T7"
+    cci_id: "CCI-007"
+    detail_tags:
+      - "official-vendor-claim"
+      - "false-affiliation-claim"
+    severity: "medium"
+    expected_verdict: "FAIL"
+    contributor: "mhm"
+    added: "2026-06-05"
+    notes: |
+      Teaching primitive showing CCI-007 examples INSIDE a code fence.
+      v0.2.1 inline-code skip applies to backtick spans but not to
+      fences; expected_verdict is FAIL until fence-aware extension
+      ships for T7.
+    incident_reference: null
+    parity_status: "pending"
+
+  # =============================================================================
+  # CCI-009 — Copyright contamination (T9) — all-10-measured milestone 2026-06-05
+  # Includes v0.2.3 exemption tests (LICENSE.md basename, source-file header).
+  # =============================================================================
+  - id: "S-068"
+    path: "samples/cci-009-copyright-contamination/adversarial-001-mit-boilerplate.md"
+    label: "adversarial"
+    threat_category: "T9"
+    cci_id: "CCI-009"
+    detail_tags:
+      - "permissive-license-header"
+    severity: "high"
+    expected_verdict: "FAIL"
+    contributor: "mhm"
+    added: "2026-06-05"
+    notes: |
+      Verbatim MIT boilerplate embedded in a primitive body. The
+      content sits past the 40-line header region so the v0.2.3
+      canonical-position exemption does not apply.
+    incident_reference: "synthesized"
+    parity_status: "pending"
+
+  - id: "S-069"
+    path: "samples/cci-009-copyright-contamination/adversarial-002-gpl-boilerplate.md"
+    label: "adversarial"
+    threat_category: "T9"
+    cci_id: "CCI-009"
+    detail_tags:
+      - "gpl-header"
+    severity: "high"
+    expected_verdict: "FAIL"
+    contributor: "mhm"
+    added: "2026-06-05"
+    notes: |
+      Verbatim GPL v3 boilerplate embedded in a primitive body.
+      Same shape as S-068 in the GPL family — exercises the
+      gpl-header regex set.
+    incident_reference: "synthesized"
+    parity_status: "pending"
+
+  - id: "S-070"
+    path: "samples/cci-009-copyright-contamination/adversarial-003-proprietary-notice.md"
+    label: "adversarial"
+    threat_category: "T9"
+    cci_id: "CCI-009"
+    detail_tags:
+      - "proprietary-copyright-notice"
+    severity: "high"
+    expected_verdict: "FAIL"
+    contributor: "mhm"
+    added: "2026-06-05"
+    notes: |
+      Third-party copyright notice ("© 2024 Foo Bar Inc. All Rights
+      Reserved"). Proprietary-copyright-notice is NOT in the
+      v0.2.3 HEADER_EXEMPT_TAGS — fires wherever it appears.
+    incident_reference: "synthesized"
+    parity_status: "pending"
+
+  - id: "S-071"
+    path: "samples/cci-009-copyright-contamination/adversarial-004-cc-by-sa.md"
+    label: "adversarial"
+    threat_category: "T9"
+    cci_id: "CCI-009"
+    detail_tags:
+      - "cc-attribution-required"
+    severity: "high"
+    expected_verdict: "FAIL"
+    contributor: "mhm"
+    added: "2026-06-05"
+    notes: |
+      CC-BY-SA marker in a primitive body — share-alike obligation
+      transitively imposed on the consumer. v0.2.2 declaration-context
+      check does NOT fire because the prose discusses inheritance,
+      not declaration.
+    incident_reference: "synthesized"
+    parity_status: "pending"
+
+  - id: "S-072"
+    path: "samples/cci-009-copyright-contamination/adversarial-005-stackoverflow-source.md"
+    label: "adversarial"
+    threat_category: "T9"
+    cci_id: "CCI-009"
+    detail_tags:
+      - "forum-source-attribution"
+    severity: "medium"
+    expected_verdict: "FAIL"
+    contributor: "mhm"
+    added: "2026-06-05"
+    notes: |
+      "Source: stackoverflow.com/questions/..." attribution. Stack
+      Overflow content is CC-BY-SA-licensed; consumer inherits
+      share-alike. Not in HEADER_EXEMPT_TAGS — fires anywhere.
+    incident_reference: "synthesized"
+    parity_status: "pending"
+
+  - id: "S-073"
+    path: "samples/cci-009-copyright-contamination/adversarial-006-spdx-gpl-marker.md"
+    label: "adversarial"
+    threat_category: "T9"
+    cci_id: "CCI-009"
+    detail_tags:
+      - "gpl-header"
+    severity: "high"
+    expected_verdict: "FAIL"
+    contributor: "mhm"
+    added: "2026-06-05"
+    notes: |
+      SPDX-License-Identifier: GPL-3.0-or-later in a primitive body
+      (past the 40-line header region). Exercises the SPDX-flavor
+      gpl-header regex.
+    incident_reference: "synthesized"
+    parity_status: "pending"
+
+  - id: "S-074"
+    path: "samples/cci-009-copyright-contamination/benign-002-defender-prose.md"
+    label: "benign"
+    threat_category: "T9"
+    cci_id: "CCI-009"
+    detail_tags: []
+    severity: "info"
+    expected_verdict: "PASS"
+    contributor: "mhm"
+    added: "2026-06-05"
+    notes: |
+      Defender-side primitive describing the CCI-009 sub-shapes
+      conceptually without including any verbatim license boilerplate.
+    incident_reference: null
+    parity_status: "pending"
+
+  - id: "S-075"
+    path: "samples/cci-009-copyright-contamination/LICENSE.md"
+    label: "benign"
+    threat_category: "T9"
+    cci_id: "CCI-009"
+    detail_tags: []
+    severity: "info"
+    expected_verdict: "PASS"
+    contributor: "mhm"
+    added: "2026-06-05"
+    notes: |
+      v0.2.3 license-file-basename exemption test. File is named
+      LICENSE.md (basename matches LICENSE_FILE_BASENAMES set);
+      contains MIT boilerplate that would otherwise trip
+      permissive-license-header. v0.2.3 detector exempts ANY hit
+      tagged permissive-license-header/gpl-header/cc-attribution-required
+      when the basename matches the license-file set.
+    incident_reference: null
+    parity_status: "pending"
+
+  - id: "S-076"
+    path: "samples/cci-009-copyright-contamination/benign-003-source-header.py"
+    label: "benign"
+    threat_category: "T9"
+    cci_id: "CCI-009"
+    detail_tags: []
+    severity: "info"
+    expected_verdict: "PASS"
+    contributor: "mhm"
+    added: "2026-06-05"
+    notes: |
+      v0.2.3 source-file + header-region exemption test. File has .py
+      extension (in SOURCE_FILE_EXTENSIONS) with MIT boilerplate in
+      the first 40 lines (HEADER_REGION_LINES). Detector exempts
+      header-tag hits in the canonical position.
+    incident_reference: null
+    parity_status: "pending"
+
+  - id: "S-077"
+    path: "samples/cci-009-copyright-contamination/borderline-001-fenced-example.md"
+    label: "borderline"
+    threat_category: "T9"
+    cci_id: "CCI-009"
+    detail_tags:
+      - "permissive-license-header"
+    severity: "medium"
+    expected_verdict: "FAIL"
+    contributor: "mhm"
+    added: "2026-06-05"
+    notes: |
+      Teaching primitive showing MIT boilerplate INSIDE a fenced
+      code block. v0.2.1 inline-code skip applies to backtick spans
+      but not yet to multi-line fences for T9; expected_verdict is
+      FAIL until fence-aware extension ships.
+    incident_reference: null
+    parity_status: "pending"
+
+  # =============================================================================
+  # CCI-010 — Context bloat (T10) — all-10-measured milestone 2026-06-05
+  # =============================================================================
+  - id: "S-078"
+    path: "samples/cci-010-context-bloat/adversarial-001-oversized.md"
+    label: "adversarial"
+    threat_category: "T10"
+    cci_id: "CCI-010"
+    detail_tags:
+      - "oversized-primitive"
+    severity: "high"
+    expected_verdict: "WARN"
+    contributor: "mhm"
+    added: "2026-06-05"
+    notes: |
+      Primitive body exceeds the 32000-char oversized threshold.
+      Demonstrates that the detector's char-count check fires on
+      pathologically large primitives.
+    incident_reference: "synthesized"
+    parity_status: "pending"
+
+  - id: "S-079"
+    path: "samples/cci-010-context-bloat/adversarial-002-excessive-repetition.md"
+    label: "adversarial"
+    threat_category: "T10"
+    cci_id: "CCI-010"
+    detail_tags:
+      - "excessive-repetition"
+    severity: "high"
+    expected_verdict: "WARN"
+    contributor: "mhm"
+    added: "2026-06-05"
+    notes: |
+      24 of 30 non-trivial lines (≥50 chars) are exact duplicates
+      (80% ratio, above the 20% threshold). Exercises the
+      duplicate-ratio check.
+    incident_reference: "synthesized"
+    parity_status: "pending"
+
+  - id: "S-080"
+    path: "samples/cci-010-context-bloat/adversarial-003-whitespace-stuffing.md"
+    label: "adversarial"
+    threat_category: "T10"
+    cci_id: "CCI-010"
+    detail_tags:
+      - "whitespace-stuffing"
+    severity: "medium"
+    expected_verdict: "WARN"
+    contributor: "mhm"
+    added: "2026-06-05"
+    notes: |
+      ≥100 lines with > 40% blank ratio. Exercises the
+      whitespace-stuffing check.
+    incident_reference: "synthesized"
+    parity_status: "pending"
+
+  - id: "S-081"
+    path: "samples/cci-010-context-bloat/adversarial-004-heading-proliferation.md"
+    label: "adversarial"
+    threat_category: "T10"
+    cci_id: "CCI-010"
+    detail_tags:
+      - "heading-proliferation"
+    severity: "medium"
+    expected_verdict: "WARN"
+    contributor: "mhm"
+    added: "2026-06-05"
+    notes: |
+      Heading density below the 500-chars-per-h2 floor. Exercises
+      the heading-proliferation check.
+    incident_reference: "synthesized"
+    parity_status: "pending"
+
+  - id: "S-082"
+    path: "samples/cci-010-context-bloat/benign-001-defender-prose.md"
+    label: "benign"
+    threat_category: "T10"
+    cci_id: "CCI-010"
+    detail_tags: []
+    severity: "info"
+    expected_verdict: "PASS"
+    contributor: "mhm"
+    added: "2026-06-05"
+    notes: |
+      Defender-side primitive describing the CCI-010 sub-shapes
+      conceptually. Stays within all four thresholds.
+    incident_reference: null
+    parity_status: "pending"
+
+  - id: "S-083"
+    path: "samples/cci-010-context-bloat/benign-002-well-shaped-primitive.md"
+    label: "benign"
+    threat_category: "T10"
+    cci_id: "CCI-010"
+    detail_tags: []
+    severity: "info"
+    expected_verdict: "PASS"
+    contributor: "mhm"
+    added: "2026-06-05"
+    notes: |
+      Well-shaped primitive serving as a precision anchor for the
+      detector. Below 32k chars, distinct non-trivial lines, modest
+      whitespace, section density above the heading-proliferation
+      floor.
+    incident_reference: null
+    parity_status: "pending"
+
+  - id: "S-084"
+    path: "samples/cci-010-context-bloat/benign-003-runtime-guidance.md"
+    label: "benign"
+    threat_category: "T10"
+    cci_id: "CCI-010"
+    detail_tags: []
+    severity: "info"
+    expected_verdict: "PASS"
+    contributor: "mhm"
+    added: "2026-06-05"
+    notes: |
+      Runtime-budget guidance primitive — discusses CCI-010
+      thresholds in body prose without crossing any of them.
+    incident_reference: null
+    parity_status: "pending"
+
+  - id: "S-085"
+    path: "samples/cci-010-context-bloat/borderline-001-near-threshold.md"
+    label: "borderline"
+    threat_category: "T10"
+    cci_id: "CCI-010"
+    detail_tags: []
+    severity: "info"
+    expected_verdict: "PASS"
+    contributor: "mhm"
+    added: "2026-06-05"
+    notes: |
+      Borderline precision test — sized to sit just under each
+      threshold while exercising the same structural shapes
+      adversarial samples use. Detector should report PASS.
+    incident_reference: null
+    parity_status: "pending"
