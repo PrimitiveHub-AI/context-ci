@@ -270,6 +270,20 @@ What would change the answer:
 [ADR-0025](./decisions/0025-active-posture-and-phub-audit.md),
 [docs/bugs.md](./bugs.md) #25.
 
+### FP-001 Re-review log
+
+- **2026-06-05 — Resolved via Path C (ADR-0036 v0.2.2).** The v0.2.2
+  CCI-005 detector now consults `isInNegationContext()` and skips
+  matches that fall within a negated sentence. CLAUDE.md hard-rule
+  #6's prose — "**No** npx skill installs", "**Don't** run", "**never**
+  run X" — is recognized as negation framing and no longer flagged.
+  The active policy rule for this entry was removed from
+  `.primitivehub/policy.yaml` in the same commit. Corpus measurement
+  confirms: CCI-005 precision stays at 1.000 with the new benign
+  sample S-016 (negation-prose teaching primitive) passing through.
+  The ledger entry stays committed (append-only discipline per
+  ADR-0030 § 1 practice 1); only the policy allow rule was removed.
+
 ---
 
 ### FP-002 — shadcn primitive documents the canonical shadcn/ui install command
@@ -401,6 +415,21 @@ exempts frontmatter + license-description prose retires this allow).
 [ADR-0018](./decisions/0018-context-policy-language.md),
 [ADR-0030](./decisions/0030-fp-resolution-and-av-vendor-parallel.md).
 
+### FP-004 Re-review log
+
+- **2026-06-05 — Resolved via Path C (ADR-0036 v0.2.2).** The v0.2.2
+  CCI-009 detector now consults `isInDeclarationContext()` and skips
+  matches that appear in license-declaration prose (parenthesized
+  follow-on markers like `(corpus content)` / `(license)`, "ships
+  under X" pre-markers, `license: X` framing). CLAUDE.md's
+  canonical-docs table reference to `CC-BY-4.0 (corpus content)` is
+  recognized as declaration, not borrowed content. The active policy
+  rule for this entry was removed from `.primitivehub/policy.yaml`
+  in the same commit. Corpus measurement confirms: CCI-009 precision
+  stays at 1.000 with the new benign sample S-018 (canonical-docs
+  license-doc) passing through. The ledger entry stays committed
+  (append-only discipline per ADR-0030 § 1 practice 1).
+
 ---
 
 ### FP-005 — `frontend-design-elite` references real vendor names as design exemplars
@@ -450,3 +479,22 @@ What would change the answer:
 [ADR-0023](./decisions/0023-phub-cli-and-detector-parity.md) (Path-C
 work requires lockstep TS + Python tightening),
 [ADR-0030](./decisions/0030-fp-resolution-and-av-vendor-parallel.md).
+
+### FP-005 Re-review log
+
+- **2026-06-05 — Resolved via Path C (ADR-0036 v0.2.2).** The v0.2.2
+  CCI-007 detector now consults `isInMentionContext()` and skips
+  bare-vendor-name typosquat matches that appear in mention prose
+  ("Stripe's typography", "like Linear", "such as Vercel", possessive
+  forms in comma-separated exemplar lists). The
+  `frontend-design-elite` primitive's references to Stripe / Vercel /
+  Linear / Sigstore as design exemplars are recognized as mention,
+  not impersonation. OFFICIAL_CLAIM + FALSE_AFFILIATION pattern
+  families remain context-unaware (per ADR-0036 § 3), so explicit
+  impersonation prose ("the official Stripe primitive", "endorsed by
+  Linear") still fires correctly. The active policy rule for this
+  entry was removed from `.primitivehub/policy.yaml` in the same
+  commit. Corpus measurement confirms: the new benign sample S-017
+  (design-exemplars-prose primitive) passes through cleanly; CCI-007
+  has no FPs on the seed corpus. The ledger entry stays committed
+  (append-only discipline per ADR-0030 § 1 practice 1).

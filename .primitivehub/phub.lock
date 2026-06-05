@@ -4,7 +4,7 @@
     {
       "attestation": "unattested",
       "classification": "claude-md",
-      "digest": "sha256:0ef1f8adca2f09ee88195d4f1911e14a1fa69cdc7bc54410c179599067d5a64a",
+      "digest": "sha256:7fd2d37c22ef1fea455246698e581a84e415953ff85c81fde62836196ec36ebd",
       "path": "CLAUDE.md"
     },
     {
@@ -58,7 +58,7 @@
     {
       "attestation": "unattested",
       "classification": "primitive",
-      "digest": "sha256:2a15378ba99d7207a797c6c638f89fbc06213f4395db841a122790aa42c016e4",
+      "digest": "sha256:68ba8c8d6194844a76ca7fc42671f5a62db43d31c1e8a194f1fbacdf37462880",
       "path": "apps/web/content/primitives/frontend-design-elite.md"
     },
     {

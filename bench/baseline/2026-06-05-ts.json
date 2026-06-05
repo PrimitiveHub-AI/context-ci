@@ -1,0 +1,119 @@
+{
+  "version": "0.1",
+  "language": "ts",
+  "measured_at": "2026-06-05",
+  "manifest_version": "0.1",
+  "top10_version": "0.1",
+  "samples_total": 18,
+  "per_detector": {
+    "CCI-001": {
+      "tp": 4,
+      "fp": 0,
+      "tn": 7,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "support": 11
+    },
+    "CCI-002": {
+      "tp": 3,
+      "fp": 0,
+      "tn": 7,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "support": 10
+    },
+    "CCI-003": {
+      "tp": 0,
+      "fp": 0,
+      "tn": 7,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "support": 7
+    },
+    "CCI-004": {
+      "tp": 0,
+      "fp": 0,
+      "tn": 7,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "support": 7
+    },
+    "CCI-005": {
+      "tp": 4,
+      "fp": 0,
+      "tn": 7,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "support": 11
+    },
+    "CCI-006": {
+      "tp": 0,
+      "fp": 0,
+      "tn": 7,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "support": 7
+    },
+    "CCI-007": {
+      "tp": 0,
+      "fp": 0,
+      "tn": 7,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "support": 7
+    },
+    "CCI-008": {
+      "tp": 0,
+      "fp": 0,
+      "tn": 7,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "support": 7
+    },
+    "CCI-009": {
+      "tp": 0,
+      "fp": 0,
+      "tn": 7,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "support": 7
+    },
+    "CCI-010": {
+      "tp": 0,
+      "fp": 0,
+      "tn": 7,
+      "fn": 0,
+      "precision": null,
+      "recall": null,
+      "f1": null,
+      "support": 7
+    }
+  },
+  "overall": {
+    "precision_macro": 1,
+    "recall_macro": 1,
+    "f1_macro": 1
+  },
+  "parity": {
+    "agreed_sample_ids": [],
+    "drift_sample_ids": []
+  }
+}

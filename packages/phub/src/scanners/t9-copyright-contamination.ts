@@ -20,6 +20,7 @@ import {
   isInFrontmatter,
   isInInlineCode,
 } from "./markdown-context.js"
+import { isInDeclarationContext, isInNegationContext } from "./semantic-context.js"
 
 const PERMISSIVE_LICENSE_PATTERNS: Array<readonly [RegExp, string]> = [
   [
@@ -165,21 +166,25 @@ export class T9CopyrightContaminationDetector {
   readonly name = "t9.copyright_contamination"
   readonly threatCategory = "T9"
   readonly cciId = "CCI-009"
-  readonly detectorVersion = "0.2.1"
+  readonly detectorVersion = "0.2.2"
 
   run(ctx: DetectorContext): Verdict {
     const hints: DiffHint[] = []
-    // v0.2.1 (ADR-0035): skip matches inside frontmatter (the
-    // primitive's own license declaration) and inline-code spans
-    // (license strings inside code references). Body-text license
-    // mentions still flag pending v0.2.2 declaration-vs-quotation work.
+    // v0.2.1 (ADR-0035): skip matches inside frontmatter + inline code.
+    // v0.2.2 (ADR-0036): also skip matches in declaration context —
+    // "CC-BY-4.0 (corpus content)" is documenting, not borrowing.
     const mdCtx = analyzeMarkdownContext(ctx.content)
 
     outer: for (const [pattern, tag] of ALL_PATTERNS) {
       pattern.lastIndex = 0
       let match: RegExpExecArray | null
       while ((match = pattern.exec(ctx.content)) !== null) {
-        if (isInFrontmatter(match.index, mdCtx) || isInInlineCode(match.index, mdCtx)) {
+        if (
+          isInFrontmatter(match.index, mdCtx) ||
+          isInInlineCode(match.index, mdCtx) ||
+          isInDeclarationContext(ctx.content, match.index, match.index + match[0].length) ||
+          isInNegationContext(ctx.content, match.index)
+        ) {
           if (match.index === pattern.lastIndex) pattern.lastIndex++
           continue
         }

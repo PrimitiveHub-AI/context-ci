@@ -257,9 +257,10 @@ These are **enforced by user instruction**; not negotiable.
    (robots.txt + meta + X-Robots-Tag).
 6. **No npx skill installs.** External AI skills get *read into
    `/tmp/primitivehub-skills/`, distilled into a spec-conformant
-   primitive in `apps/web/content/primitives/`, source deleted*. The npx
-   install path is treated as a supply-chain attack vector (T5 in our
-   threat model). The project-local enforcement surface for this rule
+   primitive in `apps/web/content/primitives/`, source deleted*. The
+   `npx` install path is treated as a supply-chain attack vector (T5
+   in our threat model). The project-local enforcement surface for
+   this rule
    is `npx @primitivehub/phub audit` (PR 5.7.1, ADR-0025) — it walks
    the working tree, classifies every agent-context artifact, and
    runs the Top 10 detectors. If you cloned a skill and want to know

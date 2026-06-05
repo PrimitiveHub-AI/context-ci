@@ -62,6 +62,7 @@ from .markdown_context import (
     is_in_frontmatter,
     is_in_inline_code,
 )
+from .semantic_context import is_in_declaration_context, is_in_negation_context
 from .types import DetectorContext, DiffHint, Severity, Verdict
 
 _PERMISSIVE_LICENSE_PATTERNS: tuple[tuple[str, str], ...] = (
@@ -236,19 +237,22 @@ class T9CopyrightContaminationDetector:
     name = "t9.copyright_contamination"
     threat_category = "T9"
     cci_id = "CCI-009"
-    detector_version = "0.2.1"
+    detector_version = "0.2.2"
 
     def run(self, ctx: DetectorContext) -> Verdict:
         hints: list[DiffHint] = []
-        # v0.2.1 (ADR-0035): skip matches inside frontmatter (the
-        # primitive's own license declaration) and inline-code spans
-        # (license strings inside code references). Body-text license
-        # mentions still flag pending v0.2.2 declaration-vs-quotation work.
+        # v0.2.1 (ADR-0035): skip matches inside frontmatter + inline code.
+        # v0.2.2 (ADR-0036): also skip matches in declaration context —
+        # "CC-BY-4.0 (corpus content)" is documenting, not borrowing.
         md_ctx = analyze_markdown_context(ctx.content)
 
         for pattern, tag in _COMPILED:
             for match in pattern.finditer(ctx.content):
                 if is_in_frontmatter(match.start(), md_ctx) or is_in_inline_code(match.start(), md_ctx):
+                    continue
+                if is_in_declaration_context(ctx.content, match.start(), match.end()):
+                    continue
+                if is_in_negation_context(ctx.content, match.start()):
                     continue
                 hints.append(_hint_for_match(ctx.content, match, tag))
                 if len(hints) >= _MAX_HINTS_PER_VERDICT:

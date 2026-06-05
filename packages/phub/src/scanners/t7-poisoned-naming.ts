@@ -15,7 +15,8 @@ import {
   type Verdict,
   lineForPosition,
 } from "./types.js"
-import { analyzeMarkdownContext, isInFrontmatter } from "./markdown-context.js"
+import { analyzeMarkdownContext, isInFrontmatter, isInInlineCode } from "./markdown-context.js"
+import { isInMentionContext } from "./semantic-context.js"
 
 const VENDORS = [
   "Anthropic",
@@ -153,20 +154,31 @@ export class T7PoisonedNamingDetector {
   readonly name = "t7.poisoned_naming"
   readonly threatCategory = "T7"
   readonly cciId = "CCI-007"
-  readonly detectorVersion = "0.2.1"
+  readonly detectorVersion = "0.2.2"
 
   run(ctx: DetectorContext): Verdict {
     const hints: DiffHint[] = []
-    // v0.2.1 (ADR-0035): skip matches inside frontmatter — vendor
-    // URLs in `references:` lists are not impersonation. Body-text
-    // mentions still flag pending v0.2.2 mention-vs-impersonation work.
+    // v0.2.1 (ADR-0035): skip matches inside frontmatter.
+    // v0.2.2 (ADR-0036): for the bare-vendor-name typosquat family
+    // only, also skip matches in mention context — "Stripe's
+    // typography" and "like Linear" are references, not
+    // impersonation. OFFICIAL_CLAIM + FALSE_AFFILIATION patterns
+    // remain context-unaware because they're explicit impersonation
+    // prose ("the official X primitive", "endorsed by Y").
     const mdCtx = analyzeMarkdownContext(ctx.content)
 
     outer: for (const [pattern, tag] of ALL_PATTERNS) {
       pattern.lastIndex = 0
       let match: RegExpExecArray | null
       while ((match = pattern.exec(ctx.content)) !== null) {
-        if (isInFrontmatter(match.index, mdCtx)) {
+        if (isInFrontmatter(match.index, mdCtx) || isInInlineCode(match.index, mdCtx)) {
+          if (match.index === pattern.lastIndex) pattern.lastIndex++
+          continue
+        }
+        if (
+          tag === "vendor-typosquat" &&
+          isInMentionContext(ctx.content, match.index, match.index + match[0].length)
+        ) {
           if (match.index === pattern.lastIndex) pattern.lastIndex++
           continue
         }

@@ -48,7 +48,12 @@ from __future__ import annotations
 
 import re
 
-from .markdown_context import analyze_markdown_context, is_in_frontmatter
+from .markdown_context import (
+    analyze_markdown_context,
+    is_in_frontmatter,
+    is_in_inline_code,
+)
+from .semantic_context import is_in_mention_context
 from .types import DetectorContext, DiffHint, Severity, Verdict
 
 # Well-known AI / cloud / dev vendors. The detector flags impersonation
@@ -198,18 +203,26 @@ class T7PoisonedNamingDetector:
     name = "t7.poisoned_naming"
     threat_category = "T7"
     cci_id = "CCI-007"
-    detector_version = "0.2.1"
+    detector_version = "0.2.2"
 
     def run(self, ctx: DetectorContext) -> Verdict:
         hints: list[DiffHint] = []
-        # v0.2.1 (ADR-0035): skip matches inside frontmatter — vendor
-        # URLs in `references:` lists are not impersonation. Body-text
-        # mentions still flag pending v0.2.2 mention-vs-impersonation work.
+        # v0.2.1 (ADR-0035): skip matches inside frontmatter.
+        # v0.2.2 (ADR-0036): for the bare-vendor-name typosquat family
+        # only, also skip matches in mention context — "Stripe's
+        # typography" and "like Linear" are references, not
+        # impersonation. OFFICIAL_CLAIM + FALSE_AFFILIATION patterns
+        # remain context-unaware because they're explicit impersonation
+        # prose.
         md_ctx = analyze_markdown_context(ctx.content)
 
         for pattern, tag in _COMPILED:
             for match in pattern.finditer(ctx.content):
-                if is_in_frontmatter(match.start(), md_ctx):
+                if is_in_frontmatter(match.start(), md_ctx) or is_in_inline_code(match.start(), md_ctx):
+                    continue
+                if tag == "vendor-typosquat" and is_in_mention_context(
+                    ctx.content, match.start(), match.end()
+                ):
                     continue
                 hints.append(_hint_for_match(ctx.content, match, tag))
                 if len(hints) >= _MAX_HINTS_PER_VERDICT:

@@ -246,9 +246,8 @@ for the full priority stack.
 
 ## References
 
-- Linear's design principles:
-  https://linear.app/method/principles
-- Vercel design system: https://vercel.com/design
-- Stripe Docs design language: https://docs.stripe.com/
-- Sigstore Foundation site: https://www.sigstore.dev/
+- Linear's design principles: `https://linear.app/method/principles`
+- Vercel design system: `https://vercel.com/design`
+- Stripe Docs design language: `https://docs.stripe.com/`
+- Sigstore Foundation site: `https://www.sigstore.dev/`
 - This codebase's own existing components as taste anchors.

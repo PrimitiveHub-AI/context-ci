@@ -11,82 +11,51 @@
 #
 # Re-review cadence: quarterly + on every Top 10 minor-version bump.
 # See §4 of the methodology doc.
+#
+# ─────────────────────────────────────────────────────────────────────
+# CURRENT STATUS (2026-06-05): ZERO active allow rules.
+# All five accepted false positives (FP-001 .. FP-005) have been
+# closed at the detector level via Path-C tightening:
+#   - FP-002 + FP-003 closed by v0.2.1 syntactic context (ADR-0035)
+#   - FP-001 + FP-004 + FP-005 closed by v0.2.2 semantic context (ADR-0036)
+# The ledger entries themselves stay committed forever (append-only
+# discipline per ADR-0030 § 1 practice 1) as the audit trail; only
+# the active allow rules were removed.
+# ─────────────────────────────────────────────────────────────────────
 
 version: "0.1"
 strict: false
 
-allow:
-  # FP-001 — CLAUDE.md teaches the T5 attack vector by name.
-  # See docs/false-positive-resolution.md §6 → FP-001.
-  - reason: |
-      FP-001 — CLAUDE.md hard-rule #6 explicitly documents
-      `npx skill installs` as a T5 supply-chain attack vector and
-      names `npx @primitivehub/phub audit` as the local enforcement
-      surface for the rule. The detector is doing its job; the
-      content is the project's own threat-model documentation.
-      Canonical WAI per docs/bugs.md #25. Path B (domain WAI) per
-      docs/false-positive-resolution.md §1.
-      Re-review: 2026-09-01. ADR-0018, ADR-0023, ADR-0025.
-    files:
-      - "CLAUDE.md"
-    rules:
-      - id: "CCI-005"
-        detail_tags:
-          - "npx-arbitrary-install"
+allow: []
 
-  # FP-002 — REMOVED 2026-06-04 via Path C (ADR-0035 v0.2.1).
-  # The v0.2.1 CCI-005 detector now skips matches inside inline-code
-  # spans. The `npx shadcn@latest` mention in the primitive is wrapped
-  # in backticks and no longer trips the detector. See
-  # docs/false-positive-resolution.md § 6 → FP-002 Re-review log for
-  # the closure trail. The ledger entry stays in place (append-only
-  # discipline per ADR-0030 § 1 practice 1); only the active policy
-  # rule was removed.
-
-  # FP-003 — REMOVED 2026-06-04 via Path C (ADR-0035 v0.2.1).
-  # The v0.2.1 CCI-009 detector now skips matches inside the
-  # frontmatter block. Every primitive's `license: CC-BY-4.0`
-  # declaration sits in frontmatter and is no longer flagged. See
-  # docs/false-positive-resolution.md § 6 → FP-003 Re-review log.
-
-  # FP-004 — CLAUDE.md references CC-BY-4.0 when describing the corpus license.
-  # See docs/false-positive-resolution.md §6 → FP-004.
-  - reason: |
-      FP-004 — CLAUDE.md's canonical-docs table describes the Corpus
-      v0.1 row with the phrase "CC-BY-4.0 (corpus content)" — meta-
-      documentation about which artifact ships under which license.
-      Not adopted content; the project is the source of the corpus,
-      not a consumer of CC-BY content. Same shape as FP-003 applied
-      to the project's own meta-docs. Path B (domain WAI) per
-      docs/false-positive-resolution.md §1.
-      Re-review: 2026-09-04. ADR-0018, ADR-0030.
-    files:
-      - "CLAUDE.md"
-    rules:
-      - id: "CCI-009"
-        detail_tags:
-          - "cc-attribution-required"
-
-  # FP-005 — frontend-design-elite primitive references real vendor names
-  # (Stripe / Vercel / Linear / Sigstore) as design exemplars.
-  # See docs/false-positive-resolution.md §6 → FP-005.
-  - reason: |
-      FP-005 — apps/web/content/primitives/frontend-design-elite.md
-      teaches design taste by referencing the design discipline of
-      named vendors (Stripe / Vercel / Linear / Sigstore). The v0.1
-      CCI-007 detector flags every literal occurrence of those vendor
-      names as "vendor-typosquat / impersonation" — but the primitive
-      is REFERENCING the real vendors as exemplars, not impersonating
-      them. The detector confuses mention with impersonation.
-      Path B (domain WAI) per docs/false-positive-resolution.md §1.
-      The v0.2 Path-C tightening should distinguish vendor mention
-      (context: design references, comparisons, quotations) from
-      vendor impersonation (context: install commands, package names,
-      author identity claims).
-      Re-review: 2026-09-04. ADR-0018, ADR-0030.
-    files:
-      - "apps/web/content/primitives/frontend-design-elite.md"
-    rules:
-      - id: "CCI-007"
-        detail_tags:
-          - "vendor-typosquat"
+# FP-001 — REMOVED 2026-06-05 via Path C (ADR-0036 v0.2.2).
+# The v0.2.2 CCI-005 detector now consults isInNegationContext() and
+# skips matches in negation prose. CLAUDE.md hard-rule #6 says
+# "No npx skill installs" (and equivalents) — body prose in negation
+# context. The detector no longer fires. See FP-001 § Re-review log
+# in docs/false-positive-resolution.md for the closure trail.
+#
+# FP-002 — REMOVED 2026-06-04 via Path C (ADR-0035 v0.2.1).
+# CCI-005 skips matches inside inline-code spans. The `npx
+# shadcn@latest` mention in shadcn-ui-composition.md is wrapped in
+# backticks and no longer trips the detector.
+#
+# FP-003 — REMOVED 2026-06-04 via Path C (ADR-0035 v0.2.1).
+# CCI-009 skips matches inside the frontmatter block. Every primitive's
+# `license: CC-BY-4.0` declaration sits in frontmatter and is no longer
+# flagged.
+#
+# FP-004 — REMOVED 2026-06-05 via Path C (ADR-0036 v0.2.2).
+# The v0.2.2 CCI-009 detector now consults isInDeclarationContext()
+# and skips matches in declaration prose. CLAUDE.md's "CC-BY-4.0
+# (corpus content)" body-table reference is recognized as declaration,
+# not borrowed content. See FP-004 § Re-review log in the methodology
+# doc.
+#
+# FP-005 — REMOVED 2026-06-05 via Path C (ADR-0036 v0.2.2).
+# The v0.2.2 CCI-007 detector now consults isInMentionContext() for
+# the bare-vendor-name typosquat family only and skips matches in
+# reference prose ("Stripe's typography", "like Linear",
+# "such as Vercel"). OFFICIAL_CLAIM + FALSE_AFFILIATION patterns
+# remain context-unaware so explicit impersonation prose still fires.
+# See FP-005 § Re-review log in the methodology doc.

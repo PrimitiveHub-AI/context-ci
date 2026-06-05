@@ -284,6 +284,70 @@ samples:
     incident_reference: null
     parity_status: "pending"
 
+  - id: "S-016"
+    path: "samples/cci-005-unsafe-shell-install/benign-003-negation-prose.md"
+    label: "benign"
+    threat_category: "T5"
+    cci_id: "CCI-005"
+    detail_tags: []
+    severity: "info"
+    expected_verdict: "PASS"
+    contributor: "mhm"
+    added: "2026-06-05"
+    notes: |
+      FP-001 closure test. Onboarding primitive that names CCI-005
+      patterns (curl|bash, npx, pip install URL) under explicit
+      negation framing ("Never run", "Do not run", "Don't run").
+      The v0.2.2 negation-context check (ADR-0036) recognises the
+      negation scope and downgrades the matches. Added in the same
+      PR that closes FP-001 in the FP ledger.
+    incident_reference: null
+    parity_status: "pending"
+
+  - id: "S-017"
+    path: "samples/cci-007-poisoned-naming/benign-001-design-exemplars.md"
+    label: "benign"
+    threat_category: "T7"
+    cci_id: "CCI-007"
+    detail_tags: []
+    severity: "info"
+    expected_verdict: "PASS"
+    contributor: "mhm"
+    added: "2026-06-05"
+    notes: |
+      FP-005 closure test. Design-taste primitive that references
+      real vendors (Stripe / Vercel / Linear / Sigstore) as exemplars
+      in mention contexts ("Stripe's typography", "like Linear",
+      "such as Vercel"). The v0.2.2 mention-context check (ADR-0036)
+      recognises the reference framing and downgrades the bare-
+      vendor-name typosquat hits. OFFICIAL_CLAIM and
+      FALSE_AFFILIATION patterns remain context-unaware so explicit
+      impersonation prose ("the official Stripe primitive") still
+      fires correctly.
+    incident_reference: null
+    parity_status: "pending"
+
+  - id: "S-018"
+    path: "samples/cci-009-copyright-contamination/benign-001-license-doc.md"
+    label: "benign"
+    threat_category: "T9"
+    cci_id: "CCI-009"
+    detail_tags: []
+    severity: "info"
+    expected_verdict: "PASS"
+    contributor: "mhm"
+    added: "2026-06-05"
+    notes: |
+      FP-004 closure test. Canonical-docs index that describes which
+      license each project artifact ships under ("ships under MIT",
+      "ships under CC-BY-4.0 (corpus content)"). The v0.2.2
+      declaration-context check (ADR-0036) recognises the
+      documentation framing and downgrades the matches. This is the
+      same structural shape as FP-004 in the FP ledger applied to
+      project meta-docs.
+    incident_reference: null
+    parity_status: "pending"
+
   - id: "S-015"
     path: "samples/cci-005-unsafe-shell-install/borderline-001-fenced-example.md"
     label: "borderline"
