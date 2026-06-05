@@ -72,6 +72,14 @@ classes of document live here:
   `.primitivehub/policy.yaml`.** Every policy entry MUST be
   back-referenced by a ledger entry committed in the same PR.
 
+- **[False-negative resolution](./false-negative-resolution.md)** —
+  The equal-and-opposite ledger to false-positives. Methodology +
+  append-only `FN-NNN` ledger for detector *misses* surfaced by the
+  corpus regression gate (ADR-0037). Four-path triage (detector
+  defect / sample relabel / spec gap / escalate). Exists because once
+  precision saturates (P=1.000), further FP-tuning can only cost
+  recall — the FN discipline is what keeps tuning honest.
+
 - **[Corpus v0.1](./corpus-v0.1.md)** — Labeled adversarial corpus
   used to measure per-detector precision + recall + F1 (ADR-0032).
   Implementation: [`bench/`](../bench/) at the repo root, with the
@@ -79,7 +87,16 @@ classes of document live here:
   scripts in `bench/scripts/{measure.ts,measure.py}`. CC-BY-4.0
   (corpus content). The single artifact the launch paper's
   evaluation section will cite by `(corpus_version, top10_version,
-  language, commit_sha)`.
+  language, commit_sha)`. Expanded to **v0.2** (+20 samples, 80/20
+  in-sample/holdout split for overfit detection) per ADR-0038.
+
+- **[OWASP LLM Top 10 crosswalk](./owasp-llm-top10-crosswalk.md)** —
+  Maps the Context CI Top 10 ↔ OWASP Top 10 for LLM Applications
+  (2025). The *map-don't-expand* answer to OWASP trend pressure
+  (ADR-0040 §4): we cover the injection + supply-chain slice
+  statically; runtime/training-time OWASP risks (model poisoning,
+  output handling, embeddings) are a different defense layer, out of
+  scope by design.
 
 - **[Decisions](./decisions/)** — Architecture Decision Records. One
   file per load-bearing choice (Django Ninja over DRF, Postgres RLS,
