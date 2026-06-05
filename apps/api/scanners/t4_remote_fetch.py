@@ -50,7 +50,15 @@ _FETCH_AND_INCLUDE_PATTERNS: tuple[tuple[str, str], ...] = (
         "fetch-and-include",
     ),
     (
-        r"\b(?:include|inject|append|merge)\s+(?:the\s+(?:contents?|response|body)\s+of\s+)?(?:curl|wget|fetch)\s+\S*https?://",
+        # v0.2.1 (Round 2 — closes corpus FN on S-030 "Inject the
+        # response body of curl -s https://..."). Two fixes vs v0.2.0:
+        #   (a) the noun slot accepts compound forms like "response
+        #       body" / "payload data", not just single nouns.
+        #   (b) the flag/value gap between command and URL allows up
+        #       to 8 whitespace-separated tokens (bounded — prevents
+        #       catastrophic backtracking; covers realistic curl
+        #       invocations per FN-004 peer-review addendum).
+        r"\b(?:include|inject|append|merge)\s+(?:the\s+(?:contents?|response|body|payload|data)(?:\s+(?:body|payload|content|data))?\s+of\s+)?(?:curl|wget|fetch)\s+(?:[\w-]+\s+){0,8}https?://",
         "fetch-and-include",
     ),
     (
@@ -145,7 +153,7 @@ class T4RemoteFetchDetector:
         md_ctx = analyze_markdown_context(ctx.content)
         for pattern, tag in _COMPILED:
             for match in pattern.finditer(ctx.content):
-                if is_in_any_code_or_frontmatter(match.start(), md_ctx):
+                if is_in_any_code_or_frontmatter(match.start(), md_ctx, match.end()):
                     continue
                 hints.append(_hint_for_match(ctx.content, match, tag))
                 if len(hints) >= _MAX_HINTS_PER_VERDICT:

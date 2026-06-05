@@ -292,9 +292,28 @@ def _scan_fake_doi_prefixes(content: str) -> list[DiffHint]:
     return hints
 
 
+def _is_quoted_trigger_phrase(content: str, start: int, end: int) -> bool:
+    """v0.2.2 (Round 2 — closes corpus FP=2 on CCI-008 meta-discussion
+    of trigger phrases in quoted form). When a vague-trigger appears
+    inside a "..." or '...' quoted phrase, the prose is describing the
+    trigger phrase rather than asserting it. Recognise the case by
+    checking for a paired quote-character immediately before AND
+    after the match.
+    """
+    if start == 0 or end >= len(content):
+        return False
+    before = content[start - 1]
+    after = content[end]
+    if before not in {'"', "'"}:
+        return False
+    return after == before
+
+
 def _scan_vague_citations(content: str) -> list[DiffHint]:
     hints: list[DiffHint] = []
     for match in _VAGUE_TRIGGER_RE.finditer(content):
+        if _is_quoted_trigger_phrase(content, match.start(), match.end()):
+            continue
         window_start = match.end()
         window = content[window_start : window_start + _VAGUE_LOOKAHEAD_CHARS]
         if _REFERENCE_SIGNAL_RE.search(window):

@@ -173,7 +173,7 @@ class T5UnsafeShellInstallDetector:
 
         for pattern, tag in _COMPILED:
             for match in pattern.finditer(ctx.content):
-                if is_in_any_code_or_frontmatter(match.start(), md_ctx):
+                if is_in_any_code_or_frontmatter(match.start(), md_ctx, match.end()):
                     continue
                 if is_in_negation_context(ctx.content, match.start()):
                     continue

@@ -76,11 +76,19 @@ _DECODE_AND_EXECUTE_PATTERNS: tuple[tuple[str, str], ...] = (
         "decode-and-execute",
     ),
     (
-        r"\b(?:decode|deobfuscate)\s+(?:the\s+|this\s+|following\s+)?(?:hex|base64|payload|blob).{0,40}\s+(?:and|then)\s+(?:run|execute|eval|exec)",
+        # v0.2.2 (Round 2 — closes corpus FN on S-019 "decode the
+        # following base64 string and run"). Widened the article slot
+        # from a single optional article (the/this/following) to up to
+        # 30 chars of word/whitespace so multi-word noun phrases between
+        # `decode` and the format keyword still match.
+        r"\b(?:decode|deobfuscate)\s+[\w\s]{0,30}\b(?:hex|base64|payload|blob)\b.{0,80}?\s+(?:and|then)\s+(?:run|execute|eval|exec)",
         "decode-and-execute",
     ),
     (
-        r"\b(?:run|exec|eval)\s+(?:the\s+)?(?:result|output|decoded)\s+of\s+(?:base64|hex|decode)",
+        # v0.2.2 — closes corpus FN on S-021 "Run the result of decoding
+        # hex on the following payload". Added `decod\w*` so participle
+        # / gerund forms match alongside the bare verb.
+        r"\b(?:run|exec|eval)\s+(?:the\s+)?(?:result|output|decoded)\s+of\s+(?:base64|hex|decod\w*)",
         "decode-and-execute",
     ),
 )
@@ -132,7 +140,7 @@ def _scan_long_encoded_blobs(
         for match in pattern.finditer(content):
             if len(hints) >= _MAX_HINTS_PER_VERDICT:
                 return hints
-            if md_ctx is not None and is_in_any_code_or_frontmatter(match.start(), md_ctx):
+            if md_ctx is not None and is_in_any_code_or_frontmatter(match.start(), md_ctx, match.end()):
                 continue
             raw = match.group(0)
             hints.append(
@@ -159,7 +167,7 @@ def _scan_instructions(
         for match in pattern.finditer(content):
             if len(hints) >= _MAX_HINTS_PER_VERDICT:
                 return hints
-            if md_ctx is not None and is_in_any_code_or_frontmatter(match.start(), md_ctx):
+            if md_ctx is not None and is_in_any_code_or_frontmatter(match.start(), md_ctx, match.end()):
                 continue
             raw = match.group(0)
             hints.append(

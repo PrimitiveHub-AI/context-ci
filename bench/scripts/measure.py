@@ -68,6 +68,11 @@ class ManifestSample:
     contributor: str
     added: str
     notes: str
+    # Round 4 (ADR-0038): 80/20 holdout split for overfit detection.
+    # Samples with holdout=True contribute to a SEPARATE stats group;
+    # the gate enforces against in-sample only. Default False keeps the
+    # v0.1 corpus' in-sample/holdout boundary at the v0.2 cut.
+    holdout: bool = False
 
 
 @dataclass
@@ -102,6 +107,7 @@ def load_manifest() -> tuple[str, str, list[ManifestSample]]:
             contributor=s["contributor"],
             added=str(s["added"]),
             notes=s.get("notes", ""),
+            holdout=bool(s.get("holdout", False)),
         )
         for s in raw["samples"]
     ]
@@ -195,8 +201,18 @@ def select_detectors(restrict_to: str | None) -> list[Detector]:
     return [d for d in all_d if d.cci_id == restrict_to]
 
 
-def measure(samples: list[ManifestSample], detectors: list[Detector]) -> dict[str, DetectorStats]:
-    stats: dict[str, DetectorStats] = {}
+def measure(
+    samples: list[ManifestSample], detectors: list[Detector]
+) -> tuple[dict[str, DetectorStats], dict[str, DetectorStats]]:
+    """Run detectors over the corpus; return (in_sample_stats, holdout_stats).
+
+    Per ADR-0038, samples marked `holdout: true` in the manifest score
+    into a SEPARATE stats group. The corpus regression gate compares
+    against in-sample stats; holdout stats are reported alongside for
+    overfit detection. The pair is also written to the baseline JSON.
+    """
+    in_sample: dict[str, DetectorStats] = {}
+    holdout: dict[str, DetectorStats] = {}
     for s in samples:
         abs_path = CORPUS_ROOT / s.path
         if not abs_path.exists():
@@ -211,10 +227,11 @@ def measure(samples: list[ManifestSample], detectors: list[Detector]) -> dict[st
             file_path=s.path,
         )
         verdicts = {d.cci_id: d.run(ctx) for d in detectors}
-        score_sample(s, verdicts, stats)
-    for st in stats.values():
-        finalize_stats(st)
-    return stats
+        score_sample(s, verdicts, holdout if s.holdout else in_sample)
+    for bucket in (in_sample, holdout):
+        for st in bucket.values():
+            finalize_stats(st)
+    return in_sample, holdout
 
 
 # ---------------------------------------------------------------------------
@@ -228,18 +245,20 @@ def print_report(
     samples: list[ManifestSample],
     per: dict[str, DetectorStats],
     overall: dict[str, float | None],
+    *,
+    bucket: str = "in-sample",
 ) -> None:
     labels: dict[str, int] = {}
     for s in samples:
         labels[s.label] = labels.get(s.label, 0) + 1
     print(
         f"Corpus v{corpus_version} (top10 v{top10_version}) — "
-        f"{len(samples)} samples "
+        f"{len(samples)} {bucket} samples "
         f"({labels.get('adversarial', 0)} adversarial, "
         f"{labels.get('benign', 0)} benign, "
         f"{labels.get('borderline', 0)} borderline)\n"
     )
-    print("Per detector:")
+    print(f"Per detector ({bucket}):")
     for cci, st in sorted(per.items()):
         print(f"  {cci}:")
         print(f"    precision  {fmt_num(st.precision)}  (TP={st.tp}, FP={st.fp})")
@@ -247,7 +266,7 @@ def print_report(
         print(f"    F1         {fmt_num(st.f1)}")
         print(f"    support    {st.support} samples")
     print()
-    print("Overall (macro-average over detectors):")
+    print(f"Overall ({bucket} macro-average):")
     print(f"  precision  {fmt_num(overall['precision_macro'])}")
     print(f"  recall     {fmt_num(overall['recall_macro'])}")
     print(f"  F1         {fmt_num(overall['f1_macro'])}\n")
@@ -260,8 +279,12 @@ def baseline_doc(
     samples_total: int,
     per: dict[str, DetectorStats],
     overall: dict[str, float | None],
+    *,
+    holdout_per: dict[str, DetectorStats] | None = None,
+    holdout_overall: dict[str, float | None] | None = None,
+    holdout_total: int = 0,
 ) -> dict[str, Any]:
-    return {
+    doc: dict[str, Any] = {
         "version": "0.1",
         "language": "py",
         "measured_at": measured_at,
@@ -275,6 +298,13 @@ def baseline_doc(
             "drift_sample_ids": [],
         },
     }
+    if holdout_per is not None and holdout_overall is not None:
+        doc["holdout"] = {
+            "samples_total": holdout_total,
+            "per_detector": {cci: asdict(st) for cci, st in sorted(holdout_per.items())},
+            "overall": holdout_overall,
+        }
+    return doc
 
 
 def compare_to_baseline(current: dict[str, Any], prior: dict[str, Any], tolerance: float) -> list[str]:
@@ -296,12 +326,27 @@ def compare_to_baseline(current: dict[str, Any], prior: dict[str, Any], toleranc
 # ---------------------------------------------------------------------------
 
 
+def latest_baseline(language: str) -> Path | None:
+    """Return the most recent baseline JSON for `language` (py/ts).
+
+    Sort lexicographically — baseline filenames are `YYYY-MM-DD-<lang>.json`,
+    so lex sort == chronological sort. Returns None if no baselines exist.
+    """
+    candidates = sorted(BASELINE_DIR.glob(f"*-{language}.json"))
+    return candidates[-1] if candidates else None
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(
         description="Python precision/recall measurement against the PrimitiveHub corpus (v0.1).",
     )
     parser.add_argument("--baseline", help="compare against a prior baseline JSON", default=None)
     parser.add_argument("--gate", help="exit 1 on F1 regression > tolerance", action="store_true")
+    parser.add_argument(
+        "--gate-vs-latest",
+        help="auto-discover the most recent Py baseline and gate against it (CI mode)",
+        action="store_true",
+    )
     parser.add_argument("--detector", help="restrict to one detector (CCI-NNN)", default=None)
     parser.add_argument(
         "--no-baseline",
@@ -317,18 +362,51 @@ def main(argv: list[str]) -> int:
     )
     args = parser.parse_args(argv)
 
+    # --gate-vs-latest is the CI ergonomics path: implies --gate and finds
+    # the latest committed baseline as the floor.
+    if args.gate_vs_latest:
+        if args.baseline is not None:
+            print("measure: --gate-vs-latest is mutually exclusive with --baseline", file=sys.stderr)
+            return 1
+        latest = latest_baseline("py")
+        if latest is None:
+            print("measure: --gate-vs-latest set but no Py baselines found", file=sys.stderr)
+            return 1
+        args.baseline = str(latest)
+        args.gate = True
+        args.emit_baseline = False
+
     corpus_version, top10_version, samples = load_manifest()
     detectors = select_detectors(args.detector)
     if not detectors:
         print(f"measure: no detectors selected (--detector={args.detector})", file=sys.stderr)
         return 1
 
-    per = measure(samples, detectors)
-    overall = macro_average(per)
-    print_report(corpus_version, top10_version, samples, per, overall)
+    in_sample_per, holdout_per = measure(samples, detectors)
+    in_sample_overall = macro_average(in_sample_per)
+    holdout_overall = macro_average(holdout_per)
+    in_sample_samples = [s for s in samples if not s.holdout]
+    holdout_samples = [s for s in samples if s.holdout]
+    print_report(
+        corpus_version, top10_version, in_sample_samples, in_sample_per, in_sample_overall, bucket="in-sample"
+    )
+    if holdout_samples:
+        print_report(
+            corpus_version, top10_version, holdout_samples, holdout_per, holdout_overall, bucket="holdout"
+        )
 
     measured_at = datetime.now(timezone.utc).date().isoformat()
-    current = baseline_doc(measured_at, corpus_version, top10_version, len(samples), per, overall)
+    current = baseline_doc(
+        measured_at,
+        corpus_version,
+        top10_version,
+        len(in_sample_samples),
+        in_sample_per,
+        in_sample_overall,
+        holdout_per=holdout_per if holdout_samples else None,
+        holdout_overall=holdout_overall if holdout_samples else None,
+        holdout_total=len(holdout_samples),
+    )
 
     if args.emit_baseline:
         BASELINE_DIR.mkdir(parents=True, exist_ok=True)

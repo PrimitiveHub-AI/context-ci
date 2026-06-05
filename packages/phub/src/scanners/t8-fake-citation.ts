@@ -155,13 +155,33 @@ function scanFakeDoiPrefixes(content: string): DiffHint[] {
   return hints
 }
 
+/**
+ * v0.2.2 (Round 2 — closes corpus FP=2 on CCI-008 from meta-discussion
+ * of trigger phrases in quoted form). When a vague-trigger appears
+ * inside a "..." or '...' quoted phrase, the prose is describing
+ * the trigger phrase rather than asserting it. Recognise the case
+ * by checking for a paired quote-character immediately before AND
+ * after the match.
+ */
+function isQuotedTriggerPhrase(content: string, start: number, end: number): boolean {
+  if (start === 0 || end >= content.length) return false
+  const before = content[start - 1]
+  const after = content[end]
+  if (before !== '"' && before !== "'") return false
+  return after === before
+}
+
 function scanVagueCitations(content: string): DiffHint[] {
   const hints: DiffHint[] = []
   VAGUE_TRIGGER_RE.lastIndex = 0
   let m: RegExpExecArray | null
   while ((m = VAGUE_TRIGGER_RE.exec(content)) !== null) {
-    const windowStart = m.index + m[0].length
-    const window = content.slice(windowStart, windowStart + VAGUE_LOOKAHEAD_CHARS)
+    const matchEnd = m.index + m[0].length
+    if (isQuotedTriggerPhrase(content, m.index, matchEnd)) {
+      if (m.index === VAGUE_TRIGGER_RE.lastIndex) VAGUE_TRIGGER_RE.lastIndex++
+      continue
+    }
+    const window = content.slice(matchEnd, matchEnd + VAGUE_LOOKAHEAD_CHARS)
     if (!REFERENCE_SIGNAL_RE.test(window)) {
       hints.push({
         line: lineForPosition(content, m.index),

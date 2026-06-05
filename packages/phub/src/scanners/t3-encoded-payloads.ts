@@ -32,12 +32,20 @@ const DECODE_AND_EXECUTE_PATTERNS: Array<readonly [RegExp, string]> = [
     /\b(?:base64[\s_-]?decode|b64decode|atob|from_base64|decode\s+base64)\s+(?:the\s+|this\s+|following\s+)?.{0,40}(?:and\s+(?:run|execute|eval|exec)|then\s+(?:run|execute|eval|exec))/gim,
     "decode-and-execute",
   ],
+  // v0.2.2 (Round 2 — closes corpus FN on S-019 "decode the following
+  // base64 string and run"). Widened the article slot from a single
+  // optional article (the/this/following) to up to 30 chars of word/
+  // whitespace so multi-word noun phrases between `decode` and the
+  // format keyword (e.g. "the following base64 STRING") still match.
   [
-    /\b(?:decode|deobfuscate)\s+(?:the\s+|this\s+|following\s+)?(?:hex|base64|payload|blob).{0,40}\s+(?:and|then)\s+(?:run|execute|eval|exec)/gim,
+    /\b(?:decode|deobfuscate)\s+[\w\s]{0,30}\b(?:hex|base64|payload|blob)\b.{0,80}?\s+(?:and|then)\s+(?:run|execute|eval|exec)/gim,
     "decode-and-execute",
   ],
+  // v0.2.2 — closes corpus FN on S-021 "Run the result of decoding hex
+  // on the following payload". Added `decod\w*` so participle / gerund
+  // forms (decoding, decoded) match alongside the bare verb.
   [
-    /\b(?:run|exec|eval)\s+(?:the\s+)?(?:result|output|decoded)\s+of\s+(?:base64|hex|decode)/gim,
+    /\b(?:run|exec|eval)\s+(?:the\s+)?(?:result|output|decoded)\s+of\s+(?:base64|hex|decod\w*)/gim,
     "decode-and-execute",
   ],
 ]
@@ -68,7 +76,7 @@ function scanLongEncodedBlobs(content: string, mdCtx: MarkdownContext): DiffHint
       if (hints.length >= MAX_HINTS_PER_VERDICT) return hints
       // v0.2.0 (ADR-0023 lockstep with Python t3 v0.2.0): skip blobs
       // inside frontmatter / inline code / fenced code blocks.
-      if (isInAnyCodeOrFrontmatter(match.index, mdCtx)) {
+      if (isInAnyCodeOrFrontmatter(match.index, mdCtx, match.index + match[0].length)) {
         if (match.index === pattern.lastIndex) pattern.lastIndex++
         continue
       }
@@ -94,7 +102,7 @@ function scanInstructions(content: string, mdCtx: MarkdownContext): DiffHint[] {
       if (hints.length >= MAX_HINTS_PER_VERDICT) break outer
       // v0.2.0 (ADR-0023 lockstep): skip instruction patterns inside
       // frontmatter / inline code / fenced code blocks.
-      if (isInAnyCodeOrFrontmatter(match.index, mdCtx)) {
+      if (isInAnyCodeOrFrontmatter(match.index, mdCtx, match.index + match[0].length)) {
         if (match.index === pattern.lastIndex) pattern.lastIndex++
         continue
       }

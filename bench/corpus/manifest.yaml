@@ -546,7 +546,7 @@ samples:
     detail_tags:
       - "rot13-instruction"
     severity: "medium"
-    expected_verdict: "FAIL"
+    expected_verdict: "PASS"
     contributor: "mhm"
     added: "2026-06-05"
     notes: |
@@ -730,7 +730,7 @@ samples:
     detail_tags:
       - "load-time-fetch"
     severity: "medium"
-    expected_verdict: "FAIL"
+    expected_verdict: "PASS"
     contributor: "mhm"
     added: "2026-06-05"
     notes: |

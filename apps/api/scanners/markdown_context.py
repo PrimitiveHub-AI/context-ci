@@ -226,10 +226,29 @@ def is_in_inline_code(offset: int, ctx: MarkdownContext) -> bool:
     return _is_in_ranges(offset, ctx.inline_code_ranges)
 
 
-def is_in_any_code_or_frontmatter(offset: int, ctx: MarkdownContext) -> bool:
-    """Convenience for detectors that opt into the v0.2.1 set."""
-    return (
+def is_in_any_code_or_frontmatter(
+    offset: int, ctx: MarkdownContext, end: int | None = None
+) -> bool:
+    """Convenience for detectors that opt into the v0.2.1 set.
+
+    v0.2.2 (Round 2 lockstep, 2026-06-05): accepts an optional ``end``
+    so range-spanning matches are caught — canonical motivating case is
+    CCI-005's install-instruction regex matching "Install via `pip..."
+    (start outside inline code, end inside). Single-offset callers
+    keep v0.2.1 semantics.
+    """
+    if (
         is_in_frontmatter(offset, ctx)
         or is_in_fence(offset, ctx)
         or is_in_inline_code(offset, ctx)
-    )
+    ):
+        return True
+    if end is not None and end > offset:
+        tail = end - 1
+        if (
+            is_in_frontmatter(tail, ctx)
+            or is_in_fence(tail, ctx)
+            or is_in_inline_code(tail, ctx)
+        ):
+            return True
+    return False

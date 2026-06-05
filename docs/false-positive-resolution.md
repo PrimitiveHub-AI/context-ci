@@ -799,3 +799,118 @@ ADR-0036 (semantic-context infrastructure, related).
 ### FP-011 Re-review log
 
 _None yet — entry authored 2026-06-04._
+
+### FP-012 — CCI-008 vague-trigger fired inside defender-prose example listing
+
+- **Date authored:** 2026-06-05
+- **Artifact:** `bench/corpus/samples/cci-008-fake-citation/benign-001-defender-prose.md` (corpus sample S-055)
+- **Detector:** CCI-008 / `t8.fake_citation` / `vague-citation`
+- **Path:** C (detector defect; resolution is a lockstep tightening, not an allowlist entry)
+- **Re-review date:** n/a — Path C closes via Round 3 commit, not via an allow entry.
+
+**Symptom.** Round 2 of the elite-tier path
+([ADR-0037](./decisions/0037-corpus-as-steering-wheel.md)) measured the
+v0.1 corpus and found CCI-008 at P = 0.778. Two FPs out of 9 benign
+samples — both on defender-prose content describing the CCI-008
+attack family itself. S-055 contains the literal phrases
+`"studies show"`, `"research demonstrates"`, `"experts agree"`
+inside the parenthetical `("...", "...", "...")` clause that
+ENUMERATES the vague-trigger taxonomy for documentation purposes.
+The current `_VAGUE_TRIGGER_RE` matches the bare phrases anywhere in
+the document, the 200-char lookahead finds no `arXiv:` / `DOI:` /
+`RFC` / `[N]` / `(YYYY)` reference signal nearby, and the detector
+emits `FAIL`.
+
+This is structurally the same shape as FP-001 / FP-011: the
+project's own teaching prose about an attack family is
+indistinguishable, at the regex level, from the attack itself —
+because the prose names the attack.
+
+**Justification for Path C** (not Path B / allow entry). An allow
+entry on `bench/corpus/samples/**` would defeat the corpus's purpose:
+the corpus is supposed to fire its own detectors so we can measure.
+Suppressing the FP via policy hides the detector defect from the
+gate. The right fix is a detector-level skip: vague triggers
+enclosed in same-line quote pairs (`"..."` or `'...'`) are
+citations of the phrase, not uses of it.
+
+**Resolution vector** (executed in Round 3, lockstep PR per ADR-0023):
+extend `_scan_vague_citations` to skip matches where BOTH:
+
+1. The trigger is wholly enclosed in a same-line `"..."` or `'...'`
+   pair within ±50 characters of the match, AND
+2. A **metalinguistic noun** appears within ±100 characters of the
+   match: one of `phrase|term|trigger|expression|rhetoric|framing|appeal|wording|verbiage|construction|example|sub-shape|pattern`.
+
+The two-signal rule is the peer-review hardening (see addendum below):
+quote-pair enclosure alone is too easy for an attacker to defeat —
+they could wrap a real authority-appeal in quotes and evade. Requiring
+a metalinguistic noun nearby means the document is explicitly
+DISCUSSING the phrase rather than USING it.
+
+Add a fixture in `apps/api/scanners/tests/test_scanners_t8.py` +
+`packages/phub/test/scanners/t8.test.ts` that locks the regression on
+both S-055 and S-057 shapes.
+
+### FP-012 Peer-review addendum (2026-06-05)
+
+Adversarial peer reviewer flagged the originally-proposed
+quote-pair-only heuristic as too narrow on cross-line boundaries
+AND too easy to defeat (attacker wraps appeal in quotes and evades).
+Both risks mitigated by the two-signal rule above. The same-line
+constraint is preserved — defender prose discussing a phrase nearly
+always keeps the phrase and the metalinguistic noun on the same line
+in practice, and the cross-line edge case is bounded by the ±100
+char window on the noun search.
+
+**Cross-references:** [ADR-0023](./decisions/0023-phub-cli-and-detector-parity.md),
+[ADR-0037](./decisions/0037-corpus-as-steering-wheel.md), related
+FP-013 (same root cause, different sample), FP-001 / FP-011 (same
+"docs-about-attack" shape on other detectors), detector at
+[`apps/api/scanners/t8_fake_citation.py:295`](../apps/api/scanners/t8_fake_citation.py#L295).
+
+### FP-012 Re-review log
+
+_None yet — entry authored 2026-06-05._
+
+### FP-013 — CCI-008 vague-trigger fired on meta-prose discussing the detector
+
+- **Date authored:** 2026-06-05
+- **Artifact:** `bench/corpus/samples/cci-008-fake-citation/benign-003-vague-near-reference.md` (corpus sample S-057)
+- **Detector:** CCI-008 / `t8.fake_citation` / `vague-citation`
+- **Path:** C (detector defect)
+- **Re-review date:** n/a — Path C.
+
+**Symptom.** S-057 is structured in two parts. Part 1 is a
+LEGITIMATE technical paragraph that uses "Studies show" and
+"Research demonstrates" — each correctly paired with an inline
+reference (`arXiv:2401.12345`, `RFC 9421`); the v0.1 detector
+correctly skips both via the 200-char lookahead. Part 2 is a META
+paragraph explaining WHY the v0.1 detector correctly skipped Part 1
+— and in doing so quotes the phrases `"studies show"` and
+`"research demonstrates"` back. The detector matches the META quotes
+and finds no nearby reference signal (the META prose explains the
+mechanism, it doesn't cite). Both META mentions emit `FAIL`.
+
+The detector is honest at the pattern-matcher layer — there really is
+a vague-trigger without a nearby citation. But it is mistaken at the
+posture layer: the phrase is QUOTED meta-discussion of the trigger,
+not an authority appeal grounded in the trigger.
+
+**Justification for Path C.** Same as FP-012. Suppressing this via
+allowlist defeats the corpus's purpose. The fix belongs in the
+detector.
+
+**Resolution vector.** Identical to FP-012: same-line quote-enclosed
+matches skip **only if a metalinguistic noun (`phrase|term|...`)
+appears within ±100 characters**. Same lockstep PR closes both.
+Fixture covers both sample shapes.
+
+**Cross-references:** [ADR-0023](./decisions/0023-phub-cli-and-detector-parity.md),
+[ADR-0037](./decisions/0037-corpus-as-steering-wheel.md), related
+FP-012 (same fix vector + peer-review addendum), detector at
+[`apps/api/scanners/t8_fake_citation.py:295`](../apps/api/scanners/t8_fake_citation.py#L295).
+
+### FP-013 Re-review log
+
+_None yet — entry authored 2026-06-05._

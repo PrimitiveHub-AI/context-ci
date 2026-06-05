@@ -23,7 +23,7 @@
  *   1 — regression detected (under --gate) OR usage error
  */
 
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs"
+import { readFileSync, writeFileSync, mkdirSync, readdirSync } from "node:fs"
 import { join, dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
@@ -55,6 +55,10 @@ interface ManifestSample {
   notes: string
   incident_reference?: string | null
   parity_status?: string
+  // Round 4 (ADR-0038): 80/20 holdout split for overfit detection.
+  // Default false — sample contributes to in-sample stats unless
+  // explicitly flagged in the manifest.
+  holdout?: boolean
 }
 
 interface Manifest {
@@ -75,6 +79,12 @@ interface DetectorStats {
   support: number
 }
 
+interface OverallStats {
+  precision_macro: number | null
+  recall_macro: number | null
+  f1_macro: number | null
+}
+
 interface BaselineDoc {
   version: "0.1"
   language: "ts"
@@ -83,14 +93,17 @@ interface BaselineDoc {
   top10_version: string
   samples_total: number
   per_detector: Record<string, DetectorStats>
-  overall: {
-    precision_macro: number | null
-    recall_macro: number | null
-    f1_macro: number | null
-  }
+  overall: OverallStats
   parity: {
     agreed_sample_ids: string[]
     drift_sample_ids: string[]
+  }
+  // Round 4 (ADR-0038): holdout stats reported separately. Present
+  // only when the manifest contains at least one holdout sample.
+  holdout?: {
+    samples_total: number
+    per_detector: Record<string, DetectorStats>
+    overall: OverallStats
   }
 }
 
@@ -205,16 +218,38 @@ function fmtNum(n: number | null, w = 6): string {
 interface Args {
   baseline: string | null
   gate: boolean
+  gateVsLatest: boolean
   detector: string | null
   writeBaseline: boolean
   baselinePath: string | null
 }
 
+function latestBaseline(language: "py" | "ts"): string | null {
+  let entries: string[]
+  try {
+    entries = readdirSync(BASELINE_DIR)
+  } catch {
+    return null
+  }
+  const matches = entries
+    .filter((n) => n.endsWith(`-${language}.json`))
+    .sort() // YYYY-MM-DD-<lang>.json — lex sort == chronological
+  return matches.length === 0 ? null : join(BASELINE_DIR, matches[matches.length - 1])
+}
+
 function parseArgs(argv: readonly string[]): Args {
-  const a: Args = { baseline: null, gate: false, detector: null, writeBaseline: true, baselinePath: null }
+  const a: Args = {
+    baseline: null,
+    gate: false,
+    gateVsLatest: false,
+    detector: null,
+    writeBaseline: true,
+    baselinePath: null,
+  }
   for (let i = 0; i < argv.length; i++) {
     const t = argv[i]
     if (t === "--gate") a.gate = true
+    else if (t === "--gate-vs-latest") a.gateVsLatest = true
     else if (t === "--no-baseline") a.writeBaseline = false
     else if (t === "--baseline") { a.baseline = argv[++i] ?? null }
     else if (t === "--detector") { a.detector = argv[++i] ?? null }
@@ -227,6 +262,7 @@ Usage:
   tsx measure.ts                              # measure + write today's baseline
   tsx measure.ts --baseline <path>            # compare against a prior baseline
   tsx measure.ts --gate                       # exit 1 on F1 regression > ${REGRESSION_TOLERANCE.toFixed(2)} (composes with --baseline)
+  tsx measure.ts --gate-vs-latest             # CI mode: auto-discover latest baseline + gate against it
   tsx measure.ts --detector CCI-001           # restrict to one detector
   tsx measure.ts --no-baseline                # don't write the baseline file
   tsx measure.ts --write-baseline <path>      # write baseline to a specific path
@@ -304,6 +340,22 @@ function compareToBaseline(current: BaselineDoc, baseline: BaselineDoc, toleranc
 
 function main(argv: readonly string[]): number {
   const args = parseArgs(argv)
+
+  if (args.gateVsLatest) {
+    if (args.baseline !== null) {
+      process.stderr.write("measure: --gate-vs-latest is mutually exclusive with --baseline\n")
+      return 1
+    }
+    const latest = latestBaseline("ts")
+    if (latest === null) {
+      process.stderr.write("measure: --gate-vs-latest set but no TS baselines found\n")
+      return 1
+    }
+    args.baseline = latest
+    args.gate = true
+    args.writeBaseline = false
+  }
+
   let manifest: Manifest
   try {
     manifest = loadManifest()

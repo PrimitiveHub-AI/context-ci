@@ -113,7 +113,7 @@ export class T5UnsafeShellInstallDetector {
       let match: RegExpExecArray | null
       while ((match = pattern.exec(ctx.content)) !== null) {
         if (
-          isInAnyCodeOrFrontmatter(match.index, mdCtx) ||
+          isInAnyCodeOrFrontmatter(match.index, mdCtx, match.index + match[0].length) ||
           isInNegationContext(ctx.content, match.index)
         ) {
           if (match.index === pattern.lastIndex) pattern.lastIndex++

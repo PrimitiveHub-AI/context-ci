@@ -24,8 +24,17 @@ const FETCH_AND_INCLUDE_PATTERNS: Array<readonly [RegExp, string]> = [
     /\b(?:fetch|download|retrieve|pull|load)\s+(?:the\s+)?(?:contents?\s+of\s+)?https?:\/\/\S+\s+(?:and|then)\s+(?:append|include|add|use|merge|insert|inject)/gim,
     "fetch-and-include",
   ],
+  // v0.2.1 (Round 2 — closes corpus FN on S-030 "Inject the response
+  // body of curl -s https://..."). Two fixes vs v0.2.0:
+  //   (a) the noun slot accepts compound forms like "response body"
+  //       / "payload data", not just single nouns.
+  //   (b) the flag/value gap between command and URL allows up to
+  //       8 whitespace-separated tokens (bounded — prevents
+  //       catastrophic backtracking; covers realistic curl invocations
+  //       per FN-004 peer-review addendum).
+  // Lockstep with apps/api/scanners/t4_remote_fetch.py § v0.2.1.
   [
-    /\b(?:include|inject|append|merge)\s+(?:the\s+(?:contents?|response|body)\s+of\s+)?(?:curl|wget|fetch)\s+\S*https?:\/\//gim,
+    /\b(?:include|inject|append|merge)\s+(?:the\s+(?:contents?|response|body|payload|data)(?:\s+(?:body|payload|content|data))?\s+of\s+)?(?:curl|wget|fetch)\s+(?:[\w-]+\s+){0,8}https?:\/\//gim,
     "fetch-and-include",
   ],
   [
@@ -99,7 +108,7 @@ export class T4RemoteFetchDetector {
       pattern.lastIndex = 0
       let match: RegExpExecArray | null
       while ((match = pattern.exec(ctx.content)) !== null) {
-        if (isInAnyCodeOrFrontmatter(match.index, mdCtx)) {
+        if (isInAnyCodeOrFrontmatter(match.index, mdCtx, match.index + match[0].length)) {
           if (match.index === pattern.lastIndex) pattern.lastIndex++
           continue
         }

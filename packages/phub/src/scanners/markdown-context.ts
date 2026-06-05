@@ -241,7 +241,28 @@ export function isInInlineCode(offset: number, ctx: MarkdownContext): boolean {
  * frontmatter + inline code + fenced code. Detectors that want a
  * different subset (e.g., CCI-007 v0.2.1 skips ONLY frontmatter)
  * compose the individual predicates instead.
+ *
+ * v0.2.2 (Round 2 lockstep, 2026-06-05): accepts an optional `end`
+ * offset so range-spanning matches are caught. The canonical
+ * motivating case is CCI-005's install-instruction regex, which
+ * matches "Install via `pip ..." — start outside inline code, end
+ * inside it. Without the range check the match fires; with it, the
+ * span-into-code is recognized as documentary context. Detectors
+ * that pass only `offset` keep v0.2.1 single-point semantics.
  */
-export function isInAnyCodeOrFrontmatter(offset: number, ctx: MarkdownContext): boolean {
-  return isInFrontmatter(offset, ctx) || isInFence(offset, ctx) || isInInlineCode(offset, ctx)
+export function isInAnyCodeOrFrontmatter(
+  offset: number,
+  ctx: MarkdownContext,
+  end?: number,
+): boolean {
+  if (isInFrontmatter(offset, ctx) || isInFence(offset, ctx) || isInInlineCode(offset, ctx)) {
+    return true
+  }
+  if (end !== undefined && end > offset) {
+    const tail = end - 1
+    if (isInFrontmatter(tail, ctx) || isInFence(tail, ctx) || isInInlineCode(tail, ctx)) {
+      return true
+    }
+  }
+  return false
 }

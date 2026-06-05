@@ -1,0 +1,91 @@
+name: scanner-bench — corpus regression gate (ADR-0037)
+
+# Corpus-anchored regression gate for the Context CI scanners. Runs the
+# Python + TypeScript detector measurements against the most recent
+# committed baseline (the "floor"), then cross-checks Py↔TS parity
+# (ADR-0023). Every detector change PR passes through this gate before
+# merge — this is the *steering wheel* that replaced eyeballed
+# hit-trimming. See bench/baseline/FLOOR.md + docs/decisions/0037-corpus-as-steering-wheel.md.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/api/scanners/**"
+      - "packages/phub/src/scanners/**"
+      - "packages/phub/src/audit/**"        # audit pipeline can affect verdicts
+      - "bench/**"                          # corpus + measurement scripts
+      - ".github/workflows/scanner-bench.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/api/scanners/**"
+      - "packages/phub/src/scanners/**"
+      - "packages/phub/src/audit/**"
+      - "bench/**"
+      - ".github/workflows/scanner-bench.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bench:
+    name: corpus regression gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── Python side ───────────────────────────────────────────────────
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "0.5.4"
+          enable-cache: true
+          cache-dependency-glob: "apps/api/uv.lock"
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Sync apps/api deps
+        working-directory: apps/api
+        run: uv sync --all-extras
+
+      # ── TypeScript side ───────────────────────────────────────────────
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: |
+            packages/verify/pnpm-lock.yaml
+            packages/phub/pnpm-lock.yaml
+            bench/scripts/pnpm-lock.yaml
+
+      - name: Install + build verify (phub dep)
+        working-directory: packages/verify
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      - name: Install + build phub
+        working-directory: packages/phub
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      - name: Install bench/scripts deps
+        working-directory: bench/scripts
+        run: pnpm install --frozen-lockfile
+
+      # ── The gate ──────────────────────────────────────────────────────
+      # gate.sh discovers the most recent committed baseline per language,
+      # runs Py + TS measurement, and cross-checks parity. Exit 1 on any
+      # F1 regression > tolerance OR (tp,fp,tn,fn) drift between languages.
+      - name: Run corpus regression gate
+        env:
+          VERBOSE: "1"
+        run: bench/scripts/gate.sh
