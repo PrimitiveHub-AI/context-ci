@@ -421,6 +421,15 @@ All Python commands run from `apps/api/` via `uv`.
 - **Branch from `main`** unless there's a stated reason to stack.
 - **No merging without the user's explicit OK** — even on a session
   where they've trusted you to do everything else.
+- **Multi-session coordination.** Before editing, read + add a claim to
+  the live board in [`README.md`](./README.md) § "Multi-session
+  coordination"; update or clear your row on stop. This is how parallel
+  agent/dev sessions avoid clobbering files and losing continuity. Git +
+  ADRs stay the permanent record; the board is current-state only. When
+  cooperation can't be assumed, escalate to hard isolation —
+  `scripts/session-worktree.sh new <name>` (one `git worktree` per
+  session) under the single-stack rule. See
+  [ADR-0042](./docs/decisions/0042-multi-session-isolation.md).
 
 ## When in doubt
 

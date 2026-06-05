@@ -82,6 +82,68 @@ docker compose down
 docker compose down -v
 ```
 
+## Multi-session coordination
+
+When more than one agent/dev session works this repo, two things go wrong:
+**continuity is lost** (a new session redoes or contradicts the last one) and
+**files get clobbered** (two sessions edit the same area). Git history is the
+permanent record and ADRs are the decision record — this section is neither. It
+is the **live board** of what is in-flight *right now*. Keep it short: clear an
+entry the moment the work lands; git holds the history.
+
+**Protocol — every session:**
+
+1. **On start** — read the board below, plus `git log --oneline -10`. Don't
+   re-do landed work; don't silently contradict an open ADR.
+2. **Before editing** — add a claim row for the area you're about to touch. If a
+   live claim already covers those files, coordinate or pick different work —
+   **do not overwrite**.
+3. **On stop** — update your row with the state + the single next step, or delete
+   it if the work landed (the commit is the record).
+
+This is a convention, not a lock: it only works if every session honours it. For
+*cooperative* sessions the board is enough. When cooperation can't be assumed,
+escalate to **hard isolation** below — and note that no markdown file fixes
+*runtime* competition (crashes, resource fights); that's "Runtime hygiene".
+
+### Live board
+
+| Area / files | Session intent | State + next step | Since |
+|---|---|---|---|
+| _`apps/web/components/forge/` — example, replace with your real claim_ | _refactor CVA variants_ | _mid-flight — next: wire the CodeMirror linter_ | _2026-06-05_ |
+
+### Hard isolation (when the board isn't enough)
+
+The board can't *prevent* an overwrite — only a convention every session honours.
+When you can't assume that (e.g. genuinely concurrent agents), give each session
+its own `git worktree`: a separate checkout on its own branch, in its own
+directory, so two sessions editing the same file is **physically impossible**.
+
+```bash
+scripts/session-worktree.sh new my-task   # new worktree + branch off main
+scripts/session-worktree.sh list          # show all active worktrees
+scripts/session-worktree.sh rm  my-task    # remove it (branch is kept)
+```
+
+**Single-stack rule:** worktrees isolate *files*, not *ports/RAM*. Only **one**
+worktree may run the dev stack at a time — edit in parallel, run `docker compose
+up` / `pnpm dev` in exactly one. See [ADR-0042](./docs/decisions/0042-multi-session-isolation.md).
+
+### Runtime hygiene (prevents the "competing / crashing" dev process)
+
+A board cannot stop two processes fighting for the same socket or RAM. These
+rules can:
+
+- **One dev server at a time.** Either `docker compose up` (containerized,
+  preferred) **or** host `pnpm dev` — never both; they collide on port 3000 and
+  the `.next` build dir. After switching modes, `docker compose down -v` wipes
+  the anonymous `node_modules`/`.next` volumes.
+- **Mind the RAM floor.** The full stack needs ≥8 GB + swap; `next dev` alone is
+  ~1 GB. `docker compose stop web` while doing auth/admin work frees ~1 GB. See
+  [`CLAUDE.md`](./CLAUDE.md) § "Dev host minimum" before blaming application code
+  for an OOM/HMR stall.
+- **Localhost-only, always.** `127.0.0.1`, never `0.0.0.0` (pre-launch posture).
+
 ## Production deployment
 
 The CI pipeline (`.github/workflows/build-web.yml`) builds and pushes the image
