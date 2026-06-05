@@ -48,7 +48,13 @@ from .types import DetectorContext, DiffHint, Severity, Verdict
 OVERSIZED_THRESHOLD_CHARS = 32000  # approximately 8K tokens; 2x headroom over the largest project primitive
 EXCESSIVE_REPETITION_THRESHOLD = 0.20  # 20% of non-trivial lines duplicated
 WHITESPACE_STUFFING_THRESHOLD = 0.40  # 40% blank lines
-HEADING_PROLIFERATION_RATIO = 500  # one h2 per N chars triggers the flag
+HEADING_PROLIFERATION_RATIO = 200  # one h2 per N chars triggers the flag
+# v0.1.1 (2026-06-04) lowered from 500 → 200 (~50 tokens/section). The
+# 500 floor was over-strict — legitimate catalog / cheatsheet primitives
+# with 4–6 short sections in 2 KB routinely tripped it. 200 still
+# catches the outline-spam attack pattern (15+ empty h2 headings in
+# <1 KB) without flagging well-structured short docs.
+HEADING_PROLIFERATION_MIN_COUNT = 6  # must have at least N h2 headings to flag
 MIN_LINES_FOR_WHITESPACE_CHECK = 100
 NON_TRIVIAL_LINE_MIN_CHARS = 50
 
@@ -121,7 +127,7 @@ def _check_heading_proliferation(content: str) -> DiffHint | None:
     if n < 1000:
         return None
     h2_count = len(_H2_RE.findall(content))
-    if h2_count < 2:
+    if h2_count < HEADING_PROLIFERATION_MIN_COUNT:
         return None
     chars_per_h2 = n / h2_count
     if chars_per_h2 >= HEADING_PROLIFERATION_RATIO:
@@ -138,6 +144,49 @@ def _check_heading_proliferation(content: str) -> DiffHint | None:
     )
 
 
+# File paths that look like a primitive being authored. T10's bloat
+# semantics are calibrated for single primitives; firing on every
+# README/docs/changelog in a normal repo is the case ADR-0030 § 1
+# warns about — "scanner becomes the noisy boy who cries wolf." For
+# multi-file scans (file_path is set), only run T10 against files
+# whose path indicates they're a primitive.
+_PRIMITIVE_PATH_MARKERS: tuple[str, ...] = (
+    "/primitives/",
+    "/skills/",
+    "/skill/",
+    "/prompts/",
+    "/agents/",
+    "/.claude/skills/",
+    "/.cursor/rules/",
+)
+_PRIMITIVE_BASENAMES: frozenset[str] = frozenset({
+    "skill.md",
+    "agents.md",
+    "claude.md",
+    "cursor.md",
+    "codex.md",
+    "system.md",
+    "prompt.md",
+    "primitive.md",
+    ".cursorrules",
+})
+
+
+def _looks_like_primitive(file_path: str) -> bool:
+    """True when `file_path` looks like a primitive markdown / agent context.
+
+    Empty path → True (single-blob mode, no filename info, keep the
+    v0.1 behavior of running T10 against every input).
+    """
+    if not file_path:
+        return True
+    lowered = file_path.lower()
+    basename = lowered.rsplit("/", 1)[-1]
+    if basename in _PRIMITIVE_BASENAMES:
+        return True
+    return any(marker in f"/{lowered}/" for marker in _PRIMITIVE_PATH_MARKERS)
+
+
 class T10ContextBloatDetector:
     """Concrete `Detector` for T10. Mechanical-threshold-only in v0.1.
 
@@ -149,9 +198,25 @@ class T10ContextBloatDetector:
     name = "t10.context_bloat"
     threat_category = "T10"
     cci_id = "CCI-010"
-    detector_version = "0.1.0"
+    detector_version = "0.1.1"
 
     def run(self, ctx: DetectorContext) -> Verdict:
+        # v0.1.1 (2026-06-04): multi-file scan callers pass `file_path`;
+        # skip T10 when the file isn't a primitive (e.g. README in a
+        # repo). The bloat-threshold semantics don't apply to general
+        # documentation. Single-blob (Forge / mode=content) callers
+        # pass empty file_path and keep the original behavior.
+        if not _looks_like_primitive(ctx.file_path):
+            return Verdict(
+                detector_name=self.name,
+                threat_category=self.threat_category,
+                cci_id=self.cci_id,
+                severity=Severity.INFO,
+                passed=True,
+                summary="Skipped — file is not a primitive (T10 v0.1.1 scope).",
+                detector_version=self.detector_version,
+            )
+
         hints: list[DiffHint] = []
         for check in (
             _check_oversized,

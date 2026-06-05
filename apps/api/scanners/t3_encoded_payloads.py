@@ -45,6 +45,11 @@ from __future__ import annotations
 
 import re
 
+from .markdown_context import (
+    MarkdownContext,
+    analyze_markdown_context,
+    is_in_any_code_or_frontmatter,
+)
 from .types import DetectorContext, DiffHint, Severity, Verdict
 
 # Conservative cutoffs — short base64/hex strings produce too many
@@ -110,8 +115,15 @@ def _line_for(content: str, position: int) -> int:
     return content.count("\n", 0, position) + 1
 
 
-def _scan_long_encoded_blobs(content: str) -> list[DiffHint]:
-    """Find long base64 + hex runs."""
+def _scan_long_encoded_blobs(
+    content: str, md_ctx: MarkdownContext | None = None
+) -> list[DiffHint]:
+    """Find long base64 + hex runs.
+
+    v0.2.0: skip matches inside frontmatter / fenced code / inline
+    code. A long base64 blob in a ```python ... ``` example is
+    demonstration material, not a hidden payload.
+    """
     hints: list[DiffHint] = []
     for pattern, tag, label in (
         (_BASE64_RE, "base64-long-blob", "base64"),
@@ -120,6 +132,8 @@ def _scan_long_encoded_blobs(content: str) -> list[DiffHint]:
         for match in pattern.finditer(content):
             if len(hints) >= _MAX_HINTS_PER_VERDICT:
                 return hints
+            if md_ctx is not None and is_in_any_code_or_frontmatter(match.start(), md_ctx):
+                continue
             raw = match.group(0)
             hints.append(
                 DiffHint(
@@ -137,12 +151,16 @@ def _scan_long_encoded_blobs(content: str) -> list[DiffHint]:
     return hints
 
 
-def _scan_instructions(content: str) -> list[DiffHint]:
+def _scan_instructions(
+    content: str, md_ctx: MarkdownContext | None = None
+) -> list[DiffHint]:
     hints: list[DiffHint] = []
     for pattern, tag in _COMPILED_INSTRUCTIONS:
         for match in pattern.finditer(content):
             if len(hints) >= _MAX_HINTS_PER_VERDICT:
                 return hints
+            if md_ctx is not None and is_in_any_code_or_frontmatter(match.start(), md_ctx):
+                continue
             raw = match.group(0)
             hints.append(
                 DiffHint(
@@ -176,14 +194,16 @@ class T3EncodedPayloadsDetector:
     name = "t3.encoded_payloads"
     threat_category = "T3"
     cci_id = "CCI-003"
-    detector_version = "0.1.0"
+    detector_version = "0.2.0"
 
     def run(self, ctx: DetectorContext) -> Verdict:
+        # v0.2.0 (2026-06-04): markdown-context awareness.
+        md_ctx = analyze_markdown_context(ctx.content)
         hints: list[DiffHint] = []
-        hints.extend(_scan_long_encoded_blobs(ctx.content))
+        hints.extend(_scan_long_encoded_blobs(ctx.content, md_ctx))
         if len(hints) < _MAX_HINTS_PER_VERDICT:
             remaining = _MAX_HINTS_PER_VERDICT - len(hints)
-            hints.extend(_scan_instructions(ctx.content)[:remaining])
+            hints.extend(_scan_instructions(ctx.content, md_ctx)[:remaining])
 
         if not hints:
             return Verdict(

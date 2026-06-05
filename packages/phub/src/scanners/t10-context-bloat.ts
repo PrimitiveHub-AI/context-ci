@@ -16,11 +16,50 @@ import {
 const OVERSIZED_THRESHOLD_CHARS = 32000
 const EXCESSIVE_REPETITION_THRESHOLD = 0.2
 const WHITESPACE_STUFFING_THRESHOLD = 0.4
-const HEADING_PROLIFERATION_RATIO = 500
+// v0.1.1 (2026-06-04) lowered ratio 500 → 200, raised min-count 2 → 6.
+// The 500 floor was over-strict — catalog primitives with 4–6 short
+// sections in 2 KB routinely tripped it. Lockstep with
+// apps/api/scanners/t10_context_bloat.py § v0.1.1.
+const HEADING_PROLIFERATION_RATIO = 200
+const HEADING_PROLIFERATION_MIN_COUNT = 6
 const MIN_LINES_FOR_WHITESPACE_CHECK = 100
 const NON_TRIVIAL_LINE_MIN_CHARS = 50
 
 const H2_RE = /^##\s+\S/gm
+
+// Multi-file callers (phub audit, /check repo scan) populate
+// `ctx.filename`. T10's bloat semantics apply to primitives; skip for
+// non-primitive files in repo-scan mode. Empty filename (single-blob
+// / Forge mode) keeps the original behavior — fires on every input.
+const PRIMITIVE_PATH_MARKERS: readonly string[] = [
+  "/primitives/",
+  "/skills/",
+  "/skill/",
+  "/prompts/",
+  "/agents/",
+  "/.claude/skills/",
+  "/.cursor/rules/",
+]
+const PRIMITIVE_BASENAMES: ReadonlySet<string> = new Set([
+  "skill.md",
+  "agents.md",
+  "claude.md",
+  "cursor.md",
+  "codex.md",
+  "system.md",
+  "prompt.md",
+  "primitive.md",
+  ".cursorrules",
+])
+
+function looksLikePrimitive(filename: string | undefined): boolean {
+  if (!filename) return true // single-blob mode → keep v0.1 behavior.
+  const lowered = filename.toLowerCase()
+  const basename = lowered.split("/").pop() ?? ""
+  if (PRIMITIVE_BASENAMES.has(basename)) return true
+  const padded = `/${lowered}/`
+  return PRIMITIVE_PATH_MARKERS.some((m) => padded.includes(m))
+}
 
 function checkOversized(content: string): DiffHint | null {
   const n = content.length
@@ -71,7 +110,7 @@ function checkHeadingProliferation(content: string): DiffHint | null {
   H2_RE.lastIndex = 0
   let h2Count = 0
   while (H2_RE.exec(content) !== null) h2Count++
-  if (h2Count < 2) return null
+  if (h2Count < HEADING_PROLIFERATION_MIN_COUNT) return null
   const charsPerH2 = n / h2Count
   if (charsPerH2 >= HEADING_PROLIFERATION_RATIO) return null
   return {
@@ -86,9 +125,26 @@ export class T10ContextBloatDetector {
   readonly name = "t10.context_bloat"
   readonly threatCategory = "T10"
   readonly cciId = "CCI-010"
-  readonly detectorVersion = "0.1.0"
+  readonly detectorVersion = "0.1.1"
 
   run(ctx: DetectorContext): Verdict {
+    // v0.1.1 (2026-06-04): multi-file scan callers pass `filename`;
+    // skip T10 when the file isn't a primitive. Single-blob (Forge /
+    // mode=content) callers pass undefined filename and keep the
+    // original behavior.
+    if (!looksLikePrimitive(ctx.filename)) {
+      return {
+        detectorName: this.name,
+        threatCategory: this.threatCategory,
+        cciId: this.cciId,
+        severity: Severity.INFO,
+        passed: true,
+        summary: "Skipped — file is not a primitive (T10 v0.1.1 scope).",
+        detectorVersion: this.detectorVersion,
+        diffHints: [],
+      }
+    }
+
     const hints: DiffHint[] = []
     for (const check of [
       checkOversized,

@@ -41,6 +41,7 @@ from __future__ import annotations
 
 import re
 
+from .markdown_context import analyze_markdown_context, is_in_any_code_or_frontmatter
 from .types import DetectorContext, DiffHint, Severity, Verdict
 
 _FETCH_AND_INCLUDE_PATTERNS: tuple[tuple[str, str], ...] = (
@@ -133,12 +134,19 @@ class T4RemoteFetchDetector:
     name = "t4.remote_fetch"
     threat_category = "T4"
     cci_id = "CCI-004"
-    detector_version = "0.1.0"
+    detector_version = "0.2.0"
 
     def run(self, ctx: DetectorContext) -> Verdict:
         hints: list[DiffHint] = []
+        # v0.2.0 (2026-06-04): markdown-context awareness. Skip
+        # matches inside frontmatter / fenced code / inline code. An
+        # `<iframe>` quoted inside ```html ... ``` is a teaching
+        # example, not a runtime fetch instruction.
+        md_ctx = analyze_markdown_context(ctx.content)
         for pattern, tag in _COMPILED:
             for match in pattern.finditer(ctx.content):
+                if is_in_any_code_or_frontmatter(match.start(), md_ctx):
+                    continue
                 hints.append(_hint_for_match(ctx.content, match, tag))
                 if len(hints) >= _MAX_HINTS_PER_VERDICT:
                     break

@@ -16,6 +16,19 @@ import {
   type Verdict,
   lineForPosition,
 } from "./types.js"
+import { analyzeMarkdownContext, isInAnyCodeOrFrontmatter } from "./markdown-context.js"
+
+// Pattern families that are commonly quoted in teaching content
+// (cybersecurity skills, primitives explaining attacks). Skip those
+// when inside fence / inline code / frontmatter — they're examples,
+// not live injection. The other families (hidden-instructions,
+// role-hijack) stay context-unaware because they ARE designed to
+// abuse fence-like structures. Lockstep with
+// apps/api/scanners/t1_prompt_injection.py § v0.2.0.
+const CONTEXT_AWARE_TAGS: ReadonlySet<string> = new Set([
+  "override-system-instructions",
+  "credential-exfiltration-hint",
+])
 
 const OVERRIDE_PATTERNS: Array<readonly [RegExp, string]> = [
   [
@@ -101,15 +114,25 @@ export class T1PromptInjectionDetector {
   readonly name = "t1.prompt_injection"
   readonly threatCategory = "T1"
   readonly cciId = "CCI-001"
-  readonly detectorVersion = "0.1.0"
+  readonly detectorVersion = "0.2.0"
 
   run(ctx: DetectorContext): Verdict {
     const hints: DiffHint[] = []
+    // v0.2.0 (2026-06-04): selective markdown-context awareness.
+    // See CONTEXT_AWARE_TAGS comment above for the discrimination.
+    const mdCtx = analyzeMarkdownContext(ctx.content)
 
     outer: for (const [pattern, tag] of ALL_PATTERNS) {
       pattern.lastIndex = 0
       let match: RegExpExecArray | null
       while ((match = pattern.exec(ctx.content)) !== null) {
+        if (
+          CONTEXT_AWARE_TAGS.has(tag) &&
+          isInAnyCodeOrFrontmatter(match.index, mdCtx)
+        ) {
+          if (match.index === pattern.lastIndex) pattern.lastIndex++
+          continue
+        }
         hints.push(hintForMatch(ctx.content, match, tag))
         if (hints.length >= MAX_HINTS_PER_VERDICT) break outer
         // Guard against zero-width matches infinite-looping

@@ -153,19 +153,30 @@ _CC_PATTERNS: tuple[tuple[str, str], ...] = (
 
 _FORUM_PATTERNS: tuple[tuple[str, str], ...] = (
     (
+        # Stack Overflow content is CC-BY-SA — attribution is a real
+        # downstream obligation. Legitimate signal.
         r"\b(?:Source|From|Adapted\s+from|Taken\s+from|Copied\s+from|Borrowed\s+from):\s*(?:https?://)?(?:www\.)?stackoverflow\.com\b",
         "forum-source-attribution",
     ),
     (
+        # Reddit user-license + attribution complications.
         r"\b(?:Source|From|Adapted\s+from|Taken\s+from):\s*(?:https?://)?(?:www\.)?reddit\.com\b",
         "forum-source-attribution",
     ),
+    # v0.2.3 (2026-06-04): GitHub `Source:` attribution removed from
+    # this family. A skill citing `Source: https://github.com/foo/bar`
+    # is doing the RIGHT thing — attribution. GitHub repos carry their
+    # OWN license (per-repo), not blanket CC-BY-SA, so this is not a
+    # downstream-licensing risk by default. The actual contamination
+    # cases (verbatim copy without attribution) get caught by the
+    # permissive-license-header and proprietary-copyright-notice
+    # detectors when those headers appear. See FP-008 in
+    # docs/false-positive-resolution.md.
+    # medium.com / dev.to / substack.com kept as a single pattern —
+    # those have author-license heterogeneity and `Source:` to them
+    # is a soft smell that the content may be lifted without rephrase.
     (
         r"\b(?:Source|From|Adapted\s+from|Taken\s+from):\s*(?:https?://)?(?:www\.)?(?:medium\.com|dev\.to|substack\.com)/\S+",
-        "forum-source-attribution",
-    ),
-    (
-        r"\b(?:Source|From|Adapted\s+from|Taken\s+from):\s*(?:https?://)?github\.com/\S+/\S+",
         "forum-source-attribution",
     ),
 )
@@ -185,6 +196,143 @@ _COMPILED = tuple(
 
 _MAX_HINTS_PER_VERDICT = 10
 _SNIPPET_MAX_CHARS = 120
+
+# A license header at the very top of a SOURCE CODE file is the
+# canonical, expected place for one — every Apache 2.0-licensed `.java`
+# / `.py` / `.go` / etc. has 20 or so lines of this exact text. We
+# exempt the header region ONLY for source files: markdown primitives
+# that embed license boilerplate verbatim ARE the T9 threat (see
+# `docs/context-ci-top-10/conformance/fixtures/CCI-009/`) and must not
+# be exempted just because the boilerplate is near the top.
+_HEADER_REGION_LINES = 40
+
+# File extensions for which a license header at the top is canonical.
+# Markdown / text / config / data formats are deliberately excluded —
+# primitives are markdown, and a markdown file containing license
+# boilerplate is the case T9 was designed to catch.
+_SOURCE_FILE_EXTENSIONS: frozenset[str] = frozenset(
+    {
+        ".py",
+        ".js",
+        ".mjs",
+        ".cjs",
+        ".ts",
+        ".tsx",
+        ".jsx",
+        ".java",
+        ".kt",
+        ".scala",
+        ".groovy",
+        ".c",
+        ".h",
+        ".cc",
+        ".cpp",
+        ".hpp",
+        ".hh",
+        ".cxx",
+        ".m",
+        ".mm",
+        ".swift",
+        ".go",
+        ".rs",
+        ".rb",
+        ".php",
+        ".pl",
+        ".pm",
+        ".lua",
+        ".sh",
+        ".bash",
+        ".zsh",
+        ".fish",
+        ".ps1",
+        ".sql",
+        ".css",
+        ".scss",
+        ".less",
+        ".vue",
+        ".svelte",
+        ".dart",
+        ".erl",
+        ".ex",
+        ".exs",
+        ".clj",
+        ".cljs",
+        ".hs",
+        ".elm",
+        ".f",
+        ".f90",
+        ".r",
+        ".jl",
+        ".nim",
+        ".zig",
+        ".v",
+    }
+)
+
+# Files whose entire job is to BE the license / notice. License-family
+# detectors are noise on these — they're working as intended.
+_LICENSE_FILE_BASENAMES: frozenset[str] = frozenset(
+    {
+        "license",
+        "license.md",
+        "license.txt",
+        "license.rst",
+        "copying",
+        "copying.md",
+        "copying.txt",
+        "notice",
+        "notice.md",
+        "notice.txt",
+        "copyright",
+        "copyright.md",
+        "copyright.txt",
+    }
+)
+
+# Tag families that the "canonical header position" exemption applies
+# to. Proprietary-copyright-notice and forum-source-attribution are NOT
+# in this set — they're meaningful wherever they appear.
+_HEADER_EXEMPT_TAGS: frozenset[str] = frozenset(
+    {"permissive-license-header", "gpl-header", "cc-attribution-required"},
+)
+
+
+def _is_license_file(file_path: str) -> bool:
+    """True when the file's basename indicates it is a license document.
+
+    Handles `LICENSE`, `LICENSE.md`, `licenses/MIT.md`, etc. The check
+    is case-insensitive — `LICENSE` and `license` both qualify.
+    """
+    if not file_path:
+        return False
+    basename = file_path.rsplit("/", 1)[-1].lower()
+    if basename in _LICENSE_FILE_BASENAMES:
+        return True
+    parts = [p.lower() for p in file_path.split("/") if p]
+    return "licenses" in parts or "license" in parts
+
+
+def _is_source_file(file_path: str) -> bool:
+    """True when the file path looks like a source-code file.
+
+    Empty `file_path` returns False — single-blob callers (mode=content)
+    don't get the source-file exemption because we don't know the file
+    type. They get the normal detector behavior, which matches the
+    Primitive-Forge use case (a markdown primitive being authored).
+    """
+    if not file_path:
+        return False
+    lowered = file_path.lower()
+    dot = lowered.rfind(".")
+    if dot < 0:
+        return False
+    return lowered[dot:] in _SOURCE_FILE_EXTENSIONS
+
+
+def _is_in_header_region(content: str, offset: int) -> bool:
+    """True when `offset` falls within the first N lines of `content`."""
+    line_no = content.count("\n", 0, offset) + 1
+    return line_no <= _HEADER_REGION_LINES
 
 
 _SUGGESTION_BY_TAG = {
@@ -237,14 +385,21 @@ class T9CopyrightContaminationDetector:
     name = "t9.copyright_contamination"
     threat_category = "T9"
     cci_id = "CCI-009"
-    detector_version = "0.2.2"
+    detector_version = "0.2.3"
 
     def run(self, ctx: DetectorContext) -> Verdict:
         hints: list[DiffHint] = []
         # v0.2.1 (ADR-0035): skip matches inside frontmatter + inline code.
         # v0.2.2 (ADR-0036): also skip matches in declaration context —
         # "CC-BY-4.0 (corpus content)" is documenting, not borrowing.
+        # v0.2.3 (2026-06-04): for license-family tags only, exempt the
+        # canonical positions — license-named files (LICENSE / COPYING /
+        # NOTICE) and the top-of-file header region. Apache 2.0 headers
+        # at the top of every file in a normally-licensed repo were
+        # generating overwhelming noise on /check's GitHub repo scans.
         md_ctx = analyze_markdown_context(ctx.content)
+        is_license_file = _is_license_file(ctx.file_path)
+        is_source_file = _is_source_file(ctx.file_path)
 
         for pattern, tag in _COMPILED:
             for match in pattern.finditer(ctx.content):
@@ -253,6 +408,17 @@ class T9CopyrightContaminationDetector:
                 if is_in_declaration_context(ctx.content, match.start(), match.end()):
                     continue
                 if is_in_negation_context(ctx.content, match.start()):
+                    continue
+                # License-family exemption — TWO narrow cases:
+                #   1. LICENSE-named file (anywhere in the file)
+                #   2. SOURCE file + header region (top of the file)
+                # Markdown primitives that embed license boilerplate
+                # are NOT exempted — that's the canonical T9 threat
+                # tested by docs/context-ci-top-10/conformance/CCI-009.
+                if tag in _HEADER_EXEMPT_TAGS and (
+                    is_license_file
+                    or (is_source_file and _is_in_header_region(ctx.content, match.start()))
+                ):
                     continue
                 hints.append(_hint_for_match(ctx.content, match, tag))
                 if len(hints) >= _MAX_HINTS_PER_VERDICT:

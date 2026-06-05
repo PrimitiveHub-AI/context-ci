@@ -47,6 +47,7 @@ from __future__ import annotations
 
 import re
 
+from .markdown_context import analyze_markdown_context, is_in_any_code_or_frontmatter
 from .types import DetectorContext, DiffHint, Severity, Verdict
 
 # ─────────────────────────────────────────────────────────────────────
@@ -135,6 +136,17 @@ _COMPILED = tuple(
 # wasting predicate space — the reviewer gets the point after 10.
 _MAX_HINTS_PER_VERDICT = 10
 
+# Pattern families that are commonly quoted in teaching content (skill
+# tutorials, primitives that explain attacks). When inside a code
+# fence / inline code / frontmatter, those are demonstrations, not
+# live injection. The OTHER families (`hidden-instructions` syntactic
+# carriers, `role-hijack`) stay context-unaware because they ARE
+# designed to use fence-like structures as the attack vector.
+_CONTEXT_AWARE_TAGS: frozenset[str] = frozenset({
+    "override-system-instructions",
+    "credential-exfiltration-hint",
+})
+
 # Cap on snippet length in the diff hint. Long captures risk rendering
 # attacker-controlled content prominently in the reviewer UI.
 _SNIPPET_MAX_CHARS = 120
@@ -163,13 +175,31 @@ class T1PromptInjectionDetector:
     name = "t1.prompt_injection"
     threat_category = "T1"  # legacy code; back-compat with pre-CCI attestations
     cci_id = "CCI-001"  # Context CI Top 10 v0.1 canonical ID (ADR-0016)
-    detector_version = "0.1.0"
+    detector_version = "0.2.0"
 
     def run(self, ctx: DetectorContext) -> Verdict:
         hints: list[DiffHint] = []
+        # v0.2.0 (2026-06-04): selective markdown-context awareness.
+        #
+        # The `override-system-instructions` and
+        # `credential-exfiltration-hint` families are prose patterns —
+        # a primitive teaching what prompt injection looks like quotes
+        # them in code fences as examples. Skip those when found in
+        # frontmatter / fenced code / inline code.
+        #
+        # The `hidden-instructions` and `role-hijack` families are
+        # syntactic attack carriers — `\`\`\`system`, `[SYSTEM]:`,
+        # `<!-- instructions` — they LIVE in fence-like structures
+        # and we must still detect them. Those tags stay
+        # context-unaware.
+        md_ctx = analyze_markdown_context(ctx.content)
 
         for pattern, tag in _COMPILED:
             for match in pattern.finditer(ctx.content):
+                if tag in _CONTEXT_AWARE_TAGS and is_in_any_code_or_frontmatter(
+                    match.start(), md_ctx
+                ):
+                    continue
                 hints.append(_hint_for_match(ctx.content, match, tag))
                 if len(hints) >= _MAX_HINTS_PER_VERDICT:
                     break

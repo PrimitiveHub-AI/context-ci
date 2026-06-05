@@ -498,3 +498,304 @@ work requires lockstep TS + Python tightening),
   (design-exemplars-prose primitive) passes through cleanly; CCI-007
   has no FPs on the seed corpus. The ledger entry stays committed
   (append-only discipline per ADR-0030 § 1 practice 1).
+
+### FP-006 — CCI-007 typosquat patterns fired on canonical vendor names
+
+- **Date authored:** 2026-06-04
+- **Artifact:** `apps/api/scanners/t7_poisoned_naming.py` (regex bug, not content)
+- **Detector:** CCI-007 / `t7.poisoned_naming` / `vendor-typosquat`
+- **Path:** C — detector defect; resolved at the detector level.
+- **Surfacing context:** discovered via `/check` (ADR-0034) scanning a
+  real cybersecurity skills repo. The detector fired `vendor-typosquat`
+  on the literal canonical strings `Anthropic`, `Microsoft`, `Okta`,
+  `Stripe`. Volume on a single 4,000-file repo scan: ~2,400 spurious
+  hints, drowning out real findings.
+
+**Root cause.** Four character-class regexes in `_TYPOSQUAT_PATTERNS`
+included the canonical letter itself as one of the alternation
+choices:
+
+```python
+r"\b[A4O0]nthropic\b",   # matched "Anthropic" (canonical A!)
+r"\bM[i1l]crosoft\b",    # matched "Microsoft" (canonical i!)
+r"\b[O0]kta\b(?!\w)",    # matched "Okta" (canonical O!)
+r"\bSt[r1]ipe\b",        # matched "Stripe" (canonical r!)
+```
+
+A typosquat detector by definition catches imitations, not bare
+mentions — the canonical letter has no business in the character
+class. The patch (v0.2.3) drops the canonical letter, leaving only
+the substitute digits/letters that actually constitute typosquats:
+`[40]nthropic`, `M[1l]crosoft`, `0kta`, `St1ipe`.
+
+**Why this matters.** Every primitive, README, or skill that mentions
+"Anthropic" by name (i.e. virtually every primitive in any AI-adjacent
+repo) was tripping CCI-007 with FAIL severity, dropping the trust
+score by 25 points per file. `/check` verdicts on real repos were
+unusable noise. This is the "scanner becomes the noisy boy who cries
+wolf" failure mode that ADR-0030 § 1 warns about — closed at the
+detector level rather than papered over with an allowlist.
+
+**No policy entry needed.** This is a Path-C defect fix, not a Path-B
+suppression. The regex is corrected in code; no
+`.primitivehub/policy.yaml` rule exists for this case. Regression
+tests live at
+[`apps/api/checks/tests/test_fp_regressions.py`](../apps/api/checks/tests/test_fp_regressions.py) —
+the canonical-name parametrize ensures the bug doesn't return.
+
+**TS parity follow-up.** `packages/phub/src/scanners/t7-poisoned-naming.ts`
+has the same regex bug and will be patched in lockstep per ADR-0023
+in the next phub release.
+
+**Cross-references:**
+[ADR-0023](./decisions/0023-phub-cli-and-detector-parity.md) (parity),
+[ADR-0030](./decisions/0030-fp-resolution-and-av-vendor-parallel.md),
+[ADR-0034](./decisions/0034-public-check-lookup-surface.md) (surfacing
+surface).
+
+### FP-006 Re-review log
+
+_None yet — entry authored 2026-06-04._
+
+### FP-007 — CCI-009 license-header fired on canonical Apache 2.0 source-file headers
+
+- **Date authored:** 2026-06-04
+- **Artifact:** `apps/api/scanners/t9_copyright_contamination.py` (over-broad scope, not content)
+- **Detector:** CCI-009 / `t9.copyright_contamination` /
+  `permissive-license-header`, `gpl-header`, `cc-attribution-required`
+- **Path:** C — detector defect (spec-context mismatch); resolved at
+  the detector level.
+- **Surfacing context:** `/check` scanning a real Apache-2.0-licensed
+  GitHub repo. Every `.java` / `.py` / `.go` / `.js` file with the
+  canonical Apache 2.0 header (`"Licensed under the Apache License,
+  Version 2.0 (the \"License\")"`) flagged as "downstream licensing
+  risk." 20+ FAILs per scan from license-aware file headers.
+
+**Root cause.** T9 v0.2.2 had no notion of file type or in-file
+position. The detector was designed for the Primitive-Forge context
+(scanning a single markdown primitive in isolation), where embedded
+license boilerplate IS the threat — primitive content shouldn't
+copy-paste verbatim license text it can't redistribute (see the
+adversarial fixtures at
+`docs/context-ci-top-10/conformance/fixtures/CCI-009/`).
+
+For the `/check` repo-scanning context (ADR-0034), the detector ran
+against every file in the tarball, including source code files where
+the Apache header at the top is the CANONICAL place for the header.
+That's not the threat; that's how Apache-2.0-licensed code is
+supposed to look.
+
+**Patch (v0.2.3).** Two narrow exemptions for the open-source-license
+family (`permissive-license-header`, `gpl-header`,
+`cc-attribution-required`):
+
+1. **License-named files** (`LICENSE`, `LICENSE.md`, `COPYING`,
+   `NOTICE`, etc., case-insensitive, anywhere in path): exempt
+   anywhere in the file. The file's job IS to be the license.
+2. **Source files + header region**: if the file extension is in the
+   source-code list (`.py`, `.js`, `.ts`, `.java`, `.go`, `.rs`, `.c`,
+   etc.) AND the match is within the first 40 lines, exempt. This is
+   the canonical license-header position.
+
+Markdown / text / config / data files get no exemption — embedded
+license boilerplate in those IS the T9 threat, and the conformance
+fixtures at
+[`docs/context-ci-top-10/conformance/fixtures/CCI-009/`](./context-ci-top-10/conformance/fixtures/CCI-009/)
+explicitly validate that. The fixtures (which are `.md` files)
+continue to fire CCI-009 after this patch.
+
+The `proprietary-copyright-notice` and `forum-source-attribution`
+families do NOT get the exemption — they're meaningful wherever they
+appear (a `© ACME 2023 All Rights Reserved` at the top of a `.py`
+file is still a third-party-copy smell).
+
+**Filename plumbing.** `DetectorContext` gained an optional
+`file_path: str` field. The `/check` endpoint populates it from the
+tarball-entry name when scanning multi-file archives; single-blob
+callers (mode=content) leave it empty and get the original
+markdown-primitive behavior (no exemption).
+
+**No policy entry needed.** Path-C fix; regression tests at
+[`apps/api/checks/tests/test_fp_regressions.py`](../apps/api/checks/tests/test_fp_regressions.py).
+
+**TS parity follow-up.**
+`packages/phub/src/scanners/t9-copyright-contamination.ts` will mirror
+this fix in lockstep per ADR-0023 in the next phub release.
+
+**Cross-references:** ADR-0023, ADR-0030, ADR-0034, conformance
+fixtures CCI-009.
+
+### FP-007 Re-review log
+
+_None yet — entry authored 2026-06-04._
+
+### FP-008 — CCI-009 forum-source-attribution fired on legitimate GitHub citations
+
+- **Date authored:** 2026-06-04
+- **Artifact:** `apps/api/scanners/t9_copyright_contamination.py` (over-broad pattern)
+- **Detector:** CCI-009 / `t9.copyright_contamination` / `forum-source-attribution`
+- **Path:** C — detector defect (over-broad pattern).
+- **Surfacing context:** `/check` flagged
+  `Source: https://github.com/thinkst/canarytokens` as a "downstream
+  licensing risk." The skill was correctly attributing its source —
+  the opposite of contamination.
+
+**Root cause.** The v0.1 pattern grouped `Source:
+https://github.com/...` with `Source: https://stackoverflow.com/...`.
+Stack Overflow content is CC-BY-SA (real attribution obligation);
+GitHub repos carry their own per-repo license, so a `Source:`
+attribution to a github URL is benign — and is in fact the
+RIGHT thing to do when adapting code or skills from upstream.
+
+**Patch (v0.2.3).** The GitHub `Source:` pattern is removed from
+`_FORUM_PATTERNS`. Stack Overflow, Reddit, Medium, dev.to, Substack
+patterns kept — those have user-license heterogeneity and attribution
+requirements. The actual GitHub-contamination cases (verbatim copy of
+copyrighted code) get caught by `permissive-license-header` and
+`proprietary-copyright-notice` instead, when those headers appear.
+
+**TS parity.** `packages/phub/src/scanners/t9-copyright-contamination.ts`
+mirrors this patch in lockstep per ADR-0023.
+
+**Cross-references:** ADR-0023, ADR-0030, ADR-0034.
+
+### FP-008 Re-review log
+
+_None yet — entry authored 2026-06-04._
+
+### FP-009 — CCI-008 fake-doi-prefix list missing major registrants
+
+- **Date authored:** 2026-06-04
+- **Artifact:** `apps/api/scanners/t8_fake_citation.py` (under-sized allowlist)
+- **Detector:** CCI-008 / `t8.fake_citation` / `fake-doi-prefix`
+- **Path:** C — detector calibration; allowlist expansion.
+- **Surfacing context:** `/check` flagged `doi.org/10.1184/R1/12124386`
+  as fake. `10.1184` is Carnegie Mellon University — entirely
+  legitimate, just absent from the v0.1 28-prefix list.
+
+**Root cause.** The v0.1 list covered top commercial publishers
+(IEEE, ACM, Springer, Elsevier) but had ZERO university-press
+prefixes, ZERO US federal research orgs (NIST, OSTI, USGS), and
+ZERO of the standard preprint servers besides arXiv. Real-world
+cybersecurity citations regularly target NIST publications
+(10.6028) and Carnegie Mellon's CyLab (10.1184).
+
+**Patch (v0.2.0).** Expanded the allowlist from 28 to ~80 prefixes
+covering:
+- Major commercial publishers (added Elsevier 10.1016, SAGE 10.1177,
+  MDPI 10.3390, Annual Reviews 10.1146, …)
+- US federal research orgs (NIST 10.6028, OSTI 10.2172, NIST alt
+  10.18434, USGS 10.25333)
+- University presses + repositories (CMU 10.1184, Columbia 10.7916,
+  Cornell 10.7298, Harvard Dataverse 10.7910, UC Irvine ML Repo
+  10.24432, MIT DSpace 10.34740, ETH Zurich 10.34894, Penn State
+  10.22152, Princeton 10.23943, UC San Diego 10.25394, …)
+- Preprint servers (ResearchGate 10.13140, OSF 10.31219, PsyArXiv
+  10.31234, TechRxiv 10.36227, Figshare 10.6084, …)
+- Standards bodies (BSI 10.3403)
+
+**TS parity.** `packages/phub/src/scanners/t8-fake-citation.ts`
+mirrors the expansion.
+
+**Cross-references:** ADR-0023, ADR-0030, ADR-0034.
+
+### FP-009 Re-review log
+
+_None yet — entry authored 2026-06-04._
+
+### FP-010 — CCI-010 fired on every documentation file in repo scans
+
+- **Date authored:** 2026-06-04
+- **Artifact:** `apps/api/scanners/t10_context_bloat.py` (spec-context mismatch + over-strict threshold)
+- **Detector:** CCI-010 / `t10.context_bloat` (all sub-tags)
+- **Path:** C — detector defect (calibrated for single-primitive
+  context, not multi-file repo scans) + threshold tuning.
+- **Surfacing context:** `/check` repo scan of
+  `anthropic-cybersecurity-skills` (4,184 files) produced **1,044
+  T10 WARN hits** — overwhelming useful signal. ~1,017 of those
+  were `heading-proliferation` on files with 4–6 short sections.
+
+**Root cause #1 (scope).** T10 was calibrated for the Primitive Forge
+context (one .md primitive being authored). When `/check` ships a
+multi-file scan, every README / changelog / docs page gets evaluated
+as if it were a primitive. That's a category error.
+
+**Root cause #2 (calibration).** The `heading-proliferation` threshold
+required ≥500 chars per h2 to pass. Legitimate documentation patterns
+— cheatsheets, reference catalogs, structured runbooks — routinely
+have 4–6 short sections in 2 KB and tripped the floor.
+
+**Patch (v0.1.1).** Two narrow changes:
+
+1. **File-type awareness.** When `DetectorContext.file_path` is
+   populated (multi-file scan), T10 only runs on files whose path
+   indicates they're a primitive: anything under `/primitives/`,
+   `/skills/`, `/prompts/`, `/agents/`, `/.claude/skills/`,
+   `/.cursor/rules/`, or with a primitive-y basename
+   (`SKILL.md`, `AGENTS.md`, `CLAUDE.md`, etc.). Empty `file_path`
+   (single-blob / Forge mode) → run as before.
+
+2. **Threshold tune.** `HEADING_PROLIFERATION_RATIO` lowered from
+   500 → 200 chars/h2 (~50 tokens/section), and a new minimum
+   `HEADING_PROLIFERATION_MIN_COUNT = 6` — a file must have at least
+   6 h2 sections to qualify. This still catches the outline-spam
+   attack pattern (15+ empty headings in <1 KB) without flagging
+   well-structured short docs.
+
+**Combined impact** on the anthropic-cybersecurity-skills repo scan:
+T10 hits dropped from **1,044 → 48** (95% reduction). Total `/check`
+verdict noise across all detectors dropped from **2,434 → 60** (97.5%
+reduction) when combined with FP-006 + FP-007 + FP-008 + FP-009 +
+FP-011 fixes.
+
+**TS parity.** `packages/phub/src/scanners/t10-context-bloat.ts`
+mirrors both fixes.
+
+**Cross-references:** ADR-0023, ADR-0030, ADR-0034.
+
+### FP-010 Re-review log
+
+_None yet — entry authored 2026-06-04._
+
+### FP-011 — CCI-001 / CCI-003 / CCI-004 fired on patterns inside teaching code fences
+
+- **Date authored:** 2026-06-04
+- **Artifact:** `apps/api/scanners/t1_prompt_injection.py`,
+  `apps/api/scanners/t3_encoded_payloads.py`,
+  `apps/api/scanners/t4_remote_fetch.py`
+- **Detectors:** CCI-001 (`override-system-instructions` +
+  `credential-exfiltration-hint`), CCI-003 (`base64-long-blob`,
+  `hex-long-blob`, decode-instructions), CCI-004 (`agent-side-include`)
+- **Path:** C — markdown-context awareness gap.
+- **Surfacing context:** Cybersecurity skill primitives TEACH the
+  attack patterns by quoting them in ```code blocks. Those
+  demonstrations fired the detectors as if they were live attacks.
+
+**Root cause.** T5 already had `is_in_any_code_or_frontmatter()`
+filtering since ADR-0035 (v0.2.1). T1, T3, T4 did not. Result: every
+fenced demonstration of "Ignore previous instructions" in a tutorial
+was scored as a real injection.
+
+**Patch.**
+- **T1 v0.2.0** — SELECTIVE context awareness. Skip
+  `override-system-instructions` and `credential-exfiltration-hint`
+  when inside fence / inline code / frontmatter. Keep
+  `hidden-instructions` (`\`\`\`system`, `[SYSTEM]:`,
+  `<!-- instructions`) and `role-hijack` context-unaware — those tag
+  families DO live in fence-like structures as the attack carrier
+  itself, and the conformance suite validates them firing.
+- **T3 v0.2.0** — Skip all matches (long blobs + decode instructions)
+  inside fence / inline code / frontmatter.
+- **T4 v0.2.0** — Same — `<iframe>` example in a ```html block is
+  teaching content, not a runtime fetch instruction.
+
+**TS parity.** `packages/phub/src/scanners/t1-prompt-injection.ts`,
+`t3-encoded-payloads.ts`, `t4-remote-fetch.ts` mirror these patches.
+
+**Cross-references:** ADR-0023 (parity), ADR-0030, ADR-0034,
+ADR-0035 (the markdown-context infrastructure this patch consumes),
+ADR-0036 (semantic-context infrastructure, related).
+
+### FP-011 Re-review log
+
+_None yet — entry authored 2026-06-04._

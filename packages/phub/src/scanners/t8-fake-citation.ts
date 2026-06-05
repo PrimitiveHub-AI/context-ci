@@ -26,35 +26,33 @@ const CVE_RE = /\bCVE-(\d{4})-(\d{4,7})\b/g
 const RFC_RE = /\bRFC[\s-]?(\d{1,7})\b/gi
 const ARXIV_RE = /\barXiv:(\d{2})(\d{2})\.(\d{4,5})(?:v\d+)?\b/gi
 
+// v0.2.0 (2026-06-04) — expanded from 28 → ~80 prefixes after /check
+// flagged 10.1184 (Carnegie Mellon) as fake on a real cybersec-skills
+// repo. Lockstep with apps/api/scanners/t8_fake_citation.py § v0.2.0.
 const ACCEPTED_DOI_PREFIXES: ReadonlySet<string> = new Set([
-  "10.1145",
-  "10.48550",
-  "10.1109",
-  "10.1007",
-  "10.1038",
-  "10.1126",
-  "10.1093",
-  "10.1017",
-  "10.1057",
-  "10.1080",
-  "10.1162",
-  "10.1186",
-  "10.1371",
-  "10.1525",
-  "10.1561",
-  "10.1613",
-  "10.18653",
-  "10.21105",
-  "10.2200",
-  "10.2202",
-  "10.2307",
-  "10.3389",
-  "10.5210",
-  "10.5281",
-  "10.7717",
-  "10.7287",
-  "10.1051",
-  "10.1207",
+  // Major commercial publishers
+  "10.1006", "10.1007", "10.1016", "10.1017", "10.1038", "10.1051",
+  "10.1057", "10.1075", "10.1080", "10.1093", "10.1109", "10.1126",
+  "10.1145", "10.1146", "10.1162", "10.1177", "10.1186", "10.1198",
+  "10.1207", "10.1257", "10.1287", "10.1364", "10.1371", "10.1503",
+  "10.1525", "10.1542", "10.1561", "10.1613",
+  "10.2105", "10.2139", "10.2200", "10.2202", "10.2307",
+  "10.3322", "10.3389", "10.3390", "10.4135", "10.4314",
+  "10.5061", "10.5067", "10.5210", "10.5281", "10.5772",
+  "10.7287", "10.7551", "10.7717",
+  // Preprint / repository servers
+  "10.13140", "10.21437", "10.31219", "10.31222", "10.31234", "10.31235",
+  "10.36227", "10.48550", "10.6084",
+  // Universities + research institutions
+  "10.1184", "10.7298", "10.7910", "10.7916", "10.13016", "10.17615",
+  "10.18034", "10.22152", "10.23943", "10.24432", "10.25394",
+  "10.34740", "10.34894",
+  // Open-access scholarly orgs
+  "10.13039", "10.14778", "10.18653", "10.21105",
+  // US federal research orgs (critical for security/CS citations)
+  "10.6028", "10.2172", "10.18434", "10.25333",
+  // International standards bodies + government
+  "10.3403", "10.21236",
 ])
 
 const DOI_RE = /\b(?:DOI:?\s*|doi\.org\/)(10\.\d{4,9})\/([^\s"',]+)/gi
@@ -182,7 +180,7 @@ export class T8FakeCitationDetector {
   readonly name = "t8.fake_citation"
   readonly threatCategory = "T8"
   readonly cciId = "CCI-008"
-  readonly detectorVersion = "0.1.0"
+  readonly detectorVersion = "0.2.0"
 
   run(ctx: DetectorContext): Verdict {
     const hints: DiffHint[] = []

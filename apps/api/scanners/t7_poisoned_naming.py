@@ -99,24 +99,29 @@ _VENDORS: tuple[str, ...] = (
 _VENDOR_ALT = "|".join(re.escape(v) for v in _VENDORS)
 
 # Typosquats: digit-for-letter substitutions that produce visually
-# similar names. Capture each suspicious form as a literal regex.
+# similar names. Each pattern must EXCLUDE the canonical letter — the
+# detector is meant to catch IMITATIONS, not bare mentions. v0.2.3
+# (2026-06-04) fixed character classes that accidentally included the
+# canonical letter and were firing on every legitimate vendor mention
+# (e.g. `[A4O0]nthropic` matched "Anthropic" itself, `[O0]kta` matched
+# "Okta", `M[i1l]crosoft` matched "Microsoft").
 _TYPOSQUAT_PATTERNS = (
-    r"\bAnthrop1c\b",
-    r"\b[A4O0]nthropic\b",
-    r"\b0penAI\b",
-    r"\b0pen[Aa][Ii]\b",
-    r"\bOp3nAI\b",
-    r"\bG0ogle\b",
-    r"\bGo0gle\b",
-    r"\bGoog1e\b",
-    r"\bM1crosoft\b",
-    r"\bMlcrosoft\b",
-    r"\bM[i1l]crosoft\b",
-    r"\bClaud3\b",
-    r"\bGPT4-?official\b",
-    r"\bM3ta\b",
-    r"\b[O0]kta\b(?!\w)",
-    r"\bSt[r1]ipe\b",
+    r"\bAnthrop1c\b",            # 1-for-i in Anthropic
+    r"\b4nthropic\b",            # 4-for-A in Anthropic
+    r"\b0nthropic\b",            # 0-for-A (debatable but distinctive)
+    r"\b0penAI\b",               # 0-for-O in OpenAI
+    r"\b0pen[Aa][Ii]\b",         # 0-for-O + casing variants
+    r"\bOp3nAI\b",               # 3-for-e in OpenAI
+    r"\bG0ogle\b",               # 0-for-o in Google (first o)
+    r"\bGo0gle\b",               # 0-for-o in Google (second o)
+    r"\bGoog1e\b",               # 1-for-l in Google
+    r"\bM1crosoft\b",            # 1-for-i in Microsoft
+    r"\bMlcrosoft\b",            # l-for-i in Microsoft (visual confusable)
+    r"\bClaud3\b",               # 3-for-e in Claude
+    r"\bGPT4-?official\b",       # GPT4-official impersonation
+    r"\bM3ta\b",                 # 3-for-e in Meta
+    r"\b0kta\b(?!\w)",           # 0-for-O in Okta
+    r"\bSt1ipe\b",               # 1-for-r in Stripe (visually weak; kept for symmetry)
 )
 
 _OFFICIAL_CLAIM_PATTERNS: tuple[tuple[str, str], ...] = (
@@ -203,7 +208,7 @@ class T7PoisonedNamingDetector:
     name = "t7.poisoned_naming"
     threat_category = "T7"
     cci_id = "CCI-007"
-    detector_version = "0.2.2"
+    detector_version = "0.2.3"
 
     def run(self, ctx: DetectorContext) -> Verdict:
         hints: list[DiffHint] = []

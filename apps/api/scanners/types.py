@@ -116,9 +116,15 @@ class DetectorContext:
     `raw_bytes` is the original bytes (kept separate because T2
     unicode-steganography and T3 encoded-payloads care about byte-level
     artifacts that decoding can lose).
+    `file_path` is the in-archive relative path for multi-file scans
+    (e.g. `/check`'s npx + github paths). Detectors that vary behavior
+    by filename (T9 skipping LICENSE files; future per-file rules) read
+    it. Empty string when the context is a single blob with no
+    filename (`mode=content`).
     """
 
     primitive_slug: str
     semver: str
     content: str
     raw_bytes: bytes
+    file_path: str = ""

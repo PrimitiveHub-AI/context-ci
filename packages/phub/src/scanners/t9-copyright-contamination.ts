@@ -113,21 +113,25 @@ const CC_PATTERNS: Array<readonly [RegExp, string]> = [
   [/\blicensed\s+under\s+Creative\s+Commons\b/gim, "cc-attribution-required"],
 ]
 
+// v0.2.3 (2026-06-04) — GitHub `Source:` attribution pattern removed.
+// A skill citing `Source: https://github.com/foo/bar` is doing the
+// RIGHT thing (attribution). GitHub repos carry their OWN per-repo
+// license, not blanket CC-BY-SA, so attribution is not a downstream
+// licensing risk. See FP-008 in docs/false-positive-resolution.md.
+// Lockstep with apps/api/scanners/t9_copyright_contamination.py.
 const FORUM_PATTERNS: Array<readonly [RegExp, string]> = [
   [
+    // Stack Overflow content is CC-BY-SA — attribution is real.
     /\b(?:Source|From|Adapted\s+from|Taken\s+from|Copied\s+from|Borrowed\s+from):\s*(?:https?:\/\/)?(?:www\.)?stackoverflow\.com\b/gim,
     "forum-source-attribution",
   ],
   [
+    // Reddit user-license + attribution complications.
     /\b(?:Source|From|Adapted\s+from|Taken\s+from):\s*(?:https?:\/\/)?(?:www\.)?reddit\.com\b/gim,
     "forum-source-attribution",
   ],
   [
     /\b(?:Source|From|Adapted\s+from|Taken\s+from):\s*(?:https?:\/\/)?(?:www\.)?(?:medium\.com|dev\.to|substack\.com)\/\S+/gim,
-    "forum-source-attribution",
-  ],
-  [
-    /\b(?:Source|From|Adapted\s+from|Taken\s+from):\s*(?:https?:\/\/)?github\.com\/\S+\/\S+/gim,
     "forum-source-attribution",
   ],
 ]
