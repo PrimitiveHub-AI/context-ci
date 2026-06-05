@@ -101,15 +101,33 @@ entry the moment the work lands; git holds the history.
 3. **On stop** — update your row with the state + the single next step, or delete
    it if the work landed (the commit is the record).
 
-This is a convention, not a lock: it only works if every session honours it. It
-fixes *continuity* and *overwrites*. It does **not** fix *runtime* competition
-(crashes, resource fights) — no markdown file can; see "Runtime hygiene" below.
+This is a convention, not a lock: it only works if every session honours it. For
+*cooperative* sessions the board is enough. When cooperation can't be assumed,
+escalate to **hard isolation** below — and note that no markdown file fixes
+*runtime* competition (crashes, resource fights); that's "Runtime hygiene".
 
 ### Live board
 
 | Area / files | Session intent | State + next step | Since |
 |---|---|---|---|
 | _`apps/web/components/forge/` — example, replace with your real claim_ | _refactor CVA variants_ | _mid-flight — next: wire the CodeMirror linter_ | _2026-06-05_ |
+
+### Hard isolation (when the board isn't enough)
+
+The board can't *prevent* an overwrite — only a convention every session honours.
+When you can't assume that (e.g. genuinely concurrent agents), give each session
+its own `git worktree`: a separate checkout on its own branch, in its own
+directory, so two sessions editing the same file is **physically impossible**.
+
+```bash
+scripts/session-worktree.sh new my-task   # new worktree + branch off main
+scripts/session-worktree.sh list          # show all active worktrees
+scripts/session-worktree.sh rm  my-task    # remove it (branch is kept)
+```
+
+**Single-stack rule:** worktrees isolate *files*, not *ports/RAM*. Only **one**
+worktree may run the dev stack at a time — edit in parallel, run `docker compose
+up` / `pnpm dev` in exactly one. See [ADR-0042](./docs/decisions/0042-multi-session-isolation.md).
 
 ### Runtime hygiene (prevents the "competing / crashing" dev process)
 
