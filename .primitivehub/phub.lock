@@ -4,7 +4,7 @@
     {
       "attestation": "unattested",
       "classification": "claude-md",
-      "digest": "sha256:7fd2d37c22ef1fea455246698e581a84e415953ff85c81fde62836196ec36ebd",
+      "digest": "sha256:d7056586bc1fcf26c974ecde998f0623975aac7a06c878a94d18ad25d38aeb1a",
       "path": "CLAUDE.md"
     },
     {

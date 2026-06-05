@@ -225,6 +225,45 @@ JSON baseline (`bench/baseline/<date>-<lang>.json`):
   default.
 - `--detector <CCI-NNN>` — restrict the run to a single detector.
 
+## How to reproduce
+
+The corpus + the detectors + the measurement harness are all open and
+deterministic. Anyone reading this should be able to reproduce
+[`docs/evaluation.md`](./evaluation.md) on their own machine in under
+ten minutes:
+
+```bash
+git clone https://github.com/DevXYZx/primitivehub.git
+cd primitivehub
+
+# Build TS detectors (publishes @primitivehub/phub locally)
+pnpm install --frozen-lockfile
+pnpm --filter @primitivehub/phub build
+
+# Sync Python detectors
+(cd apps/api && uv sync --all-extras)
+
+# Measure both engines + cross-check Py↔TS parity (ADR-0023)
+bench/scripts/gate.sh                # exits 0 if no F1 regression > 0.02
+
+# Regenerate docs/evaluation.md from the latest baselines
+python bench/scripts/render-evaluation.py --check
+```
+
+Expected:
+1. `gate.sh` prints per-detector P/R/F1 for Py and TS, then
+   `GATE: PASS  (no F1 regression > tolerance; Py↔TS parity intact)`.
+2. `render-evaluation.py --check` exits 0 (the committed
+   `docs/evaluation.md` matches the freshly-measured numbers).
+
+If either step fails, the discipline is to file a numbered ledger
+entry — false negatives go in
+[`docs/false-negative-resolution.md`](./false-negative-resolution.md),
+false positives in
+[`docs/false-positive-resolution.md`](./false-positive-resolution.md)
+— before changing the detector or the corpus. The methodology lives in
+§1 of each file (the four resolution paths).
+
 ## Governance
 
 ### Adding a sample

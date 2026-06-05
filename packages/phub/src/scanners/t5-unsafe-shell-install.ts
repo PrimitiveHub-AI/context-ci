@@ -26,6 +26,18 @@ const SHELL_PIPE_PATTERNS: Array<readonly [RegExp, string]> = [
     /\b(?:curl|wget|fetch)\s+(?:-\w+\s+)*[^\s|]*https?:\/\/[^\s|]+\s*\|\s*(?:sudo\s+)?(?:sh|bash|zsh|fish|ksh|csh)\b/gim,
     "shell-pipe-from-network",
   ],
+  // v0.2.3 (Round 3 — closes test_shell_pipe_family inline-code case).
+  // Verb-anchored variant: "Run `curl ... | sh`" / "Then execute
+  // `wget ... | bash`". The match.index is at the VERB (outside the
+  // backticks), so the inline-code skip in v0.2.1 doesn't apply, but
+  // the negation guard still does — "Never run `curl ... | sh`" is
+  // still skipped because "Never" precedes the verb within the
+  // sentence. AV-strict position: prose that tells the agent to copy-
+  // paste a curl|sh from inline code is the Shai-Hulud vector.
+  [
+    /(?:^|\s)(?:first[,\s]+|then[,\s]+|now[,\s]+)?(?:run|execute|launch)\s+`\s*(?:sudo\s+)?(?:curl|wget|fetch)\s+(?:-\w+\s+)*[^\s|`]*https?:\/\/[^\s|`]+\s*\|\s*(?:sudo\s+)?(?:sh|bash|zsh|fish|ksh|csh)\b/gim,
+    "shell-pipe-from-network",
+  ],
   [
     /\bpython(?:3)?\s+-c\s+["']?\$\(\s*(?:curl|wget)/gim,
     "shell-pipe-from-network",
@@ -47,6 +59,16 @@ const SHELL_PIPE_PATTERNS: Array<readonly [RegExp, string]> = [
 const NPX_INSTALL_PATTERNS: Array<readonly [RegExp, string]> = [
   [
     /\bnpx\s+(?:-y\s+|--yes\s+)?(?!--help|--version)[a-zA-Z0-9@/_.-][a-zA-Z0-9@/_.-]+/gim,
+    "npx-arbitrary-install",
+  ],
+  // v0.2.3 (Round 3 — closes test_npx_install_family inline-code case).
+  // Verb-anchored variant: "Then run `npx -y attacker-cli`". Same
+  // discipline as the shell-pipe verb-anchored entry. The existing
+  // bare-prose npx pattern (which IS inline-code-skip-blocked) still
+  // protects benign vendor docs like "`npx shadcn@latest add Button`"
+  // shown without a "run/execute/launch" verb before the backtick.
+  [
+    /(?:^|\s)(?:first[,\s]+|then[,\s]+|now[,\s]+)?(?:run|execute|launch)\s+`\s*npx\s+(?:-y\s+|--yes\s+)?(?!--help|--version)[a-zA-Z0-9@/_.-][a-zA-Z0-9@/_.-]+/gim,
     "npx-arbitrary-install",
   ],
 ]
@@ -97,7 +119,7 @@ export class T5UnsafeShellInstallDetector {
   readonly name = "t5.unsafe_shell_install"
   readonly threatCategory = "T5"
   readonly cciId = "CCI-005"
-  readonly detectorVersion = "0.2.2"
+  readonly detectorVersion = "0.2.3"
 
   run(ctx: DetectorContext): Verdict {
     const hints: DiffHint[] = []
@@ -112,8 +134,16 @@ export class T5UnsafeShellInstallDetector {
       pattern.lastIndex = 0
       let match: RegExpExecArray | null
       while ((match = pattern.exec(ctx.content)) !== null) {
+        // v0.2.3 (Round 3): start-only check, NOT range-aware.
+        // The verb-anchored patterns added in v0.2.3 deliberately
+        // span from prose OUTSIDE inline code into inline code —
+        // a range-aware check would skip them because the tail
+        // lives inside backticks. start-only fires correctly on
+        // the verb anchor (outside) and the existing inside-backtick
+        // patterns still skip correctly because their match.index is
+        // inside the inline code.
         if (
-          isInAnyCodeOrFrontmatter(match.index, mdCtx, match.index + match[0].length) ||
+          isInAnyCodeOrFrontmatter(match.index, mdCtx) ||
           isInNegationContext(ctx.content, match.index)
         ) {
           if (match.index === pattern.lastIndex) pattern.lastIndex++

@@ -1,8 +1,11 @@
 # Baseline FLOOR — the regression contract
 
+[![scanner-bench](https://github.com/DevXYZx/primitivehub/actions/workflows/scanner-bench.yml/badge.svg)](https://github.com/DevXYZx/primitivehub/actions/workflows/scanner-bench.yml)
+
 **Spec:** [ADR-0037 (corpus-as-steering-wheel)](../../docs/decisions/0037-corpus-as-steering-wheel.md)
 + [ADR-0038 (v0.2 expansion + 80/20 holdout split)](../../docs/decisions/0038-corpus-v0_2-expansion-and-holdout-split.md)
 **Enforcement:** [`.github/workflows/scanner-bench.yml`](../../.github/workflows/scanner-bench.yml)
+**Public scoreboard:** [`docs/evaluation.md`](../../docs/evaluation.md) (auto-generated; CI fails if stale)
 **Active corpus version:** v0.2 (105 samples: 99 in-sample + 6 holdout)
 
 The most recent committed baseline JSON in this directory is the

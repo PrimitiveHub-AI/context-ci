@@ -69,6 +69,18 @@ _SHELL_PIPE_PATTERNS: tuple[tuple[str, str], ...] = (
         r"\b(?:curl|wget|fetch)\s+(?:-\w+\s+)*[^\s|]*https?://[^\s|]+\s*\|\s*(?:sudo\s+)?(?:sh|bash|zsh|fish|ksh|csh)\b",
         "shell-pipe-from-network",
     ),
+    # v0.2.3 (Round 3 — closes test_shell_pipe_family inline-code case).
+    # Verb-anchored variant: "Run `curl ... | sh`" / "Then execute
+    # `wget ... | bash`". match.start() is at the VERB (outside the
+    # backticks), so the v0.2.1 inline-code skip doesn't apply, but the
+    # negation guard still does — "Never run `curl ... | sh`" stays
+    # skipped because "Never" precedes the verb within the sentence.
+    # AV-strict position: prose that tells the agent to copy-paste a
+    # curl|sh from inline code IS the Shai-Hulud vector.
+    (
+        r"(?:^|\s)(?:first[,\s]+|then[,\s]+|now[,\s]+)?(?:run|execute|launch)\s+`\s*(?:sudo\s+)?(?:curl|wget|fetch)\s+(?:-\w+\s+)*[^\s|`]*https?://[^\s|`]+\s*\|\s*(?:sudo\s+)?(?:sh|bash|zsh|fish|ksh|csh)\b",
+        "shell-pipe-from-network",
+    ),
     # python -c "$(curl ...)" and friends
     (
         r"\bpython(?:3)?\s+-c\s+[\"']?\$\(\s*(?:curl|wget)",
@@ -94,6 +106,16 @@ _NPX_INSTALL_PATTERNS: tuple[tuple[str, str], ...] = (
     # npx -y <package> or npx <package> — auto-installs and runs
     (
         r"\bnpx\s+(?:-y\s+|--yes\s+)?(?!--help|--version)[a-zA-Z0-9@/_.-][a-zA-Z0-9@/_.-]+",
+        "npx-arbitrary-install",
+    ),
+    # v0.2.3 (Round 3 — closes test_npx_install_family inline-code case).
+    # Verb-anchored variant: "Then run `npx -y attacker-cli`". Same
+    # discipline as the shell-pipe verb-anchored entry. The existing
+    # bare-prose npx pattern (which IS inline-code-skip-blocked) still
+    # protects benign vendor docs like "`npx shadcn@latest add Button`"
+    # shown without a "run/execute/launch" verb before the backtick.
+    (
+        r"(?:^|\s)(?:first[,\s]+|then[,\s]+|now[,\s]+)?(?:run|execute|launch)\s+`\s*npx\s+(?:-y\s+|--yes\s+)?(?!--help|--version)[a-zA-Z0-9@/_.-][a-zA-Z0-9@/_.-]+",
         "npx-arbitrary-install",
     ),
 )
@@ -162,7 +184,7 @@ class T5UnsafeShellInstallDetector:
     name = "t5.unsafe_shell_install"
     threat_category = "T5"  # legacy; back-compat
     cci_id = "CCI-005"  # Context CI Top 10 v0.1 canonical ID (ADR-0016)
-    detector_version = "0.2.2"
+    detector_version = "0.2.3"
 
     def run(self, ctx: DetectorContext) -> Verdict:
         hints: list[DiffHint] = []
@@ -173,7 +195,15 @@ class T5UnsafeShellInstallDetector:
 
         for pattern, tag in _COMPILED:
             for match in pattern.finditer(ctx.content):
-                if is_in_any_code_or_frontmatter(match.start(), md_ctx, match.end()):
+                # v0.2.3 (Round 3): start-only check, NOT range-aware.
+                # The verb-anchored patterns added in v0.2.3 deliberately
+                # span from prose OUTSIDE inline code into inline code —
+                # a range-aware check would skip them because the tail
+                # lives inside backticks. start-only fires correctly on
+                # the verb anchor (outside) and the existing inside-
+                # backtick patterns still skip correctly because their
+                # match.start() is inside the inline code.
+                if is_in_any_code_or_frontmatter(match.start(), md_ctx):
                     continue
                 if is_in_negation_context(ctx.content, match.start()):
                     continue

@@ -4,6 +4,12 @@ The trusted registry for AI Context Primitives. A CyberOrca Labs initiative.
 
 > PrimitiveHub treats agent context as supply-chain material, not disposable prompt text.
 
+[![scanner-bench](https://github.com/DevXYZx/primitivehub/actions/workflows/scanner-bench.yml/badge.svg)](https://github.com/DevXYZx/primitivehub/actions/workflows/scanner-bench.yml)
+&nbsp;
+[Evaluation scoreboard](docs/evaluation.md) ·
+[Adversarial corpus](docs/corpus-v0.1.md) ·
+[Security policy](SECURITY.md)
+
 ## Status
 
 - **Phase 1 (done)** — Clean architecture, content-digest cryptographic vocabulary, runtime data invariant guards.

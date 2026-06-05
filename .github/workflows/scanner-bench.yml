@@ -89,3 +89,12 @@ jobs:
         env:
           VERBOSE: "1"
         run: bench/scripts/gate.sh
+
+      # ── Public scoreboard drift gate ─────────────────────────────────
+      # docs/evaluation.md is the public, human-readable per-detector
+      # P/R/F1 board; it's regenerated from the most recent committed
+      # baselines. If a PR changes detector behaviour without also
+      # committing the regenerated evaluation, this step exits 1 and
+      # blocks the merge — the public numbers can't lie by being stale.
+      - name: Check docs/evaluation.md is in sync with the latest baselines
+        run: python3 bench/scripts/render-evaluation.py --check
