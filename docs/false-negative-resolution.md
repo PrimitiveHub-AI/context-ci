@@ -577,3 +577,23 @@ floor.
   `\p{Emoji_Presentation}` class; flag if > 5% of the file's
   non-whitespace codepoints OR if any line contains ≥10
   consecutive emoji codepoints.
+- **2026-06-06 (Round 6, fix 4) — CLOSED.** Shipped as T10 v0.1.2
+  (final fix in the round; brings all 10 detectors to F1 = 1.000
+  on the v0.2 in-sample slice). Two-stage codepoint check, both
+  applied across the document:
+    * **density:** > 5% of non-whitespace codepoints fall in the
+      emoji-presentation ranges (Misc Symbols + Dingbats
+      U+2600..U+27BF, Extended Pictographs U+1F300..U+1FAFF);
+    * **run:** any consecutive run of ≥ 10 emoji-presentation
+      codepoints (whitespace resets the run; non-emoji breaks it).
+  Either condition fires the `emoji-density` tag (severity WARN
+  per the T10 design). ZWJ / skin-tone / flag sequences out of
+  scope — their leading codepoints already fall in the covered
+  blocks. Manifest ratchet: S-104 expected_verdict FAIL → WARN
+  to match T10's design intent (bloat is context-budget waste,
+  not active attack; all other CCI-010 adversarial samples already
+  used WARN). Corpus: CCI-010 in-sample F1 0.909 → 1.000 (FN=1 → 0;
+  TP=5 → 6 because TP/FN routes via severity-int comparison).
+  Overall in-sample macro F1 0.989 → **1.000** — all 10 detectors,
+  precision 1.000 + recall 1.000, on the v0.2 in-sample slice.
+  Py + TS parity intact.

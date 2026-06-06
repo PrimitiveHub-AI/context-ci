@@ -1962,8 +1962,13 @@ samples:
     cci_id: "CCI-010"
     detail_tags:
       - "visual-bloat"
+      - "emoji-density"
     severity: "high"
-    expected_verdict: "FAIL"
+    # 2026-06-06 ratchet: T10 returns WARN max by design (bloat is
+    # context-budget waste, not active attack). v0.1.2 emoji-density
+    # check fires WARN; all other CCI-010 adversarial samples already
+    # use expected_verdict: "WARN" so this row was the odd-one-out.
+    expected_verdict: "WARN"
     contributor: "mhm"
     added: "2026-06-05"
     notes: |

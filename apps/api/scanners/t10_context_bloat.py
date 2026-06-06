@@ -144,6 +144,77 @@ def _check_heading_proliferation(content: str) -> DiffHint | None:
     )
 
 
+# v0.1.2 (Round 6 fix 4 — closes FN-013): emoji-density check. v0.1
+# thresholds (oversized, repetition, whitespace, heading proliferation)
+# all measure structure; an attacker-built primitive padded with
+# consecutive emoji glyphs stays small in chars/h2/whitespace metrics
+# but visually hides the actual instruction below the bloat. T10
+# v0.1.2 flags either > 5% emoji density across non-whitespace
+# codepoints OR any single line with ≥ 10 consecutive emoji-presentation
+# codepoints.
+#
+# Codepoint coverage: Misc Symbols + Dingbats (U+2600..U+27BF) and
+# the Extended Pictographs blocks (U+1F300..U+1FAFF). Covers the v0.2
+# corpus attack shape; ZWJ-joined sequences + skin-tone modifiers are
+# out of scope (their components match the same blocks). Lockstep
+# with packages/phub/src/scanners/t10-context-bloat.ts § v0.1.2.
+EMOJI_DENSITY_RATIO = 0.05
+EMOJI_CONSECUTIVE_RUN_THRESHOLD = 10
+
+
+def _is_emoji_presentation(cp: int) -> bool:
+    return (0x2600 <= cp <= 0x27BF) or (0x1F300 <= cp <= 0x1FAFF)
+
+
+def _check_emoji_density(content: str) -> DiffHint | None:
+    emoji_count = 0
+    non_ws_count = 0
+    max_run = 0
+    cur_run = 0
+    for ch in content:
+        if ch == "\n":
+            if cur_run > max_run:
+                max_run = cur_run
+            cur_run = 0
+            continue
+        if ch.isspace():
+            cur_run = 0
+            continue
+        non_ws_count += 1
+        if _is_emoji_presentation(ord(ch)):
+            emoji_count += 1
+            cur_run += 1
+        else:
+            if cur_run > max_run:
+                max_run = cur_run
+            cur_run = 0
+    if cur_run > max_run:
+        max_run = cur_run
+    if non_ws_count == 0:
+        return None
+    density_ratio = emoji_count / non_ws_count
+    if (
+        density_ratio <= EMOJI_DENSITY_RATIO
+        and max_run < EMOJI_CONSECUTIVE_RUN_THRESHOLD
+    ):
+        return None
+    return DiffHint(
+        line=1,
+        snippet=(
+            f"<{emoji_count} emoji of {non_ws_count} non-whitespace codepoints "
+            f"({round(density_ratio * 100)}%); max consecutive run {max_run}>"
+        ),
+        suggestion=(
+            f"Emoji density ({round(density_ratio * 100)}%) or longest consecutive "
+            f"emoji run ({max_run} codepoints) exceeds the v0.2 bloat threshold "
+            f"({round(EMOJI_DENSITY_RATIO * 100)}% / "
+            f"{EMOJI_CONSECUTIVE_RUN_THRESHOLD}-emoji run). Visual padding wastes "
+            "context budget and obscures the primitive's actual instruction."
+        ),
+        detail_tag="emoji-density",
+    )
+
+
 # File paths that look like a primitive being authored. T10's bloat
 # semantics are calibrated for single primitives; firing on every
 # README/docs/changelog in a normal repo is the case ADR-0030 § 1
@@ -198,7 +269,7 @@ class T10ContextBloatDetector:
     name = "t10.context_bloat"
     threat_category = "T10"
     cci_id = "CCI-010"
-    detector_version = "0.1.1"
+    detector_version = "0.1.2"
 
     def run(self, ctx: DetectorContext) -> Verdict:
         # v0.1.1 (2026-06-04): multi-file scan callers pass `file_path`;
@@ -223,6 +294,7 @@ class T10ContextBloatDetector:
             _check_excessive_repetition,
             _check_whitespace_stuffing,
             _check_heading_proliferation,
+            _check_emoji_density,
         ):
             hint = check(ctx.content)
             if hint is not None:

@@ -104,6 +104,66 @@ function checkWhitespaceStuffing(content: string): DiffHint | null {
   }
 }
 
+// v0.1.2 (Round 6 fix 4 — closes FN-013): emoji-density check.
+// The v0.1 thresholds (oversized chars, repetition, whitespace,
+// heading proliferation) all measure structure; an attacker-built
+// primitive padded with consecutive emoji glyphs ("🚀🚀🚀..." x 30
+// per line) stays small in chars/h2/whitespace metrics but visually
+// hides the actual instruction below the bloat. T10 v0.1.2 flags
+// either > 5% emoji density across non-whitespace codepoints OR any
+// single line with ≥ 10 consecutive emoji-presentation codepoints.
+//
+// Codepoint coverage: Misc Symbols + Dingbats (U+2600..U+27BF) and
+// the Extended Pictographs blocks (U+1F300..U+1FAFF). This covers
+// the v0.2 corpus attack shape; ZWJ-joined emoji sequences and skin
+// -tone modifiers are out of scope (their components match the same
+// blocks). Lockstep with apps/api/scanners/t10_context_bloat.py § v0.1.2.
+const EMOJI_DENSITY_RATIO = 0.05
+const EMOJI_CONSECUTIVE_RUN_THRESHOLD = 10
+
+function isEmojiPresentation(cp: number): boolean {
+  return (cp >= 0x2600 && cp <= 0x27bf) || (cp >= 0x1f300 && cp <= 0x1faff)
+}
+
+function checkEmojiDensity(content: string): DiffHint | null {
+  let emojiCount = 0
+  let nonWsCount = 0
+  let maxRun = 0
+  let curRun = 0
+  for (const ch of content) {
+    const cp = ch.codePointAt(0) ?? 0
+    if (ch === "\n") {
+      if (curRun > maxRun) maxRun = curRun
+      curRun = 0
+      continue
+    }
+    if (/\s/.test(ch)) {
+      curRun = 0
+      continue
+    }
+    nonWsCount++
+    if (isEmojiPresentation(cp)) {
+      emojiCount++
+      curRun++
+    } else {
+      if (curRun > maxRun) maxRun = curRun
+      curRun = 0
+    }
+  }
+  if (curRun > maxRun) maxRun = curRun
+  if (nonWsCount === 0) return null
+  const densityRatio = emojiCount / nonWsCount
+  if (densityRatio <= EMOJI_DENSITY_RATIO && maxRun < EMOJI_CONSECUTIVE_RUN_THRESHOLD) {
+    return null
+  }
+  return {
+    line: 1,
+    snippet: `<${emojiCount} emoji of ${nonWsCount} non-whitespace codepoints (${Math.round(densityRatio * 100)}%); max consecutive run ${maxRun}>`,
+    suggestion: `Emoji density (${Math.round(densityRatio * 100)}%) or longest consecutive emoji run (${maxRun} codepoints) exceeds the v0.2 bloat threshold (${Math.round(EMOJI_DENSITY_RATIO * 100)}% / ${EMOJI_CONSECUTIVE_RUN_THRESHOLD}-emoji run). Visual padding wastes context budget and obscures the primitive's actual instruction.`,
+    detailTag: "emoji-density",
+  }
+}
+
 function checkHeadingProliferation(content: string): DiffHint | null {
   const n = content.length
   if (n < 1000) return null
@@ -125,7 +185,7 @@ export class T10ContextBloatDetector {
   readonly name = "t10.context_bloat"
   readonly threatCategory = "T10"
   readonly cciId = "CCI-010"
-  readonly detectorVersion = "0.1.1"
+  readonly detectorVersion = "0.1.2"
 
   run(ctx: DetectorContext): Verdict {
     // v0.1.1 (2026-06-04): multi-file scan callers pass `filename`;
@@ -151,6 +211,7 @@ export class T10ContextBloatDetector {
       checkExcessiveRepetition,
       checkWhitespaceStuffing,
       checkHeadingProliferation,
+      checkEmojiDensity,
     ]) {
       const hint = check(ctx.content)
       if (hint !== null) hints.push(hint)
