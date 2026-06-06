@@ -204,6 +204,77 @@ def render_evaluation(py_doc: dict[str, Any], ts_doc: dict[str, Any]) -> str:
         "[`docs/false-positive-resolution.md`](./false-positive-resolution.md) "
         "— same four-path discipline, opposite failure mode.\n"
     )
+    lines.append("## Limitations\n")
+    lines.append(
+        "Honest disclosure of what these numbers do AND do NOT prove. "
+        "Cite this section in the paper's threats-to-validity sub-section.\n"
+    )
+    lines.append(
+        "1. **Corpus size.** v0.2 ships 99 in-sample + 6 holdout = 105 "
+        "labeled samples. Per-detector support ranges from ~30 (CCI-002) "
+        "to ~45 (CCI-007/CCI-009) labels apiece. F1=1.000 on 30 samples "
+        "is the best we can demonstrate at this corpus size; it is NOT "
+        "the same claim as F1=1.000 on 30,000 samples. Corpus expansion "
+        "is the next-round work.\n"
+    )
+    lines.append(
+        "2. **Holdout coverage is uneven.** The v0.2 80/20 split shipped "
+        "6 holdout samples (1 per CCI for the six families where we had "
+        "natural variants); CCI-005 / CCI-007 / CCI-009 / CCI-010 "
+        "currently have 0 holdout samples. Their reported holdout F1 = "
+        "n/a — informational. Closing the holdout coverage gap is the "
+        "next corpus round per "
+        "[ADR-0038](./decisions/0038-corpus-v0_2-expansion-and-holdout-split.md).\n"
+    )
+    lines.append(
+        "3. **Static detection only.** The corpus measures detectors "
+        "operating on PRIMITIVE CONTENT (markdown files). It does NOT "
+        "measure runtime-injection defense (the agent fetching a "
+        "malicious resource AFTER signing) or training-time attacks "
+        "against the underlying LLM. Those threat surfaces map to "
+        "different layers of the Trust Runtime (the Sigstore "
+        "attestation chain and the LLM provider's pre-training "
+        "safeguards respectively); see "
+        "[`docs/owasp-llm-top10-crosswalk.md`](./owasp-llm-top10-crosswalk.md) "
+        "for the scope boundary.\n"
+    )
+    lines.append(
+        "4. **Vendor list scope (CCI-007).** Generic Unicode confusables "
+        "(T7 v0.3.0) catch impersonation against the 35 single-word "
+        "vendor names in `_VENDORS`. Confusables.txt's full 6000-entry "
+        "set is NOT loaded — the project's vendor list is the operational "
+        "scope. Expansion is one line per added vendor.\n"
+    )
+    lines.append(
+        "5. **English-language bias.** Adversarial samples are written "
+        "primarily in English-language prose. Attacker phrasing in other "
+        "languages (Russian / Chinese / Arabic / Spanish) is uncovered. "
+        "Multi-lingual corpus expansion is deferred to a future round.\n"
+    )
+    lines.append(
+        "6. **Synthesized provenance.** Most adversarial samples are "
+        "marked `incident_reference: \"synthesized\"` — composed to "
+        "exercise a specific attack shape rather than drawn from "
+        "observed in-the-wild incidents. Real-incident provenance is "
+        "added per [ADR-0030](./decisions/0030-fp-resolution-and-av-vendor-parallel.md) §6 "
+        "as the project's `/check` surface accumulates field reports.\n"
+    )
+    lines.append(
+        "7. **`replay.py` ≠ `gate.sh`.** [`bench/cli/replay.py`](../bench/cli/replay.py) "
+        "lets a reader re-run any specific sample deterministically and "
+        "diff its verdict; [`bench/scripts/gate.sh`](../bench/scripts/gate.sh) "
+        "runs the aggregate measurement + parity check that the CI gate "
+        "enforces. Both consume the same corpus + detectors; the gate "
+        "is what blocks merges, the replay is what answers \"show me "
+        "this specific finding.\"\n"
+    )
+    lines.append(
+        "8. **No third-party verification.** These numbers are produced "
+        "by the same team that wrote the detectors. The corpus + gate "
+        "are open-source and reproducible by design; independent "
+        "replication is invited and the methodology to file a "
+        "discrepancy is documented in `SECURITY.md`.\n"
+    )
     return "\n".join(lines) + "\n"
 
 
