@@ -580,6 +580,30 @@ floor.
   NFKC + script-mixing detector deferred to Round 7+. Corpus:
   CCI-007 in-sample F1 0.933 → 1.000 (FN=1 → 0). Overall in-sample
   macro F1 0.984 → 0.989. Parity OK.
+- **2026-06-06 (Round 7, PR 7.2) — GENERIC scope shipped.** T7
+  v0.2.4 → **v0.3.0**: replaces the two hardcoded Anthropic /
+  OpenAI patterns with the UTS #39 "skeleton" comparison method
+  scoped to the project's vendor list. A `_CONFUSABLES_MAP` of
+  Cyrillic + Greek codepoints → canonical Latin (the letters that
+  actually appear in vendor names + the confusables.txt subset
+  the v0.2 attacks exploit). A precomputed
+  `_SINGLE_WORD_VENDOR_SKELETONS` set; per-input-word the detector
+  tokenises, skips pure-ASCII words, maps non-ASCII codepoints via
+  the map, and checks the resulting lowercase Latin skeleton
+  against the vendor-skeleton set. Hits fire `vendor-homoglyph`
+  with snippet showing the original Cyrillic/Greek render alongside
+  the canonical form (paper-grade audit trail). Generalises to
+  every single-word vendor in `_VENDORS` (Anthropic, OpenAI, Google,
+  Microsoft, Meta, Apple, Amazon, AWS, GitHub, GitLab, Bitbucket,
+  Vercel, Netlify, Cloudflare, Stripe, Auth0, Okta, LangChain,
+  LlamaIndex, HuggingFace, Pinecone, Weaviate, Cursor, Aider,
+  Cline, Continue, MongoDB, Supabase, PostgreSQL, Postgres,
+  Snowflake, Databricks, Datadog, Sentry, PagerDuty). Corpus:
+  CCI-007 in-sample F1 stays at 1.000 (no regression on S-098);
+  parity OK. Multi-word vendors ("Hugging Face") use their single-
+  word sibling form in the list. Full Unicode confusables.txt
+  (~6000 entries) deferred — Phase 2 generalisation when the
+  vendor list outgrows the current 35-entry scope.
 
 ### FN-012 — CCI-008 misses future-dated US Patent citation (S-100)
 

@@ -134,38 +134,72 @@ const TYPOSQUAT_TUPLES: Array<readonly [RegExp, string]> = TYPOSQUAT_PATTERNS.ma
   "vendor-typosquat",
 ])
 
-// v0.2.4 (Round 6 fix 3 — closes FN-011): Unicode-confusable patterns
-// for known vendor names. The character classes mix the canonical
-// Latin letter with its commonly-substituted Cyrillic / Greek
-// confusable; matches in the "any non-ASCII letter is present in the
-// canonical-Latin slot" sense fire `vendor-homoglyph`. ASCII-only
-// renders (no confusable used) DON'T match — the bare-Latin word
-// is the vendor's REAL name and isn't impersonation.
+// v0.3.0 (Round 7 PR 7.2 — generic Unicode confusables, replaces the
+// v0.2.4 hardcoded Anthropic/OpenAI patterns). Implements UTS #39's
+// "skeleton" identifier-comparison method scoped to the project's
+// vendor list. Each canonical vendor name has a precomputed skeleton
+// (lowercase Latin form); each input "word" containing any non-ASCII
+// codepoint is mapped through CONFUSABLES_MAP and compared to the
+// vendor-skeleton set. A match means an attacker rendered a vendor
+// name with one or more Cyrillic/Greek confusable substitutions —
+// the classic visual-impersonation supply-chain shape.
 //
-// Boundary defense: `(?<![A-Za-z0-9_])` / `(?![A-Za-z0-9_])` are used
-// instead of `\b` because `\b` is ASCII-only in default mode and a
-// Cyrillic letter at the boundary doesn't trigger it.
+// The map covers the codepoints that actually appear in the v0.2.4
+// attack samples + the broader set that confusables.txt lists for
+// the letters in the project's vendor names. Generic enough to catch
+// "Аpple" or "Мicrosoft" or "Ѕtripe" without re-tuning per vendor.
 //
-// Vendor-list-first scope: Anthropic + OpenAI. A generic NFKC + script
-// -mixing detector is the planned Round 7+ generalisation.
-const HOMOGLYPH_VENDOR_PATTERNS: string[] = [
-  // Anthropic: Cyrillic А (U+0410) or а (U+0430) instead of Latin A/a.
-  // The non-leading "nthropic" stays canonical Latin so this fires
-  // specifically on the mixed-script attack shape.
-  String.raw`(?<![A-Za-z0-9_])[Аа]nthropic(?![A-Za-z0-9_])`,
-  // OpenAI: Cyrillic О (U+041E) or о (U+043E) instead of Latin O/o.
-  String.raw`(?<![A-Za-z0-9_])[Оо]pen[Aa][Ii](?![A-Za-z0-9_])`,
-]
+// Lockstep with apps/api/scanners/t7_poisoned_naming.py § v0.3.0.
+const CONFUSABLES_MAP: ReadonlyMap<string, string> = new Map([
+  // Cyrillic uppercase
+  ["А", "A"], ["В", "B"], ["С", "C"], ["Е", "E"],
+  ["Н", "H"], ["І", "I"], ["К", "K"], ["М", "M"],
+  ["О", "O"], ["Р", "P"], ["Ѕ", "S"], ["Т", "T"],
+  ["Х", "X"],
+  // Cyrillic lowercase
+  ["а", "a"], ["с", "c"], ["е", "e"], ["о", "o"],
+  ["р", "p"], ["ѕ", "s"],
+  // Greek uppercase
+  ["Α", "A"], ["Β", "B"], ["Ε", "E"], ["Η", "H"],
+  ["Ι", "I"], ["Κ", "K"], ["Μ", "M"], ["Ν", "N"],
+  ["Ο", "O"], ["Ρ", "P"], ["Τ", "T"], ["Υ", "Y"],
+  ["Χ", "X"], ["Ϲ", "C"],
+  // Greek lowercase
+  ["α", "a"], ["ο", "o"], ["ρ", "p"],
+])
 
-const HOMOGLYPH_TUPLES: Array<readonly [RegExp, string]> = HOMOGLYPH_VENDOR_PATTERNS.map(
-  (p) => [new RegExp(p, "gim"), "vendor-homoglyph"],
+function skeleton(s: string): string {
+  let out = ""
+  for (const ch of s) {
+    out += CONFUSABLES_MAP.get(ch) ?? ch
+  }
+  return out
+}
+
+function hasNonAscii(s: string): boolean {
+  for (let i = 0; i < s.length; i++) {
+    if (s.charCodeAt(i) > 127) return true
+  }
+  return false
+}
+
+// Single-word vendors only. Multi-word forms ("Hugging Face") have
+// single-word siblings in the list ("HuggingFace") so the homoglyph
+// check still catches their attack shape.
+const SINGLE_WORD_VENDOR_SKELETONS: ReadonlyMap<string, string> = new Map(
+  VENDORS.filter((v) => !/\s/.test(v)).map((v) => [skeleton(v).toLowerCase(), v]),
 )
+
+// Word tokenizer: contiguous run of letters / digits / "._-" with a
+// letter-class anchor. Covers Latin + the Cyrillic / Greek blocks
+// the confusables map handles; matches at word boundaries via the
+// surrounding-context filter (non-letter chars before/after).
+const HOMOGLYPH_WORD_RE = /[A-Za-zͰ-ϿЀ-ӿ][A-Za-z0-9._Ͱ-ϿЀ-ӿ-]*/g
 
 const ALL_PATTERNS = [
   ...OFFICIAL_CLAIM_PATTERNS,
   ...FALSE_AFFILIATION_PATTERNS,
   ...TYPOSQUAT_TUPLES,
-  ...HOMOGLYPH_TUPLES,
 ]
 
 const SUGGESTIONS: Record<string, string> = {
@@ -192,7 +226,7 @@ export class T7PoisonedNamingDetector {
   readonly name = "t7.poisoned_naming"
   readonly threatCategory = "T7"
   readonly cciId = "CCI-007"
-  readonly detectorVersion = "0.2.4"
+  readonly detectorVersion = "0.3.0"
 
   run(ctx: DetectorContext): Verdict {
     const hints: DiffHint[] = []
@@ -214,7 +248,7 @@ export class T7PoisonedNamingDetector {
           continue
         }
         if (
-          (tag === "vendor-typosquat" || tag === "vendor-homoglyph") &&
+          tag === "vendor-typosquat" &&
           isInMentionContext(ctx.content, match.index, match.index + match[0].length)
         ) {
           if (match.index === pattern.lastIndex) pattern.lastIndex++
@@ -224,6 +258,46 @@ export class T7PoisonedNamingDetector {
         if (hints.length >= MAX_HINTS_PER_VERDICT) break outer
         if (match.index === pattern.lastIndex) pattern.lastIndex++
       }
+    }
+
+    // v0.3.0 (Round 7 PR 7.2): generic homoglyph pass using UTS #39
+    // skeleton comparison. Tokenises the content into words, skips
+    // pure-ASCII words (the vendor's REAL name), maps non-ASCII
+    // codepoints through CONFUSABLES_MAP, compares the resulting
+    // skeleton to SINGLE_WORD_VENDOR_SKELETONS. Hits fire
+    // `vendor-homoglyph`.
+    HOMOGLYPH_WORD_RE.lastIndex = 0
+    let wm: RegExpExecArray | null
+    while ((wm = HOMOGLYPH_WORD_RE.exec(ctx.content)) !== null) {
+      if (hints.length >= MAX_HINTS_PER_VERDICT) break
+      const word = wm[0]
+      if (!hasNonAscii(word)) {
+        if (wm.index === HOMOGLYPH_WORD_RE.lastIndex) HOMOGLYPH_WORD_RE.lastIndex++
+        continue
+      }
+      const skel = skeleton(word).toLowerCase()
+      const canonical = SINGLE_WORD_VENDOR_SKELETONS.get(skel)
+      if (canonical === undefined) {
+        if (wm.index === HOMOGLYPH_WORD_RE.lastIndex) HOMOGLYPH_WORD_RE.lastIndex++
+        continue
+      }
+      // Same frontmatter / inline-code / mention-context skips as the
+      // regex-driven patterns.
+      if (isInFrontmatter(wm.index, mdCtx) || isInInlineCode(wm.index, mdCtx)) {
+        if (wm.index === HOMOGLYPH_WORD_RE.lastIndex) HOMOGLYPH_WORD_RE.lastIndex++
+        continue
+      }
+      if (isInMentionContext(ctx.content, wm.index, wm.index + word.length)) {
+        if (wm.index === HOMOGLYPH_WORD_RE.lastIndex) HOMOGLYPH_WORD_RE.lastIndex++
+        continue
+      }
+      hints.push({
+        line: lineForPosition(ctx.content, wm.index),
+        snippet: truncateSnippet(`${word} (renders as “${canonical}” via Cyrillic/Greek confusables)`),
+        suggestion: SUGGESTIONS["vendor-homoglyph"]!,
+        detailTag: "vendor-homoglyph",
+      })
+      if (wm.index === HOMOGLYPH_WORD_RE.lastIndex) HOMOGLYPH_WORD_RE.lastIndex++
     }
 
     if (hints.length === 0) {

@@ -162,36 +162,64 @@ _TYPOSQUAT_TUPLES: tuple[tuple[str, str], ...] = tuple(
     (pat, "vendor-typosquat") for pat in _TYPOSQUAT_PATTERNS
 )
 
-# v0.2.4 (Round 6 fix 3 — closes FN-011): Unicode-confusable patterns
-# for known vendor names. Mixes the canonical Latin letter with its
-# commonly-substituted Cyrillic / Greek confusable; matches the "any
-# non-ASCII letter is present in the canonical-Latin slot" sense and
-# fires `vendor-homoglyph`. ASCII-only renders (no confusable used)
-# DON'T match — the bare-Latin word is the vendor's REAL name and
-# isn't impersonation.
+# v0.3.0 (Round 7 PR 7.2 — generic Unicode confusables, replaces
+# the v0.2.4 hardcoded Anthropic/OpenAI patterns). Implements UTS
+# #39's "skeleton" identifier-comparison method scoped to the
+# project's vendor list. Each canonical single-word vendor has a
+# precomputed skeleton (lowercase Latin form); each input "word"
+# containing any non-ASCII codepoint is mapped through
+# CONFUSABLES_MAP and compared to the vendor-skeleton set. A match
+# means an attacker rendered a vendor name with one or more
+# Cyrillic / Greek confusable substitutions — the classic visual-
+# impersonation supply-chain shape.
 #
-# Boundary defense: ``(?<![A-Za-z0-9_])`` / ``(?![A-Za-z0-9_])`` are
-# used instead of ``\b`` because ``\b`` is ASCII-only by default and
-# a Cyrillic letter at the boundary doesn't trigger it.
-#
-# Vendor-list-first scope: Anthropic + OpenAI. A generic NFKC + script-
-# mixing detector is the planned Round 7+ generalisation.
-_HOMOGLYPH_VENDOR_PATTERNS: tuple[str, ...] = (
-    # Anthropic: Cyrillic А (U+0410) or а (U+0430) instead of Latin A/a.
-    r"(?<![A-Za-z0-9_])[Аа]nthropic(?![A-Za-z0-9_])",
-    # OpenAI: Cyrillic О (U+041E) or о (U+043E) instead of Latin O/o.
-    r"(?<![A-Za-z0-9_])[Оо]pen[Aa][Ii](?![A-Za-z0-9_])",
-)
+# Lockstep with packages/phub/src/scanners/t7-poisoned-naming.ts § v0.3.0.
+_CONFUSABLES_MAP: dict[str, str] = {
+    # Cyrillic uppercase
+    "А": "A", "В": "B", "С": "C", "Е": "E",
+    "Н": "H", "І": "I", "К": "K", "М": "M",
+    "О": "O", "Р": "P", "Ѕ": "S", "Т": "T",
+    "Х": "X",
+    # Cyrillic lowercase
+    "а": "a", "с": "c", "е": "e", "о": "o",
+    "р": "p", "ѕ": "s",
+    # Greek uppercase
+    "Α": "A", "Β": "B", "Ε": "E", "Η": "H",
+    "Ι": "I", "Κ": "K", "Μ": "M", "Ν": "N",
+    "Ο": "O", "Ρ": "P", "Τ": "T", "Υ": "Y",
+    "Χ": "X", "Ϲ": "C",
+    # Greek lowercase
+    "α": "a", "ο": "o", "ρ": "p",
+}
 
-_HOMOGLYPH_TUPLES: tuple[tuple[str, str], ...] = tuple(
-    (pat, "vendor-homoglyph") for pat in _HOMOGLYPH_VENDOR_PATTERNS
+
+def _skeleton(s: str) -> str:
+    return "".join(_CONFUSABLES_MAP.get(ch, ch) for ch in s)
+
+
+def _has_non_ascii(s: str) -> bool:
+    return any(ord(ch) > 127 for ch in s)
+
+
+# Single-word vendors only. Multi-word forms ("Hugging Face") have
+# single-word siblings in the list ("HuggingFace") so the homoglyph
+# check still catches their attack shape.
+_SINGLE_WORD_VENDOR_SKELETONS: dict[str, str] = {
+    _skeleton(v).lower(): v for v in _VENDORS if " " not in v
+}
+
+# Word tokenizer: contiguous run of letters / digits / "._-" with a
+# letter-class anchor. Latin + Cyrillic + Greek blocks (the ranges
+# the confusables map handles).
+_HOMOGLYPH_WORD_RE = re.compile(
+    r"[A-Za-zͰ-ϿЀ-ӿ]"
+    r"[A-Za-z0-9._Ͱ-ϿЀ-ӿ\-]*"
 )
 
 _ALL_PATTERNS = (
     _OFFICIAL_CLAIM_PATTERNS
     + _FALSE_AFFILIATION_PATTERNS
     + _TYPOSQUAT_TUPLES
-    + _HOMOGLYPH_TUPLES
 )
 
 _COMPILED = tuple(
@@ -243,7 +271,7 @@ class T7PoisonedNamingDetector:
     name = "t7.poisoned_naming"
     threat_category = "T7"
     cci_id = "CCI-007"
-    detector_version = "0.2.4"
+    detector_version = "0.3.0"
 
     def run(self, ctx: DetectorContext) -> Verdict:
         hints: list[DiffHint] = []
@@ -260,7 +288,7 @@ class T7PoisonedNamingDetector:
             for match in pattern.finditer(ctx.content):
                 if is_in_frontmatter(match.start(), md_ctx) or is_in_inline_code(match.start(), md_ctx):
                     continue
-                if tag in {"vendor-typosquat", "vendor-homoglyph"} and is_in_mention_context(
+                if tag == "vendor-typosquat" and is_in_mention_context(
                     ctx.content, match.start(), match.end()
                 ):
                     continue
@@ -269,6 +297,46 @@ class T7PoisonedNamingDetector:
                     break
             if len(hints) >= _MAX_HINTS_PER_VERDICT:
                 break
+
+        # v0.3.0 (Round 7 PR 7.2): generic homoglyph pass using
+        # UTS #39 skeleton comparison. Tokenises the content into
+        # words, skips pure-ASCII words, maps non-ASCII codepoints
+        # through _CONFUSABLES_MAP, compares the resulting skeleton
+        # to _SINGLE_WORD_VENDOR_SKELETONS. Hits fire
+        # `vendor-homoglyph`.
+        for word_match in _HOMOGLYPH_WORD_RE.finditer(ctx.content):
+            if len(hints) >= _MAX_HINTS_PER_VERDICT:
+                break
+            word = word_match.group(0)
+            if not _has_non_ascii(word):
+                continue
+            skel = _skeleton(word).lower()
+            canonical = _SINGLE_WORD_VENDOR_SKELETONS.get(skel)
+            if canonical is None:
+                continue
+            if is_in_frontmatter(word_match.start(), md_ctx) or is_in_inline_code(
+                word_match.start(), md_ctx
+            ):
+                continue
+            if is_in_mention_context(ctx.content, word_match.start(), word_match.end()):
+                continue
+            snippet = f'{word} (renders as "{canonical}" via Cyrillic/Greek confusables)'
+            hints.append(
+                DiffHint(
+                    line=ctx.content.count("\n", 0, word_match.start()) + 1,
+                    snippet=snippet[:_SNIPPET_MAX_CHARS]
+                    + ("…" if len(snippet) > _SNIPPET_MAX_CHARS else ""),
+                    suggestion=(
+                        "Vendor name appears with a non-ASCII letter visually identical "
+                        "to the canonical Latin spelling (Cyrillic / Greek confusable). "
+                        "This is the classic visual-impersonation shape and never benign "
+                        "in primitive content. If this is a foreign-language reference, "
+                        'use the language\'s native spelling (e.g. "Антропик") rather '
+                        "than a mixed-script form."
+                    ),
+                    detail_tag="vendor-homoglyph",
+                )
+            )
 
         if not hints:
             return Verdict(
