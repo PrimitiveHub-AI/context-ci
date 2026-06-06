@@ -143,11 +143,50 @@ const INSTALL_INSTRUCTION_PATTERNS: Array<readonly [RegExp, string]> = [
   ],
 ]
 
+// v0.2.5 (Round 10 PR 10.1 — closes FN-014 on S-106 brew install +
+// Gatekeeper bypass). Homebrew is the macOS Shai-Hulud vector — the
+// cask installation pipes through a package manager whose signing
+// chain doesn't validate install-time scripts. Pattern shape mirrors
+// the npx family. Lockstep with apps/api/scanners/t5_unsafe_shell_install.py § v0.2.5.
+const BREW_INSTALL_PATTERNS: Array<readonly [RegExp, string]> = [
+  [
+    /\bbrew\s+(?:cask\s+)?install\s+(?:--cask\s+)?(?!--help|--version)[a-zA-Z0-9@/_.-]+/gim,
+    "brew-install",
+  ],
+  [
+    /(?:^|\s)(?:first[,\s]+|then[,\s]+|now[,\s]+)?(?:run|execute|launch)\s+`\s*brew\s+(?:cask\s+)?install\s+(?:--cask\s+)?(?!--help|--version)[a-zA-Z0-9@/_.-]+/gim,
+    "brew-install",
+  ],
+]
+
+// v0.2.5 — policy-bypass family. When prose instructs the agent to
+// disable a platform's signing / policy / sandboxing protection,
+// that's prepare-for-untrusted-install regardless of which installer
+// follows. Three OSes in scope: macOS Gatekeeper / SIP / quarantine,
+// Linux SELinux / AppArmor, Windows execution-policy + Defender.
+const POLICY_BYPASS_PATTERNS: Array<readonly [RegExp, string]> = [
+  [/\bsudo\s+spctl\s+--(?:master-disable|disable|add)\b/gim, "policy-bypass"],
+  [/\bxattr\s+(?:-d\s+|-c\s+|-rd\s+)?com\.apple\.quarantine\b/gim, "policy-bypass"],
+  [/\bcsrutil\s+disable\b/gim, "policy-bypass"],
+  [/\bsetenforce\s+0\b/gim, "policy-bypass"],
+  [/\baa-disable\s+\S+/gim, "policy-bypass"],
+  [
+    /\bSet-ExecutionPolicy\s+(?:-ExecutionPolicy\s+)?(?:Unrestricted|Bypass)\b/gim,
+    "policy-bypass",
+  ],
+  [
+    /\bSet-MpPreference\s+-DisableRealtimeMonitoring\s+\$?true\b/gim,
+    "policy-bypass",
+  ],
+]
+
 const ALL_PATTERNS = [
   ...SHELL_PIPE_PATTERNS,
   ...NPX_INSTALL_PATTERNS,
   ...PIP_INSTALL_PATTERNS,
   ...INSTALL_INSTRUCTION_PATTERNS,
+  ...BREW_INSTALL_PATTERNS,
+  ...POLICY_BYPASS_PATTERNS,
 ]
 
 function hintForMatch(
@@ -167,7 +206,7 @@ export class T5UnsafeShellInstallDetector {
   readonly name = "t5.unsafe_shell_install"
   readonly threatCategory = "T5"
   readonly cciId = "CCI-005"
-  readonly detectorVersion = "0.2.4"
+  readonly detectorVersion = "0.2.5"
 
   run(ctx: DetectorContext): Verdict {
     const hints: DiffHint[] = []

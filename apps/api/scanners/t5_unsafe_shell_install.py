@@ -194,11 +194,73 @@ _INSTALL_INSTRUCTION_PATTERNS: tuple[tuple[str, str], ...] = (
     ),
 )
 
+# v0.2.5 (Round 10 PR 10.1 — closes FN-014 on S-106 brew install +
+# Gatekeeper bypass). Homebrew is the macOS Shai-Hulud vector: the
+# user pipes a community-maintained cask installation through a
+# package manager whose signing chain doesn't validate the cask's
+# install-time scripts. The pattern set mirrors the npx family
+# (bare verb + arbitrary target). Lockstep with packages/phub/src/
+# scanners/t5-unsafe-shell-install.ts § v0.2.5.
+_BREW_INSTALL_PATTERNS: tuple[tuple[str, str], ...] = (
+    # brew install <pkg> / brew install --cask <pkg> / brew cask install <pkg>
+    (
+        r"\bbrew\s+(?:cask\s+)?install\s+(?:--cask\s+)?(?!--help|--version)[a-zA-Z0-9@/_.-]+",
+        "brew-install",
+    ),
+    # Verb-anchored inline-code form: "Then run `brew install attacker`"
+    (
+        r"(?:^|\s)(?:first[,\s]+|then[,\s]+|now[,\s]+)?(?:run|execute|launch)\s+`\s*brew\s+(?:cask\s+)?install\s+(?:--cask\s+)?(?!--help|--version)[a-zA-Z0-9@/_.-]+",
+        "brew-install",
+    ),
+)
+
+# v0.2.5 (Round 10 PR 10.1 — FN-014 sibling). When the prose
+# instructs the agent to disable a platform's signing / policy /
+# sandboxing protection, that's the prepare-for-untrusted-install
+# attack shape regardless of which installer follows. Three families
+# in scope: macOS Gatekeeper / SIP, Windows AppLocker / SmartScreen,
+# Linux SELinux / AppArmor. Each fires `policy-bypass`.
+_POLICY_BYPASS_PATTERNS: tuple[tuple[str, str], ...] = (
+    # macOS: Gatekeeper / SIP / quarantine bypass
+    (
+        r"\bsudo\s+spctl\s+--(?:master-disable|disable|add)\b",
+        "policy-bypass",
+    ),
+    (
+        r"\bxattr\s+(?:-d\s+|-c\s+|-rd\s+)?com\.apple\.quarantine\b",
+        "policy-bypass",
+    ),
+    (
+        r"\bcsrutil\s+disable\b",
+        "policy-bypass",
+    ),
+    # Linux: SELinux / AppArmor disable
+    (
+        r"\bsetenforce\s+0\b",
+        "policy-bypass",
+    ),
+    (
+        r"\baa-disable\s+\S+",
+        "policy-bypass",
+    ),
+    # Windows PowerShell: execution-policy / AppLocker / SmartScreen
+    (
+        r"\bSet-ExecutionPolicy\s+(?:-ExecutionPolicy\s+)?(?:Unrestricted|Bypass)\b",
+        "policy-bypass",
+    ),
+    (
+        r"\bSet-MpPreference\s+-DisableRealtimeMonitoring\s+\$?true\b",
+        "policy-bypass",
+    ),
+)
+
 _ALL_PATTERNS = (
     _SHELL_PIPE_PATTERNS
     + _NPX_INSTALL_PATTERNS
     + _PIP_INSTALL_PATTERNS
     + _INSTALL_INSTRUCTION_PATTERNS
+    + _BREW_INSTALL_PATTERNS
+    + _POLICY_BYPASS_PATTERNS
 )
 
 _COMPILED = tuple(
@@ -232,7 +294,7 @@ class T5UnsafeShellInstallDetector:
     name = "t5.unsafe_shell_install"
     threat_category = "T5"  # legacy; back-compat
     cci_id = "CCI-005"  # Context CI Top 10 v0.1 canonical ID (ADR-0016)
-    detector_version = "0.2.4"
+    detector_version = "0.2.5"
 
     def run(self, ctx: DetectorContext) -> Verdict:
         hints: list[DiffHint] = []

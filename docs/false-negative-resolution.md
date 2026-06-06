@@ -673,6 +673,24 @@ floor.
   bypass + the equivalent Windows AppLocker / Linux SELinux
   policy-disable shapes as a sibling `policy-bypass` tag. Round 10
   closure.
+- **2026-06-06 (Round 10, PR 10.1) — CLOSED.** Shipped as T5
+  v0.2.5 (Py + TS lockstep). Two new pattern families added to
+  `_ALL_PATTERNS`:
+    * `_BREW_INSTALL_PATTERNS` (tag `brew-install`): bare-prose
+      `brew install <pkg>` / `brew install --cask <pkg>` / `brew
+      cask install <pkg>` plus the verb-anchored inline-code
+      variant ("Then run \`brew install attacker-cli\`"). Pattern
+      shape mirrors the npx family.
+    * `_POLICY_BYPASS_PATTERNS` (tag `policy-bypass`): seven
+      cross-OS shapes —
+      `sudo spctl --master-disable` / `xattr -d com.apple.quarantine`
+      / `csrutil disable` (macOS Gatekeeper / SIP / quarantine),
+      `setenforce 0` / `aa-disable` (Linux SELinux / AppArmor),
+      `Set-ExecutionPolicy Unrestricted|Bypass` /
+      `Set-MpPreference -DisableRealtimeMonitoring $true` (Windows
+      PowerShell execution-policy + Defender disable). Holdout F1:
+      CCI-005 0.000 → **1.000** (TP=0 → 1; FN=1 → 0). In-sample
+      F1 stays at 1.000 (no regression). Parity OK.
 
 ### FN-015 — CCI-007 misses confusable on unsupported vendor (S-107)
 

@@ -160,13 +160,13 @@
         "support": 1
       },
       "CCI-005": {
-        "tp": 0,
+        "tp": 1,
         "fp": 0,
         "tn": 0,
-        "fn": 1,
-        "precision": null,
-        "recall": 0,
-        "f1": null,
+        "fn": 0,
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
         "support": 1
       },
       "CCI-006": {
@@ -222,7 +222,7 @@
     },
     "overall": {
       "precision_macro": 1,
-      "recall_macro": 0.6,
+      "recall_macro": 0.7,
       "f1_macro": 1
     }
   }
