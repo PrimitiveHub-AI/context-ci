@@ -712,6 +712,23 @@ floor.
   Round 10 ships option 1 first (the demonstrable
   vendor-list expansion); option 2 deferred until the vendor list
   outgrows manual curation.
+- **2026-06-06 (Round 10, PR 10.2) — CLOSED.** Shipped as T7
+  v0.3.0 → **v0.3.1** (Py + TS lockstep). Vendor list expanded
+  from 35 → 43 entries; the eight new entries cover the
+  AI-coding-tool space the FN-015 prediction explicitly named:
+  Replit, Glitch, StackBlitz, Codespaces, Bolt, Lovable, Cody,
+  Sourcegraph. The v0.3.0 generic UTS \#39 skeleton check
+  automatically extends to the new vendors — zero per-vendor
+  pattern authoring required. The S-107 attack ("Rеplit" with
+  Cyrillic е) is now caught because "Replit" → skeleton "replit"
+  is in `_SINGLE_WORD_VENDOR_SKELETONS`. Holdout F1: CCI-007
+  0.000 → **1.000**. In-sample F1 stays at 1.000 (no regression
+  on the 99-sample slice). Parity OK. Option 2 (generic
+  script-mixing detector independent of name registration)
+  remains deferred — the operational evidence is that
+  vendor-list growth scales fine at 35 → 43 entries; a UAX \#31
+  identifier-domain check is the natural extension if the list
+  outgrows manual curation, not now.
 
 ### FN-016 — CCI-009 catches CC-BY-NC-SA already (S-108 — informational)
 

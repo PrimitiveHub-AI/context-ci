@@ -95,6 +95,20 @@ _VENDORS: tuple[str, ...] = (
     "Datadog",
     "Sentry",
     "PagerDuty",
+    # v0.3.1 (Round 10 PR 10.2 — closes FN-015): AI-coding-tool vendors
+    # currently outside the curated list. Each addition automatically
+    # extends BOTH the official-vendor-claim / false-affiliation /
+    # vendor-typosquat regex families AND the v0.3.0 generic
+    # homoglyph skeleton check; no per-vendor pattern authoring needed.
+    # Lockstep with packages/phub/src/scanners/t7-poisoned-naming.ts § v0.3.1.
+    "Replit",
+    "Glitch",
+    "StackBlitz",
+    "Codespaces",
+    "Bolt",
+    "Lovable",
+    "Cody",
+    "Sourcegraph",
 )
 _VENDOR_ALT = "|".join(re.escape(v) for v in _VENDORS)
 
@@ -271,7 +285,7 @@ class T7PoisonedNamingDetector:
     name = "t7.poisoned_naming"
     threat_category = "T7"
     cci_id = "CCI-007"
-    detector_version = "0.3.0"
+    detector_version = "0.3.1"
 
     def run(self, ctx: DetectorContext) -> Verdict:
         hints: list[DiffHint] = []

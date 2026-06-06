@@ -55,6 +55,20 @@ const VENDORS = [
   "Datadog",
   "Sentry",
   "PagerDuty",
+  // v0.3.1 (Round 10 PR 10.2 — closes FN-015): AI-coding-tool vendors
+  // currently outside the curated list. Each addition automatically
+  // extends BOTH the official-vendor-claim / false-affiliation /
+  // vendor-typosquat regex families AND the v0.3.0 generic homoglyph
+  // skeleton check; no per-vendor pattern authoring needed. Lockstep
+  // with apps/api/scanners/t7_poisoned_naming.py § v0.3.1.
+  "Replit",
+  "Glitch",
+  "StackBlitz",
+  "Codespaces",
+  "Bolt",
+  "Lovable",
+  "Cody",
+  "Sourcegraph",
 ]
 const escapeRegex = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 const VENDOR_ALT = VENDORS.map(escapeRegex).join("|")
@@ -226,7 +240,7 @@ export class T7PoisonedNamingDetector {
   readonly name = "t7.poisoned_naming"
   readonly threatCategory = "T7"
   readonly cciId = "CCI-007"
-  readonly detectorVersion = "0.3.0"
+  readonly detectorVersion = "0.3.1"
 
   run(ctx: DetectorContext): Verdict {
     const hints: DiffHint[] = []
