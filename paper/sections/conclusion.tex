@@ -1,69 +1,98 @@
-% Conclusion — v0.1 skeleton.
-%
-% Target: 1 page. Summary + what's next.
+% Conclusion — v0.2 prose. Target: ~1 page. Summary + future work
+% + closing.
 
 \section{Conclusion and Future Work}
 \label{sec:conclusion}
 
-% Subsection 1 — summary.
 \subsection{Summary}
 
-% Claim 1.1 — what we showed.
-% TODO: AI-agent context is a new class of supply-chain artifact,
-% and existing tooling (SLSA, in-toto, Sigstore) doesn't address
-% the semantic-validation layer. PrimitiveHub closes that gap with
-% a 10-category threat taxonomy, a 105-sample labeled corpus, two
-% byte-identical detector implementations, an FP/FN ledger
-% methodology, and a CI-enforced regression gate.
+% Source: docs/threat-model.md § 1, docs/evaluation.md macro F1.
+AI-agent context is a new class of supply-chain artifact, and the
+existing supply-chain controls --- SLSA, in-toto, Sigstore, and
+package-manager provenance --- do not address it. A primitive can
+be signed by an authorized maintainer, content-digest-verified,
+and unchanged since signing, and still tell the consuming agent
+to fetch a remote URL and execute the response. The missing layer
+is a semantic-validation step that scans the primitive's prose
+for known attack shapes before the primitive reaches the agent's
+load path.
 
-% Claim 1.2 — the headline number.
-% TODO: macro F1 = 1.000 on the in-sample slice (99 samples) and on
-% the holdout slice (6 samples), across all 10 detectors, with
-% cross-language parity intact.
-% Source: docs/evaluation.md.
+This paper presented PrimitiveHub, a registry plus
+static-analysis pipeline that closes that gap. We contributed a
+ten-category threat taxonomy (the Context CI Top 10), a
+105-sample labeled corpus split into in-sample and holdout
+slices, two byte-identical detector implementations measured
+against the corpus by a CI-enforced regression gate, an
+antivirus-industry-modeled FP/FN ledger discipline, and an
+open-source pipeline that a reviewer can reproduce in under ten
+minutes. On the v0.2 corpus the detectors achieve macro
+F\textsubscript{1} of 1.000 on both slices with cross-language
+parity intact. The corpus + ledger + gate together are the
+discipline that lets future measurements at larger corpus sizes
+be comparable to this one.
 
-% Claim 1.3 — the reproducibility claim.
-% TODO: reviewers can reproduce these numbers in ten minutes from
-% a fresh clone, including running any specific sample through the
-% replay tool. The corpus + detectors + gate are open-source.
-
-% Subsection 2 — future work.
 \subsection{Future work}
 
-% Claim 2.1 — corpus expansion.
-% TODO: v0.2 covers 30..45 samples per category; v0.3 will scale
-% per-category support past 100 samples each. Holdout coverage
-% completion (currently 4 detectors have 0 holdout samples) is
-% the immediate target.
+% Source: docs/evaluation.md § Limitations; FN ledger entries 7-13.
+The current measurement is honest about what it does not yet
+prove. The corpus is small (105 samples; per-detector support
+30--45); F\textsubscript{1} on this size is the best we can
+demonstrate at this corpus size, not a claim that no errors
+exist. Five lines of future work follow directly from the
+limitations enumerated in Section~\ref{sec:evaluation}:
 
-% Claim 2.2 — multi-lingual corpus.
-% TODO: adversarial samples are currently authored in English.
-% Russian, Chinese, Arabic, and Spanish adversarial variants are
-% scheduled for v0.3 to test detection beyond the English-language
-% phrasing bias.
+\paragraph{Corpus expansion to per-detector support past 100
+samples.} The next round of corpus work targets a tenfold growth
+in per-detector support. The discipline that prevents this from
+becoming an exercise in tuning is the holdout split itself: every
+expansion must include holdout samples that the detectors are
+\emph{not} permitted to be tuned against until the closure round.
 
-% Claim 2.3 — runtime gating.
-% TODO: PrimitiveHub's MCP gate (the runtime verification surface)
-% currently rejects unsigned primitives but doesn't re-run the Top
-% 10 at agent-load time. A future PR will close this gap so even
-% a corrupted lock file can't deliver a known-bad primitive to an
-% agent.
+\paragraph{Closing the four zero-holdout detectors.} CCI-005,
+CCI-007, CCI-009, and CCI-010 currently have zero holdout
+samples; their reported holdout F\textsubscript{1} is
+informational only. Closing this coverage gap is the immediate
+corpus-side work documented in
+\cite{primitivehub:2026:eval-limitations} and is scheduled for
+the round following this paper's submission.
 
-% Claim 2.4 — generic UTS #39 confusables.
-% TODO: T7 v0.3.0 scopes confusables to the project's 35-vendor
-% list. The full UTS #39 confusables.txt mapping (~6000 entries)
-% + identifier-domain rules (UAX #31) is the natural extension
-% when the vendor list outgrows the current scope.
+\paragraph{Multilingual adversarial samples.} Adversarial samples
+are presently authored primarily in English. Russian, Chinese,
+Arabic, and Spanish variants are scheduled for v0.3 to test
+detection beyond the English-language phrasing bias. The
+per-language addition is bounded by a UTS \#39-style script
+identifier discipline so detection generalizes rather than
+hand-codes per-language patterns.
 
-% Claim 2.5 — third-party replication.
-% TODO: SECURITY.md documents the independent-replication path.
-% We actively invite security researchers to file FN samples
-% against the corpus; each ledger entry credits the reporter.
+\paragraph{Runtime gating.} The MCP gate
+(\verb|verify_before_load|) currently rejects unsigned primitives
+but does not re-run the Top 10 at agent-load time. A primitive
+that was clean at registry-publish time but has since been
+tampered with in transit, or that arrives via a lock-file path
+the signing chain did not cover, slips past the static gate. A
+future round closes this gap so even a corrupted lock file
+cannot deliver a known-bad primitive to a running agent.
 
-% Subsection 3 — closing.
+\paragraph{Generic Unicode confusables at full scope.} The T7
+v0.3.0 detector scopes the UTS \#39 skeleton method to the
+project's 35-entry vendor list. The full confusables.txt mapping
+(roughly 6\,000 entries) plus UAX \#31 identifier-domain rules is
+the natural extension when the vendor list outgrows its current
+scope. We expect this expansion to be code-light --- the table
+is data, the algorithm is unchanged.
+
 \subsection{Closing thoughts}
 
-% TODO: one paragraph framing — agent-context AV is a new product
-% category. The numbers in this paper are the first measurement,
-% not the last. The corpus + ledger discipline is what makes the
-% next measurement comparable to this one.
+% Source: docs/decisions/0030; docs/false-{positive,negative}-resolution.md.
+Agent-context AV is a new product category. The numbers in this
+paper are the first measurement, not the last. The discipline
+that makes them comparable to future measurements is the corpus +
+ledger + gate triad described in
+Sections~\ref{sec:implementation} and~\ref{sec:evaluation}: a
+public corpus that doubles as the regression contract, append-only
+numbered ledgers for every false-positive and false-negative
+finding, and a CI gate that fails the merge on F\textsubscript{1}
+regression or cross-language drift. Independent replication is
+explicitly invited at our public security contact and credited in
+the ledger closure log. The corpus is the steering wheel; this
+paper is the first map of where the wheel has been pointed.

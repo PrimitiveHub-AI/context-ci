@@ -157,3 +157,58 @@
             see \texttt{docs/decisions/0038-corpus-v0\_2-expansion-and-holdout-split.md}
             for PrimitiveHub's 80/20 application.},
 }
+
+% ────────────────────────────────────────────────────────────────────
+% Prompt-injection + LLM-attack literature
+% ────────────────────────────────────────────────────────────────────
+
+@article{Greshake:2023:prompt-injection-survey,
+  title   = {Not what You've Signed up for: Compromising Real-World
+             {LLM}-Integrated Applications with Indirect Prompt Injection},
+  author  = {Greshake, Kai and Abdelnabi, Sahar and Mishra, Shailesh and
+             Endres, Christoph and Holz, Thorsten and Fritz, Mario},
+  journal = {arXiv preprint arXiv:2302.12173},
+  year    = {2023},
+}
+
+@article{Wallace:2024:instruction-hierarchy,
+  title   = {The Instruction Hierarchy: Training {LLMs} to Prioritize
+             Privileged Instructions},
+  author  = {Wallace, Eric and Xiao, Kai and Leike, Reimar and Weng, Lilian
+             and Heidecke, Johannes and Beutel, Alex},
+  journal = {arXiv preprint arXiv:2404.13208},
+  year    = {2024},
+}
+
+@article{Carlini:2024:webcrawl-poisoning,
+  title   = {Poisoning Web-Scale Training Datasets is Practical},
+  author  = {Carlini, Nicholas and Jagielski, Matthew and Choquette-Choo,
+             Christopher A. and Paleka, Daniel and Pearce, Will and Anderson,
+             Hyrum and Terzis, Andreas and Thomas, Kurt and Tram{\`e}r,
+             Florian},
+  journal = {arXiv preprint arXiv:2302.10149},
+  year    = {2024},
+}
+
+% ────────────────────────────────────────────────────────────────────
+% Self-references (PrimitiveHub-internal docs cited from the paper)
+% ────────────────────────────────────────────────────────────────────
+
+@misc{primitivehub:2026:top10,
+  title  = {Context {CI} Top 10: A Corpus-Mapped Taxonomy of
+            Agent-Context Supply-Chain Attacks},
+  author = {{PrimitiveHub Maintainers}},
+  year   = {2026},
+  howpublished = {\url{docs/top10-corpus-map.md} in the project repository},
+  note   = {Source of truth for the per-detector versions and
+            canonical sample IDs cited throughout this paper.},
+}
+
+@misc{primitivehub:2026:eval-limitations,
+  title  = {Evaluation Limitations},
+  author = {{PrimitiveHub Maintainers}},
+  year   = {2026},
+  howpublished = {\texttt{docs/evaluation.md \S Limitations} in the project repository},
+  note   = {Auto-generated; carries the eight numbered limitations
+            enumerated in Section \ref{sec:evaluation}.},
+}
