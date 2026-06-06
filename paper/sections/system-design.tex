@@ -1,108 +1,156 @@
-% System Design — v0.1 skeleton.
-%
-% Target: 3-4 pages. Architectural exposition of the Trust Runtime
-% three-pillar model (Trust Contract + Top 10 + CBOM), the
-% registry surface, and the AV-vendor parallel.
+% System Design — v0.2 prose.
+% Target: ~3 pages. The Trust Runtime three-pillar architecture +
+% the dual-implementation discipline.
 
 \section{System Design}
 \label{sec:system-design}
 
-% Subsection 1 — the Trust Runtime three pillars.
-% Source: docs/doctrine.md § "Layers of the Trust Runtime".
 \subsection{The Trust Runtime: three pillars}
 
-% Claim 1.1 — pillar overview.
-% TODO: PrimitiveHub's defense model rests on three pillars:
-%   1. Trust Contract — the wire format and attestation chain
-%      (ADR-0011, docs/spec.md).
-%   2. Context CI Top 10 — the taxonomy and detector suite
-%      (Section \Cref{sec:threat-model}).
-%   3. Context Bill of Materials (CBOM) — the inventory artifact
-%      that lets downstream consumers know what they're loading
-%      (docs/cbom-v0.1.md, ADR-0033).
-% Each pillar addresses a question the others don't.
+% Source: docs/doctrine.md § "Layers of the Trust Runtime".
+PrimitiveHub's defense model rests on three pillars, each
+answering a question the others do not.
 
-% Subsection 2 — Trust Contract.
-\subsection{Trust Contract: signed primitives}
+The \emph{Trust Contract} (formalised in
+\texttt{docs/spec.md}~\cite{primitivehub:2026:trust-contract}) is
+the wire format and attestation chain. Every primitive has a
+content digest (SHA-256 over canonical bytes), an Ed25519
+signature via Sigstore~\cite{Sigstore:2021:keyless-signing}
+keyless OIDC, and an in-toto
+attestation~\cite{in-toto:2016:supply-chain} carrying detector
+verdicts, the reviewer's identity, the Context Bill of Materials
+digest, and the publish timestamp. The Trust Contract answers
+\emph{who signed this and what bytes did they sign?}
 
-% Claim 2.1 — content addressing.
-% TODO: every primitive has a \contentdigest{} (SHA-256). Two
-% primitives with identical bytes have identical digests; this is
-% the leaf of the \provenancechain{}.
+The \emph{Context CI Top 10} (Section~\ref{sec:threat-model}) is
+the static-detection pass that runs before signing. Every
+primitive that enters the registry passes through all ten
+detectors; their verdicts are recorded in the attestation
+predicate. The Top 10 answers \emph{do the prose contents, read
+as instruction, cross a threat-model line?}
 
-% Claim 2.2 — attestation predicate.
-% TODO: an \attestation{} is an in-toto Statement with predicate
-% type \texttt{https://primitivehub.ai/context-ci/v0.1/Attestation}.
-% The predicate records the detector verdicts (Top 10), the
-% reviewer identity, the CBOM digest, and the timestamp.
-% Source: docs/spec.md § Attestation Predicate.
+The \emph{Context Bill of Materials} (CBOM v0.1, formalised
+in \texttt{docs/cbom-v0.1.md} and ADR-0033) is the inventory
+artifact every Trust Bundle carries: a structured list of the
+context components the primitive references, their
+classifications, content digests, sizes, and pointers to their
+own attestations. A consumer of the primitive knows what they
+load before they load it. The CBOM answers \emph{what is in
+here?}
 
-% Claim 2.3 — signing backend abstraction.
-% TODO: signatures via Sigstore (public registry) or Sigstore-
-% self-hosted (enterprise tier). The abstraction (ADR-0011) means
-% the sign call is identical regardless of backend; one env var
-% (SIGSTORE\_BACKEND) swaps them.
+The three pillars compose: a signed Trust Contract carries an
+attestation whose predicate cites the Top 10 verdicts and the
+CBOM digest. A downstream verifier checks signature, then
+re-runs the Top 10 against the content (the MCP gate path), then
+walks the CBOM to verify component-level provenance. The
+verification chain is the same shape as SLSA's build-provenance
+chain~\cite{SLSA:2023:provenance-spec}, extended to cover
+the semantic-content layer the existing controls don't address.
+
+\subsection{Signing-backend abstraction}
+
 % Source: docs/decisions/0011.
+The choice of signing backend is a single environment variable,
+not a code path. The \verb|SIGSTORE_BACKEND| setting selects
+between three operational modes:
 
-% Subsection 3 — Context CI scanners.
-\subsection{Context CI scanners}
+\begin{itemize}
+  \item \verb|public-fulcio| --- the public Sigstore (Fulcio +
+        Rekor) for the v1 launched registry.
+  \item \verb|sigstage| --- Sigstore's staging environment
+        (\texttt{sigstage.dev}) for development and CI.
+  \item \verb|self-hosted| --- a self-hosted Sigstore
+        installation for enterprise customers whose author
+        identities cannot be disclosed in the public Rekor
+        transparency log.
+\end{itemize}
 
-% Claim 3.1 — detector interface.
-% TODO: each detector implements a \texttt{run(DetectorContext) ->
-% Verdict} interface. DetectorContext carries (content, file\_path,
-% raw\_bytes, primitive\_slug, semver). Verdict carries (severity,
-% passed, summary, diff\_hints, detector\_version, cci\_id).
-% Source: apps/api/scanners/protocol.py + packages/phub/src/scanners/types.ts.
+The abstraction lives in \texttt{apps/api/signing/} and is
+covered by ADR-0011. The sign-call code never branches on
+backend; verification reads the same wire format regardless.
 
-% Claim 3.2 — markdown-context awareness.
-% TODO: detectors that operate on prose patterns share a markdown-
-% context analyzer (ADR-0035) that identifies frontmatter, fenced
-% code blocks, and inline code spans. The analyzer is the v0.2.1
-% precision-defense layer — primitives teaching about attack
-% shapes (defender prose, documented examples) don't trigger
-% verdicts.
-
-% Claim 3.3 — semantic-context awareness.
-% TODO: the markdown-AST layer is supplemented by a semantic-
-% context layer (ADR-0036) that detects negation ("never run
-% \texttt{curl|sh}"), mention ("Stripe's typography"), and
-% declaration ("license: CC-BY-4.0"). Three pure predicates,
-% used by detectors at opt-in.
-
-% Subsection 4 — surfaces.
-% Source: docs/decisions/0025 (active posture), docs/decisions/0040 (anti-bloat).
 \subsection{The five active surfaces}
 
-% TODO: enumerate the surfaces — phub audit, phub lock, phub watch,
-% phub install, phub MCP gate. Each maps to one slot of the
-% AV-vendor product family (ADR-0030 § 3):
-%   audit   ↔ on-demand scanner
-%   lock    ↔ allowlist database
-%   watch   ↔ on-access guard
-%   install ↔ safe-install wrapper
-%   MCP gate ↔ runtime verification gate
-% Each surface declares itself ACTIVE (discovers its own targets)
-% or PASSIVE (waits for a target) in its design note.
+% Source: docs/decisions/0025 (active posture);
+% docs/decisions/0040 (anti-bloat).
+A primitive registry that only validates at publish time leaves
+the agent's runtime path undefended. PrimitiveHub ships five
+active surfaces, each mapped to one slot of the AV-vendor
+product family~\cite{AntivirusTaxonomy:2010s:industry-practice}:
 
-% Subsection 5 — the AV-vendor parallel.
-% Source: docs/decisions/0030.
+\begin{enumerate}
+  \item \verb|phub audit| --- recursive on-demand scanner. Walks
+        the working tree, classifies every agent-context
+        artifact, runs all ten detectors, emits a verdict report.
+        Maps to the \emph{on-demand scanner} slot.
+  \item \verb|phub lock| --- deterministic primitive-state
+        capture. Records the content digest of every primitive in
+        a workspace lock file; subsequent runs detect drift.
+        Maps to the \emph{allowlist database} slot.
+  \item \verb|phub watch| --- the on-access guard. A daemon mode
+        that re-scans primitives on file-system change events,
+        emitting a structured event log. Maps to the
+        \emph{on-access guard} slot.
+  \item \verb|phub install| --- the safe-install wrapper. Resolves
+        a primitive reference, verifies its Trust Bundle, runs
+        the Top 10 against the content, and only writes to disk
+        on a clean verdict. Maps to the \emph{boot-time scan}
+        slot.
+  \item \verb|@primitivehub/mcp-server verify_before_load| --- the
+        runtime verification gate. The MCP server composite tool
+        that an agent calls before loading a primitive; rejects
+        unsigned content or content whose lock-file digest
+        diverges from the on-disk bytes. Maps to the
+        \emph{runtime gate} slot.
+\end{enumerate}
+
+The five surfaces share one principle (ADR-0025): each declares
+itself active (it discovers its own targets) or passive (it
+waits for a target the user names). The user-facing surface
+budget is capped per ADR-0040 anti-bloat contract: a new
+surface ships only when accompanied by an AV-vendor-family slot
+it occupies. Engine depth (more detectors, more corpus, more
+ledger entries) is unconstrained; surface breadth is taxed.
+
+\subsection{The /check public lookup surface}
+
+% Source: docs/decisions/0034 (/check route).
+The \verb|/check| route is the public, anonymous, paste-and-verdict
+lookup surface. The user pastes a snippet, a URL, an
+\verb|npx| command, or a GitHub repository reference; the server
+sniffs the input mode and dispatches to the appropriate scanner
+pipeline; the verdict is returned with per-detector breakdown and
+per-file findings.
+
+The route has no authentication, stores no session state, and
+never executes the pasted content. Two report buttons (Round~9
+PR~9.1) let a viewer disagree with the verdict: a click opens
+GitHub's new-issue UI pre-filled with the input, the verdict
+snapshot, and the four-path triage template from the FP/FN
+ledger methodology. The result is the AV-vendor FP submission
+portal and FN submission portal shipped as a client-side
+GitHub-UI prefill, not a server-side ingestion route.
+
 \subsection{The AV-vendor product-family parallel}
 
-% Claim 5.1 — the parallel.
-% TODO: PrimitiveHub is ``agent-context AV plus registry,'' not
-% ``GitHub for prompts.'' The classical AV-vendor product family
-% (scanner / signature DB / FP submission portal / allowlist DB /
-% on-access guard / boot-time check / HIPS / cloud lookup /
-% provenance) maps row-for-row onto PrimitiveHub's surfaces.
+% Source: docs/decisions/0030.
+PrimitiveHub is ``agent-context AV plus registry,'' not ``GitHub
+for prompts'' (ADR-0030 \S 3). The framing is operationally
+load-bearing because it forces specific disciplines: append-only
+FP and FN ledgers, four-path triage classification before any
+detector or corpus change, per-finding numbered tracking,
+quarterly re-review, per-detector versioning, corpus as the
+regression contract. Each of those norms has decades of AV-industry
+practice behind it~\cite{AntivirusTaxonomy:2010s:industry-practice};
+adopting them lets agent-context AV avoid the failure modes the
+AV industry has already named.
 
-% Claim 5.2 — the implication.
-% TODO: this framing forces a specific methodology — FP / FN
-% ledgers with append-only numbered entries, per-finding triage
-% paths, and a corpus regression gate that enforces both rates.
-% Section \Cref{sec:evaluation} reports the resulting numbers.
-
-% Claim 5.3 — what this is NOT.
-% TODO: PrimitiveHub is not a runtime LLM-output filter. The
-% scanners run pre-signing; the agent gets primitives that have
-% already passed the Top 10. Runtime defense is a different layer
-% of the Trust Runtime (see Section \Cref{sec:related}).
+What the framing does \emph{not} say is that PrimitiveHub is a
+runtime LLM-output filter. The scanners run pre-signing; the
+verification gate runs pre-load. By the time the primitive
+reaches the agent's interpretation step, it has passed through
+both passes or it has been rejected. Defense at execution time
+--- input/output filtering, instruction-hierarchy
+training~\cite{Wallace:2024:instruction-hierarchy}, retrieval
+sanitization --- is a complementary defense layer, not a
+substitute for the one this paper studies.
