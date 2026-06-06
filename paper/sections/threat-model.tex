@@ -1,0 +1,150 @@
+% Threat Model — v0.1 skeleton.
+%
+% Target: 4-5 pages. One subsection per Context CI category
+% (CCI-001 through CCI-010). Each subsection follows the same shape:
+% definition, illustrative attack from the corpus, detection signal.
+
+\section{Threat Model: The Context CI Top 10}
+\label{sec:threat-model}
+
+% Subsection 0 — methodology.
+% Source: docs/threat-model.md § 2.
+\subsection{Methodology and scope}
+
+% Claim 0.1 — what's in scope.
+% TODO: static analysis of agent-context artifacts (markdown +
+% frontmatter) at registry-publish time. Runtime defenses (the
+% agent fetching a malicious resource AFTER signing) are out of
+% scope for this paper — they belong to a different layer of the
+% Trust Runtime stack. See OWASP LLM Top 10 crosswalk
+% (docs/owasp-llm-top10-crosswalk.md).
+
+% Claim 0.2 — what an "attack" means here.
+% TODO: a primitive that, when interpreted as instruction by a
+% consuming agent, causes the agent to take an action that the
+% primitive's signer did NOT authorize. The attack surface is the
+% PROSE-as-INSTRUCTION boundary.
+
+% Claim 0.3 — corpus discipline.
+% TODO: every category in this section is exercised by at least
+% three adversarial samples in the corpus (one canonical + two+
+% variants), at least two benign samples (precision defense), and
+% at least one borderline (where reasonable labelers could
+% disagree). Per-detector support sizes are in
+% \Cref{tab:coverage-summary}.
+
+\subsection{CCI-001: Prompt Injection in Markdown}
+\label{subsec:cci-001}
+
+% Claim 1.1 — definition.
+% TODO: prose patterns that override the consuming agent's existing
+% system instructions. Four sub-families: override-system,
+% role-hijack, hidden-instructions, credential-exfiltration-hint.
+% Source: apps/api/scanners/t1_prompt_injection.py § header.
+
+% Claim 1.2 — canonical attack.
+% TODO: cite \texttt{S-001} (canonical adversarial). Walk through
+% the attack: "Ignore previous instructions" + role override
+% imperative.
+
+% Claim 1.3 — detection signal.
+% TODO: regex-driven pattern recognition with markdown-context
+% awareness (skip matches inside fenced code / inline code /
+% frontmatter) and semantic-context awareness (skip matches inside
+% negation prose or quoted enumeration). Detector version
+% \tonever{}.
+
+\subsection{CCI-002: Unicode Steganography}
+\label{subsec:cci-002}
+
+% TODO: same shape as CCI-001 — definition, canonical S-006
+% (zero-width space embedding), detection (Unicode codepoint
+% scanning for invisible / format / control classes).
+% Detector version \ttwover{}.
+
+\subsection{CCI-003: Encoded Payloads (decode-and-execute)}
+\label{subsec:cci-003}
+
+% TODO: same shape — definition (base64 / hex / URL-encoded shell
+% command + "decode and run" imperative), canonical S-019, holdout
+% S-090 (URL-encoded variant), detection (verb-anchored regex on
+% decode-format-execute triple). Detector version \tthreever{}.
+
+\subsection{CCI-004: Remote Content Fetching at Load Time}
+\label{subsec:cci-004}
+
+% TODO: definition (primitive instructs agent to fetch external
+% URL and include the response in its context), canonical S-029,
+% holdout S-092 (WebSocket variant), detection (URL scheme +
+% temporal-imperative verb pairing). Detector version \tfourver{}.
+
+\subsection{CCI-005: Unsafe Shell Install (Shai-Hulud)}
+\label{subsec:cci-005}
+
+% TODO: definition (the canonical curl-pipe-shell + npx-arbitrary +
+% pip-from-URL family), canonical S-010, the v0.2 corpus's
+% S-094 directive-referenced-fence variant, detection (regex pool +
+% directive-referenced fence detection). Detector version
+% \tfivever{}.
+% This is the highest-impact CCI category — name the Shai-Hulud
+% incident family explicitly.
+
+\subsection{CCI-006: Credential Exfiltration via Prose}
+\label{subsec:cci-006}
+
+% TODO: definition (primitive instructs agent to read env vars /
+% API keys and send to attacker URL), canonical S-039, detection
+% (env-var name pattern + network-target pairing). Detector
+% version \tsixver{}.
+
+\subsection{CCI-007: Poisoned Naming, Typosquat, Impersonation}
+\label{subsec:cci-007}
+
+% TODO: definition (vendor false-affiliation claims, typosquatting
+% via digit-for-letter substitution, Cyrillic/Greek homoglyph
+% substitution), canonical S-059, notable S-098 (Cyrillic А),
+% detection (vendor-list lookup + UTS #39 skeleton comparison).
+% Detector version \tsevenver{}.
+
+\subsection{CCI-008: Fake Citations and Authority Claims}
+\label{subsec:cci-008}
+
+% TODO: definition (fabricated CVE / RFC / arXiv / DOI / US
+% Patent identifiers used to manufacture authority), canonical
+% S-049 (CVE with implausible year), holdout S-100 (US Patent with
+% future year + implausible number), detection (per-identifier
+% implausibility checks). Detector version \teightver{}.
+
+\subsection{CCI-009: Copyright Contamination}
+\label{subsec:cci-009}
+
+% TODO: definition (license-laundering via inlined MIT / GPL /
+% Apache boilerplate), canonical S-068, detection (license-pattern
+% regex + declaration-context skip). Detector version \tninever{}.
+
+\subsection{CCI-010: Context Bloat}
+\label{subsec:cci-010}
+
+% TODO: definition (primitive padded with bloat to waste context
+% budget AND/OR bury the active instruction below decorative
+% content), canonical S-078 (oversized), notable S-104 (emoji
+% density), detection (mechanical thresholds: chars, h2-ratio,
+% whitespace, emoji-density, longest-emoji-run). Detector version
+% \ttenver{}.
+
+\subsection{Discussion: what's not in this taxonomy}
+
+% Claim disc.1 — what's deliberately excluded.
+% TODO: runtime-injection attacks (post-signing fetch), training-
+% time attacks against the underlying LLM, vector-database
+% poisoning, RAG retrieval poisoning. Each maps to a different
+% defense layer in the Trust Runtime stack; the static-detection
+% layer this paper studies is one of several complementary lines
+% of defense.
+% Source: docs/owasp-llm-top10-crosswalk.md.
+
+% Claim disc.2 — extension discipline.
+% TODO: new CCI categories are added per
+% docs/decisions/0040 § "How a new category is justified" — must
+% ship as a (taxonomy + Py + TS + corpus) quadruple so the gate
+% can defend it. The taxonomy doesn't grow speculatively.

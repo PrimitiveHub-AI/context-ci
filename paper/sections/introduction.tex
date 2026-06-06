@@ -1,0 +1,113 @@
+% Introduction — v0.1 skeleton.
+%
+% Target: 2-3 pages. Walks the reader from "what changed about the
+% supply chain" to "why a new defense layer is needed" to "what we
+% built and what we measured."
+
+\section{Introduction}
+\label{sec:intro}
+
+% Subsection 1 — the shift.
+% Source: docs/vision.md, docs/threat-model.md § Scope.
+\subsection{The agent-context shift}
+\label{subsec:shift}
+
+% Claim 1.1 — software supply chain is well-studied.
+% TODO: enumerate the prior decade's work on package-manager
+% provenance — SolarWinds (2020), Codecov (2021), ua-parser-js
+% (2021), eslint-config-prettier (2024), xz-utils CVE-2024-3094
+% (2024), the September 2025 Shai-Hulud npm worm.
+% Citations: SolarWinds:2020, Codecov:2021, ua-parser-js:2021,
+%            eslint-config-prettier:2024, xz-utils:2024,
+%            Shai-Hulud:2025.
+
+% Claim 1.2 — what existing tooling addresses.
+% TODO: SLSA, in-toto, Sigstore, package-manager provenance — all
+% verify that a compiled artifact originated from a specific source
+% commit and was signed by an authorized identity.
+% Citations: SLSA:2023, in-toto:2016, Sigstore:2021.
+
+% Claim 1.3 — the gap.
+% TODO: AI agents load a DIFFERENT class of supply-chain artifact.
+% Context primitives (skills, system prompts, MCP server
+% descriptions, AGENTS.md files, .claude/skills directories,
+% .cursor/rules trees) are markdown-style documents the agent
+% INTERPRETS AS INSTRUCTION. None of the existing supply-chain
+% controls verify the SEMANTICS of that interpretation.
+% Source: docs/threat-model.md § 1.
+
+% Subsection 2 — the attack surface.
+% Source: docs/threat-model.md § 2.
+\subsection{What an attacker can do with a poisoned primitive}
+
+% Claim 2.1 — illustrative attack.
+% TODO: walk through one canonical Shai-Hulud-style attack: a
+% primitive looks legitimate (signed, content-digest-verified),
+% but its prose tells the agent to ``run \texttt{curl URL | bash}
+% before responding,'' or ``fetch \texttt{wss://attacker} on
+% session start,'' or impersonates a vendor with a Cyrillic
+% homoglyph.
+% Source: docs/top10-corpus-map.md CCI-005 + CCI-004 + CCI-007.
+
+% Claim 2.2 — why static signing alone fails.
+% TODO: signing proves WHO wrote the artifact; it does NOT prove
+% WHAT the artifact tells the agent to do. A signed primitive can
+% still contain an attack. The defense layer that's missing is
+% SEMANTIC validation — does the prose, when interpreted as
+% instruction, cross a threat-model line?
+% Source: docs/threat-model.md § 3.
+
+% Claim 2.3 — runtime alone fails too.
+% TODO: runtime gating catches some attacks at execution time but
+% the cost of a runtime-detected attack is already paid in
+% credentials lost / commands run. The static + signed +
+% semantic-validation layer prevents the attack from reaching the
+% runtime in the first place.
+
+% Subsection 3 — what we built.
+\subsection{Contributions}
+
+% Claim 3.1 — taxonomy.
+% TODO: the Context CI Top 10 — a ten-category taxonomy of
+% agent-context supply-chain attacks, each with detector +
+% canonical sample + measured precision/recall.
+% Source: docs/top10-corpus-map.md.
+
+% Claim 3.2 — corpus.
+% TODO: a 105-sample labeled corpus (99 in-sample + 6 holdout) with
+% per-detector P/R/F1 measurement, byte-identical across two
+% independent implementations.
+% Source: docs/corpus-v0.1.md + docs/evaluation.md.
+
+% Claim 3.3 — methodology.
+% TODO: an AV-vendor-equivalent FP/FN ledger discipline that
+% prevents tuning past optimal — every detector change has an
+% append-only numbered ledger entry and an accompanying corpus
+% measurement that proves the change generalises.
+% Source: docs/false-{positive,negative}-resolution.md.
+
+% Claim 3.4 — runtime gate.
+% TODO: a regression gate (\texttt{bench/scripts/gate.sh}) that runs
+% on every PR and blocks merges on F1 regression $> 0.02$ or
+% cross-language verdict drift. The gate is the steering wheel; the
+% corpus is the road.
+% Source: bench/baseline/FLOOR.md, docs/decisions/0037.
+
+% Claim 3.5 — reproducibility.
+% TODO: the entire pipeline is open-source and reproducible from a
+% fresh clone in under 10 minutes. \texttt{bench/cli/replay.py} lets a
+% reviewer re-run any specific sample deterministically and diff its
+% verdict against the committed baseline.
+
+% Subsection 4 — paper layout.
+\subsection{Paper organization}
+
+% TODO: standard ``Section 2 presents the threat model... Section 6
+% reports evaluation results...'' wrapper.
+% \Cref{sec:threat-model} presents the Context CI Top 10 taxonomy.
+% \Cref{sec:system-design} describes the Trust Runtime three-pillar
+% architecture (Trust Contract, Top 10, CBOM). \Cref{sec:implementation}
+% covers the dual-implementation discipline. \Cref{sec:evaluation}
+% reports per-detector precision, recall, and F1. \Cref{sec:related}
+% positions PrimitiveHub against prior supply-chain work.
+% \Cref{sec:conclusion} discusses limitations and future work.

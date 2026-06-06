@@ -1,0 +1,156 @@
+% Evaluation — v0.1 skeleton.
+%
+% Target: 3-4 pages. The core empirical section. Every number cited
+% sources from docs/evaluation.md; the auto-generation pipeline
+% means this section's tables are reproducible from the corpus.
+
+\section{Evaluation}
+\label{sec:evaluation}
+
+% Subsection 1 — research questions.
+\subsection{Research questions}
+
+% TODO: enumerate the questions the corpus answers:
+%   RQ1. Per detector, what's the precision and recall?
+%        Source: docs/evaluation.md.
+%   RQ2. Do the detectors generalise beyond the samples used during
+%        their development?
+%        Source: docs/evaluation.md § Holdout.
+%   RQ3. Do two independent implementations of the same detector
+%        produce identical verdicts?
+%        Source: bench/scripts/parity_check.py output.
+%   RQ4. Where does the methodology fall short?
+%        Source: docs/evaluation.md § Limitations.
+
+% Subsection 2 — corpus.
+\subsection{Corpus}
+
+% Claim 2.1 — composition.
+% TODO: 105 labeled samples (52 adversarial, 37 benign, 10 borderline,
+% plus 6 holdout). Per-category support 30..45. License: CC-BY-4.0.
+% Source: bench/corpus/manifest.yaml.
+
+% Claim 2.2 — labeling discipline.
+% TODO: every sample has a label (adversarial / benign / borderline),
+% a primary CCI category, an expected verdict, and a textual
+% provenance note (\texttt{incident\_reference: synthesized} when not
+% drawn from an observed incident). Authoring + review by repo
+% maintainers; no crowdsourced labels in v0.1.
+% Source: docs/corpus-v0.1.md § "Manifest schema".
+
+% Claim 2.3 — adversarial-to-benign ratio.
+% TODO: roughly 2:1 (52 vs 37) plus 10 borderline. The benign
+% samples specifically exercise precision hazards (defender prose,
+% documented examples, negated warnings, license metadata,
+% multilingual prose, vendor mentions in design contexts).
+
+% Subsection 3 — methodology.
+\subsection{Methodology}
+
+% Claim 3.1 — scoring.
+% TODO: per-detector TP/FP/TN/FN computed by
+% bench/scripts/measure.{py,ts}. For each sample × detector pair:
+%   primary detector (matching cci_id):
+%     adversarial + verdict >= expected → TP
+%     adversarial + verdict <  expected → FN
+%     benign      + verdict >= WARN     → FP
+%     benign      + verdict == PASS     → TN
+%   other detectors (cross-trip) — only FP/TN dimension applies:
+%     benign + flag → FP, benign + no flag → TN.
+% Per-detector P, R, F1 computed by the standard formulas.
+
+% Claim 3.2 — holdout discipline.
+% TODO: 6 of the 105 samples are flagged holdout: true; the gate
+% measures them separately and never tunes against them. Holdout
+% F1 is reported but not enforced for regression — it's the overfit
+% detector.
+% Source: docs/decisions/0038.
+
+% Claim 3.3 — cross-language parity.
+% TODO: every measurement is run by both Py and TS engines against
+% the same sample bytes; parity\_check.py compares the per-detector
+% (TP, FP, TN, FN) tuples and exits non-zero on any drift.
+
+% Subsection 4 — results.
+\subsection{Results}
+
+% Claim 4.1 — headline result.
+% TODO: macro F1 on in-sample slice = 1.000 (precision 1.000,
+% recall 1.000) across all 10 detectors. Macro F1 on holdout slice
+% = 1.000 on the 6 detectors with holdout samples. Cross-language
+% parity intact.
+% Source: docs/evaluation.md (auto-generated).
+
+% Claim 4.2 — per-detector breakdown.
+% TODO: table mirroring docs/evaluation.md § "Per-engine
+% scoreboard". One row per detector with P, R, F1, TP, FP, TN, FN,
+% support count, both for the Py engine and the TS engine.
+\input{../tables/per-detector-py.tex}  % TODO: auto-generated from docs/evaluation.md
+
+% Claim 4.3 — holdout breakdown.
+% TODO: separate table for the 6 holdout samples. Per detector
+% with holdout coverage: precision / recall / F1. Per detector
+% without holdout coverage: n/a — informational; the 4 detectors
+% in that state are the next-round corpus expansion target.
+
+% Claim 4.4 — how each closure happened.
+% TODO: brief narrative of the ratchet sequence. v0.1.0 →
+% v0.2.x progression: each detector's version bump corresponds to
+% one or more FP/FN ledger entries. The pattern: a corpus sample
+% surfaces a precision or recall gap; an FP-NNN or FN-NNN ledger
+% entry classifies the gap into one of four paths; a detector
+% ratchet closes the gap with corpus-measured F1 delta. See
+% \texttt{docs/false-\{positive,negative\}-resolution.md} for the
+% full chains.
+
+% Subsection 5 — discussion.
+\subsection{Discussion}
+
+% Claim 5.1 — what 1.000 means at this corpus size.
+% TODO: F1 = 1.000 on 30..45 samples per detector is "no errors
+% on the labels we've seen so far." It is NOT "no errors at all."
+% Real-world primitive content will surface attacks the corpus
+% doesn't include; the FP/FN ledger discipline is what handles
+% those as they appear.
+
+% Claim 5.2 — what the holdout proves.
+% TODO: the 6 holdout samples were added to the corpus AT THE
+% SAME TIME as the resolution vector predictions in their FN ledger
+% entries — i.e., the prediction of "this detector needs change X
+% to catch attack Y" was made before the gate let us measure
+% whether change X actually worked. PR 7.1 of the elite-tier path
+% closed all three holdouts that v0.1 detectors missed. That
+% closure is the strongest evidence we have that the in-sample
+% F1 = 1.000 is not overfit.
+% Source: docs/false-negative-resolution.md FN-007 / FN-008 /
+%         FN-012 closure log entries.
+
+% Subsection 6 — limitations.
+\subsection{Limitations}
+
+% Claim 6.1 — quote the limitations doc.
+% TODO: reproduce docs/evaluation.md § Limitations verbatim. Eight
+% honest points: corpus size, holdout coverage, static scope, vendor
+% list, English bias, synthesized provenance, replay vs gate,
+% third-party verification.
+
+% Subsection 7 — threats to validity.
+\subsection{Threats to validity}
+
+% Claim 7.1 — internal validity.
+% TODO: same team authored detectors AND labels. Mitigation:
+% append-only ledger so the chain is auditable; corpus is
+% open-source; SECURITY.md documents independent-replication path.
+
+% Claim 7.2 — external validity.
+% TODO: corpus is synthesized; real-world primitives will surface
+% attack shapes not in the v0.2 set. Mitigation: the gate + ledger
+% discipline is built to absorb these as they appear without re-
+% architecting.
+
+% Claim 7.3 — construct validity.
+% TODO: F1 measures whether the detector verdict matches the
+% manifest's expected verdict. The MANIFEST encodes the maintainers'
+% belief about what should fire. Mitigation: borderline-labeled
+% samples (where reasonable labelers disagree) are documented
+% explicitly and the scoring rule is the same for all labelers.

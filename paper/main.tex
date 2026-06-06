@@ -1,0 +1,95 @@
+% PrimitiveHub: Context CI for the agent-context supply chain
+%
+% arXiv submission v0.1 skeleton — Round 8 PR 8.1.
+%
+% Build (not yet wired):
+%   latexmk -pdf main.tex
+%
+% Sources of truth (paper text echoes; never invents):
+%   docs/evaluation.md            per-detector P/R/F1
+%   docs/top10-corpus-map.md      CCI ↔ sample ID mapping
+%   docs/corpus-v0.1.md           corpus methodology
+%   docs/threat-model.md          threat taxonomy
+%   docs/paper-bibliography.md    external citations
+%   docs/false-{positive,negative}-resolution.md   methodology ledgers
+
+\documentclass[11pt,letterpaper]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{cleveref}
+
+% Banned vocabulary lint hook (manual for v0.1; CI-enforced later).
+% See docs/brand-voice.md for the list — do not ship words like
+% "revolutionary," "seamlessly," "leverage," "synergy" in this paper.
+
+% Cryptographic vocabulary macros — keeps the locked terminology
+% from CLAUDE.md consistent across all sections.
+\newcommand{\contentdigest}{content digest}
+\newcommand{\signature}{Ed25519 signature}
+\newcommand{\attestation}{Context CI attestation}
+\newcommand{\provenancechain}{provenance chain}
+
+% Detector version macros — keep in sync with the registry. When a
+% detector's version bumps, update here AND re-render evaluation.md.
+\newcommand{\tonever}{0.2.1}     % T1 prompt injection
+\newcommand{\ttwover}{0.2.0}     % T2 unicode steganography
+\newcommand{\tthreever}{0.2.3}   % T3 encoded payloads
+\newcommand{\tfourver}{0.2.2}    % T4 remote fetch
+\newcommand{\tfivever}{0.2.4}    % T5 unsafe shell install
+\newcommand{\tsixver}{0.2.0}     % T6 credential exfiltration
+\newcommand{\tsevenver}{0.3.0}   % T7 poisoned naming
+\newcommand{\teightver}{0.2.3}   % T8 fake citation
+\newcommand{\tninever}{0.2.3}    % T9 copyright contamination
+\newcommand{\ttenver}{0.1.2}     % T10 context bloat
+
+\title{%
+  PrimitiveHub: Treating AI Agent Context as Supply-Chain Material%
+}
+
+\author{%
+  CyberOrca Labs%
+  \thanks{Correspondence: \texttt{security@primitivehub.ai}.
+  Source + corpus + reproducer:
+  \url{https://github.com/DevXYZx/primitivehub}.}%
+}
+
+\date{Draft v0.1 — \today}
+
+\hypersetup{
+  pdftitle={PrimitiveHub: Treating AI Agent Context as Supply-Chain Material},
+  pdfauthor={CyberOrca Labs},
+  pdfkeywords={AI safety, supply-chain security, prompt injection, MCP, agent context}
+}
+
+\begin{document}
+
+\maketitle
+
+\input{sections/abstract.tex}
+
+\input{sections/introduction.tex}
+
+\input{sections/threat-model.tex}
+
+\input{sections/system-design.tex}
+
+\input{sections/implementation.tex}
+
+\input{sections/evaluation.tex}
+
+\input{sections/related-work.tex}
+
+\input{sections/conclusion.tex}
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}

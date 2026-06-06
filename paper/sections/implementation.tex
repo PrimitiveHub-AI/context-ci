@@ -1,0 +1,112 @@
+% Implementation — v0.1 skeleton.
+%
+% Target: 2-3 pages. Engineering exposition: dual-implementation
+% discipline, the lockstep rule, the corpus regression gate, the
+% FP/FN ledger discipline.
+
+\section{Implementation}
+\label{sec:implementation}
+
+% Subsection 1 — dual implementation.
+% Source: docs/decisions/0023 (lockstep rule).
+\subsection{Dual implementation: Python and TypeScript}
+
+% Claim 1.1 — why two?
+% TODO: agent-side runtime calls (the MCP gate) need TypeScript;
+% server-side validation calls (registry publish, /check route)
+% need Python. PrimitiveHub ships both engines with byte-identical
+% verdicts (ADR-0023).
+
+% Claim 1.2 — what "byte-identical" means.
+% TODO: for any sample $s$ and detector $d$, the verdict
+% (severity, passed) is the same in both engines. Cross-engine
+% parity is checked by bench/scripts/parity\_check.py and the
+% scanner-bench CI gate fails the merge on drift.
+
+% Claim 1.3 — the cost.
+% TODO: every detector change requires a lockstep edit. v0.1 of
+% the gate accepted this cost manually; v0.2 (after the gate
+% landed) catches the regression automatically. The corpus is the
+% shared ground truth.
+
+% Subsection 2 — the corpus regression gate.
+% Source: bench/baseline/FLOOR.md, docs/decisions/0037.
+\subsection{The corpus regression gate}
+
+% Claim 2.1 — the floor concept.
+% TODO: the most recent committed JSON baseline under
+% bench/baseline/ is the FLOOR. Per detector, a PR may not drop
+% F1 by more than \texttt{REGRESSION\_TOLERANCE = 0.02} against
+% the floor on either language without an explicit recall trade
+% declared in the PR description.
+
+% Claim 2.2 — what the gate does on every PR.
+% TODO: list the steps bench/scripts/gate.sh performs:
+%   1. Discover latest baselines per language (lex-sort filename).
+%   2. Run Py + TS measurement with --gate against those floors.
+%   3. Run parity\_check.py to verify cross-engine verdict counts.
+%   4. Exit 0 iff no F1 regression > tolerance AND parity intact.
+
+% Claim 2.3 — what changes when the gate fires.
+% TODO: a failed gate forces the author to either (a) close the
+% regression with a detector ratchet (lockstep), (b) re-label the
+% offending corpus sample with a methodology-ledger entry, or
+% (c) declare an explicit recall trade in the PR description.
+% Silent acceptance is not an option.
+
+% Subsection 3 — FP/FN ledger discipline.
+% Source: docs/false-{positive,negative}-resolution.md.
+\subsection{FP/FN methodology and ledgers}
+
+% Claim 3.1 — the AV-vendor playbook.
+% TODO: classical AV vendors faced an FP-tuning trap —
+% diminishing returns where further precision optimization costs
+% recall. The fix is to formalise an FN ledger AS the equal-and-
+% opposite partner of FP resolution.
+
+% Claim 3.2 — four resolution paths.
+% TODO: every diagnosed finding (FP or FN) classifies into:
+%   A — edit the content (the primitive author fixes it),
+%   B — narrow allow entry + ledger record (policy carve-out),
+%   C — detector ratchet (lockstep TS + Py with corpus measurement),
+%   D — escalate (security-reviewer; never silently allow).
+
+% Claim 3.3 — append-only.
+% TODO: ledger entries are numbered (FP-NNN, FN-NNN), never
+% renumbered, never deleted. A Re-review log appends to each entry
+% as the resolution moves through its lifecycle. Quarterly
+% re-review (the AV-vendor cadence) is mandated by the FP doc.
+
+% Subsection 4 — what we measured this paper against.
+\subsection{Replicating the results}
+
+% Claim 4.1 — the corpus.
+% TODO: Corpus v0.2 (top10 v0.1) — 105 labeled samples, 99 in-
+% sample + 6 holdout. Per-detector support ranges 30..45 samples.
+% License: CC-BY-4.0.
+% Source: docs/corpus-v0.1.md.
+
+% Claim 4.2 — the reproducer.
+% TODO: one-command reproduction. Print the command block from
+% docs/corpus-v0.1.md § "How to reproduce" verbatim.
+\begin{lstlisting}[basicstyle=\ttfamily\small,frame=single]
+git clone https://github.com/DevXYZx/primitivehub.git
+cd primitivehub
+pnpm install --frozen-lockfile
+pnpm --filter @primitivehub/phub build
+(cd apps/api && uv sync --all-extras)
+bench/scripts/gate.sh
+python bench/scripts/render-evaluation.py --check
+python bench/cli/replay.py --sample S-001
+\end{lstlisting}
+
+% Claim 4.3 — the gate output.
+% TODO: the gate prints per-detector P/R/F1 on both engines and
+% exits 0 iff no F1 regression > 0.02 and parity intact. Reviewers
+% see the same number we cite in Section \Cref{sec:evaluation}.
+
+% Claim 4.4 — the replay tool.
+% TODO: bench/cli/replay.py lets reviewers replay any specific
+% sample deterministically; \texttt{--all --diff-only} processes the
+% full 105-sample corpus and reports samples where the per-detector
+% outcome diverges from the manifest contract.

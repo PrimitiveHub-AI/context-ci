@@ -1,0 +1,121 @@
+% Related Work — v0.1 skeleton.
+%
+% Target: 1-2 pages. Positions PrimitiveHub against three lines of
+% prior work: software supply-chain security, prompt-injection
+% defense, and AV-vendor methodology.
+
+\section{Related Work}
+\label{sec:related}
+
+% Subsection 1 — software supply chain.
+\subsection{Software supply-chain provenance}
+
+% Claim 1.1 — SLSA + in-toto + Sigstore.
+% TODO: SLSA \cite{SLSA:2023:provenance-spec} formalises build-
+% provenance levels. in-toto \cite{in-toto:2016:supply-chain}
+% provides the predicate-based attestation framework. Sigstore
+% \cite{Sigstore:2021:keyless-signing} provides keyless signing via
+% OIDC. PrimitiveHub's Trust Bundle inherits the predicate format
+% from in-toto and the signing layer from Sigstore; the addition
+% is the SEMANTIC validation layer (Top 10) that runs BEFORE the
+% signing step.
+
+% Claim 1.2 — incident catalog.
+% TODO: cite the chain of supply-chain incidents the threat model
+% draws from — SolarWinds \cite{SolarWinds:2020:supply-chain},
+% Codecov \cite{Codecov:2021:bash-uploader}, ua-parser-js
+% \cite{ua-parser-js:2021:npm-typosquat}, eslint-config-prettier
+% \cite{eslint-config-prettier:2024:maintainer-compromise}, xz-utils
+% CVE-2024-3094 \cite{xz-utils:2024:CVE-2024-3094}, and the
+% Shai-Hulud npm worm \cite{Shai-Hulud:2025:npm-worm}. Each
+% motivates one or more CCI categories.
+
+% Subsection 2 — prompt-injection defense.
+\subsection{Prompt-injection defense}
+
+% Claim 2.1 — what the field has tried.
+% TODO: prior work has focused on runtime defenses — input/output
+% filtering, prompt rewriting, instruction-hierarchy training,
+% RAG-retrieval sanitization. These operate at LLM execution time
+% and don't prevent the attack from reaching the model.
+
+% Claim 2.2 — what's different.
+% TODO: PrimitiveHub's scanners operate at REGISTRY PUBLISH TIME.
+% The artifact never reaches the consuming agent unless it has
+% passed the Top 10. This is the same shift package managers made
+% from "warn on install" to "block install of known-bad" — moving
+% the defense earlier in the pipeline.
+
+% Subsection 3 — OWASP LLM Top 10.
+\subsection{OWASP Top 10 for LLM applications}
+
+% Claim 3.1 — the relationship.
+% TODO: OWASP \cite{OWASP:2025:llm-top10} defines a 10-category
+% taxonomy for LLM application security. PrimitiveHub's Top 10
+% overlaps with OWASP's LLM01 (Prompt Injection), LLM02 (Insecure
+% Output Handling), LLM03 (Training Data Poisoning), and LLM05
+% (Supply Chain Vulnerabilities). The crosswalk is documented in
+% docs/owasp-llm-top10-crosswalk.md.
+
+% Claim 3.2 — the scope boundary.
+% TODO: PrimitiveHub covers the supply-chain + injection slice that
+% can be detected statically on agent-context content. OWASP's
+% runtime categories (LLM02 Insecure Output Handling, LLM04 Model
+% Denial of Service, LLM06 Sensitive Information Disclosure
+% post-inference) require different defense layers — typically
+% provider-side or proxy-side, not registry-side.
+
+% Subsection 4 — AV-vendor methodology.
+\subsection{Antivirus industry methodology}
+
+% Claim 4.1 — the parallel.
+% TODO: the AV industry has spent two decades formalising
+% scanner-as-product. The product-family map (signature DB / FP
+% portal / allowlist DB / on-access guard / boot-time scan / HIPS /
+% cloud lookup / provenance) is documented in
+% \cite{AntivirusTaxonomy:2010s:industry-practice}. PrimitiveHub
+% mirrors this map row-for-row (docs/decisions/0030 § 3).
+
+% Claim 4.2 — what carries over.
+% TODO: append-only FP/FN ledgers, four-path triage, quarterly
+% re-review, per-detector versioning, corpus-as-ground-truth. These
+% norms are well-evidenced in AV practice; PrimitiveHub adopts them
+% for agent-context AV.
+
+% Claim 4.3 — what's new.
+% TODO: agent-context primitives are MARKDOWN with SEMANTIC content.
+% AV detectors operate on binary executables. The detection
+% techniques — regex pools with markdown-context awareness, UTS #39
+% skeleton comparison for vendor names, codepoint-class density
+% checks — are PrimitiveHub-specific even when the surrounding
+% methodology is AV-industry-standard.
+
+% Subsection 5 — Unicode security.
+\subsection{Unicode-based attacks}
+
+% Claim 5.1 — UTS #39 + confusables.
+% TODO: cite UTS #39 \cite{UTS39:2024:unicode-confusables} and the
+% confusables.txt distribution. The skeleton method we use for
+% T7 vendor-homoglyph detection is the standard one; what's new is
+% applying it to PRIMITIVE-vendor identifiers at publish time.
+
+% Claim 5.2 — the npm typosquat tradition.
+% TODO: confusables-based phishing detection
+% \cite{Confusables:2017:phishing-detection} has a decade of
+% practice in the browser-security space. PrimitiveHub brings it
+% into the primitive-registry space.
+
+% Subsection 6 — measurement methodology.
+\subsection{Measurement methodology}
+
+% Claim 6.1 — precision/recall/F1.
+% TODO: standard binary-classification evaluation as documented in
+% \cite{Powers:2011:evaluation-precision-recall}. Per-detector
+% macro-averaging chosen because each CCI category is a separate
+% defense (no class-imbalance averaging argument).
+
+% Claim 6.2 — holdout.
+% TODO: the train/test split discipline
+% \cite{HoldoutValidation:1995:tradition} is industry-standard
+% since the 1990s. PrimitiveHub's 80/20 ratio + per-category
+% balance follows the convention.

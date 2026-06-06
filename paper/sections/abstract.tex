@@ -1,0 +1,49 @@
+% Abstract — v0.1 skeleton.
+%
+% Target: ≤ 250 words. Final prose is one of the last things to
+% land. v0.1 carries claim stubs so each sentence has a single
+% source-of-truth file in the repo.
+
+\begin{abstract}
+
+% Claim 1 — context as supply-chain material.
+% Source: docs/threat-model.md § Scope; docs/vision.md.
+% TODO: open with the framing — AI agents load a new class of
+% supply-chain artifact (context primitives: skills, system prompts,
+% MCP server descriptions, AGENTS.md files) and the existing
+% software-supply-chain controls (SLSA, Sigstore, in-toto) don't
+% address it.
+
+% Claim 2 — taxonomy.
+% Source: docs/top10-corpus-map.md § Coverage summary.
+% TODO: introduce Context CI Top 10 — ten categories of agent-context
+% supply-chain attack we enumerate, each with a canonical sample +
+% a deterministic detector.
+
+% Claim 3 — measurement.
+% Source: docs/evaluation.md macro F1 (1.000 in-sample +
+% 1.000 holdout); docs/corpus-v0.1.md methodology.
+% TODO: state the number. "On a 105-sample labeled corpus split
+% 99/6 between in-sample and holdout, our detector suite achieves
+% macro F1 of 1.000 on both slices, with byte-identical results
+% across two independent implementations (Python + TypeScript)."
+
+% Claim 4 — methodology.
+% Source: docs/false-{positive,negative}-resolution.md.
+% TODO: name the FP/FN ledger discipline — the AV-vendor parallel
+% (ADR-0030) that prevents tuning past optimal.
+
+% Claim 5 — reproducibility.
+% Source: bench/scripts/gate.sh + bench/cli/replay.py.
+% TODO: one-command reproduction; corpus + detectors + gate all
+% open-source.
+
+% Claim 6 — limitations.
+% Source: docs/evaluation.md § Limitations.
+% TODO: honest disclosure — corpus size, English-language bias,
+% static-detection scope.
+
+This abstract is a v0.1 skeleton. See \texttt{paper/README.md} for the
+source-of-truth files each claim sits over.
+
+\end{abstract}

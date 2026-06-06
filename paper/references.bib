@@ -1,0 +1,159 @@
+% references.bib — v0.1 skeleton.
+%
+% Source of truth: docs/paper-bibliography.md. Each entry below mirrors
+% one row in that file. When the bibliography grows, update the .md
+% first and then re-export here.
+%
+% Citation-key convention: LastName:Year:short-title (per
+% docs/paper-bibliography.md).
+
+% ────────────────────────────────────────────────────────────────────
+% Supply-chain incidents
+% ────────────────────────────────────────────────────────────────────
+
+@misc{Shai-Hulud:2025:npm-worm,
+  title  = {The Shai-Hulud npm Worm: Postinstall-Hook Self-Propagation via Typosquat Names},
+  author = {{npm Security Team and post-mortem authors}},
+  year   = {2025},
+  month  = {September},
+  howpublished = {GitHub Security Advisory database},
+  note   = {Multiple post-mortems; cited as the canonical
+            agent-context-supply-chain incident class.},
+}
+
+@misc{SolarWinds:2020:supply-chain,
+  title  = {The {SUNBURST} Backdoor and the {SolarWinds Orion} Compromise},
+  author = {{FireEye/Mandiant}},
+  year   = {2020},
+  month  = {December},
+  howpublished = {FireEye Threat Research Blog},
+}
+
+@misc{Codecov:2021:bash-uploader,
+  title  = {The {Codecov} Bash Uploader Supply-Chain Breach},
+  author = {{Codecov}},
+  year   = {2021},
+  month  = {April},
+}
+
+@misc{ua-parser-js:2021:npm-typosquat,
+  title  = {Compromise of {ua-parser-js}: Cryptominer and Credential Stealer},
+  author = {{npm Security}},
+  year   = {2021},
+  month  = {October},
+}
+
+@misc{eslint-config-prettier:2024:maintainer-compromise,
+  title  = {Maintainer-Account Compromise of {eslint-config-prettier}},
+  author = {{npm Security}},
+  year   = {2024},
+}
+
+@misc{xz-utils:2024:CVE-2024-3094,
+  title  = {{CVE-2024-3094}: {xz-utils} Backdoor},
+  author = {{Andres Freund} and {Red Hat Product Security}},
+  year   = {2024},
+  month  = {March},
+}
+
+% ────────────────────────────────────────────────────────────────────
+% Standards and provenance frameworks
+% ────────────────────────────────────────────────────────────────────
+
+@misc{SLSA:2023:provenance-spec,
+  title        = {Supply-Chain Levels for Software Artifacts ({SLSA}) Specification},
+  author       = {{Open Source Security Foundation (OpenSSF)}},
+  year         = {2023},
+  url          = {https://slsa.dev/},
+}
+
+@inproceedings{in-toto:2016:supply-chain,
+  title     = {{in-toto}: Providing Farm-to-Table Guarantees for Bits and Bytes},
+  author    = {Torres-Arias, Santiago and Afzali, Hammad and Kuppusamy, Trishank Karthik and Curtmola, Reza and Cappos, Justin},
+  booktitle = {USENIX Security Symposium},
+  year      = {2019},
+  note      = {Project site \url{https://in-toto.io/}.},
+}
+
+@misc{Sigstore:2021:keyless-signing,
+  title  = {{Sigstore}: Keyless Signing via {OIDC} ({Fulcio} + {Rekor})},
+  author = {{The Sigstore Authors}},
+  year   = {2021},
+  url    = {https://www.sigstore.dev/},
+}
+
+@misc{OWASP:2025:llm-top10,
+  title  = {{OWASP} Top 10 for Large Language Model Applications ({2025 Edition})},
+  author = {{OWASP Foundation}},
+  year   = {2025},
+  url    = {https://owasp.org/www-project-top-10-for-large-language-model-applications/},
+}
+
+@techreport{UTS39:2024:unicode-confusables,
+  title       = {Unicode Technical Standard \#39: Unicode Security Mechanisms},
+  author      = {{Unicode Consortium}},
+  institution = {Unicode Consortium},
+  year        = {2024},
+  url         = {https://unicode.org/reports/tr39/},
+}
+
+@misc{CommonMark:2024:spec,
+  title  = {{CommonMark} Specification},
+  author = {{John MacFarlane and contributors}},
+  year   = {2024},
+  url    = {https://spec.commonmark.org/},
+}
+
+@misc{MITRE:CVE:1999:taxonomy,
+  title  = {Common Vulnerabilities and Exposures ({CVE})},
+  author = {{MITRE Corporation}},
+  year   = {1999},
+  url    = {https://cve.mitre.org/},
+}
+
+@misc{USPTO:1790:patent-system,
+  title  = {United States Patent and Trademark Office: Patent Issuance Records (1790--present)},
+  author = {{U.S. Patent and Trademark Office}},
+  year   = {1790},
+  url    = {https://patents.uspto.gov/},
+}
+
+% ────────────────────────────────────────────────────────────────────
+% Methodology references
+% ────────────────────────────────────────────────────────────────────
+
+@misc{Confusables:2017:phishing-detection,
+  title  = {Cross-Script Confusable Detection for Phishing-Domain Defense},
+  author = {{Google Safe Browsing Team and industry practitioners}},
+  year   = {2017},
+  note   = {Industry practice; cited as evidence that UTS \#39
+            skeleton comparison is deployed at internet scale.},
+}
+
+@misc{AntivirusTaxonomy:2010s:industry-practice,
+  title  = {Antivirus Product-Family Taxonomy: Scanner, Signature Database, FP Portal, Allowlist DB, On-Access Guard, Boot Scan, HIPS, Cloud Lookup, Provenance},
+  author = {{AV industry consensus}},
+  year   = {2015},
+  note   = {Composite reference to industry practice; see
+            \texttt{docs/decisions/0030-fp-resolution-and-av-vendor-parallel.md}
+            for the row-by-row map applied to PrimitiveHub.},
+}
+
+@article{Powers:2011:evaluation-precision-recall,
+  title   = {Evaluation: From Precision, Recall and F-Measure to ROC, Informedness, Markedness \& Correlation},
+  author  = {Powers, David M. W.},
+  journal = {Journal of Machine Learning Technologies},
+  volume  = {2},
+  number  = {1},
+  pages   = {37--63},
+  year    = {2011},
+}
+
+@misc{HoldoutValidation:1995:tradition,
+  title  = {Train/Test Split for Overfit Detection},
+  author = {{Industry consensus}},
+  year   = {1995},
+  note   = {Citation marker for the holdout-validation tradition;
+            see \texttt{docs/decisions/0038-corpus-v0\_2-expansion-and-holdout-split.md}
+            for PrimitiveHub's 80/20 application.},
+}
