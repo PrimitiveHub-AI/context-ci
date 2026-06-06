@@ -223,3 +223,75 @@
             (content digest, Ed25519 signature, in-toto attestation
             predicate) cited from Section \ref{sec:system-design}.},
 }
+
+@misc{primitivehub:2026:adr-0023,
+  title  = {ADR-0023: Cross-Language Detector Parity},
+  author = {{PrimitiveHub Maintainers}},
+  year   = {2026},
+  howpublished = {\url{docs/decisions/0023-phub-cli-and-detector-parity.md}
+                  in the project repository},
+  note   = {The lockstep rule that requires byte-identical
+            verdict counts across Python and TypeScript engines.},
+}
+
+@misc{primitivehub:2026:adr-0036,
+  title  = {ADR-0036: Semantic-Context Awareness v0.2.2},
+  author = {{PrimitiveHub Maintainers}},
+  year   = {2026},
+  howpublished = {\url{docs/decisions/0036-semantic-context-awareness-v0_2_2.md}
+                  in the project repository},
+  note   = {Three semantic-context predicates (negation, mention,
+            declaration) plus the v0.2.2 quoted-trigger predicate.},
+}
+
+@misc{primitivehub:2026:adr-0038,
+  title  = {ADR-0038: Corpus v0.2 Expansion and 80/20 Holdout
+            Split},
+  author = {{PrimitiveHub Maintainers}},
+  year   = {2026},
+  howpublished = {\url{docs/decisions/0038-corpus-v0_2-expansion-and-holdout-split.md}
+                  in the project repository},
+  note   = {The holdout discipline that prevents overfit by
+            reserving samples the regression gate does not
+            enforce.},
+}
+
+@misc{primitivehub:2026:eval,
+  title  = {PrimitiveHub Evaluation Scoreboard},
+  author = {{PrimitiveHub Maintainers}},
+  year   = {2026},
+  howpublished = {\url{docs/evaluation.md} in the project repository},
+  note   = {Auto-generated per-detector P/R/F1 table; source of
+            truth for every numerical claim in Section
+            \ref{sec:evaluation}.},
+}
+
+@misc{primitivehub:2026:corpus-spec,
+  title  = {Adversarial Corpus v0.1: Schema, Labeling Discipline,
+            and Reproducibility},
+  author = {{PrimitiveHub Maintainers}},
+  year   = {2026},
+  howpublished = {\url{docs/corpus-v0.1.md} in the project repository},
+  note   = {Source of truth for the corpus methodology + manifest
+            schema; updated to v0.2 in ADR-0038.},
+}
+
+@misc{primitivehub:2026:paper-readme,
+  title  = {PrimitiveHub Paper Authoring Discipline},
+  author = {{PrimitiveHub Maintainers}},
+  year   = {2026},
+  howpublished = {\url{paper/README.md} in the project repository},
+  note   = {Discipline forbidding invented numbers; every quoted
+            quantity in this paper sources from a file under
+            \texttt{docs/} or \texttt{bench/}.},
+}
+
+@misc{primitivehub:2026:security,
+  title  = {PrimitiveHub Security and Responsible Disclosure},
+  author = {{PrimitiveHub Maintainers}},
+  year   = {2026},
+  howpublished = {\url{SECURITY.md} in the project repository},
+  note   = {Routing for false-positive, false-negative, and
+            vulnerability reports; documents the
+            independent-replication path.},
+}

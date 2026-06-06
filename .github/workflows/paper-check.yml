@@ -1,0 +1,35 @@
+name: paper-check — citation-coverage gate
+
+# Lightweight CI gate for the arXiv paper source under paper/.
+# Runs `make paper-check` which verifies every \cite{key} appearing
+# in sections/*.tex has a matching entry in references.bib.
+#
+# Intentionally NOT a LaTeX build. The TeX toolchain dependency is
+# heavy and v0.1 of the paper renders locally; the citation-coverage
+# gate is what prevents stale-reference drift between commits.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "paper/**"
+      - ".github/workflows/paper-check.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "paper/**"
+      - ".github/workflows/paper-check.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  citation-coverage:
+    name: cited keys ⊆ references.bib
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run paper-check
+        working-directory: paper
+        run: make paper-check

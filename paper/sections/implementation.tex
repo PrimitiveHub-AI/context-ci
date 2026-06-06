@@ -1,95 +1,182 @@
-% Implementation — v0.1 skeleton.
-%
-% Target: 2-3 pages. Engineering exposition: dual-implementation
-% discipline, the lockstep rule, the corpus regression gate, the
-% FP/FN ledger discipline.
+% Implementation — v0.2 prose.
+% Target: ~3 pages. Engineering exposition: dual-implementation
+% discipline, the corpus regression gate, the FP/FN ledger discipline,
+% the reproducer commands.
 
 \section{Implementation}
 \label{sec:implementation}
 
-% Subsection 1 — dual implementation.
-% Source: docs/decisions/0023 (lockstep rule).
 \subsection{Dual implementation: Python and TypeScript}
 
-% Claim 1.1 — why two?
-% TODO: agent-side runtime calls (the MCP gate) need TypeScript;
-% server-side validation calls (registry publish, /check route)
-% need Python. PrimitiveHub ships both engines with byte-identical
-% verdicts (ADR-0023).
+% Source: docs/decisions/0023 (lockstep rule).
+The agent-context AV story has two operational endpoints with
+opposite runtime profiles. Server-side calls (registry publish,
+the \verb|/check| public route, the validation pipeline) run on
+Django and use Python detectors directly. Agent-side calls (the
+MCP verification gate, the \verb|phub| CLI, browser tooling) run
+on Node and use TypeScript detectors. Maintaining one canonical
+implementation and a thin port at the other end produces drift
+the moment a contributor edits one without the other; the
+existing supply-chain literature treats this as a known
+failure mode for security-critical code.
 
-% Claim 1.2 — what "byte-identical" means.
-% TODO: for any sample $s$ and detector $d$, the verdict
-% (severity, passed) is the same in both engines. Cross-engine
-% parity is checked by bench/scripts/parity\_check.py and the
-% scanner-bench CI gate fails the merge on drift.
+PrimitiveHub addresses it by treating cross-language verdict
+parity as a CI-enforced contract, not a code-review claim. The
+Architectural Decision Record that locks the contract
+(ADR-0023~\cite{primitivehub:2026:adr-0023}) names two
+requirements: (a) for any sample $s$ and detector $d$, the
+verdict severity and the boolean \emph{passed} flag are
+identical between the Python implementation in
+\verb|apps/api/scanners/| and the TypeScript implementation in
+\verb|packages/phub/src/scanners/|; (b) the per-detector
+(TP, FP, TN, FN) tuples measured against the shared corpus must
+agree byte-for-byte across engines. The contract holds at every
+detector version we ship and is verified by
+\verb|bench/scripts/parity_check.py| against the most recent
+committed baseline JSONs.
 
-% Claim 1.3 — the cost.
-% TODO: every detector change requires a lockstep edit. v0.1 of
-% the gate accepted this cost manually; v0.2 (after the gate
-% landed) catches the regression automatically. The corpus is the
-% shared ground truth.
+The cost of the dual implementation is real: every detector
+change is two PR edits and a parity-recheck. The benefit is
+the same: the byte-identical-verdicts property is what lets
+the MCP gate carry the same security guarantee as the server-side
+validation pipeline, and it is what lets a reviewer reproduce
+any verdict in either engine without converting between dialects
+of the rules.
 
-% Subsection 2 — the corpus regression gate.
-% Source: bench/baseline/FLOOR.md, docs/decisions/0037.
+\subsection{The markdown-context analyzer}
+
+% Source: docs/decisions/0035 (markdown context awareness).
+Detectors that scan prose patterns share a markdown-context
+analyzer that identifies three syntactic regions: YAML
+frontmatter (delimited by \verb|---| at line starts), fenced
+code blocks (opened by \verb|```| or \verb|~~~| at line starts
+per the CommonMark spec~\cite{CommonMark:2024:spec}), and inline
+code spans (delimited by backticks, with balanced run-length).
+The analyzer walks the document once and produces three lists of
+character offsets; per-detector calls into it are
+constant-time per offset.
+
+The analyzer's introduction (Round 1 of the elite-tier path)
+was the v0.2.1 ratchet that closed three precision-defense FP
+ledger entries simultaneously: detectors stopped firing on
+documented teaching examples (fenced shell pipes), on inline-code
+documentation of vendor commands (npx install in vendor docs),
+and on YAML frontmatter referencing attack-shape keywords. ADR-0035
+records the design and the trade-off: each detector opts into the
+markdown-context skip by listing the detail tags that should
+honor it, leaving the syntactic-attack-carrier families
+(role-hijack via fenced \verb|system| markers, hidden
+\verb|<!-- instructions -->| HTML comments) unprotected so they
+still fire on their intended attack shape.
+
+A second-order pass --- the semantic-context analyzer in
+ADR-0036~\cite{primitivehub:2026:adr-0036} --- classifies the
+\emph{prose} around a regex match into three categories:
+negation (``never run \verb|curl|sh|''), mention (``Stripe's
+typography''), and declaration (``CC-BY-4.0 (corpus content)''),
+plus the v0.2.2 quoted-trigger predicate that recognises a
+matched phrase wrapped in paired \verb|"...".| The semantic-context
+analyzer is what lets detectors generalise beyond the syntactic
+fence-skip: defender prose enumerating attacker phrases is now
+distinguishable from attacker prose using them.
+
 \subsection{The corpus regression gate}
 
-% Claim 2.1 — the floor concept.
-% TODO: the most recent committed JSON baseline under
-% bench/baseline/ is the FLOOR. Per detector, a PR may not drop
-% F1 by more than \texttt{REGRESSION\_TOLERANCE = 0.02} against
-% the floor on either language without an explicit recall trade
-% declared in the PR description.
+% Source: docs/decisions/0037 (corpus as steering wheel);
+% bench/baseline/FLOOR.md.
+ADR-0037 reframes the corpus's role: not just a test set the
+detectors are measured against, but the regression contract every
+PR passes through. The mechanics:
 
-% Claim 2.2 — what the gate does on every PR.
-% TODO: list the steps bench/scripts/gate.sh performs:
-%   1. Discover latest baselines per language (lex-sort filename).
-%   2. Run Py + TS measurement with --gate against those floors.
-%   3. Run parity\_check.py to verify cross-engine verdict counts.
-%   4. Exit 0 iff no F1 regression > tolerance AND parity intact.
+\begin{itemize}
+  \item The most recent committed baseline JSON under
+        \verb|bench/baseline/| is the \emph{floor}. Per detector,
+        a PR may not drop F\textsubscript{1} by more than the
+        regression tolerance (0.02 absolute) against the floor
+        on either engine without an explicit recall trade
+        declared in the PR description.
+  \item The shell script \verb|bench/scripts/gate.sh| is the
+        single entry point. It discovers the latest baseline per
+        language (lex-sort filename), runs the Py and TS
+        measurement scripts with \verb|--gate --baseline <floor>|,
+        and runs \verb|parity_check.py| on the resulting
+        baselines.
+  \item The script exits 0 iff no F\textsubscript{1} regression
+        exceeds tolerance AND the cross-language tuple parity is
+        intact.
+  \item The GitHub Actions workflow
+        \verb|.github/workflows/scanner-bench.yml| runs the same
+        script on every PR touching detectors, audit pipelines,
+        bench scripts, or workflow files. A regression fails the
+        merge.
+  \item A drift-gate step in the same workflow runs
+        \verb|render-evaluation.py --check| to verify
+        \verb|docs/evaluation.md| is in sync with the latest
+        baselines, blocking merges where the public scoreboard
+        would lie by being stale.
+\end{itemize}
 
-% Claim 2.3 — what changes when the gate fires.
-% TODO: a failed gate forces the author to either (a) close the
-% regression with a detector ratchet (lockstep), (b) re-label the
-% offending corpus sample with a methodology-ledger entry, or
-% (c) declare an explicit recall trade in the PR description.
-% Silent acceptance is not an option.
+When the gate fires, the author has three options: close the
+regression with a detector ratchet (lockstep TS + Py), re-label
+the offending corpus sample with a FP-NNN or FN-NNN ledger
+entry, or declare an explicit recall trade in the PR
+description. Silent acceptance is not an option; the gate is
+the steering wheel and the floor advances only by author intent.
 
-% Subsection 3 — FP/FN ledger discipline.
-% Source: docs/false-{positive,negative}-resolution.md.
 \subsection{FP/FN methodology and ledgers}
 
-% Claim 3.1 — the AV-vendor playbook.
-% TODO: classical AV vendors faced an FP-tuning trap —
-% diminishing returns where further precision optimization costs
-% recall. The fix is to formalise an FN ledger AS the equal-and-
-% opposite partner of FP resolution.
+% Source: docs/false-{positive,negative}-resolution.md.
+The discipline that prevents tuning past optimal is the
+append-only paired-ledger model PrimitiveHub adopts from
+antivirus-industry practice~\cite{AntivirusTaxonomy:2010s:industry-practice}.
+Every diagnosed finding (false positive or false negative) is
+classified into exactly one of four resolution paths before any
+detector change ships:
 
-% Claim 3.2 — four resolution paths.
-% TODO: every diagnosed finding (FP or FN) classifies into:
-%   A — edit the content (the primitive author fixes it),
-%   B — narrow allow entry + ledger record (policy carve-out),
-%   C — detector ratchet (lockstep TS + Py with corpus measurement),
-%   D — escalate (security-reviewer; never silently allow).
+\begin{description}
+  \item[Path A — edit the content.] The primitive author rewrites
+    the prose so the detector no longer fires. Used when the
+    finding is a real precision hazard caused by careless
+    drafting on the primitive's side.
+  \item[Path B — narrow allow entry plus ledger record.] A policy
+    carve-out in \verb|.primitivehub/policy.yaml| documents that
+    the finding is benign in this specific context. The allow
+    entry MUST be accompanied by a numbered FP-NNN ledger entry
+    that explains the carve-out's scope; an allow entry without
+    a ledger entry is rejected by code review.
+  \item[Path C — detector ratchet with corpus measurement.] The
+    detector is structurally under-broad or over-broad. Lockstep
+    edit to both implementations, accompanied by a corpus sample
+    that locks the regression. The FN ledger entry shows the
+    F\textsubscript{1} delta the fix produces.
+  \item[Path D — escalate to a security reviewer.] The finding's
+    classification is ambiguous; never silently allow.
+\end{description}
 
-% Claim 3.3 — append-only.
-% TODO: ledger entries are numbered (FP-NNN, FN-NNN), never
-% renumbered, never deleted. A Re-review log appends to each entry
-% as the resolution moves through its lifecycle. Quarterly
-% re-review (the AV-vendor cadence) is mandated by the FP doc.
+The ledgers themselves
+(\verb|docs/false-positive-resolution.md| and
+\verb|docs/false-negative-resolution.md|) are append-only
+markdown with numbered entries. As of this submission, the FP
+ledger carries 14 entries (FP-001 through FP-014) and the FN
+ledger carries 17 (FN-001 through FN-017). Each entry names
+the corpus sample, classifies the path, records the resolution
+vector, and (after closure) appends a re-review log showing the
+F\textsubscript{1} delta and the lockstep-version bump. The two
+ledgers together are the audit trail a peer reviewer can walk
+to verify any specific claim in this paper's evaluation
+section.
 
-% Subsection 4 — what we measured this paper against.
 \subsection{Replicating the results}
 
-% Claim 4.1 — the corpus.
-% TODO: Corpus v0.2 (top10 v0.1) — 105 labeled samples, 99 in-
-% sample + 6 holdout. Per-detector support ranges 30..45 samples.
-% License: CC-BY-4.0.
-% Source: docs/corpus-v0.1.md.
+% Source: bench/scripts/gate.sh; bench/cli/replay.py;
+% docs/corpus-v0.1.md § "How to reproduce".
+The corpus, detectors, measurement scripts, regression gate, and
+per-sample replay tool are open-source under CC-BY-4.0 (corpus)
+and Apache-2.0 (detectors and tooling). A reviewer reproduces
+every number cited in Section~\ref{sec:evaluation} from a fresh
+clone in under ten minutes:
 
-% Claim 4.2 — the reproducer.
-% TODO: one-command reproduction. Print the command block from
-% docs/corpus-v0.1.md § "How to reproduce" verbatim.
-\begin{lstlisting}[basicstyle=\ttfamily\small,frame=single]
+\begin{lstlisting}[basicstyle=\ttfamily\small,frame=single,breaklines=true]
 git clone https://github.com/DevXYZx/primitivehub.git
 cd primitivehub
 pnpm install --frozen-lockfile
@@ -100,13 +187,21 @@ python bench/scripts/render-evaluation.py --check
 python bench/cli/replay.py --sample S-001
 \end{lstlisting}
 
-% Claim 4.3 — the gate output.
-% TODO: the gate prints per-detector P/R/F1 on both engines and
-% exits 0 iff no F1 regression > 0.02 and parity intact. Reviewers
-% see the same number we cite in Section \Cref{sec:evaluation}.
+The gate emits per-detector P, R, and F\textsubscript{1} on both
+engines and exits 0 iff the corpus regression contract holds.
+The \verb|render-evaluation.py --check| step verifies that
+\verb|docs/evaluation.md| (the public scoreboard) is in sync
+with the latest baselines and exits 0 iff no drift is
+detected.
 
-% Claim 4.4 — the replay tool.
-% TODO: bench/cli/replay.py lets reviewers replay any specific
-% sample deterministically; \texttt{--all --diff-only} processes the
-% full 105-sample corpus and reports samples where the per-detector
-% outcome diverges from the manifest contract.
+The replay tool (\verb|bench/cli/replay.py|) lets a reviewer
+re-run any individual sample through the Python detectors and
+see the per-detector verdict with the outcome (TP, FN, FP, TN,
+or ``cross-trip''-only) classification. With
+\verb|--all --diff-only --include-holdout|, the tool processes
+the full 109-sample corpus and reports only the samples whose
+primary-detector outcome diverges from the manifest contract.
+Holdout samples that surface ledger-documented gaps are tagged
+\verb|[HOLDOUT]| and do not count toward the drift exit code,
+keeping the tool useful as an open-loop replay surface
+independent of the gate's blocking semantics.
