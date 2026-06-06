@@ -1,0 +1,229 @@
+{
+  "version": "0.1",
+  "language": "ts",
+  "measured_at": "2026-06-06",
+  "manifest_version": "0.2",
+  "top10_version": "0.1",
+  "samples_total": 99,
+  "per_detector": {
+    "CCI-001": {
+      "tp": 4,
+      "fp": 0,
+      "tn": 37,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "support": 41
+    },
+    "CCI-002": {
+      "tp": 3,
+      "fp": 0,
+      "tn": 37,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "support": 40
+    },
+    "CCI-003": {
+      "tp": 7,
+      "fp": 0,
+      "tn": 37,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "support": 44
+    },
+    "CCI-004": {
+      "tp": 7,
+      "fp": 0,
+      "tn": 37,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "support": 44
+    },
+    "CCI-005": {
+      "tp": 5,
+      "fp": 0,
+      "tn": 37,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "support": 42
+    },
+    "CCI-006": {
+      "tp": 7,
+      "fp": 0,
+      "tn": 37,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "support": 44
+    },
+    "CCI-007": {
+      "tp": 8,
+      "fp": 0,
+      "tn": 37,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "support": 45
+    },
+    "CCI-008": {
+      "tp": 7,
+      "fp": 0,
+      "tn": 37,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "support": 44
+    },
+    "CCI-009": {
+      "tp": 8,
+      "fp": 0,
+      "tn": 37,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "support": 45
+    },
+    "CCI-010": {
+      "tp": 5,
+      "fp": 0,
+      "tn": 37,
+      "fn": 1,
+      "precision": 1,
+      "recall": 0.8333333333333334,
+      "f1": 0.9090909090909091,
+      "support": 43
+    }
+  },
+  "overall": {
+    "precision_macro": 1,
+    "recall_macro": 0.9833333333333334,
+    "f1_macro": 0.9909090909090909
+  },
+  "parity": {
+    "agreed_sample_ids": [],
+    "drift_sample_ids": []
+  },
+  "holdout": {
+    "samples_total": 6,
+    "per_detector": {
+      "CCI-001": {
+        "tp": 1,
+        "fp": 0,
+        "tn": 0,
+        "fn": 0,
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "support": 1
+      },
+      "CCI-002": {
+        "tp": 1,
+        "fp": 0,
+        "tn": 0,
+        "fn": 0,
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "support": 1
+      },
+      "CCI-003": {
+        "tp": 0,
+        "fp": 0,
+        "tn": 0,
+        "fn": 1,
+        "precision": null,
+        "recall": 0,
+        "f1": null,
+        "support": 1
+      },
+      "CCI-004": {
+        "tp": 0,
+        "fp": 0,
+        "tn": 0,
+        "fn": 1,
+        "precision": null,
+        "recall": 0,
+        "f1": null,
+        "support": 1
+      },
+      "CCI-005": {
+        "tp": 0,
+        "fp": 0,
+        "tn": 0,
+        "fn": 0,
+        "precision": null,
+        "recall": null,
+        "f1": null,
+        "support": 0
+      },
+      "CCI-006": {
+        "tp": 0,
+        "fp": 0,
+        "tn": 0,
+        "fn": 1,
+        "precision": null,
+        "recall": 0,
+        "f1": null,
+        "support": 1
+      },
+      "CCI-007": {
+        "tp": 0,
+        "fp": 0,
+        "tn": 0,
+        "fn": 0,
+        "precision": null,
+        "recall": null,
+        "f1": null,
+        "support": 0
+      },
+      "CCI-008": {
+        "tp": 0,
+        "fp": 0,
+        "tn": 0,
+        "fn": 1,
+        "precision": null,
+        "recall": 0,
+        "f1": null,
+        "support": 1
+      },
+      "CCI-009": {
+        "tp": 0,
+        "fp": 0,
+        "tn": 0,
+        "fn": 0,
+        "precision": null,
+        "recall": null,
+        "f1": null,
+        "support": 0
+      },
+      "CCI-010": {
+        "tp": 0,
+        "fp": 0,
+        "tn": 0,
+        "fn": 0,
+        "precision": null,
+        "recall": null,
+        "f1": null,
+        "support": 0
+      }
+    },
+    "overall": {
+      "precision_macro": 1,
+      "recall_macro": 0.3333333333333333,
+      "f1_macro": 1
+    }
+  }
+}

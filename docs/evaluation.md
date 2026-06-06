@@ -16,7 +16,7 @@ The corpus is split into an **in-sample** slice (used during detector iteration)
 
 ## Per-engine scoreboard
 
-### Python (py) — measured 2026-06-05
+### Python (py) — measured 2026-06-06
 
 - **Corpus:** v0.2 (Top 10 v0.1) — 99 in-sample samples + 6 holdout
 
@@ -30,12 +30,12 @@ The corpus is split into an **in-sample** slice (used during detector iteration)
 | **CCI-004** | 1.000 | 1.000 | 1.000 | 7 | 0 | 37 | 0 | 44 |
 | **CCI-005** | 1.000 | 1.000 | 1.000 | 5 | 0 | 37 | 0 | 42 |
 | **CCI-006** | 1.000 | 1.000 | 1.000 | 7 | 0 | 37 | 0 | 44 |
-| **CCI-007** | 1.000 | 0.875 | 0.933 | 7 | 0 | 37 | 1 | 45 |
+| **CCI-007** | 1.000 | 1.000 | 1.000 | 8 | 0 | 37 | 0 | 45 |
 | **CCI-008** | 1.000 | 1.000 | 1.000 | 7 | 0 | 37 | 0 | 44 |
 | **CCI-009** | 1.000 | 1.000 | 1.000 | 8 | 0 | 37 | 0 | 45 |
 | **CCI-010** | 1.000 | 0.833 | 0.909 | 5 | 0 | 37 | 1 | 43 |
 
-| **Macro avg** | **1.000** | **0.971** | **0.984** | — | — | — | — | — |
+| **Macro avg** | **1.000** | **0.983** | **0.991** | — | — | — | — | — |
 
 #### Holdout (overfit detector, informational only)
 
@@ -54,7 +54,7 @@ The corpus is split into an **in-sample** slice (used during detector iteration)
 
 | **Macro avg** | **1.000** | **0.333** | **1.000** | — | — | — | — | — |
 
-### TypeScript (ts) — measured 2026-06-05
+### TypeScript (ts) — measured 2026-06-06
 
 - **Corpus:** v0.2 (Top 10 v0.1) — 99 in-sample samples + 6 holdout
 
@@ -68,12 +68,12 @@ The corpus is split into an **in-sample** slice (used during detector iteration)
 | **CCI-004** | 1.000 | 1.000 | 1.000 | 7 | 0 | 37 | 0 | 44 |
 | **CCI-005** | 1.000 | 1.000 | 1.000 | 5 | 0 | 37 | 0 | 42 |
 | **CCI-006** | 1.000 | 1.000 | 1.000 | 7 | 0 | 37 | 0 | 44 |
-| **CCI-007** | 1.000 | 0.875 | 0.933 | 7 | 0 | 37 | 1 | 45 |
+| **CCI-007** | 1.000 | 1.000 | 1.000 | 8 | 0 | 37 | 0 | 45 |
 | **CCI-008** | 1.000 | 1.000 | 1.000 | 7 | 0 | 37 | 0 | 44 |
 | **CCI-009** | 1.000 | 1.000 | 1.000 | 8 | 0 | 37 | 0 | 45 |
 | **CCI-010** | 1.000 | 0.833 | 0.909 | 5 | 0 | 37 | 1 | 43 |
 
-| **Macro avg** | **1.000** | **0.971** | **0.984** | — | — | — | — | — |
+| **Macro avg** | **1.000** | **0.983** | **0.991** | — | — | — | — | — |
 
 #### Holdout (overfit detector, informational only)
 

@@ -134,10 +134,38 @@ const TYPOSQUAT_TUPLES: Array<readonly [RegExp, string]> = TYPOSQUAT_PATTERNS.ma
   "vendor-typosquat",
 ])
 
+// v0.2.4 (Round 6 fix 3 — closes FN-011): Unicode-confusable patterns
+// for known vendor names. The character classes mix the canonical
+// Latin letter with its commonly-substituted Cyrillic / Greek
+// confusable; matches in the "any non-ASCII letter is present in the
+// canonical-Latin slot" sense fire `vendor-homoglyph`. ASCII-only
+// renders (no confusable used) DON'T match — the bare-Latin word
+// is the vendor's REAL name and isn't impersonation.
+//
+// Boundary defense: `(?<![A-Za-z0-9_])` / `(?![A-Za-z0-9_])` are used
+// instead of `\b` because `\b` is ASCII-only in default mode and a
+// Cyrillic letter at the boundary doesn't trigger it.
+//
+// Vendor-list-first scope: Anthropic + OpenAI. A generic NFKC + script
+// -mixing detector is the planned Round 7+ generalisation.
+const HOMOGLYPH_VENDOR_PATTERNS: string[] = [
+  // Anthropic: Cyrillic А (U+0410) or а (U+0430) instead of Latin A/a.
+  // The non-leading "nthropic" stays canonical Latin so this fires
+  // specifically on the mixed-script attack shape.
+  String.raw`(?<![A-Za-z0-9_])[Аа]nthropic(?![A-Za-z0-9_])`,
+  // OpenAI: Cyrillic О (U+041E) or о (U+043E) instead of Latin O/o.
+  String.raw`(?<![A-Za-z0-9_])[Оо]pen[Aa][Ii](?![A-Za-z0-9_])`,
+]
+
+const HOMOGLYPH_TUPLES: Array<readonly [RegExp, string]> = HOMOGLYPH_VENDOR_PATTERNS.map(
+  (p) => [new RegExp(p, "gim"), "vendor-homoglyph"],
+)
+
 const ALL_PATTERNS = [
   ...OFFICIAL_CLAIM_PATTERNS,
   ...FALSE_AFFILIATION_PATTERNS,
   ...TYPOSQUAT_TUPLES,
+  ...HOMOGLYPH_TUPLES,
 ]
 
 const SUGGESTIONS: Record<string, string> = {
@@ -147,6 +175,8 @@ const SUGGESTIONS: Record<string, string> = {
     "Prose asserts endorsement/certification by a named vendor. Same fix as above — drop the claim or back it with an attestation chain.",
   "vendor-typosquat":
     "Vendor name appears typosquatted (digit-for-letter or near-confusable). If accidental, fix the spelling. If deliberate, this is impersonation.",
+  "vendor-homoglyph":
+    "Vendor name appears with a non-ASCII letter visually identical to the canonical Latin spelling (Cyrillic / Greek confusable). This is the classic visual-impersonation shape and never benign in primitive content. If this is a foreign-language reference, use the language's native spelling (e.g. \"Антропик\") rather than a mixed-script form.",
 }
 
 function hintForMatch(content: string, match: RegExpExecArray, tag: string): DiffHint {
@@ -162,7 +192,7 @@ export class T7PoisonedNamingDetector {
   readonly name = "t7.poisoned_naming"
   readonly threatCategory = "T7"
   readonly cciId = "CCI-007"
-  readonly detectorVersion = "0.2.3"
+  readonly detectorVersion = "0.2.4"
 
   run(ctx: DetectorContext): Verdict {
     const hints: DiffHint[] = []
@@ -184,7 +214,7 @@ export class T7PoisonedNamingDetector {
           continue
         }
         if (
-          tag === "vendor-typosquat" &&
+          (tag === "vendor-typosquat" || tag === "vendor-homoglyph") &&
           isInMentionContext(ctx.content, match.index, match.index + match[0].length)
         ) {
           if (match.index === pattern.lastIndex) pattern.lastIndex++

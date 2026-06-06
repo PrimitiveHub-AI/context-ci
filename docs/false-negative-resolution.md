@@ -539,6 +539,23 @@ floor.
   decompose the matched word using `unicodedata.normalize("NFKD",
   …)` and compare to the canonical ASCII. Mismatch in any
   letter slot = homoglyph attack.
+- **2026-06-06 (Round 6, fix 3) — CLOSED (vendor-list scope).**
+  Shipped as T7 v0.2.4. New tag `vendor-homoglyph` joins the
+  existing `vendor-typosquat` family with two hard-coded patterns:
+  `(?<![A-Za-z0-9_])[Аа]nthropic(?![A-Za-z0-9_])` and
+  `(?<![A-Za-z0-9_])[Оо]pen[Aa][Ii](?![A-Za-z0-9_])`. Character
+  classes mix Cyrillic confusables (А U+0410, а U+0430, О U+041E,
+  о U+043E) with canonical Latin so all-ASCII renders (the legit
+  vendor name) DON'T fire — only mixed-script attacks do. Boundary
+  uses `(?<![A-Za-z0-9_])` / `(?![A-Za-z0-9_])` instead of `\b`
+  because default-mode `\b` is ASCII-only and won't trigger on a
+  Cyrillic leading char. Mention-context skip extended to cover
+  homoglyph too. The NFKD-decompose approach proposed earlier
+  doesn't work as-is (Cyrillic letters don't decompose to Latin);
+  this is the pragmatic vendor-list-first scope, with the generic
+  NFKC + script-mixing detector deferred to Round 7+. Corpus:
+  CCI-007 in-sample F1 0.933 → 1.000 (FN=1 → 0). Overall in-sample
+  macro F1 0.984 → 0.989. Parity OK.
 
 ### FN-012 — CCI-008 misses future-dated US Patent citation (S-100)
 

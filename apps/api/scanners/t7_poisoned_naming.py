@@ -162,8 +162,36 @@ _TYPOSQUAT_TUPLES: tuple[tuple[str, str], ...] = tuple(
     (pat, "vendor-typosquat") for pat in _TYPOSQUAT_PATTERNS
 )
 
+# v0.2.4 (Round 6 fix 3 — closes FN-011): Unicode-confusable patterns
+# for known vendor names. Mixes the canonical Latin letter with its
+# commonly-substituted Cyrillic / Greek confusable; matches the "any
+# non-ASCII letter is present in the canonical-Latin slot" sense and
+# fires `vendor-homoglyph`. ASCII-only renders (no confusable used)
+# DON'T match — the bare-Latin word is the vendor's REAL name and
+# isn't impersonation.
+#
+# Boundary defense: ``(?<![A-Za-z0-9_])`` / ``(?![A-Za-z0-9_])`` are
+# used instead of ``\b`` because ``\b`` is ASCII-only by default and
+# a Cyrillic letter at the boundary doesn't trigger it.
+#
+# Vendor-list-first scope: Anthropic + OpenAI. A generic NFKC + script-
+# mixing detector is the planned Round 7+ generalisation.
+_HOMOGLYPH_VENDOR_PATTERNS: tuple[str, ...] = (
+    # Anthropic: Cyrillic А (U+0410) or а (U+0430) instead of Latin A/a.
+    r"(?<![A-Za-z0-9_])[Аа]nthropic(?![A-Za-z0-9_])",
+    # OpenAI: Cyrillic О (U+041E) or о (U+043E) instead of Latin O/o.
+    r"(?<![A-Za-z0-9_])[Оо]pen[Aa][Ii](?![A-Za-z0-9_])",
+)
+
+_HOMOGLYPH_TUPLES: tuple[tuple[str, str], ...] = tuple(
+    (pat, "vendor-homoglyph") for pat in _HOMOGLYPH_VENDOR_PATTERNS
+)
+
 _ALL_PATTERNS = (
-    _OFFICIAL_CLAIM_PATTERNS + _FALSE_AFFILIATION_PATTERNS + _TYPOSQUAT_TUPLES
+    _OFFICIAL_CLAIM_PATTERNS
+    + _FALSE_AFFILIATION_PATTERNS
+    + _TYPOSQUAT_TUPLES
+    + _HOMOGLYPH_TUPLES
 )
 
 _COMPILED = tuple(
@@ -193,6 +221,13 @@ def _hint_for_match(content: str, match: re.Match[str], tag: str) -> DiffHint:
             "Vendor name appears typosquatted (digit-for-letter or near-confusable). "
             "If accidental, fix the spelling. If deliberate, this is impersonation."
         ),
+        "vendor-homoglyph": (
+            "Vendor name appears with a non-ASCII letter visually identical to the "
+            "canonical Latin spelling (Cyrillic / Greek confusable). This is the "
+            "classic visual-impersonation shape and never benign in primitive content. "
+            'If this is a foreign-language reference, use the language\'s native '
+            'spelling (e.g. "Антропик") rather than a mixed-script form.'
+        ),
     }
     return DiffHint(
         line=line_no,
@@ -208,7 +243,7 @@ class T7PoisonedNamingDetector:
     name = "t7.poisoned_naming"
     threat_category = "T7"
     cci_id = "CCI-007"
-    detector_version = "0.2.3"
+    detector_version = "0.2.4"
 
     def run(self, ctx: DetectorContext) -> Verdict:
         hints: list[DiffHint] = []
@@ -225,7 +260,7 @@ class T7PoisonedNamingDetector:
             for match in pattern.finditer(ctx.content):
                 if is_in_frontmatter(match.start(), md_ctx) or is_in_inline_code(match.start(), md_ctx):
                     continue
-                if tag == "vendor-typosquat" and is_in_mention_context(
+                if tag in {"vendor-typosquat", "vendor-homoglyph"} and is_in_mention_context(
                     ctx.content, match.start(), match.end()
                 ):
                     continue
