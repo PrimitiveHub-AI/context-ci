@@ -164,6 +164,51 @@ function checkEmojiDensity(content: string): DiffHint | null {
   }
 }
 
+// v0.1.3 (Round 10 PR 10.3 — closes FN-017 on S-109 markdown-table-
+// density bury attack). v0.1.2 thresholds miss a small primitive
+// (~6 KB, below the oversized cap) padded with a long innocuous
+// markdown table burying the directive at the bottom. Signal: when
+// > 50% of non-blank lines are markdown table rows AND the rows are
+// structurally repetitive (most share the same column count), the
+// primitive uses table bloat to bury an instruction below the
+// attention budget. Lockstep with apps/api/scanners/t10_context_bloat.py § v0.1.3.
+const TABLE_DENSITY_RATIO = 0.5
+const TABLE_REPETITION_RATIO = 0.8
+const TABLE_MIN_NON_BLANK_LINES = 30
+const TABLE_MIN_TABLE_ROWS = 20
+const TABLE_ROW_RE = /^\s*\|.*\|\s*$/
+
+function checkTableDensity(content: string): DiffHint | null {
+  const lines = content.split("\n")
+  const nonBlank = lines.filter((ln) => ln.trim().length > 0)
+  if (nonBlank.length < TABLE_MIN_NON_BLANK_LINES) return null
+  const tableRows = nonBlank.filter((ln) => TABLE_ROW_RE.test(ln))
+  if (tableRows.length < TABLE_MIN_TABLE_ROWS) return null
+  const tableRatio = tableRows.length / nonBlank.length
+  if (tableRatio < TABLE_DENSITY_RATIO) return null
+  const colCounts = tableRows.map((ln) => (ln.match(/\|/g) ?? []).length)
+  const tally = new Map<number, number>()
+  for (const c of colCounts) tally.set(c, (tally.get(c) ?? 0) + 1)
+  let mostCommonCount = 0
+  let mostCommonHits = 0
+  for (const [c, n] of tally) {
+    if (n > mostCommonHits) {
+      mostCommonHits = n
+      mostCommonCount = c
+    }
+  }
+  const repetitionRatio = mostCommonHits / colCounts.length
+  if (repetitionRatio < TABLE_REPETITION_RATIO) return null
+  const tablePct = Math.round(tableRatio * 100)
+  const repPct = Math.round(repetitionRatio * 100)
+  return {
+    line: 1,
+    snippet: `<${tableRows.length} of ${nonBlank.length} non-blank lines are table rows (${tablePct}%); ${repPct}% share ${mostCommonCount - 1} columns>`,
+    suggestion: `Markdown-table density ${tablePct}% (threshold ${Math.round(TABLE_DENSITY_RATIO * 100)}%) with structural repetition ${repPct}% (threshold ${Math.round(TABLE_REPETITION_RATIO * 100)}%). The primitive is using a long innocuous table to bury its actual instruction; the instruction sits below the attention budget. Move the active directive above the table or split the reference data into a separate primitive.`,
+    detailTag: "table-density",
+  }
+}
+
 function checkHeadingProliferation(content: string): DiffHint | null {
   const n = content.length
   if (n < 1000) return null
@@ -185,7 +230,7 @@ export class T10ContextBloatDetector {
   readonly name = "t10.context_bloat"
   readonly threatCategory = "T10"
   readonly cciId = "CCI-010"
-  readonly detectorVersion = "0.1.2"
+  readonly detectorVersion = "0.1.3"
 
   run(ctx: DetectorContext): Verdict {
     // v0.1.1 (2026-06-04): multi-file scan callers pass `filename`;
@@ -212,6 +257,7 @@ export class T10ContextBloatDetector {
       checkWhitespaceStuffing,
       checkHeadingProliferation,
       checkEmojiDensity,
+      checkTableDensity,
     ]) {
       const hint = check(ctx.content)
       if (hint !== null) hints.push(hint)

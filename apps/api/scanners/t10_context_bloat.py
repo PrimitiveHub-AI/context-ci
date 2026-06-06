@@ -215,6 +215,60 @@ def _check_emoji_density(content: str) -> DiffHint | None:
     )
 
 
+# v0.1.3 (Round 10 PR 10.3 — closes FN-017 on S-109 markdown-table-
+# density bury attack). The v0.1.2 thresholds miss a small primitive
+# (~6 KB, below the oversized cap) padded with a long innocuous
+# markdown table burying the directive at the bottom. Signal: when
+# > 50% of non-blank lines are markdown table rows AND the rows are
+# structurally repetitive (most share the same column count), the
+# primitive is using table bloat to bury an instruction below the
+# attention budget. Lockstep with packages/phub/src/scanners/t10-context-bloat.ts § v0.1.3.
+TABLE_DENSITY_RATIO = 0.5
+TABLE_REPETITION_RATIO = 0.8
+TABLE_MIN_NON_BLANK_LINES = 30
+TABLE_MIN_TABLE_ROWS = 20
+
+_TABLE_ROW_RE = re.compile(r"^\s*\|.*\|\s*$")
+
+
+def _check_table_density(content: str) -> DiffHint | None:
+    lines = content.split("\n")
+    non_blank = [ln for ln in lines if ln.strip()]
+    if len(non_blank) < TABLE_MIN_NON_BLANK_LINES:
+        return None
+    table_rows = [ln for ln in non_blank if _TABLE_ROW_RE.match(ln)]
+    if len(table_rows) < TABLE_MIN_TABLE_ROWS:
+        return None
+    table_ratio = len(table_rows) / len(non_blank)
+    if table_ratio < TABLE_DENSITY_RATIO:
+        return None
+    col_counts = [ln.count("|") for ln in table_rows]
+    most_common_count = max(set(col_counts), key=col_counts.count)
+    repetition_ratio = col_counts.count(most_common_count) / len(col_counts)
+    if repetition_ratio < TABLE_REPETITION_RATIO:
+        return None
+    return DiffHint(
+        line=1,
+        snippet=(
+            f"<{len(table_rows)} of {len(non_blank)} non-blank lines are "
+            f"table rows ({round(table_ratio * 100)}%); "
+            f"{round(repetition_ratio * 100)}% share {most_common_count - 1} "
+            "columns>"
+        ),
+        suggestion=(
+            f"Markdown-table density {round(table_ratio * 100)}% "
+            f"(threshold {round(TABLE_DENSITY_RATIO * 100)}%) with structural "
+            f"repetition {round(repetition_ratio * 100)}% (threshold "
+            f"{round(TABLE_REPETITION_RATIO * 100)}%). The primitive is using "
+            "a long innocuous table to bury its actual instruction; the "
+            "instruction sits below the attention budget. Move the active "
+            "directive above the table or split the reference data into a "
+            "separate primitive."
+        ),
+        detail_tag="table-density",
+    )
+
+
 # File paths that look like a primitive being authored. T10's bloat
 # semantics are calibrated for single primitives; firing on every
 # README/docs/changelog in a normal repo is the case ADR-0030 § 1
@@ -269,7 +323,7 @@ class T10ContextBloatDetector:
     name = "t10.context_bloat"
     threat_category = "T10"
     cci_id = "CCI-010"
-    detector_version = "0.1.2"
+    detector_version = "0.1.3"
 
     def run(self, ctx: DetectorContext) -> Verdict:
         # v0.1.1 (2026-06-04): multi-file scan callers pass `file_path`;
@@ -295,6 +349,7 @@ class T10ContextBloatDetector:
             _check_whitespace_stuffing,
             _check_heading_proliferation,
             _check_emoji_density,
+            _check_table_density,
         ):
             hint = check(ctx.content)
             if hint is not None:
