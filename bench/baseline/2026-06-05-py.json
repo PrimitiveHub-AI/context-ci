@@ -47,13 +47,13 @@
       "support": 44
     },
     "CCI-005": {
-      "tp": 4,
+      "tp": 5,
       "fp": 0,
       "tn": 37,
-      "fn": 1,
+      "fn": 0,
       "precision": 1.0,
-      "recall": 0.8,
-      "f1": 0.888888888888889,
+      "recall": 1.0,
+      "f1": 1.0,
       "support": 42
     },
     "CCI-006": {
@@ -109,8 +109,8 @@
   },
   "overall": {
     "precision_macro": 1.0,
-    "recall_macro": 0.9508333333333333,
-    "f1_macro": 0.9731313131313131
+    "recall_macro": 0.9708333333333334,
+    "f1_macro": 0.9842424242424241
   },
   "parity": {
     "agreed_sample_ids": [],

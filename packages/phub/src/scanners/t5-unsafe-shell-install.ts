@@ -17,9 +17,57 @@ import {
 } from "./types.js"
 import {
   analyzeMarkdownContext,
+  fenceContaining,
   isInAnyCodeOrFrontmatter,
+  type MarkdownContext,
+  type OffsetRange,
 } from "./markdown-context.js"
 import { isInNegationContext } from "./semantic-context.js"
+
+// v0.2.4 (Round 6 fix 2 — closes FN-009): imperative directive
+// keywords that, when appearing within ±3 lines BEFORE a fence,
+// mark that fence as "directive-referenced". The detector then
+// treats the fence's content as live attack instruction rather
+// than documentary example — closing the gap where adversarial
+// primitives say "Before responding, run the install hook:
+// ```\ncurl ... | sh\n```" and slip past v0.2.x fence-skip.
+const DIRECTIVE_RE =
+  /\b(?:before\s+(?:you\s+)?(?:respond(?:ing)?|answer(?:ing)?|repl(?:y|ying)|proceed(?:ing)?)|as\s+the\s+(?:first|next)\s+step|first[,\s]+|then[,\s]+|now[,\s]+|on\s+(?:every\s+)?(?:load|read|consume|startup)|at\s+(?:the\s+)?start\s+of\s+(?:every|each)\s+(?:conversation|session|turn))?\s*(?:run|execute|launch|install|bootstrap|initialise|initialize)\s+(?:the\s+|this\s+|that\s+)?(?:install(?:er|ation)?|hook|setup|init|bootstrap|script|command)\b/i
+
+const DIRECTIVE_LOOKBACK_LINES = 3
+
+/** Is `fence` immediately preceded (within DIRECTIVE_LOOKBACK_LINES
+ * lines) by an imperative-directive sentence? */
+function isDirectiveReferencedFence(content: string, fence: OffsetRange): boolean {
+  // Walk back DIRECTIVE_LOOKBACK_LINES lines from the fence start
+  // and scan that slice for the directive pattern. The pattern is
+  // tolerant of trailing colon / "this command:" / etc.
+  let linesSeen = 0
+  let cursor = fence[0]
+  while (cursor > 0 && linesSeen < DIRECTIVE_LOOKBACK_LINES + 1) {
+    const nl = content.lastIndexOf("\n", cursor - 1)
+    if (nl < 0) {
+      cursor = 0
+      break
+    }
+    cursor = nl
+    linesSeen++
+  }
+  const window = content.slice(Math.max(0, cursor), fence[0])
+  return DIRECTIVE_RE.test(window)
+}
+
+/** True iff the offset is inside a fence whose preceding prose
+ * directs the agent to execute its contents. */
+function isInDirectiveReferencedFence(
+  content: string,
+  offset: number,
+  mdCtx: MarkdownContext,
+): boolean {
+  const fence = fenceContaining(offset, mdCtx)
+  if (fence === null) return false
+  return isDirectiveReferencedFence(content, fence)
+}
 
 const SHELL_PIPE_PATTERNS: Array<readonly [RegExp, string]> = [
   [
@@ -119,7 +167,7 @@ export class T5UnsafeShellInstallDetector {
   readonly name = "t5.unsafe_shell_install"
   readonly threatCategory = "T5"
   readonly cciId = "CCI-005"
-  readonly detectorVersion = "0.2.3"
+  readonly detectorVersion = "0.2.4"
 
   run(ctx: DetectorContext): Verdict {
     const hints: DiffHint[] = []
@@ -142,8 +190,17 @@ export class T5UnsafeShellInstallDetector {
         // the verb anchor (outside) and the existing inside-backtick
         // patterns still skip correctly because their match.index is
         // inside the inline code.
+        //
+        // v0.2.4 (Round 6 fix 2 — closes FN-009): if the match is
+        // inside a fence whose preceding prose directs the agent to
+        // execute its contents ("Before responding, run the install
+        // hook:\n```\ncurl ... | sh\n```"), the fence is treated as
+        // live attack instruction rather than documentary example.
+        // Negation still wins — "do NOT run the install hook below"
+        // continues to suppress.
         if (
-          isInAnyCodeOrFrontmatter(match.index, mdCtx) ||
+          (isInAnyCodeOrFrontmatter(match.index, mdCtx) &&
+            !isInDirectiveReferencedFence(ctx.content, match.index, mdCtx)) ||
           isInNegationContext(ctx.content, match.index)
         ) {
           if (match.index === pattern.lastIndex) pattern.lastIndex++

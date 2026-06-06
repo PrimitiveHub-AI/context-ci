@@ -231,6 +231,18 @@ export function isInFence(offset: number, ctx: MarkdownContext): boolean {
   return isInRanges(offset, ctx.fencedRanges)
 }
 
+/**
+ * Return the fence range that contains `offset`, or `null` if the
+ * offset is outside every fence. Lockstep partner:
+ * `apps/api/scanners/markdown_context.py::fence_containing`.
+ */
+export function fenceContaining(offset: number, ctx: MarkdownContext): OffsetRange | null {
+  for (const r of ctx.fencedRanges) {
+    if (offset >= r[0] && offset <= r[1]) return r
+  }
+  return null
+}
+
 /** True iff `offset` is inside any inline code span. */
 export function isInInlineCode(offset: number, ctx: MarkdownContext): boolean {
   return isInRanges(offset, ctx.inlineCodeRanges)

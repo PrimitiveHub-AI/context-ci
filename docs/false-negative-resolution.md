@@ -501,6 +501,19 @@ floor.
   the fenced content becomes "directive-referenced" and the
   T5 install-shape regexes run against it. Closes the
   semantic-context over-skip.
+- **2026-06-05 (Round 6, fix 2) — CLOSED.** Shipped as T5 v0.2.4.
+  New helpers `fence_containing` / `fenceContaining` on
+  `markdown_context` expose the fence range a given offset sits
+  in; private T5 predicate `_is_in_directive_referenced_fence`
+  walks the ±3 lines preceding the fence start and matches an
+  imperative-directive regex (`before responding | as the first
+  step | first | then | now | on every load … run/execute/launch/
+  install/bootstrap … installer/hook/setup/init/script/command`).
+  T5's call site allows in-fence matches to fire when the
+  containing fence is directive-referenced; negation context
+  still wins. Corpus measurement: CCI-005 in-sample F1 0.889 →
+  1.000 (FN=1 → 0). Overall in-sample macro F1 0.973 → 0.984.
+  Py + TS lockstep, parity OK.
 
 ### FN-010 — CCI-006 misses env-var → query-string exfil phrasing (S-096)
 

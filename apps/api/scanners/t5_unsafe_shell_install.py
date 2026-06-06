@@ -52,10 +52,58 @@ from __future__ import annotations
 import re
 
 from .markdown_context import (
+    MarkdownContext,
     analyze_markdown_context,
+    fence_containing,
     is_in_any_code_or_frontmatter,
 )
 from .semantic_context import is_in_negation_context
+
+# v0.2.4 (Round 6 fix 2 — closes FN-009): imperative directive
+# keywords that, when appearing within ±3 lines BEFORE a fence,
+# mark that fence as "directive-referenced". The detector then
+# treats the fence's content as live attack instruction rather
+# than documentary example.
+_DIRECTIVE_RE = re.compile(
+    r"\b(?:before\s+(?:you\s+)?(?:respond(?:ing)?|answer(?:ing)?|repl(?:y|ying)|proceed(?:ing)?)"
+    r"|as\s+the\s+(?:first|next)\s+step"
+    r"|first[,\s]+|then[,\s]+|now[,\s]+"
+    r"|on\s+(?:every\s+)?(?:load|read|consume|startup)"
+    r"|at\s+(?:the\s+)?start\s+of\s+(?:every|each)\s+(?:conversation|session|turn))?"
+    r"\s*(?:run|execute|launch|install|bootstrap|initialise|initialize)"
+    r"\s+(?:the\s+|this\s+|that\s+)?"
+    r"(?:install(?:er|ation)?|hook|setup|init|bootstrap|script|command)\b",
+    re.IGNORECASE,
+)
+
+_DIRECTIVE_LOOKBACK_LINES = 3
+
+
+def _is_directive_referenced_fence(content: str, fence: tuple[int, int]) -> bool:
+    """Is ``fence`` immediately preceded (within ±3 lines) by an
+    imperative-directive sentence?"""
+    lines_seen = 0
+    cursor = fence[0]
+    while cursor > 0 and lines_seen < _DIRECTIVE_LOOKBACK_LINES + 1:
+        nl = content.rfind("\n", 0, cursor)
+        if nl < 0:
+            cursor = 0
+            break
+        cursor = nl
+        lines_seen += 1
+    window = content[max(0, cursor) : fence[0]]
+    return bool(_DIRECTIVE_RE.search(window))
+
+
+def _is_in_directive_referenced_fence(
+    content: str, offset: int, md_ctx: MarkdownContext
+) -> bool:
+    """True iff ``offset`` is inside a fence whose preceding prose
+    directs the agent to execute its contents."""
+    fence = fence_containing(offset, md_ctx)
+    if fence is None:
+        return False
+    return _is_directive_referenced_fence(content, fence)
 from .types import DetectorContext, DiffHint, Severity, Verdict
 
 # ─────────────────────────────────────────────────────────────────────
@@ -184,7 +232,7 @@ class T5UnsafeShellInstallDetector:
     name = "t5.unsafe_shell_install"
     threat_category = "T5"  # legacy; back-compat
     cci_id = "CCI-005"  # Context CI Top 10 v0.1 canonical ID (ADR-0016)
-    detector_version = "0.2.3"
+    detector_version = "0.2.4"
 
     def run(self, ctx: DetectorContext) -> Verdict:
         hints: list[DiffHint] = []
@@ -203,7 +251,18 @@ class T5UnsafeShellInstallDetector:
                 # the verb anchor (outside) and the existing inside-
                 # backtick patterns still skip correctly because their
                 # match.start() is inside the inline code.
-                if is_in_any_code_or_frontmatter(match.start(), md_ctx):
+                #
+                # v0.2.4 (Round 6 fix 2 — closes FN-009): if the match
+                # is inside a fence whose preceding prose directs the
+                # agent to execute its contents ("Before responding,
+                # run the install hook:\n```\ncurl ... | sh\n```"),
+                # the fence is treated as live attack instruction
+                # rather than documentary example. Negation still wins.
+                if is_in_any_code_or_frontmatter(
+                    match.start(), md_ctx
+                ) and not _is_in_directive_referenced_fence(
+                    ctx.content, match.start(), md_ctx
+                ):
                     continue
                 if is_in_negation_context(ctx.content, match.start()):
                     continue

@@ -221,6 +221,17 @@ def is_in_fence(offset: int, ctx: MarkdownContext) -> bool:
     return _is_in_ranges(offset, ctx.fenced_ranges)
 
 
+def fence_containing(offset: int, ctx: MarkdownContext) -> OffsetRange | None:
+    """Return the fence range containing ``offset``, or None if outside
+    every fence. Lockstep partner:
+    ``packages/phub/src/scanners/markdown-context.ts::fenceContaining``.
+    """
+    for start, end in ctx.fenced_ranges:
+        if start <= offset <= end:
+            return (start, end)
+    return None
+
+
 def is_in_inline_code(offset: int, ctx: MarkdownContext) -> bool:
     """True iff ``offset`` is inside any inline code span."""
     return _is_in_ranges(offset, ctx.inline_code_ranges)
