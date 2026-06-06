@@ -18,7 +18,7 @@ The corpus is split into an **in-sample** slice (used during detector iteration)
 
 ### Python (py) — measured 2026-06-06
 
-- **Corpus:** v0.2 (Top 10 v0.1) — 99 in-sample samples + 6 holdout
+- **Corpus:** v0.2 (Top 10 v0.1) — 99 in-sample samples + 10 holdout
 
 #### In-sample
 
@@ -45,18 +45,18 @@ The corpus is split into an **in-sample** slice (used during detector iteration)
 | **CCI-002** | 1.000 | 1.000 | 1.000 | 1 | 0 | 0 | 0 | 1 |
 | **CCI-003** | 1.000 | 1.000 | 1.000 | 1 | 0 | 0 | 0 | 1 |
 | **CCI-004** | 1.000 | 1.000 | 1.000 | 1 | 0 | 0 | 0 | 1 |
-| **CCI-005** | n/a | n/a | n/a | 0 | 0 | 0 | 0 | 0 |
+| **CCI-005** | n/a | 0.000 | n/a | 0 | 0 | 0 | 1 | 1 |
 | **CCI-006** | n/a | 0.000 | n/a | 0 | 0 | 0 | 1 | 1 |
-| **CCI-007** | n/a | n/a | n/a | 0 | 0 | 0 | 0 | 0 |
+| **CCI-007** | n/a | 0.000 | n/a | 0 | 0 | 0 | 1 | 1 |
 | **CCI-008** | 1.000 | 1.000 | 1.000 | 1 | 0 | 0 | 0 | 1 |
-| **CCI-009** | n/a | n/a | n/a | 0 | 0 | 0 | 0 | 0 |
-| **CCI-010** | n/a | n/a | n/a | 0 | 0 | 0 | 0 | 0 |
+| **CCI-009** | 1.000 | 1.000 | 1.000 | 1 | 0 | 0 | 0 | 1 |
+| **CCI-010** | n/a | 0.000 | n/a | 0 | 0 | 0 | 1 | 1 |
 
-| **Macro avg** | **1.000** | **0.833** | **1.000** | — | — | — | — | — |
+| **Macro avg** | **1.000** | **0.600** | **1.000** | — | — | — | — | — |
 
 ### TypeScript (ts) — measured 2026-06-06
 
-- **Corpus:** v0.2 (Top 10 v0.1) — 99 in-sample samples + 6 holdout
+- **Corpus:** v0.2 (Top 10 v0.1) — 99 in-sample samples + 10 holdout
 
 #### In-sample
 
@@ -83,14 +83,14 @@ The corpus is split into an **in-sample** slice (used during detector iteration)
 | **CCI-002** | 1.000 | 1.000 | 1.000 | 1 | 0 | 0 | 0 | 1 |
 | **CCI-003** | 1.000 | 1.000 | 1.000 | 1 | 0 | 0 | 0 | 1 |
 | **CCI-004** | 1.000 | 1.000 | 1.000 | 1 | 0 | 0 | 0 | 1 |
-| **CCI-005** | n/a | n/a | n/a | 0 | 0 | 0 | 0 | 0 |
+| **CCI-005** | n/a | 0.000 | n/a | 0 | 0 | 0 | 1 | 1 |
 | **CCI-006** | n/a | 0.000 | n/a | 0 | 0 | 0 | 1 | 1 |
-| **CCI-007** | n/a | n/a | n/a | 0 | 0 | 0 | 0 | 0 |
+| **CCI-007** | n/a | 0.000 | n/a | 0 | 0 | 0 | 1 | 1 |
 | **CCI-008** | 1.000 | 1.000 | 1.000 | 1 | 0 | 0 | 0 | 1 |
-| **CCI-009** | n/a | n/a | n/a | 0 | 0 | 0 | 0 | 0 |
-| **CCI-010** | n/a | n/a | n/a | 0 | 0 | 0 | 0 | 0 |
+| **CCI-009** | 1.000 | 1.000 | 1.000 | 1 | 0 | 0 | 0 | 1 |
+| **CCI-010** | n/a | 0.000 | n/a | 0 | 0 | 0 | 1 | 1 |
 
-| **Macro avg** | **1.000** | **0.833** | **1.000** | — | — | — | — | — |
+| **Macro avg** | **1.000** | **0.600** | **1.000** | — | — | — | — | — |
 
 ## How to reproduce
 

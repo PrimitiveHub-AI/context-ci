@@ -658,3 +658,66 @@ floor.
   Overall in-sample macro F1 0.989 → **1.000** — all 10 detectors,
   precision 1.000 + recall 1.000, on the v0.2 in-sample slice.
   Py + TS parity intact.
+
+### FN-014 — CCI-005 misses brew install + Gatekeeper bypass (S-106)
+
+- **Path:** C (spec gap). v0.2.4 T5's pattern pool covers curl|sh,
+  npx, pip-from-URL, install-instruction-to-agent, verb-anchored
+  inline-code, and directive-referenced fence. None of those match
+  the macOS-specific Homebrew install vector
+  (`brew install --cask attacker-recon`) or the Gatekeeper-bypass
+  sibling (`sudo spctl --master-disable`). Detector misses.
+- **Resolution vector:** v0.2.5 — add a `brew-install` family to
+  `_SHELL_PIPE_PATTERNS` or `_NPX_INSTALL_PATTERNS` (whichever
+  semantic fits better; brew is closer to npx). Add the Gatekeeper
+  bypass + the equivalent Windows AppLocker / Linux SELinux
+  policy-disable shapes as a sibling `policy-bypass` tag. Round 10
+  closure.
+
+### FN-015 — CCI-007 misses confusable on unsupported vendor (S-107)
+
+- **Path:** D escalating to C (spec gap + scope decision). v0.3.0
+  T7 generic-confusables compares input-word skeletons to the
+  registered `_VENDORS` list (35 entries). The S-107 attack uses
+  Cyrillic-е on "Replit" — a vendor NOT in the list. Two
+  resolution shapes:
+    1. Expand `_VENDORS` to include the AI-coding-tool vendors
+       currently missing (Replit, Glitch, StackBlitz,
+       Codespaces, Lovable, Bolt, v0.dev). One-line additions; fast
+       to ship; bounded by the vendor list's natural growth.
+    2. Shift T7 to a script-mixing signal independent of name
+       registration: any word containing both Latin and Cyrillic /
+       Greek codepoints fires `mixed-script-identifier` UNLESS
+       the word is a known native-script identifier (per UAX #31
+       identifier domain rules). Larger change; catches future
+       attack vendors automatically.
+  Round 10 ships option 1 first (the demonstrable
+  vendor-list expansion); option 2 deferred until the vendor list
+  outgrows manual curation.
+
+### FN-016 — CCI-009 catches CC-BY-NC-SA already (S-108 — informational)
+
+- **Path:** n/a — TP unexpectedly. S-108 was authored as a holdout
+  predicting T9 would miss the CC-BY-NC-SA "viral license" attack
+  shape. The v0.2.3 T9 detector ALREADY catches it via a generic
+  CC-BY-* pattern; this is overfit-detection working in the
+  opposite direction (the detector generalises better than we
+  predicted). Action: no detector change. The sample remains
+  holdout-labeled because it tests a shape v0.x might have missed,
+  and the TP outcome is a paper-worthy generalisation note. No
+  closure required.
+
+### FN-017 — CCI-010 misses markdown-table-density bloat (S-109)
+
+- **Path:** C (spec gap). v0.1.2 T10 measures oversized chars,
+  excessive repetition, whitespace stuffing, heading proliferation,
+  and emoji density. None of those signals fire on a small
+  (~6 KB) primitive with a long innocuous markdown table burying
+  the directive. The table is structurally bloat but visually
+  innocuous; the buried directive at the end is the active
+  payload.
+- **Resolution vector:** v0.1.3 — add a `table-density` check.
+  Heuristic: when > 50% of non-blank lines are markdown table rows
+  (matching `^\|.*\|\s*$`) AND those rows are structurally repetitive
+  (shared column count + cell-token-length distribution), fire WARN.
+  Round 10 closure.
