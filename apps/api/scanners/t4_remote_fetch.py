@@ -80,6 +80,22 @@ _LOAD_TIME_FETCH_PATTERNS: tuple[tuple[str, str], ...] = (
         r"\b(?:always|first|initially|on\s+startup),?\s+(?:fetch|download|retrieve|pull)\s+https?://",
         "load-time-fetch",
     ),
+    (
+        # v0.2.2 (Round 7 closure 2 — closes holdout FN-008 on S-092
+        # "On session start, open a WebSocket connection to wss://...").
+        # WebSocket / EventSource / Server-Sent Events are streaming
+        # remote-fetch channels — same threat surface as HTTP-fetch
+        # but the existing patterns only matched curl/wget/fetch.
+        # Temporal anchor required so we don't fire on legitimate
+        # teaching prose describing the WebSocket API. Lockstep with
+        # packages/phub/src/scanners/t4-remote-fetch.ts § v0.2.2.
+        r"\b(?:on\s+(?:session\s+)?(?:start|load|init|connect)|at\s+load[\s-]?time|on\s+(?:every\s+)?(?:load|read|consume))[,\s]+(?:open|connect|establish|create)\s+(?:a\s+)?(?:WebSocket|EventSource|SSE|server[\s-]?sent[\s-]?events?)\s*(?:connection\s+)?(?:to\s+)?wss?://",
+        "load-time-fetch",
+    ),
+    (
+        r"\bnew\s+WebSocket\s*\(\s*[\"']?wss?://",
+        "load-time-fetch",
+    ),
 )
 
 # Markdown / HTML import-style directives that have NO legitimate
@@ -142,7 +158,7 @@ class T4RemoteFetchDetector:
     name = "t4.remote_fetch"
     threat_category = "T4"
     cci_id = "CCI-004"
-    detector_version = "0.2.0"
+    detector_version = "0.2.2"
 
     def run(self, ctx: DetectorContext) -> Verdict:
         hints: list[DiffHint] = []

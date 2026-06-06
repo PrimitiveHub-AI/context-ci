@@ -48,6 +48,16 @@ const DECODE_AND_EXECUTE_PATTERNS: Array<readonly [RegExp, string]> = [
     /\b(?:run|exec|eval)\s+(?:the\s+)?(?:result|output|decoded)\s+of\s+(?:base64|hex|decod\w*)/gim,
     "decode-and-execute",
   ],
+  // v0.2.3 (Round 7 closure 1 — closes holdout FN-007 on S-090
+  // "URL-decode the following string and run the decoded shell
+  // command"). URL / percent encoding is a distinct decode family
+  // from base64 / hex; explicit verb anchor catches the standard
+  // imperative shape. Lockstep with apps/api/scanners/t3_encoded_
+  // payloads.py § v0.2.3.
+  [
+    /\b(?:url[\s_-]?decode|percent[\s_-]?decode|urldecode|decodeURIComponent|unquote)\s+[\w\s]{0,30}.{0,80}?\s+(?:and|then)\s+(?:run|execute|eval|exec)/gim,
+    "decode-and-execute",
+  ],
 ]
 
 const ROT13_PATTERNS: Array<readonly [RegExp, string]> = [
@@ -122,7 +132,7 @@ export class T3EncodedPayloadsDetector {
   readonly name = "t3.encoded_payloads"
   readonly threatCategory = "T3"
   readonly cciId = "CCI-003"
-  readonly detectorVersion = "0.2.0"
+  readonly detectorVersion = "0.2.3"
 
   run(ctx: DetectorContext): Verdict {
     const hints: DiffHint[] = []

@@ -140,23 +140,23 @@
         "support": 1
       },
       "CCI-003": {
-        "tp": 0,
+        "tp": 1,
         "fp": 0,
         "tn": 0,
-        "fn": 1,
-        "precision": null,
-        "recall": 0,
-        "f1": null,
+        "fn": 0,
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
         "support": 1
       },
       "CCI-004": {
-        "tp": 0,
+        "tp": 1,
         "fp": 0,
         "tn": 0,
-        "fn": 1,
-        "precision": null,
-        "recall": 0,
-        "f1": null,
+        "fn": 0,
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
         "support": 1
       },
       "CCI-005": {
@@ -190,13 +190,13 @@
         "support": 0
       },
       "CCI-008": {
-        "tp": 0,
+        "tp": 1,
         "fp": 0,
         "tn": 0,
-        "fn": 1,
-        "precision": null,
-        "recall": 0,
-        "f1": null,
+        "fn": 0,
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
         "support": 1
       },
       "CCI-009": {
@@ -222,7 +222,7 @@
     },
     "overall": {
       "precision_macro": 1,
-      "recall_macro": 0.3333333333333333,
+      "recall_macro": 0.8333333333333334,
       "f1_macro": 1
     }
   }

@@ -70,6 +70,20 @@ _RFC_RE = re.compile(r"\bRFC[\s-]?(\d{1,7})\b", re.IGNORECASE)
 # arXiv IDs (modern format YYMM.NNNNN, optional vN suffix).
 _ARXIV_RE = re.compile(r"\barXiv:(\d{2})(\d{2})\.(\d{4,5})(?:v\d+)?\b", re.IGNORECASE)
 
+# v0.2.3 (Round 7 closure 3 — closes holdout FN-012 on S-100
+# "US Patent 99,999,999 (issued 2099)"). US Patent numbers are
+# monotonic + the year of issuance is bounded. Two implausibility
+# signals: year outside [1790, currentYear+1] OR patent number above
+# 99,000,000 (current 2026 issuance is ~13M; reserving 99M+ as
+# "clearly attacker-fabricated"). Either fires `invalid-patent`.
+# Lockstep with packages/phub/src/scanners/t8-fake-citation.ts § v0.2.3.
+_PATENT_RE = re.compile(
+    r"\bUS\s+Patent\s+([\d,]{4,12})(?:\s*\(?\s*(?:issued|granted|filed)?\s*(\d{4}))?",
+    re.IGNORECASE,
+)
+_PATENT_IMPLAUSIBLE_NUMBER = 99_000_000
+_PATENT_PROGRAM_START_YEAR = 1790
+
 # DOI prefixes we treat as accepted authorities. v0.2 (2026-06-04)
 # expands the list from 28 to ~80 prefixes after `/check` flagged
 # `10.1184` (Carnegie Mellon) as fake on a real cybersecurity-skills
@@ -270,6 +284,50 @@ def _scan_invalid_arxiv(content: str) -> list[DiffHint]:
     return hints
 
 
+def _scan_invalid_patents(content: str) -> list[DiffHint]:
+    hints: list[DiffHint] = []
+    current_year = _current_year()
+    for match in _PATENT_RE.finditer(content):
+        raw_num = (match.group(1) or "").replace(",", "")
+        try:
+            patent_num = int(raw_num)
+        except ValueError:
+            continue
+        year_str = match.group(2)
+        year = int(year_str) if year_str else None
+        number_implausible = patent_num >= _PATENT_IMPLAUSIBLE_NUMBER
+        year_implausible = year is not None and (
+            year < _PATENT_PROGRAM_START_YEAR or year > current_year + 1
+        )
+        if not (number_implausible or year_implausible):
+            continue
+        if number_implausible:
+            reason = (
+                f"patent number {patent_num:,} is above the v0.2 implausibility "
+                f"ceiling ({_PATENT_IMPLAUSIBLE_NUMBER:,}; current US issuance "
+                f"~13M as of {current_year})"
+            )
+        else:
+            reason = (
+                f"year {year} is implausible (US patent program began "
+                f"{_PATENT_PROGRAM_START_YEAR}; current year is {current_year})"
+            )
+        hints.append(
+            DiffHint(
+                line=_line_for(content, match.start()),
+                snippet=_truncate(match.group(0)),
+                suggestion=(
+                    f"Fake US Patent citation — {reason}. Real patents are at "
+                    "patents.uspto.gov; verify the number before signing."
+                ),
+                detail_tag="invalid-patent",
+            )
+        )
+        if len(hints) >= _MAX_HINTS_PER_VERDICT:
+            break
+    return hints
+
+
 def _scan_fake_doi_prefixes(content: str) -> list[DiffHint]:
     hints: list[DiffHint] = []
     for match in _DOI_RE.finditer(content):
@@ -341,7 +399,7 @@ class T8FakeCitationDetector:
     name = "t8.fake_citation"
     threat_category = "T8"
     cci_id = "CCI-008"
-    detector_version = "0.2.0"
+    detector_version = "0.2.3"
 
     def run(self, ctx: DetectorContext) -> Verdict:
         hints: list[DiffHint] = []
@@ -349,6 +407,7 @@ class T8FakeCitationDetector:
             _scan_invalid_cves,
             _scan_invalid_rfcs,
             _scan_invalid_arxiv,
+            _scan_invalid_patents,
             _scan_fake_doi_prefixes,
             _scan_vague_citations,
         ):

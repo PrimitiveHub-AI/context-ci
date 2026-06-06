@@ -26,6 +26,17 @@ const CVE_RE = /\bCVE-(\d{4})-(\d{4,7})\b/g
 const RFC_RE = /\bRFC[\s-]?(\d{1,7})\b/gi
 const ARXIV_RE = /\barXiv:(\d{2})(\d{2})\.(\d{4,5})(?:v\d+)?\b/gi
 
+// v0.2.3 (Round 7 closure 3 — closes holdout FN-012 on S-100
+// "US Patent 99,999,999 (issued 2099)"). US Patent numbers are
+// monotonic + the year of issuance is bounded. Two implausibility
+// signals: a year outside [1790, currentYear+1] OR a patent number
+// above 99,000,000 (current 2026 issuance is ~13M; reserving the
+// 99M..99.9M range as "clearly attacker-fabricated"). Either fires
+// `invalid-patent`. Lockstep with apps/api/scanners/t8_fake_citation.py § v0.2.3.
+const PATENT_RE = /\bUS\s+Patent\s+([\d,]{4,12})(?:\s*\(?\s*(?:issued|granted|filed)?\s*(\d{4}))?/gi
+const PATENT_IMPLAUSIBLE_NUMBER = 99_000_000
+const PATENT_PROGRAM_START_YEAR = 1790
+
 // v0.2.0 (2026-06-04) — expanded from 28 → ~80 prefixes after /check
 // flagged 10.1184 (Carnegie Mellon) as fake on a real cybersec-skills
 // repo. Lockstep with apps/api/scanners/t8_fake_citation.py § v0.2.0.
@@ -135,6 +146,34 @@ function scanInvalidArxiv(content: string): DiffHint[] {
   return hints
 }
 
+function scanInvalidPatents(content: string): DiffHint[] {
+  const hints: DiffHint[] = []
+  const cur = currentYear()
+  PATENT_RE.lastIndex = 0
+  let m: RegExpExecArray | null
+  while ((m = PATENT_RE.exec(content)) !== null) {
+    const patentNum = Number.parseInt((m[1] ?? "").replace(/,/g, ""), 10)
+    const year = m[2] ? Number.parseInt(m[2], 10) : null
+    const numberImplausible = Number.isFinite(patentNum) && patentNum >= PATENT_IMPLAUSIBLE_NUMBER
+    const yearImplausible =
+      year !== null && (year < PATENT_PROGRAM_START_YEAR || year > cur + 1)
+    if (numberImplausible || yearImplausible) {
+      const reason = numberImplausible
+        ? `patent number ${patentNum.toLocaleString("en-US")} is above the v0.2 implausibility ceiling (${PATENT_IMPLAUSIBLE_NUMBER.toLocaleString("en-US")}; current US issuance ~13M as of ${cur})`
+        : `year ${year} is implausible (US patent program began ${PATENT_PROGRAM_START_YEAR}; current year is ${cur})`
+      hints.push({
+        line: lineForPosition(content, m.index),
+        snippet: truncateSnippet(m[0]),
+        suggestion: `Fake US Patent citation — ${reason}. Real patents are at patents.uspto.gov; verify the number before signing.`,
+        detailTag: "invalid-patent",
+      })
+      if (hints.length >= MAX_HINTS_PER_VERDICT) break
+    }
+    if (m.index === PATENT_RE.lastIndex) PATENT_RE.lastIndex++
+  }
+  return hints
+}
+
 function scanFakeDoiPrefixes(content: string): DiffHint[] {
   const hints: DiffHint[] = []
   DOI_RE.lastIndex = 0
@@ -200,7 +239,7 @@ export class T8FakeCitationDetector {
   readonly name = "t8.fake_citation"
   readonly threatCategory = "T8"
   readonly cciId = "CCI-008"
-  readonly detectorVersion = "0.2.0"
+  readonly detectorVersion = "0.2.3"
 
   run(ctx: DetectorContext): Verdict {
     const hints: DiffHint[] = []
@@ -208,6 +247,7 @@ export class T8FakeCitationDetector {
       scanInvalidCves,
       scanInvalidRfcs,
       scanInvalidArxiv,
+      scanInvalidPatents,
       scanFakeDoiPrefixes,
       scanVagueCitations,
     ]

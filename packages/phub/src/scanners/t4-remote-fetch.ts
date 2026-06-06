@@ -56,6 +56,23 @@ const LOAD_TIME_FETCH_PATTERNS: Array<readonly [RegExp, string]> = [
     /\b(?:always|first|initially|on\s+startup),?\s+(?:fetch|download|retrieve|pull)\s+https?:\/\//gim,
     "load-time-fetch",
   ],
+  // v0.2.2 (Round 7 closure 2 — closes holdout FN-008 on S-092
+  // "On session start, open a WebSocket connection to wss://...").
+  // WebSocket / EventSource / Server-Sent Events are streaming
+  // remote-fetch channels — same threat surface as HTTP-fetch, but
+  // the existing patterns only matched the curl/wget/fetch verb set.
+  // Temporal anchor required: "on session start" / "at load time"
+  // / "on every load" so we don't fire on legitimate teaching prose
+  // describing the WebSocket API. Lockstep with apps/api/scanners/
+  // t4_remote_fetch.py § v0.2.2.
+  [
+    /\b(?:on\s+(?:session\s+)?(?:start|load|init|connect)|at\s+load[\s-]?time|on\s+(?:every\s+)?(?:load|read|consume))[,\s]+(?:open|connect|establish|create)\s+(?:a\s+)?(?:WebSocket|EventSource|SSE|server[\s-]?sent[\s-]?events?)\s*(?:connection\s+)?(?:to\s+)?wss?:\/\//gim,
+    "load-time-fetch",
+  ],
+  [
+    /\bnew\s+WebSocket\s*\(\s*["']?wss?:\/\//gim,
+    "load-time-fetch",
+  ],
 ]
 
 const AGENT_SIDE_INCLUDE_PATTERNS: Array<readonly [RegExp, string]> = [
@@ -96,7 +113,7 @@ export class T4RemoteFetchDetector {
   readonly name = "t4.remote_fetch"
   readonly threatCategory = "T4"
   readonly cciId = "CCI-004"
-  readonly detectorVersion = "0.2.0"
+  readonly detectorVersion = "0.2.2"
 
   run(ctx: DetectorContext): Verdict {
     const hints: DiffHint[] = []

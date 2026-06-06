@@ -476,6 +476,16 @@ floor.
   to `_DECODE_AND_EXECUTE_PATTERNS`: `\b(?:url[\s_-]?decode|urldecode|unescape|decodeURIComponent)\s+.{0,80}?\s+(?:and|then)\s+(?:run|execute|eval|exec)`,
   plus a "long run of %XX sequences" blob pattern paired with the
   instruction. Holdout sample.
+- **2026-06-06 (Round 7, PR 7.1 closure 1) — CLOSED.** Shipped as
+  T3 v0.2.3 (Py + TS lockstep). Added the verb-anchored URL-decode
+  pattern as specified; covers `url-decode` / `urldecode` /
+  `percent-decode` / `decodeURIComponent` / `unquote` (Python's
+  `urllib.parse.unquote`). The `[\w\s]{0,30}` article slot from
+  the existing v0.2.2 base64/hex closure carries over for "the
+  following string" noun phrases. Long-blob `%XX` pattern deferred
+  (the verb-anchored case is what S-090 needs; %XX blob alone
+  without imperative is documentary). Holdout F1: CCI-003 0.000 →
+  **1.000**. Parity OK.
 
 ### FN-008 — CCI-004 misses WebSocket load-time fetch (S-092)
 
@@ -487,6 +497,20 @@ floor.
   that already accept `https?://`. Add an `sse-stream`
   detail_tag for Server-Sent Events as a sibling pattern.
   Holdout sample.
+- **2026-06-06 (Round 7, PR 7.1 closure 2) — CLOSED.** Shipped as
+  T4 v0.2.2 (Py + TS lockstep). Two new entries to
+  `_LOAD_TIME_FETCH_PATTERNS`: (a) temporal-anchored streaming
+  channel open — "on session start / at load time / on every load"
+  followed by "open/connect/establish/create a WebSocket /
+  EventSource / SSE / server-sent events ... wss://"; (b)
+  bare `new WebSocket("wss://")` JS-API construction. Temporal
+  anchor required on (a) so the detector doesn't fire on legitimate
+  teaching prose describing the WebSocket API; (b) is unambiguous.
+  Reuses the existing `load-time-fetch` tag (the threat class is
+  the same — streaming channels are HTTP-fetch siblings, not a new
+  category). Separate `sse-stream` tag deferred — would split the
+  evaluation-section narrative without adding signal. Holdout F1:
+  CCI-004 0.000 → **1.000**. Parity OK.
 
 ### FN-009 — CCI-005 misses curl|sh inside fence with above-fence directive (S-094)
 
@@ -565,6 +589,19 @@ floor.
 - **Resolution vector:** v0.2.3 — add a `_PATENT_RE` pattern:
   `\bUS\s+Patent\s+([\d,]{4,10})\s*\(?\s*(?:issued|granted|filed)?\s*(\d{4})?` plus the same future-year /
   before-1790 implausibility checks as CVE. Holdout sample.
+- **2026-06-06 (Round 7, PR 7.1 closure 3) — CLOSED.** Shipped as
+  T8 v0.2.3 (Py + TS lockstep) — pattern as specified plus an
+  extra implausibility lever: patent NUMBER above 99,000,000 (the
+  current 2026 US issuance is ~13M; the 99M+ space is "clearly
+  fabricated"). Either signal — implausible year [< 1790 or
+  > current+1] OR implausible number — fires `invalid-patent`.
+  Two-signal check chosen because the v0.2 attack S-100 stacks
+  BOTH (number 99,999,999 + year 2099); covering each independently
+  closes both this and the variant attack of "real-year impossibly
+  -numbered patent" / "wrong-year plausible-numbered patent."
+  New `_scan_invalid_patents` scanner threaded in alongside the
+  existing CVE/RFC/arXiv/DOI/vague scanners. Holdout F1: CCI-008
+  0.000 → **1.000**. Parity OK.
 
 ### FN-013 — CCI-010 misses emoji-density visual bloat (S-104)
 
