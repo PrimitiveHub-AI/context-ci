@@ -114,7 +114,12 @@ export default function CheckPage() {
             />
           </div>
           <div className="lg:col-span-7">
-            <CheckVerdict result={result} error={error} isLoading={isLoading} />
+            <CheckVerdict
+              result={result}
+              error={error}
+              isLoading={isLoading}
+              pastedInput={input}
+            />
           </div>
         </div>
       </div>

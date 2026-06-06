@@ -37,10 +37,14 @@ import type {
   CheckVerdictEntry,
 } from "@/lib/check/types"
 
+import { ReportVerdict } from "@/components/check/report-verdict"
+
 interface CheckVerdictProps {
   result: CheckResponse | null
   error: { code: string; message: string } | null
   isLoading: boolean
+  /** The text the user pasted, echoed into the FP/FN report body. */
+  pastedInput: string
 }
 
 const BAND_COPY: Record<
@@ -113,7 +117,7 @@ function formatBytes(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MiB`
 }
 
-export function CheckVerdict({ result, error, isLoading }: CheckVerdictProps) {
+export function CheckVerdict({ result, error, isLoading, pastedInput }: CheckVerdictProps) {
   if (isLoading) {
     return (
       <Card className="border-border/40 bg-card p-10 flex flex-col items-center justify-center gap-3 min-h-[280px]">
@@ -242,6 +246,10 @@ export function CheckVerdict({ result, error, isLoading }: CheckVerdictProps) {
         filesWithFindings.length > 0 && (
           <FileBreakdown files={filesWithFindings} />
         )}
+
+      {/* FP / FN submission portal (ADR-0030 § 3). Opens GitHub's
+          new-issue UI pre-filled with the four-path triage template. */}
+      <ReportVerdict result={result} pastedInput={pastedInput} />
     </div>
   )
 }
