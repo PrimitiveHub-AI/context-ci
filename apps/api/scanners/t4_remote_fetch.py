@@ -69,7 +69,13 @@ _FETCH_AND_INCLUDE_PATTERNS: tuple[tuple[str, str], ...] = (
 
 _LOAD_TIME_FETCH_PATTERNS: tuple[tuple[str, str], ...] = (
     (
-        r"\b(?:before\s+(?:you\s+)?(?:respond(?:ing)?|answer(?:ing)?|repl(?:y|ying)|proceed(?:ing)?)|at\s+(?:the\s+)?start\s+of\s+(?:every|each)\s+(?:conversation|session|turn)|on\s+(?:every\s+)?(?:load|read|consume)),?\s+(?:fetch|download|curl|wget|retrieve|pull|load)\s+",
+        # v0.2.3 (Round 13 PR 13.1 — closes FN-022 on S-118 SolarWinds
+        # DGA-style "on every session start, fetch..."). Extends the
+        # temporal noun set to include session/start/init/connect/
+        # boot/spawn/wake/resume and the determiner set to include
+        # `every|each`. Lockstep with packages/phub/src/scanners/
+        # t4-remote-fetch.ts § v0.2.3.
+        r"\b(?:before\s+(?:you\s+)?(?:respond(?:ing)?|answer(?:ing)?|repl(?:y|ying)|proceed(?:ing)?)|at\s+(?:the\s+)?start\s+of\s+(?:every|each)\s+(?:conversation|session|turn)|on\s+(?:every\s+|each\s+)?(?:session\s+)?(?:start|init|connect|boot|spawn|wake|resume|load|read|consume)),?\s+(?:fetch|download|curl|wget|retrieve|pull|load)\s+",
         "load-time-fetch",
     ),
     (
@@ -89,7 +95,14 @@ _LOAD_TIME_FETCH_PATTERNS: tuple[tuple[str, str], ...] = (
         # Temporal anchor required so we don't fire on legitimate
         # teaching prose describing the WebSocket API. Lockstep with
         # packages/phub/src/scanners/t4-remote-fetch.ts § v0.2.2.
-        r"\b(?:on\s+(?:session\s+)?(?:start|load|init|connect)|at\s+load[\s-]?time|on\s+(?:every\s+)?(?:load|read|consume))[,\s]+(?:open|connect|establish|create)\s+(?:a\s+)?(?:WebSocket|EventSource|SSE|server[\s-]?sent[\s-]?events?)\s*(?:connection\s+)?(?:to\s+)?wss?://",
+        #
+        # v0.2.3 (Round 13 PR 13.1 — closes FN-022 on S-118 SolarWinds
+        # DGA-style "on every session start"): allow optional
+        # `(?:every|each)\s+` between `on` and the temporal noun;
+        # extend the temporal noun set with boot/spawn/wake/resume.
+        # Same widening applied to the fetch-imperative half so it
+        # catches "on every session start, fetch ..." prose.
+        r"\b(?:on\s+(?:every\s+|each\s+)?(?:session\s+)?(?:start|load|init|connect|boot|spawn|wake|resume)|at\s+load[\s-]?time|on\s+(?:every\s+)?(?:load|read|consume))[,\s]+(?:open|connect|establish|create|fetch|download|retrieve|pull)\s+(?:a\s+|the\s+)?(?:WebSocket|EventSource|SSE|server[\s-]?sent[\s-]?events?|\S+\s+(?:manifest|config|instructions))?\s*(?:connection\s+)?(?:to\s+|from\s+)?(?:wss?|https?)://",
         "load-time-fetch",
     ),
     (
@@ -158,7 +171,7 @@ class T4RemoteFetchDetector:
     name = "t4.remote_fetch"
     threat_category = "T4"
     cci_id = "CCI-004"
-    detector_version = "0.2.2"
+    detector_version = "0.2.3"
 
     def run(self, ctx: DetectorContext) -> Verdict:
         hints: list[DiffHint] = []

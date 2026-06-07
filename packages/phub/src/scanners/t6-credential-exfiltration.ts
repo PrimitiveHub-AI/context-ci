@@ -76,7 +76,12 @@ const SEND_SECRETS_PATTERNS: Array<readonly [RegExp, string]> = [
 const EXFIL_VIA_NETWORK_PATTERNS: Array<readonly [RegExp, string]> = [
   [
     new RegExp(
-      `\\bcurl\\s+(?:-\\w+\\s+)*(?:-d|--data\\b|--data-binary\\b|--data-urlencode\\b)\\s+["']?\\$?(?:${SECRET_VAR_ALT})`,
+      // v0.2.2 (Round 13 PR 13.1 — closes FN-019 on S-111 Codecov-style
+      // `-d "TOKEN=$GITHUB_TOKEN"` body prefix). The v0.1 pattern
+      // assumed the secret was the FIRST value after the opening quote;
+      // real-world attackers form-field-prefix it: `-d "TOKEN=$SECRET"`.
+      // The `[^"'\s]*` class absorbs the KEY= prefix before the `$`.
+      `\\bcurl\\s+(?:-\\w+\\s+)*(?:-d|--data\\b|--data-binary\\b|--data-urlencode\\b)\\s+["']?[^"'\\s]*\\$?(?:${SECRET_VAR_ALT})`,
       "gims",
     ),
     "exfiltrate-via-network",
@@ -90,6 +95,17 @@ const EXFIL_VIA_NETWORK_PATTERNS: Array<readonly [RegExp, string]> = [
   ],
   [
     /\b(?:curl|wget)\s+(?:-\w+\s+)*[^\s]*(?:discord\.com\/api\/webhooks|hooks\.slack\.com|webhook\.site)\b/gims,
+    "exfiltrate-via-network",
+  ],
+  // v0.2.2 (Round 13 PR 13.1 — closes FN-019 part 2 on S-111
+  // Codecov-style multi-flag curl with form-prefixed secret).
+  // Match the `-d "<key>=$<SECRET>"` shape directly — no
+  // legitimate use independent of exfil intent.
+  [
+    new RegExp(
+      `(?:^|\\s)(?:-d|--data\\b|--data-binary\\b|--data-urlencode\\b)\\s+["'][^"'\\s]*=\\$(?:${SECRET_VAR_ALT})`,
+      "gims",
+    ),
     "exfiltrate-via-network",
   ],
   // v0.2.1 (Round 10 PR 10.3 — closes FN-010 on S-096 env-var → query-
@@ -172,7 +188,7 @@ export class T6CredentialExfiltrationDetector {
   readonly name = "t6.credential_exfiltration"
   readonly threatCategory = "T6"
   readonly cciId = "CCI-006"
-  readonly detectorVersion = "0.2.1"
+  readonly detectorVersion = "0.2.2"
 
   run(ctx: DetectorContext): Verdict {
     const hints: DiffHint[] = []

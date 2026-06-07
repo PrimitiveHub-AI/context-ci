@@ -45,7 +45,13 @@ const FETCH_AND_INCLUDE_PATTERNS: Array<readonly [RegExp, string]> = [
 
 const LOAD_TIME_FETCH_PATTERNS: Array<readonly [RegExp, string]> = [
   [
-    /\b(?:before\s+(?:you\s+)?(?:respond(?:ing)?|answer(?:ing)?|repl(?:y|ying)|proceed(?:ing)?)|at\s+(?:the\s+)?start\s+of\s+(?:every|each)\s+(?:conversation|session|turn)|on\s+(?:every\s+)?(?:load|read|consume)),?\s+(?:fetch|download|curl|wget|retrieve|pull|load)\s+/gim,
+    // v0.2.3 (Round 13 PR 13.1 — closes FN-022): extend `on\s+(?:every\s+)?
+    // (?:load|read|consume)` to also accept `(?:every\s+|each\s+)?
+    // (?:session\s+)?(?:start|init|connect|boot|spawn|wake|resume)`.
+    // Closes the SolarWinds DGA-style "on every session start, fetch..."
+    // shape where the temporal anchor uses "session start" / "every
+    // session start" rather than "load".
+    /\b(?:before\s+(?:you\s+)?(?:respond(?:ing)?|answer(?:ing)?|repl(?:y|ying)|proceed(?:ing)?)|at\s+(?:the\s+)?start\s+of\s+(?:every|each)\s+(?:conversation|session|turn)|on\s+(?:every\s+|each\s+)?(?:session\s+)?(?:start|init|connect|boot|spawn|wake|resume|load|read|consume)),?\s+(?:fetch|download|curl|wget|retrieve|pull|load)\s+/gim,
     "load-time-fetch",
   ],
   [
@@ -66,7 +72,13 @@ const LOAD_TIME_FETCH_PATTERNS: Array<readonly [RegExp, string]> = [
   // describing the WebSocket API. Lockstep with apps/api/scanners/
   // t4_remote_fetch.py § v0.2.2.
   [
-    /\b(?:on\s+(?:session\s+)?(?:start|load|init|connect)|at\s+load[\s-]?time|on\s+(?:every\s+)?(?:load|read|consume))[,\s]+(?:open|connect|establish|create)\s+(?:a\s+)?(?:WebSocket|EventSource|SSE|server[\s-]?sent[\s-]?events?)\s*(?:connection\s+)?(?:to\s+)?wss?:\/\//gim,
+    // v0.2.3 (Round 13 PR 13.1 — closes FN-022 on S-118 SolarWinds
+    // DGA-style "on every session start"): allow optional
+    // (?:every|each)\s+ between `on` and the temporal noun; extend
+    // temporal nouns with boot|spawn|wake|resume; extend the
+    // imperative verb set to include fetch/download/retrieve/pull
+    // (the original pattern was streaming-channel-only).
+    /\b(?:on\s+(?:every\s+|each\s+)?(?:session\s+)?(?:start|load|init|connect|boot|spawn|wake|resume)|at\s+load[\s-]?time|on\s+(?:every\s+)?(?:load|read|consume))[,\s]+(?:open|connect|establish|create|fetch|download|retrieve|pull)\s+(?:a\s+|the\s+)?(?:WebSocket|EventSource|SSE|server[\s-]?sent[\s-]?events?|\S+\s+(?:manifest|config|instructions))?\s*(?:connection\s+)?(?:to\s+|from\s+)?(?:wss?|https?):\/\//gim,
     "load-time-fetch",
   ],
   [
@@ -113,7 +125,7 @@ export class T4RemoteFetchDetector {
   readonly name = "t4.remote_fetch"
   readonly threatCategory = "T4"
   readonly cciId = "CCI-004"
-  readonly detectorVersion = "0.2.2"
+  readonly detectorVersion = "0.2.3"
 
   run(ctx: DetectorContext): Verdict {
     const hints: DiffHint[] = []

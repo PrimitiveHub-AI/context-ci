@@ -83,7 +83,7 @@ const SHELL_PIPE_PATTERNS: Array<readonly [RegExp, string]> = [
   // sentence. AV-strict position: prose that tells the agent to copy-
   // paste a curl|sh from inline code is the Shai-Hulud vector.
   [
-    /(?:^|\s)(?:first[,\s]+|then[,\s]+|now[,\s]+)?(?:run|execute|launch)\s+`\s*(?:sudo\s+)?(?:curl|wget|fetch)\s+(?:-\w+\s+)*[^\s|`]*https?:\/\/[^\s|`]+\s*\|\s*(?:sudo\s+)?(?:sh|bash|zsh|fish|ksh|csh)\b/gim,
+    /(?:^|\s)(?:first[,\s]+|then[,\s]+|now[,\s]+)?(?:run|execute|launch|install|bootstrap|set\s+up|provision)[\w\s,:;()\-'’]{0,180}`\s*(?:sudo\s+)?(?:curl|wget|fetch)\s+(?:-\w+\s+)*[^\s|`]*https?:\/\/[^\s|`]+\s*\|\s*(?:sudo\s+)?(?:sh|bash|zsh|fish|ksh|csh)\b/gim,
     "shell-pipe-from-network",
   ],
   [
@@ -116,7 +116,7 @@ const NPX_INSTALL_PATTERNS: Array<readonly [RegExp, string]> = [
   // protects benign vendor docs like "`npx shadcn@latest add Button`"
   // shown without a "run/execute/launch" verb before the backtick.
   [
-    /(?:^|\s)(?:first[,\s]+|then[,\s]+|now[,\s]+)?(?:run|execute|launch)\s+`\s*npx\s+(?:-y\s+|--yes\s+)?(?!--help|--version)[a-zA-Z0-9@/_.-][a-zA-Z0-9@/_.-]+/gim,
+    /(?:^|\s)(?:first[,\s]+|then[,\s]+|now[,\s]+)?(?:run|execute|launch|install|bootstrap|set\s+up|provision)[\w\s,:;()\-'’]{0,180}`\s*npx\s+(?:-y\s+|--yes\s+)?(?!--help|--version)[a-zA-Z0-9@/_.-][a-zA-Z0-9@/_.-]+/gim,
     "npx-arbitrary-install",
   ],
 ]
@@ -137,8 +137,13 @@ const INSTALL_INSTRUCTION_PATTERNS: Array<readonly [RegExp, string]> = [
     /(?:first[,\s]+|then[,\s]+|now[,\s]+)?(?:run|execute|launch)\s+(?:this\s+|the\s+following\s+)?(?:command|installer|script)[:\s]*\s*[`]?(?:curl|wget|sudo|npx|pip|sh)\b/gim,
     "install-instruction-to-agent",
   ],
+  // v0.2.6 (Round 13 PR 13.1 — closes FN-021 on S-116 eslint-config-
+  // prettier-style `npm install <pkg>`): add npm / yarn / pnpm / bun
+  // to the package-manager keyword set + widen gap between via/using
+  // and the backticked command (real-world prose interposes "the
+  // canonical command:" between the prep and the backtick).
   [
-    /\binstall\s+(?:the\s+|this\s+)?(?:\S+\s+)?(?:by\s+running|via|using)\s+[`]?(?:curl|wget|npx|pip|sh|bash)\b/gim,
+    /\binstall\s+(?:the\s+|this\s+|it\s+)?(?:\S+\s+)?(?:by\s+running|via|using)[\w\s,:;()\-'’]{0,180}[`]?(?:curl|wget|npx|npm|yarn|pnpm|bun|pip|sh|bash)\b/gim,
     "install-instruction-to-agent",
   ],
 ]
@@ -206,7 +211,7 @@ export class T5UnsafeShellInstallDetector {
   readonly name = "t5.unsafe_shell_install"
   readonly threatCategory = "T5"
   readonly cciId = "CCI-005"
-  readonly detectorVersion = "0.2.5"
+  readonly detectorVersion = "0.2.6"
 
   run(ctx: DetectorContext): Verdict {
     const hints: DiffHint[] = []

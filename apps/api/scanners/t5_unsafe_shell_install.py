@@ -125,8 +125,17 @@ _SHELL_PIPE_PATTERNS: tuple[tuple[str, str], ...] = (
     # skipped because "Never" precedes the verb within the sentence.
     # AV-strict position: prose that tells the agent to copy-paste a
     # curl|sh from inline code IS the Shai-Hulud vector.
+    #
+    # v0.2.6 (Round 13 PR 13.1 — closes FN-018 + FN-020):
+    #   - FN-018: extend verb set with `install|bootstrap|set\s+up|
+    #     provision` so "Install the project's CI uploader: `curl ...
+    #     | bash`" matches.
+    #   - FN-020: widen the gap between verb and backtick from
+    #     "immediately adjacent" to "up to 200 chars of word /
+    #     whitespace / punctuation" so "run the helper installer so
+    #     the agent has the latest cache: `npx -y ...`" matches.
     (
-        r"(?:^|\s)(?:first[,\s]+|then[,\s]+|now[,\s]+)?(?:run|execute|launch)\s+`\s*(?:sudo\s+)?(?:curl|wget|fetch)\s+(?:-\w+\s+)*[^\s|`]*https?://[^\s|`]+\s*\|\s*(?:sudo\s+)?(?:sh|bash|zsh|fish|ksh|csh)\b",
+        r"(?:^|\s)(?:first[,\s]+|then[,\s]+|now[,\s]+)?(?:run|execute|launch|install|bootstrap|set\s+up|provision)[\w\s,:;()\-'’]{0,180}`\s*(?:sudo\s+)?(?:curl|wget|fetch)\s+(?:-\w+\s+)*[^\s|`]*https?://[^\s|`]+\s*\|\s*(?:sudo\s+)?(?:sh|bash|zsh|fish|ksh|csh)\b",
         "shell-pipe-from-network",
     ),
     # python -c "$(curl ...)" and friends
@@ -162,8 +171,12 @@ _NPX_INSTALL_PATTERNS: tuple[tuple[str, str], ...] = (
     # bare-prose npx pattern (which IS inline-code-skip-blocked) still
     # protects benign vendor docs like "`npx shadcn@latest add Button`"
     # shown without a "run/execute/launch" verb before the backtick.
+    #
+    # v0.2.6 (Round 13 PR 13.1 — closes FN-018 + FN-020):
+    #   - FN-018: extend verb set (install / bootstrap / set up / provision)
+    #   - FN-020: widen gap between verb and backtick (up to 200 chars)
     (
-        r"(?:^|\s)(?:first[,\s]+|then[,\s]+|now[,\s]+)?(?:run|execute|launch)\s+`\s*npx\s+(?:-y\s+|--yes\s+)?(?!--help|--version)[a-zA-Z0-9@/_.-][a-zA-Z0-9@/_.-]+",
+        r"(?:^|\s)(?:first[,\s]+|then[,\s]+|now[,\s]+)?(?:run|execute|launch|install|bootstrap|set\s+up|provision)[\w\s,:;()\-'’]{0,180}`\s*npx\s+(?:-y\s+|--yes\s+)?(?!--help|--version)[a-zA-Z0-9@/_.-][a-zA-Z0-9@/_.-]+",
         "npx-arbitrary-install",
     ),
 )
@@ -187,9 +200,16 @@ _INSTALL_INSTRUCTION_PATTERNS: tuple[tuple[str, str], ...] = (
         r"(?:first[,\s]+|then[,\s]+|now[,\s]+)?(?:run|execute|launch)\s+(?:this\s+|the\s+following\s+)?(?:command|installer|script)[:\s]*\s*[`]?(?:curl|wget|sudo|npx|pip|sh)\b",
         "install-instruction-to-agent",
     ),
-    # "Install <package> by running…"
+    # v0.2.6 (Round 13 PR 13.1 — closes FN-021 on S-116 eslint-config-
+    # prettier-style `npm install <pkg>`): add npm / yarn / pnpm / bun
+    # to the package-manager keyword set in the "Install ... by
+    # running|via|using `<cmd>`" prose form. Also widen the gap
+    # between `via|using` and the backticked command to absorb the
+    # "the canonical command:" noun phrase real-world prose
+    # interposes. Lockstep with packages/phub/src/scanners/
+    # t5-unsafe-shell-install.ts § v0.2.6.
     (
-        r"\binstall\s+(?:the\s+|this\s+)?(?:\S+\s+)?(?:by\s+running|via|using)\s+[`]?(?:curl|wget|npx|pip|sh|bash)\b",
+        r"\binstall\s+(?:the\s+|this\s+|it\s+)?(?:\S+\s+)?(?:by\s+running|via|using)[\w\s,:;()\-'’]{0,180}[`]?(?:curl|wget|npx|npm|yarn|pnpm|bun|pip|sh|bash)\b",
         "install-instruction-to-agent",
     ),
 )
@@ -294,7 +314,7 @@ class T5UnsafeShellInstallDetector:
     name = "t5.unsafe_shell_install"
     threat_category = "T5"  # legacy; back-compat
     cci_id = "CCI-005"  # Context CI Top 10 v0.1 canonical ID (ADR-0016)
-    detector_version = "0.2.5"
+    detector_version = "0.2.6"
 
     def run(self, ctx: DetectorContext) -> Verdict:
         hints: list[DiffHint] = []

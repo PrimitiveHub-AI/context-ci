@@ -48,12 +48,12 @@
     },
     "CCI-005": {
       "tp": 5,
-      "fp": 0,
-      "tn": 37,
+      "fp": 1,
+      "tn": 36,
       "fn": 0,
-      "precision": 1,
+      "precision": 0.8333333333333334,
       "recall": 1,
-      "f1": 1,
+      "f1": 0.9090909090909091,
       "support": 42
     },
     "CCI-006": {
@@ -108,9 +108,9 @@
     }
   },
   "overall": {
-    "precision_macro": 1,
+    "precision_macro": 0.9833333333333332,
     "recall_macro": 1,
-    "f1_macro": 1
+    "f1_macro": 0.990909090909091
   },
   "parity": {
     "agreed_sample_ids": [],
@@ -150,23 +150,23 @@
         "support": 2
       },
       "CCI-004": {
-        "tp": 1,
-        "fp": 0,
-        "tn": 0,
-        "fn": 1,
-        "precision": 1,
-        "recall": 0.5,
-        "f1": 0.6666666666666666,
-        "support": 2
-      },
-      "CCI-005": {
         "tp": 2,
         "fp": 0,
         "tn": 0,
-        "fn": 5,
+        "fn": 0,
         "precision": 1,
-        "recall": 0.2857142857142857,
-        "f1": 0.4444444444444445,
+        "recall": 1,
+        "f1": 1,
+        "support": 2
+      },
+      "CCI-005": {
+        "tp": 4,
+        "fp": 0,
+        "tn": 0,
+        "fn": 3,
+        "precision": 1,
+        "recall": 0.5714285714285714,
+        "f1": 0.7272727272727273,
         "support": 7
       },
       "CCI-006": {
@@ -222,8 +222,8 @@
     },
     "overall": {
       "precision_macro": 1,
-      "recall_macro": 0.7535714285714286,
-      "f1_macro": 0.8268253968253969
+      "recall_macro": 0.8321428571428571,
+      "f1_macro": 0.8884415584415585
     }
   }
 }
