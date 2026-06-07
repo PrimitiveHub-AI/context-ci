@@ -111,10 +111,58 @@ from .types import DetectorContext, DiffHint, Severity, Verdict
 # `DiffHint.detail_tag`. Case-insensitive + multiline at compile.
 # ─────────────────────────────────────────────────────────────────────
 
+# v0.2.7 (Round 13 PR 13.3 — closes FN-024 on S-120 Russian +
+# S-123 Chinese multilingual imperative-verb shell-pipe shapes).
+# Curated phrasebook of imperative verbs in Russian + Chinese. The
+# English-language verb set is the v0.2.6 pattern's
+# `(?:run|execute|launch|install|bootstrap|set up|provision)`; this
+# pattern is a parallel verb-anchored entry whose verbs are
+# non-Latin-script imperatives. Russian + Chinese coverage chosen
+# per the FN-024 scope; Arabic + Spanish reserved for Round 14+
+# when corpus samples are added for those languages.
+#
+# Russian imperatives (formal/imperative + infinitive forms):
+#   выполните     execute (formal imperative)
+#   выполнить     execute (infinitive)
+#   запустите     run/launch (formal imperative)
+#   запустить     run/launch (infinitive)
+#   установите    install (formal imperative)
+#   установить    install (infinitive)
+#   загрузите     load/download (formal imperative)
+#
+# Chinese imperatives:
+#   执行          execute / run
+#   运行          run
+#   安装          install
+#   启动          launch / start
+#   请执行         please execute
+#   请运行         please run
+_MULTILINGUAL_VERB_PHRASEBOOK = (
+    # Russian
+    r"выполните|выполнить|запустите|запустить|установите|установить|загрузите"
+    # Chinese
+    r"|执行|运行|安装|启动|请执行|请运行|请安装"
+)
+
 _SHELL_PIPE_PATTERNS: tuple[tuple[str, str], ...] = (
     # curl/wget piped to a shell — the canonical "curl | sh" pattern
     (
         r"\b(?:curl|wget|fetch)\s+(?:-\w+\s+)*[^\s|]*https?://[^\s|]+\s*\|\s*(?:sudo\s+)?(?:sh|bash|zsh|fish|ksh|csh)\b",
+        "shell-pipe-from-network",
+    ),
+    # v0.2.7 (Round 13 PR 13.3 — closes FN-024): multilingual verb-
+    # anchored variant. Same shape as the v0.2.6 English verb-
+    # anchored pattern but with the non-Latin imperative verbs in
+    # the phrasebook. The fence-skip + negation guards apply
+    # identically. No backticks-required because the multilingual
+    # corpus samples use bare-fenced rather than verb-followed-by-
+    # backtick prose.
+    (
+        # Non-Latin Unicode in the gap: replace the ASCII \w class
+        # with [^|`\n]{0,180} (any char except pipe / backtick /
+        # newline) so Cyrillic + CJK prose between the verb and the
+        # backticked command IS matched.
+        rf"(?:{_MULTILINGUAL_VERB_PHRASEBOOK})[^|`]{{0,180}}`\s*(?:sudo\s+)?(?:curl|wget|fetch)\s+(?:-\w+\s+)*[^\s|`]*https?://[^\s|`]+\s*\|\s*(?:sudo\s+)?(?:sh|bash|zsh|fish|ksh|csh)\b",
         "shell-pipe-from-network",
     ),
     # v0.2.3 (Round 3 — closes test_shell_pipe_family inline-code case).
@@ -314,7 +362,7 @@ class T5UnsafeShellInstallDetector:
     name = "t5.unsafe_shell_install"
     threat_category = "T5"  # legacy; back-compat
     cci_id = "CCI-005"  # Context CI Top 10 v0.1 canonical ID (ADR-0016)
-    detector_version = "0.2.6"
+    detector_version = "0.2.7"
 
     def run(self, ctx: DetectorContext) -> Verdict:
         hints: list[DiffHint] = []

@@ -76,6 +76,26 @@ _OVERRIDE_PATTERNS: tuple[tuple[str, str], ...] = (
         r"override\s+(?:your\s+|the\s+|all\s+|any\s+)?(?:system|previous|default|original)(?:\s+(?:system|default|previous|original))?\s+(?:prompt|instructions?|rules?)",
         "override-system-instructions",
     ),
+    # v0.2.2 (Round 13 PR 13.3 — closes FN-025 on S-124 Chinese
+    # "请忽略之前的指令"). Multilingual override-system phrasebook
+    # for Russian + Chinese; Arabic + Spanish reserved for Round
+    # 14+ when corpus samples are added. Each phrase is the
+    # imperative form an attacker would use in primitive prose.
+    # Lockstep with packages/phub/src/scanners/t1-prompt-injection.ts § v0.2.2.
+    (
+        # Chinese: 请忽略 / 忽略 / 请放弃 (please ignore / disregard / abandon)
+        # 之前的 (previous's), 系统 (system), 指令 (instruction), 提示词 (system prompt),
+        # 规则 (rules), 限制 (restrictions/constraints)
+        r"(?:请\s*)?(?:忽略|无视|放弃|抛弃|跳过|绕过)\s*(?:之前的?|先前的?|上面的?|前面的?|系统|默认|原始)?\s*(?:指令|提示词?|规则|限制|约束|配置)",
+        "override-system-instructions",
+    ),
+    (
+        # Russian: игнорировать / забыть / отменить (ignore/forget/cancel)
+        # предыдущие/предыдущих (previous), инструкции (instructions),
+        # системные (system), правила (rules)
+        r"(?:игнорируй(?:те)?|забудь(?:те)?|отмени(?:те)?|отброс(?:ь|ьте))\s+(?:все\s+)?(?:предыдущие|предыдущих|прежние|системные|любые)\s+(?:инструкции|указания|правила|сообщения|подсказки)",
+        "override-system-instructions",
+    ),
 )
 
 _ROLE_HIJACK_PATTERNS: tuple[tuple[str, str], ...] = (
@@ -176,7 +196,7 @@ class T1PromptInjectionDetector:
     name = "t1.prompt_injection"
     threat_category = "T1"  # legacy code; back-compat with pre-CCI attestations
     cci_id = "CCI-001"  # Context CI Top 10 v0.1 canonical ID (ADR-0016)
-    detector_version = "0.2.1"
+    detector_version = "0.2.2"
 
     def run(self, ctx: DetectorContext) -> Verdict:
         hints: list[DiffHint] = []

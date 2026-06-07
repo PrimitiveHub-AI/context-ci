@@ -120,13 +120,13 @@
     "samples_total": 25,
     "per_detector": {
       "CCI-001": {
-        "tp": 2,
+        "tp": 3,
         "fp": 0,
         "tn": 0,
-        "fn": 1,
+        "fn": 0,
         "precision": 1.0,
-        "recall": 0.6666666666666666,
-        "f1": 0.8,
+        "recall": 1.0,
+        "f1": 1.0,
         "support": 3
       },
       "CCI-002": {
@@ -160,13 +160,13 @@
         "support": 2
       },
       "CCI-005": {
-        "tp": 5,
+        "tp": 7,
         "fp": 0,
         "tn": 0,
-        "fn": 2,
+        "fn": 0,
         "precision": 1.0,
-        "recall": 0.7142857142857143,
-        "f1": 0.8333333333333333,
+        "recall": 1.0,
+        "f1": 1.0,
         "support": 7
       },
       "CCI-006": {
@@ -222,8 +222,8 @@
     },
     "overall": {
       "precision_macro": 1.0,
-      "recall_macro": 0.9380952380952381,
-      "f1_macro": 0.9633333333333333
+      "recall_macro": 1.0,
+      "f1_macro": 1.0
     }
   }
 }

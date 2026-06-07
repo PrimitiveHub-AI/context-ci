@@ -69,9 +69,35 @@ function isInDirectiveReferencedFence(
   return isDirectiveReferencedFence(content, fence)
 }
 
+// v0.2.7 (Round 13 PR 13.3 — closes FN-024 on S-120 Russian +
+// S-123 Chinese multilingual imperative-verb shell-pipe shapes).
+// Curated phrasebook of imperative verbs in Russian + Chinese.
+// English-language verb set is in the v0.2.6 verb-anchored
+// pattern; this constant feeds a parallel multilingual entry.
+// Lockstep with apps/api/scanners/t5_unsafe_shell_install.py § v0.2.7.
+const MULTILINGUAL_VERB_PHRASEBOOK =
+  "выполните|выполнить|запустите|запустить|установите|установить|загрузите" +
+  "|执行|运行|安装|启动|请执行|请运行|请安装"
+
 const SHELL_PIPE_PATTERNS: Array<readonly [RegExp, string]> = [
   [
     /\b(?:curl|wget|fetch)\s+(?:-\w+\s+)*[^\s|]*https?:\/\/[^\s|]+\s*\|\s*(?:sudo\s+)?(?:sh|bash|zsh|fish|ksh|csh)\b/gim,
+    "shell-pipe-from-network",
+  ],
+  // v0.2.7 (Round 13 PR 13.3 — closes FN-024): multilingual verb-
+  // anchored variant. Same shape as the v0.2.6 English entry but
+  // with the non-Latin imperative verbs in the phrasebook.
+  [
+    new RegExp(
+      // Non-Latin Unicode in the gap: replace the ASCII \w class
+      // with [^|`\n]{0,180} (any char except pipe / backtick /
+      // newline) so Cyrillic + CJK prose between the verb and the
+      // backticked command IS matched. Same sentence-boundary
+      // discipline as the English pattern — the `[^\n]` excludes
+      // multi-line spans.
+      `(?:${MULTILINGUAL_VERB_PHRASEBOOK})[^|\`]{0,180}\`\\s*(?:sudo\\s+)?(?:curl|wget|fetch)\\s+(?:-\\w+\\s+)*[^\\s|\`]*https?:\\/\\/[^\\s|\`]+\\s*\\|\\s*(?:sudo\\s+)?(?:sh|bash|zsh|fish|ksh|csh)\\b`,
+      "gim",
+    ),
     "shell-pipe-from-network",
   ],
   // v0.2.3 (Round 3 — closes test_shell_pipe_family inline-code case).
@@ -211,7 +237,7 @@ export class T5UnsafeShellInstallDetector {
   readonly name = "t5.unsafe_shell_install"
   readonly threatCategory = "T5"
   readonly cciId = "CCI-005"
-  readonly detectorVersion = "0.2.6"
+  readonly detectorVersion = "0.2.7"
 
   run(ctx: DetectorContext): Verdict {
     const hints: DiffHint[] = []

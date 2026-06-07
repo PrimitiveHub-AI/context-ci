@@ -48,6 +48,17 @@ const OVERRIDE_PATTERNS: Array<readonly [RegExp, string]> = [
     /override\s+(?:your\s+|the\s+|all\s+|any\s+)?(?:system|previous|default|original)(?:\s+(?:system|default|previous|original))?\s+(?:prompt|instructions?|rules?)/gim,
     "override-system-instructions",
   ],
+  // v0.2.2 (Round 13 PR 13.3 — closes FN-025): multilingual
+  // override-system phrasebook (Chinese + Russian). Lockstep with
+  // apps/api/scanners/t1_prompt_injection.py § v0.2.2.
+  [
+    /(?:请\s*)?(?:忽略|无视|放弃|抛弃|跳过|绕过)\s*(?:之前的?|先前的?|上面的?|前面的?|系统|默认|原始)?\s*(?:指令|提示词?|规则|限制|约束|配置)/gim,
+    "override-system-instructions",
+  ],
+  [
+    /(?:игнорируй(?:те)?|забудь(?:те)?|отмени(?:те)?|отброс(?:ь|ьте))\s+(?:все\s+)?(?:предыдущие|предыдущих|прежние|системные|любые)\s+(?:инструкции|указания|правила|сообщения|подсказки)/gim,
+    "override-system-instructions",
+  ],
 ]
 
 const ROLE_HIJACK_PATTERNS: Array<readonly [RegExp, string]> = [
@@ -115,7 +126,7 @@ export class T1PromptInjectionDetector {
   readonly name = "t1.prompt_injection"
   readonly threatCategory = "T1"
   readonly cciId = "CCI-001"
-  readonly detectorVersion = "0.2.1"
+  readonly detectorVersion = "0.2.2"
 
   run(ctx: DetectorContext): Verdict {
     const hints: DiffHint[] = []
