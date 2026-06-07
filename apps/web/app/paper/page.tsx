@@ -26,7 +26,7 @@ export default function PaperPage() {
             Toward a Trusted Cognition Supply Chain for AI Agents
           </h1>
           <p className="mt-3 text-xs text-muted-foreground font-mono">
-            PrimitiveHub Labs &middot; May 2026 &middot; Technical Report
+            mhm, CyberOrca Labs &middot; 2026 &middot; arXiv preprint (skeleton v0.1)
           </p>
           <div className="mt-5 flex gap-2">
             <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 h-8">
@@ -50,16 +50,24 @@ export default function PaperPage() {
           </h2>
           <Card className="border-border/40 bg-card p-6">
             <p className="text-sm text-muted-foreground leading-[1.7]">
-              Current AI-agent ecosystems provide tools, APIs, and execution environments but lack
-              a standardized mechanism for supplying expert-level reasoning, domain knowledge, and
-              behavioral guidelines. We propose <strong className="text-foreground/80">AI Context Primitives</strong>: modular, validated,
-              versioned Markdown cognition files that can be loaded into any compatible AI agent
-              to improve output quality, reduce hallucination, and enforce domain-specific
-              standards. We present PrimitiveHub, a registry architecture with a multi-stage
-              validation pipeline (Context CI), trust scoring model, and composition framework.
-              Our benchmarks demonstrate measurable improvements in specificity (+42%), design
-              originality (+38%), anti-pattern reduction (+51%), and instruction compliance (+46%)
-              when agents are augmented with validated primitives.
+              AI-agent context has become <strong className="text-foreground/80">executable influence</strong>.
+              Existing software supply-chain controls (SLSA, in-toto, Sigstore, npm
+              provenance) protect code artifacts, but they do not adequately govern the
+              natural-language and Markdown-based instruction artifacts consumed by AI agents
+              — <code className="font-mono text-foreground/70">AGENTS.md</code>,{" "}
+              <code className="font-mono text-foreground/70">SKILL.md</code>,{" "}
+              <code className="font-mono text-foreground/70">.cursor/rules</code>,{" "}
+              <code className="font-mono text-foreground/70">mcp.json</code>, and the
+              broader class of files an agent loads directly into its reasoning context.
+              PrimitiveHub introduces <strong className="text-foreground/80">Context CI</strong>,{" "}
+              <strong className="text-foreground/80">Trust Bundles</strong>, the{" "}
+              <strong className="text-foreground/80">Context CI Top 10</strong> taxonomy,
+              and <strong className="text-foreground/80">CBOM</strong> as the manifest
+              format for verifiable AI-agent context supply chains. The taxonomy, detector
+              implementations (Python + TypeScript, byte-identical parity), adversarial
+              corpus, and reproducible evaluation harness ship as open source alongside
+              this paper; per-detector precision and recall are published in the
+              accompanying scoreboard.
             </p>
           </Card>
         </section>
@@ -173,18 +181,22 @@ recommended_sections:
             Trust is established through a 10-stage validation pipeline (Context CI) and measured
             across four orthogonal dimensions:
           </p>
+          {/* Dimension definitions only — the score values previously
+              shown here (94 / 99 / 87 / 91) were pre-Round-6 demo
+              numbers without provenance. Principle 7 ("No
+              hallucinations as fact") forbids them on the paper page.
+              Live per-detector precision and recall belong in the
+              evaluation scoreboard, not the four-dimension definition
+              grid. */}
           <div className="grid grid-cols-2 gap-px sm:grid-cols-4 rounded-xl border border-border/40 overflow-hidden bg-border/40">
             {[
-              { metric: "Quality", score: "94", desc: "Content completeness, clarity, actionability, and structural integrity" },
-              { metric: "Safety", score: "99", desc: "Absence of injection vectors, unsafe instructions, PII leaks, and encoded payloads" },
-              { metric: "Efficiency", score: "87", desc: "Token utilization rate, information density, and redundancy minimization" },
-              { metric: "Impact", score: "91", desc: "Measured agent output improvement across benchmark test suite" },
+              { metric: "Quality", desc: "Content completeness, clarity, actionability, and structural integrity" },
+              { metric: "Safety", desc: "Absence of injection vectors, unsafe instructions, PII leaks, and encoded payloads" },
+              { metric: "Efficiency", desc: "Token utilization rate, information density, and redundancy minimization" },
+              { metric: "Impact", desc: "Measured agent output improvement across benchmark test suite" },
             ].map((m) => (
               <div key={m.metric} className="bg-card p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-xs font-semibold text-primary">{m.metric}</h4>
-                  <span className="text-sm font-mono font-bold text-foreground/80">{m.score}</span>
-                </div>
+                <h4 className="text-xs font-semibold text-primary mb-2">{m.metric}</h4>
                 <p className="text-[10px] text-muted-foreground leading-relaxed">{m.desc}</p>
               </div>
             ))}
@@ -280,13 +292,13 @@ recommended_sections:
               <span className="text-[11px] font-mono text-muted-foreground">bibtex</span>
             </div>
             <pre className="p-4 text-[11px] font-mono text-muted-foreground leading-[1.7] overflow-x-auto">
-{`@article{primitivehub2026,
+{`@misc{primitivehub2026,
   title   = {Toward a Trusted Cognition Supply Chain for AI Agents},
-  author  = {PrimitiveHub Labs},
+  author  = {mhm, CyberOrca Labs},
   year    = {2026},
-  journal = {PrimitiveHub Technical Report},
-  url     = {https://primitivehub.dev/paper},
-  note    = {Introduces AI Context Primitives and the Context CI pipeline}
+  howpublished = {arXiv preprint (skeleton v0.1)},
+  url     = {https://primitivehub.ai/paper},
+  note    = {Introduces Context CI, the CCI Top 10 taxonomy, Trust Bundles, and CBOM}
 }`}
             </pre>
           </Card>
@@ -294,7 +306,7 @@ recommended_sections:
 
         <div className="flex justify-center pt-4 pb-8">
           <Badge variant="outline" className="border-border/40 text-muted-foreground text-[10px] font-mono">
-            PrimitiveHub Labs Technical Report &middot; May 2026
+            mhm, CyberOrca Labs &middot; arXiv preprint (skeleton v0.1) &middot; 2026
           </Badge>
         </div>
       </div>

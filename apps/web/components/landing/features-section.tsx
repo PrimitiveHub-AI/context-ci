@@ -21,7 +21,7 @@ const features = [
   {
     icon: GitBranch,
     title: "Semver & Provenance",
-    description: "Full semantic versioning. SHA-256 content digest per release; Ed25519 signing planned via Sigstore. Provenance chain: author → validation → review → release.",
+    description: "Full semantic versioning. SHA-256 content digest per release. Sigstore keyless OIDC (Fulcio cert + Rekor entry). Provenance chain: author → validation → review → release.",
   },
   {
     icon: BarChart3,

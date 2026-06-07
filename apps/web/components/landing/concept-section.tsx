@@ -10,6 +10,7 @@ import {
   Globe,
 } from "lucide-react"
 
+import { EvaluationLink } from "@/components/primitives/evaluation-link"
 import { loadLatestEvaluation, summarize } from "@/lib/evaluation"
 
 const categories = [
@@ -98,8 +99,13 @@ export function ConceptSection() {
             ))}
           </div>
           <p className="mt-3 text-center text-[10px] font-mono text-muted-foreground/70">
-            Measured {summary.measuredAt} · {summary.inSampleSamples} in-sample + {summary.holdoutSamples} holdout · reproduce with{" "}
-            <code className="text-foreground/80">bench/scripts/gate.sh</code>
+            <EvaluationLink>
+              Measured {summary.measuredAt}
+            </EvaluationLink>{" "}
+            · {summary.inSampleSamples} in-sample + {summary.holdoutSamples} holdout · reproduce with{" "}
+            <EvaluationLink proof="gate">
+              <code className="text-foreground/80">bench/scripts/gate.sh</code>
+            </EvaluationLink>
           </p>
         </div>
       </div>

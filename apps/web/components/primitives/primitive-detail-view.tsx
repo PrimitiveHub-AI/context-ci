@@ -558,6 +558,13 @@ When this primitive is loaded, the agent should:
                   illustrative deltas, not measured against live agents
                 </span>
               </div>
+              {/* Demo-only — the badge above declares it, and the
+                  visual weight here is intentionally muted so the
+                  cells read as "illustrative methodology" not
+                  "measured results." Loud success-green numbers
+                  were a Principle 7 trap: the badge was present but
+                  the claim's visual weight overwhelmed it. Tuned to
+                  match what the disclaimer actually allows. */}
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {[
                   { label: "Specificity", value: "+42%", desc: "Measurable criteria in output" },
@@ -565,8 +572,12 @@ When this primitive is loaded, the agent should:
                   { label: "Anti-Pattern Reduction", value: "+51%", desc: "Known bad patterns avoided" },
                   { label: "Instruction Compliance", value: "+46%", desc: "Rules followed correctly" },
                 ].map((metric) => (
-                  <Card key={metric.label} className="border-border/40 bg-card p-4 text-center">
-                    <p className="text-xl font-bold font-mono text-success tabular-nums">{metric.value}</p>
+                  <Card
+                    key={metric.label}
+                    className="border-border/40 bg-card p-4 text-center"
+                    title="Demo data — not measured against live agents"
+                  >
+                    <p className="text-base font-mono text-muted-foreground tabular-nums">{metric.value}</p>
                     <p className="mt-1 text-[10px] uppercase tracking-wider text-foreground/70 font-medium">
                       {metric.label}
                     </p>
@@ -655,7 +666,7 @@ When this primitive is loaded, the agent should:
                   { event: "Safety Scanned", timestamp: "2026-04-10T09:02:00Z", actor: "Context CI", detail: "0 prompt injection vectors. 0 unsafe instructions. 0 PII leaks detected." },
                   { event: "Benchmarked", timestamp: "2026-04-12T14:00:00Z", actor: "Context CI", detail: "Tested across 5 agents x 3 prompts. All benchmark thresholds passed." },
                   { event: "Human Reviewed", timestamp: primitive.lastUpdated, actor: primitive.reviewerBadge || "Reviewer", detail: "Expert review completed. All decision rules verified. Approved for release." },
-                  { event: "Attested & Published", timestamp: primitive.lastUpdated, actor: "PrimitiveHub Registry", detail: `Content digest ${primitive.contentDigest}. Ed25519 signing planned (Sigstore). Published as v${primitive.version}. Immutable record stored.` },
+                  { event: "Attested & Published", timestamp: primitive.lastUpdated, actor: "PrimitiveHub Registry", detail: `Content digest ${primitive.contentDigest}. Sigstore keyless OIDC (Fulcio cert + Rekor entry). Published as v${primitive.version}. Immutable record stored.` },
                 ].map((entry, i) => (
                   <div key={i} className="flex items-start gap-3">
                     <div className="flex flex-col items-center gap-1 pt-0.5">

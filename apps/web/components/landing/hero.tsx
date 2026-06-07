@@ -15,6 +15,7 @@ import {
   Terminal,
 } from "lucide-react"
 
+import { EvaluationLink } from "@/components/primitives/evaluation-link"
 import { loadLatestEvaluation, summarize } from "@/lib/evaluation"
 
 /**
@@ -71,11 +72,16 @@ export function Hero() {
       <div className="relative mx-auto max-w-7xl px-4 pb-24 pt-24 lg:px-6 lg:pt-32 lg:pb-32">
         <div className="flex flex-col items-center text-center">
           {/* Status pill — measured live from bench/baseline so the
-              very first sentence on the site is paper-grade truth. */}
+              very first sentence on the site is paper-grade truth.
+              The number is wrapped in <EvaluationLink> so a reader
+              who suspects the claim is one click away from the
+              scoreboard that proves it. */}
           <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/[0.04] px-3.5 py-1.5">
             <span className="size-1.5 rounded-full bg-primary animate-pulse" />
             <span className="text-[11px] font-mono text-primary/80 tracking-wide">
-              {summary.totalDetectors}/{summary.totalDetectors} Top 10 detectors measured · macro F1 = {summary.macroF1InSample.toFixed(3)} · Py ↔ TS parity gated
+              <EvaluationLink>
+                {summary.totalDetectors}/{summary.totalDetectors} Top 10 detectors measured · macro F1 = {summary.macroF1InSample.toFixed(3)} · Py ↔ TS parity gated
+              </EvaluationLink>
             </span>
           </div>
 
@@ -206,13 +212,20 @@ export function Hero() {
 
         {/* Measurement footnote — anchors the pill+caption claim in
             the reproducibility surface so a curious reader can verify
-            the headline in one click. */}
+            the headline in one click. The sample count links to the
+            corpus spec; the `bench/scripts/gate.sh` code links to the
+            actual script. The discipline: no measured number stands
+            on text alone. */}
         <p className="mt-6 text-center text-[10px] font-mono text-muted-foreground/70">
           Measured {summary.measuredAt} against{" "}
-          <span className="text-foreground/80">{totalSamples} labeled samples</span>{" "}
+          <EvaluationLink proof="corpus" className="text-foreground/80">
+            {totalSamples} labeled samples
+          </EvaluationLink>{" "}
           ({summary.inSampleSamples} in-sample + {summary.holdoutSamples} holdout) ·{" "}
           reproduce with{" "}
-          <code className="text-foreground/80">bench/scripts/gate.sh</code>
+          <EvaluationLink proof="gate">
+            <code className="text-foreground/80">bench/scripts/gate.sh</code>
+          </EvaluationLink>
         </p>
       </div>
     </section>

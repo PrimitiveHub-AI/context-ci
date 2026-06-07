@@ -87,7 +87,7 @@ export default function RegistryPage() {
           <p className="mt-2 text-sm text-muted-foreground max-w-xl leading-relaxed">
             Explore, search, and install trusted AI Context Primitives. Every entry is expert-authored,
             validated through Context CI, versioned with semver, content-addressed by SHA-256 digest,
-            and scored across four quality dimensions. Ed25519 signing planned via Sigstore.
+            and scored across four quality dimensions. Signed with Sigstore keyless OIDC (Fulcio cert + Rekor entry).
           </p>
         </div>
       </div>

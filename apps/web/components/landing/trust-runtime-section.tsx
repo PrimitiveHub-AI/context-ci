@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { FileCheck2, ShieldAlert, BookKey, ArrowUpRight, FlaskConical } from "lucide-react"
 
+import { EvaluationLink } from "@/components/primitives/evaluation-link"
 import { loadLatestEvaluation, summarize } from "@/lib/evaluation"
 
 /**
@@ -168,18 +169,23 @@ export function TrustRuntimeSection() {
               </div>
               <div className="flex-1 text-[12.5px] leading-relaxed text-muted-foreground">
                 Measured against the adversarial corpus on {summary.measuredAt}:{" "}
-                <span className="text-foreground/90 font-mono">
+                <EvaluationLink className="text-foreground/90 font-mono">
                   {summary.perfectDetectors}/{summary.totalDetectors}
-                </span>{" "}
+                </EvaluationLink>{" "}
                 detectors at{" "}
-                <span className="text-foreground/90 font-mono">F1 = {summary.macroF1InSample.toFixed(3)}</span>{" "}
+                <EvaluationLink className="text-foreground/90 font-mono">
+                  F1 = {summary.macroF1InSample.toFixed(3)}
+                </EvaluationLink>{" "}
                 across{" "}
-                <span className="text-foreground/90 font-mono">
+                <EvaluationLink proof="corpus" className="text-foreground/90 font-mono">
                   {summary.inSampleSamples + summary.holdoutSamples}
-                </span>{" "}
+                </EvaluationLink>{" "}
                 labeled samples ({summary.inSampleSamples} in-sample +{" "}
-                {summary.holdoutSamples} holdout). Python ↔ TypeScript
-                parity is a CI invariant.{" "}
+                {summary.holdoutSamples} holdout).{" "}
+                <EvaluationLink proof="floor" className="text-foreground/90">
+                  Python ↔ TypeScript parity
+                </EvaluationLink>{" "}
+                is a CI invariant.{" "}
                 <a
                   href={`${GH_BASE}/docs/evaluation.md`}
                   target="_blank"
