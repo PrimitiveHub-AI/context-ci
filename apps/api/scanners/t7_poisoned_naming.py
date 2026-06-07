@@ -112,6 +112,29 @@ _VENDORS: tuple[str, ...] = (
 )
 _VENDOR_ALT = "|".join(re.escape(v) for v in _VENDORS)
 
+# v0.3.2 (Round 13 PR 13.2 — closes FN-023 on S-119 "official
+# ua-parser-js primitive"): curated list of high-trust npm + PyPI
+# packages whose names are common impersonation targets. Distinct
+# from `_VENDORS` (which holds vendor BRAND names like Anthropic /
+# Google); packages are the SPECIFIC PUBLISHED ARTIFACTS that
+# attackers impersonate by writing "the official <package-name>
+# primitive endorsed by the <package-name> maintainer team." The
+# eslint-config-prettier (2024) and ua-parser-js (2021) incidents
+# both followed this shape. Lockstep with packages/phub/src/
+# scanners/t7-poisoned-naming.ts § v0.3.2.
+_HIGH_TRUST_PACKAGES: tuple[str, ...] = (
+    # npm — most-downloaded utility packages historically used as
+    # typosquat / maintainer-compromise vectors
+    "lodash", "express", "react", "vue", "axios", "dotenv",
+    "ua-parser-js", "eslint", "prettier", "webpack", "vite",
+    "next", "nuxt", "babel", "rollup", "tailwindcss", "svelte",
+    "moment", "jquery", "underscore",
+    # PyPI — high-trust packages with known supply-chain incidents
+    "requests", "urllib3", "numpy", "pandas", "django",
+    "flask", "pytest", "sqlalchemy", "pyyaml", "setuptools",
+)
+_HIGH_TRUST_PACKAGE_ALT = "|".join(re.escape(p) for p in _HIGH_TRUST_PACKAGES)
+
 # Typosquats: digit-for-letter substitutions that produce visually
 # similar names. Each pattern must EXCLUDE the canonical letter — the
 # detector is meant to catch IMITATIONS, not bare mentions. v0.2.3
@@ -154,6 +177,23 @@ _OFFICIAL_CLAIM_PATTERNS: tuple[tuple[str, str], ...] = (
     (
         rf"\b(?:{_VENDOR_ALT})'s\s+(?:official|recommended|certified|endorsed)\s+(?:primitive|skill|tool|prompt|agent|integration|sdk)",
         "official-vendor-claim",
+    ),
+    # v0.3.2 (Round 13 PR 13.2 — closes FN-023): package-name
+    # official-claim shapes. Distinct from the vendor-brand
+    # patterns above — these draw from _HIGH_TRUST_PACKAGES which
+    # holds the specific published-artifact names attackers
+    # impersonate (ua-parser-js, eslint, lodash, etc.).
+    (
+        rf"\b(?:the\s+)?official\s+(?:{_HIGH_TRUST_PACKAGE_ALT})\s+(?:primitive|skill|tool|prompt|agent|integration|sdk|helper|package)",
+        "package-official-claim",
+    ),
+    (
+        rf"\bfrom\s+the\s+(?:{_HIGH_TRUST_PACKAGE_ALT})\s+(?:maintainer|maintainers|team|engineering)\b",
+        "package-official-claim",
+    ),
+    (
+        rf"\bendorsed\s+by\s+(?:the\s+)?(?:{_HIGH_TRUST_PACKAGE_ALT})\s+(?:maintainer|maintainers|team|engineering)\b",
+        "package-official-claim",
     ),
 )
 
@@ -285,7 +325,7 @@ class T7PoisonedNamingDetector:
     name = "t7.poisoned_naming"
     threat_category = "T7"
     cci_id = "CCI-007"
-    detector_version = "0.3.1"
+    detector_version = "0.3.2"
 
     def run(self, ctx: DetectorContext) -> Verdict:
         hints: list[DiffHint] = []

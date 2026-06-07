@@ -73,6 +73,26 @@ const VENDORS = [
 const escapeRegex = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 const VENDOR_ALT = VENDORS.map(escapeRegex).join("|")
 
+// v0.3.2 (Round 13 PR 13.2 — closes FN-023): curated list of
+// high-trust npm + PyPI packages whose names are common
+// impersonation targets. Distinct from VENDORS (vendor BRAND
+// names like Anthropic); packages are the SPECIFIC PUBLISHED
+// ARTIFACTS attackers impersonate by writing "the official
+// <package-name> primitive endorsed by the <package-name>
+// maintainer team." Lockstep with apps/api/scanners/
+// t7_poisoned_naming.py § v0.3.2.
+const HIGH_TRUST_PACKAGES = [
+  // npm
+  "lodash", "express", "react", "vue", "axios", "dotenv",
+  "ua-parser-js", "eslint", "prettier", "webpack", "vite",
+  "next", "nuxt", "babel", "rollup", "tailwindcss", "svelte",
+  "moment", "jquery", "underscore",
+  // PyPI
+  "requests", "urllib3", "numpy", "pandas", "django",
+  "flask", "pytest", "sqlalchemy", "pyyaml", "setuptools",
+]
+const HIGH_TRUST_PACKAGE_ALT = HIGH_TRUST_PACKAGES.map(escapeRegex).join("|")
+
 // Typosquats: digit-for-letter substitutions that produce visually
 // similar names. Each pattern must EXCLUDE the canonical letter — the
 // detector is meant to catch IMITATIONS, not bare mentions. v0.2.3
@@ -122,6 +142,30 @@ const OFFICIAL_CLAIM_PATTERNS: Array<readonly [RegExp, string]> = [
       "gim",
     ),
     "official-vendor-claim",
+  ],
+  // v0.3.2 (Round 13 PR 13.2 — closes FN-023): package-name
+  // official-claim shapes. Reads from HIGH_TRUST_PACKAGES — the
+  // specific published-artifact names attackers impersonate.
+  [
+    new RegExp(
+      `\\b(?:the\\s+)?official\\s+(?:${HIGH_TRUST_PACKAGE_ALT})\\s+(?:primitive|skill|tool|prompt|agent|integration|sdk|helper|package)`,
+      "gim",
+    ),
+    "package-official-claim",
+  ],
+  [
+    new RegExp(
+      `\\bfrom\\s+the\\s+(?:${HIGH_TRUST_PACKAGE_ALT})\\s+(?:maintainer|maintainers|team|engineering)\\b`,
+      "gim",
+    ),
+    "package-official-claim",
+  ],
+  [
+    new RegExp(
+      `\\bendorsed\\s+by\\s+(?:the\\s+)?(?:${HIGH_TRUST_PACKAGE_ALT})\\s+(?:maintainer|maintainers|team|engineering)\\b`,
+      "gim",
+    ),
+    "package-official-claim",
   ],
 ]
 
@@ -240,7 +284,7 @@ export class T7PoisonedNamingDetector {
   readonly name = "t7.poisoned_naming"
   readonly threatCategory = "T7"
   readonly cciId = "CCI-007"
-  readonly detectorVersion = "0.3.1"
+  readonly detectorVersion = "0.3.2"
 
   run(ctx: DetectorContext): Verdict {
     const hints: DiffHint[] = []
