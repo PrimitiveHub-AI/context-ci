@@ -19,13 +19,13 @@ import type { Bundle } from "@/lib/types"
  */
 export function RegistryBundlesSection() {
   const query = useBundles()
-  const data: Bundle[] = query.data ?? (query.isError ? mockBundles : [])
-
-  // While the first fetch is in flight and we have no bundles yet,
-  // collapse the section entirely — the Registry's primitives grid
-  // below is the headline content; we don't want a loading slug
-  // pushing it down on first paint.
-  if (query.isLoading && data.length === 0) return null
+  // Seed with `mockBundles` whenever the live query has no payload —
+  // initial SSR render, in-flight first fetch, or an API error all
+  // resolve to the same curated list. This keeps the section in the
+  // server-rendered HTML (so crawlers, OG previews, and noscript
+  // visitors see it) and avoids a layout shift when the client
+  // query later resolves.
+  const data: Bundle[] = query.data ?? mockBundles
 
   return (
     <section

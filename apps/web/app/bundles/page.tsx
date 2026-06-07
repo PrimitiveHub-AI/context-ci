@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation"
+import { permanentRedirect } from "next/navigation"
 
 /**
  * /bundles → /registry#bundles (308 permanent).
@@ -10,7 +10,12 @@ import { redirect } from "next/navigation"
  * page content now lives at /registry#bundles via
  * `RegistryBundlesSection`. This stub keeps incoming links and
  * bookmarks working.
+ *
+ * `permanentRedirect()` emits HTTP 308 (vs `redirect()` which emits
+ * 307 temporary). The merge is a deliberate doctrinal call, not a
+ * temporary outage — search engines and bookmark stores should
+ * forget the old URL.
  */
 export default function BundlesRedirectPage(): never {
-  redirect("/registry#bundles")
+  permanentRedirect("/registry#bundles")
 }
