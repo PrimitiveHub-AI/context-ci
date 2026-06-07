@@ -1,0 +1,193 @@
+name: quarterly-review — FP/FN ledger re-review automation
+
+# Schedules a quarterly re-review of every entry in the FP/FN ledgers
+# per the AV-vendor methodology cadence documented in
+# docs/false-{positive,negative}-resolution.md. Runs the full gate +
+# parity check + evaluation drift gate + replay sweep, then files
+# (or updates) a GitHub issue labeled `quarterly-review` with the
+# rollup summary and assigns it to the project owner.
+#
+# Cron schedule: 09:00 UTC on the first of January, April, July,
+# October. The Q1/Q2/Q3/Q4 boundaries align with the AV-industry
+# convention; the operator triages the resulting issue within 14
+# days per docs/false-positive-resolution.md § 4.
+#
+# Manual dispatch is also supported for ad-hoc reviews.
+
+on:
+  schedule:
+    - cron: "0 9 1 1,4,7,10 *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  quarterly-rollup:
+    name: corpus + ledger + evaluation rollup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compute quarter label
+        id: quarter
+        run: |
+          year=$(date -u +%Y)
+          month=$(date -u +%m)
+          case "$month" in
+            01) q="Q1" ;;
+            04) q="Q2" ;;
+            07) q="Q3" ;;
+            10) q="Q4" ;;
+            *)  q="adhoc-$(date -u +%Y%m%d)" ;;
+          esac
+          echo "label=$year-$q" >> "$GITHUB_OUTPUT"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "0.5.4"
+          enable-cache: true
+          cache-dependency-glob: "apps/api/uv.lock"
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Sync apps/api deps
+        working-directory: apps/api
+        run: uv sync --all-extras
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: |
+            packages/verify/pnpm-lock.yaml
+            packages/phub/pnpm-lock.yaml
+            bench/scripts/pnpm-lock.yaml
+
+      - name: Build phub
+        working-directory: packages/phub
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      - name: Install bench/scripts deps
+        working-directory: bench/scripts
+        run: pnpm install --frozen-lockfile
+
+      - name: Run the gate
+        id: gate
+        continue-on-error: true
+        run: |
+          bench/scripts/gate.sh 2>&1 | tee gate.txt
+          echo "exit=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Render evaluation
+        id: eval
+        continue-on-error: true
+        run: |
+          python bench/scripts/render-evaluation.py --check 2>&1 | tee eval.txt
+          echo "exit=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Count ledger entries
+        id: ledgers
+        run: |
+          fp_count=$(grep -cE '^### FP-[0-9]+' docs/false-positive-resolution.md || echo 0)
+          fn_count=$(grep -cE '^### FN-[0-9]+' docs/false-negative-resolution.md || echo 0)
+          fp_open=$(grep -cE '^### FP-[0-9]+' docs/false-positive-resolution.md | head -1 || echo 0)
+          echo "fp_count=$fp_count" >> "$GITHUB_OUTPUT"
+          echo "fn_count=$fn_count" >> "$GITHUB_OUTPUT"
+
+      - name: Compose issue body
+        id: body
+        run: |
+          {
+            echo "## Quarterly re-review — ${{ steps.quarter.outputs.label }}"
+            echo ""
+            echo "Per the AV-vendor cadence documented in"
+            echo "[docs/false-positive-resolution.md § 4](../blob/main/docs/false-positive-resolution.md)"
+            echo "and"
+            echo "[docs/false-negative-resolution.md § 4](../blob/main/docs/false-negative-resolution.md),"
+            echo "this issue rolls up the current state of the corpus regression gate,"
+            echo "the cross-language parity check, the evaluation drift gate, and the"
+            echo "ledger entry counts. The operator triages every open entry within"
+            echo "14 days and either closes it (with a re-review log entry) or"
+            echo "explicitly defers it with a rationale."
+            echo ""
+            echo "### Gate run"
+            echo ""
+            echo "Exit code: \`${{ steps.gate.outputs.exit }}\` (0 = PASS, 1 = FAIL)"
+            echo ""
+            echo '```'
+            tail -30 gate.txt
+            echo '```'
+            echo ""
+            echo "### Evaluation drift"
+            echo ""
+            echo "Exit code: \`${{ steps.eval.outputs.exit }}\` (0 = no drift)"
+            echo ""
+            echo "### Ledger sizes"
+            echo ""
+            echo "- FP-NNN entries: ${{ steps.ledgers.outputs.fp_count }}"
+            echo "- FN-NNN entries: ${{ steps.ledgers.outputs.fn_count }}"
+            echo ""
+            echo "### Triage checklist"
+            echo ""
+            echo "Walk each open ledger entry and apply one of:"
+            echo ""
+            echo "- [ ] Closure shipped — append closure log entry (date, vector, F1 delta)"
+            echo "- [ ] Deferred — append a deferral rationale (why this quarter is not the right round)"
+            echo "- [ ] Re-classified — Path change (e.g. C → B); append re-classification note"
+            echo ""
+            echo "Per the discipline: NO entry is left untouched at the end of the quarter."
+            echo "Every entry either advances or has its deferral rationale logged."
+            echo ""
+            echo "---"
+            echo ""
+            echo "_Auto-generated by \`.github/workflows/quarterly-review.yml\`. Update the workflow if the rollup needs different content._"
+          } > body.md
+
+      - name: File or update the quarterly-review issue
+        uses: actions/github-script@v7
+        env:
+          QUARTER_LABEL: ${{ steps.quarter.outputs.label }}
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('body.md', 'utf8');
+            const quarter = process.env.QUARTER_LABEL;
+            const title = `Quarterly re-review — ${quarter}`;
+
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'quarterly-review',
+              state: 'open',
+            });
+
+            const match = existing.data.find(i => i.title === title);
+
+            if (match) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: match.number,
+                body,
+              });
+              core.info(`Updated existing issue #${match.number}`);
+            } else {
+              const created = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ['quarterly-review', 'needs-triage'],
+                assignees: ['mhm'],
+              });
+              core.info(`Created new issue #${created.data.number}`);
+            }
