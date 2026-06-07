@@ -874,3 +874,49 @@ floor.
   Round 13 will likely ship option 1 (the curated-package
   surface is the operational reality). Incident-derived
   sample S-119 (ua-parser-js 2021).
+
+### FN-024 — Multilingual: T5 verb-anchored pattern misses non-English imperative verbs (S-120, S-123)
+
+- **Path:** C (spec gap). The v0.2.5 T5 verb-anchored inline-code
+  pattern uses `(?:run|execute|launch|install|bootstrap|...)` —
+  English imperative verbs only. Russian "выполните",
+  Chinese "执行 / 请执行 / 安装" (and equivalents in Arabic,
+  Spanish, Hindi, etc.) bypass the verb-anchor; the legacy
+  shell-pipe regex matches inside the backticks but the inline-
+  code skip suppresses it. The attack is identical in the
+  backticked content; only the surrounding prose differs.
+- **Resolution vector:** Round 13+ — two plausible paths:
+    1. **Multilingual phrasebook.** Extend the verb-anchored
+       pattern's verb set with the imperative forms in the top
+       4 non-English script families seen in field reports
+       (Russian, Chinese, Arabic, Spanish). Per-language entry
+       count $\sim$ 8 verbs; total surface growth $\sim$ 32
+       entries. Bounded; deterministic.
+    2. **Script-mixing detection.** Treat any non-ASCII-Latin
+       prose containing an inline-code shell-pipe shape as
+       suspicious regardless of the prose's imperative content.
+       Smaller surface, broader catch, higher FP risk on
+       legitimate non-English documentation.
+  Round 13 ships path 1 (phrasebook) as the demonstrable fix;
+  path 2 reserved for a later round if field reports surface
+  attack shapes the phrasebook misses. Holdout samples S-120
+  (Russian), S-123 (Chinese).
+
+### FN-025 — Multilingual: T1 override-system regex misses non-English phrasing (S-124)
+
+- **Path:** C (spec gap). The v0.2.1 T1 override-system regex
+  uses Latin-script English keywords: `ignore`, `previous`,
+  `instructions`, `prompts`, `disregard`, `forget`, etc.
+  Chinese "请忽略之前的指令" (= "please ignore previous
+  instructions") matches none of these. Russian "забудьте
+  предыдущие инструкции" (= "forget previous instructions")
+  similarly bypasses.
+- **Resolution vector:** Round 13+ — same two-path choice as
+  FN-024 (multilingual phrasebook OR script-mixing
+  detection). For T1 the phrasebook is more demanding because
+  override-system phrasing has more linguistic variety than
+  install imperatives. Round 13 ships a curated phrasebook
+  for the top-3 non-English imperative-phrase shapes
+  (override, role-hijack, hidden-instructions) per language;
+  total surface growth $\sim$ 30-40 phrases. Holdout sample
+  S-124 (Chinese).

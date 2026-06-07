@@ -117,17 +117,17 @@
     "drift_sample_ids": []
   },
   "holdout": {
-    "samples_total": 20,
+    "samples_total": 25,
     "per_detector": {
       "CCI-001": {
         "tp": 2,
         "fp": 0,
         "tn": 0,
-        "fn": 0,
+        "fn": 1,
         "precision": 1,
-        "recall": 1,
-        "f1": 1,
-        "support": 2
+        "recall": 0.6666666666666666,
+        "f1": 0.8,
+        "support": 3
       },
       "CCI-002": {
         "tp": 1,
@@ -163,31 +163,31 @@
         "tp": 2,
         "fp": 0,
         "tn": 0,
-        "fn": 3,
+        "fn": 5,
         "precision": 1,
-        "recall": 0.4,
-        "f1": 0.5714285714285715,
-        "support": 5
+        "recall": 0.2857142857142857,
+        "f1": 0.4444444444444445,
+        "support": 7
       },
       "CCI-006": {
         "tp": 1,
         "fp": 0,
         "tn": 0,
-        "fn": 1,
+        "fn": 2,
         "precision": 1,
-        "recall": 0.5,
-        "f1": 0.6666666666666666,
-        "support": 2
+        "recall": 0.3333333333333333,
+        "f1": 0.5,
+        "support": 3
       },
       "CCI-007": {
-        "tp": 2,
+        "tp": 3,
         "fp": 0,
         "tn": 0,
         "fn": 1,
         "precision": 1,
-        "recall": 0.6666666666666666,
-        "f1": 0.8,
-        "support": 3
+        "recall": 0.75,
+        "f1": 0.8571428571428571,
+        "support": 4
       },
       "CCI-008": {
         "tp": 1,
@@ -222,8 +222,8 @@
     },
     "overall": {
       "precision_macro": 1,
-      "recall_macro": 0.8066666666666666,
-      "f1_macro": 0.8704761904761906
+      "recall_macro": 0.7535714285714286,
+      "f1_macro": 0.8268253968253969
     }
   }
 }
