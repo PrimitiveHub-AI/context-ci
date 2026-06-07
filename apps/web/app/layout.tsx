@@ -17,22 +17,27 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://primitivehub.ai"),
   title: {
-    default: "PrimitiveHub — Trusted Registry for AI Context Primitives",
+    default: "PrimitiveHub — the Context Firewall for AI agents",
     template: "%s — PrimitiveHub",
   },
   description:
-    "The trusted registry for AI Context Primitives. Expert-authored Markdown cognition modules — validated, versioned, attested, scored, and installable into any compatible AI agent. A CyberOrca Labs initiative.",
+    "We verify every byte of context an AI agent consumes — AGENTS.md, SKILL.md, .cursor/rules, mcp.json — against the Context CI Top 10, before the agent reads it. Open-source verifier kernel, CLI, GitHub Action, and MCP runtime gate. A CyberOrca Labs initiative.",
   applicationName: "PrimitiveHub",
   authors: [{ name: "CyberOrca Labs" }],
   keywords: [
-    "AI Context Primitives",
-    "AI agent context",
-    "context supply chain",
+    "Context Firewall",
     "Context CI",
-    "AI registry",
+    "Context CI Top 10",
+    "AI agent context",
+    "agent-context supply chain",
+    "Trust Bundle",
+    "CBOM",
+    "Sigstore",
+    "AGENTS.md",
+    "SKILL.md",
     "Claude Code",
     "Cursor",
-    "agent governance",
+    "MCP",
     "PrimitiveHub",
     "CyberOrca",
   ],
@@ -54,16 +59,16 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    title: "PrimitiveHub — Trusted Registry for AI Context Primitives",
+    title: "PrimitiveHub — the Context Firewall for AI agents",
     description:
-      "Treats agent context as supply-chain material, not disposable prompt text. Validated, versioned, attested cognition for AI agents.",
+      "Every byte of agent context — AGENTS.md, SKILL.md, .cursor/rules, mcp.json — verified against the Context CI Top 10 before the agent reads it.",
     siteName: "PrimitiveHub",
   },
   twitter: {
     card: "summary_large_image",
-    title: "PrimitiveHub — Trusted Registry for AI Context Primitives",
+    title: "PrimitiveHub — the Context Firewall for AI agents",
     description:
-      "Treats agent context as supply-chain material. Validated, versioned, attested cognition for AI agents.",
+      "Every byte of agent context verified against the Context CI Top 10 before the agent reads it. Open-source verifier kernel, CLI, GitHub Action, MCP runtime gate.",
   },
 }
 
