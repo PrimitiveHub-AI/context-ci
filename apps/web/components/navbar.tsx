@@ -10,14 +10,20 @@ import { OrgPicker } from "@/components/org-picker"
 import { UserMenu } from "@/components/user-menu"
 import { useWhoami } from "@/lib/api/queries"
 
+// Ordered by the AV-family funnel (ADR-0040 §1): first touch
+// (Check) → research/encyclopedia (Top 10) → on-demand scan
+// (Context CI) → authoring (Forge) → discovery (Registry — now
+// includes Bundles) → CLI + service docs → research (Paper).
+// Bundles folds into Registry per ADR-0040 §2; Contributors moves
+// to the footer.
 const navLinks = [
   { href: "/check", label: "Check" },
-  { href: "/registry", label: "Registry" },
-  { href: "/bundles", label: "Bundles" },
-  { href: "/forge", label: "Forge" },
+  { href: "/top-10", label: "Top 10" },
   { href: "/validation", label: "Context CI" },
+  { href: "/forge", label: "Forge" },
+  { href: "/registry", label: "Registry" },
+  { href: "/docs", label: "Docs" },
   { href: "/paper", label: "Paper" },
-  { href: "/contributors", label: "Contributors" },
 ]
 
 export function Navbar() {

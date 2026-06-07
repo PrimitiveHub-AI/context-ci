@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { PrimitiveCard } from "@/components/primitives/primitive-card"
 import { PrimitiveTable } from "@/components/primitives/primitive-table"
+import { RegistryBundlesSection } from "@/components/primitives/registry-bundles-section"
 import { usePrimitives } from "@/lib/api/queries"
 import { primitives as mockPrimitives } from "@/lib/data/primitives"
 import { categories } from "@/lib/data/categories"
@@ -92,8 +93,14 @@ export default function RegistryPage() {
       </div>
 
       <div className="mx-auto max-w-7xl px-4 py-8 lg:px-6">
+        {/* Bundles — folded in from the retired /bundles route per
+            ADR-0040 §2 (one surface per funnel stage). Renders above
+            the primitive search so curated stacks are the first thing
+            a visitor sees; the search anchors at #primitives below. */}
+        <RegistryBundlesSection />
+
         {/* Search bar + view toggle */}
-        <div className="flex items-center gap-3 mb-6">
+        <div id="primitives" className="scroll-mt-20 flex items-center gap-3 mb-6">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input

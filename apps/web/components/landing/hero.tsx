@@ -1,6 +1,5 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { DemoDataBadge } from "@/components/primitives/demo-data-badge"
 import { ArrowRight, Terminal, BookOpen, Copy, ShieldCheck, GitBranch, Fingerprint, BarChart3, Users, Boxes } from "lucide-react"
 
 const credibilityPillars = [
@@ -17,8 +16,8 @@ const pipelineSteps = [
   { step: "02", label: "Schema Validation", detail: "Frontmatter checks, structure lint, format compliance" },
   { step: "03", label: "Safety + Quality Scans", detail: "Injection detection, contradiction scan, token efficiency" },
   { step: "04", label: "Expert Review", detail: "Human reviewer with domain credentials and reputation score" },
-  { step: "05", label: "Attested Trusted Primitive", detail: "SHA-256 content digest, Ed25519 signing planned (Sigstore), versioned, scored, immutably published" },
-  { step: "06", label: "Better Agent Output", detail: "+42% specificity, +38% originality, +46% compliance" },
+  { step: "05", label: "Attested Trusted Primitive", detail: "SHA-256 content digest, Sigstore keyless OIDC (Fulcio cert + Rekor entry), versioned, immutably published" },
+  { step: "06", label: "Verified Context Load", detail: "Loaded into the agent only after digest match + Rekor inclusion + Top 10 verdict resolve" },
 ]
 
 export function Hero() {
@@ -111,9 +110,6 @@ export function Hero() {
                 <span className="text-[9px] font-mono uppercase tracking-widest text-primary/50 mb-2">{s.step}</span>
                 <p className="text-[11px] font-semibold text-foreground leading-tight">{s.label}</p>
                 <p className="mt-1.5 text-[9px] text-muted-foreground leading-relaxed">{s.detail}</p>
-                {i === pipelineSteps.length - 1 && (
-                  <DemoDataBadge className="mt-2" />
-                )}
               </div>
             ))}
           </div>

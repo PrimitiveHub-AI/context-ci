@@ -112,9 +112,9 @@ export default function ValidationPage() {
 [2026-05-16T10:00:04Z] PASS    Copyright: 2.1% similarity (threshold: 15%)
 [2026-05-16T10:00:05Z] WARN    Token efficiency: 5,100/6,000 (85%) — above recommended
 [2026-05-16T10:00:08Z] PASS    Contradiction scan: 0/47 rules contradictory
-[2026-05-16T10:00:21Z] PASS    Benchmark: +38% specificity, +42% compliance (5 agents)
+[2026-05-16T10:00:21Z] PASS    Top 10 verdict: 0 FAIL · 0 WARN (CCI-001..CCI-010 all green)
 [2026-05-18T14:00:00Z] PASS    Human review: Marcus Webb (Security Reviewer, Rep: 95)
-[2026-05-18T14:32:00Z] RELEASE Digest sha256:c9d1e2f4a7b85c3d — Ed25519 signing planned (Sigstore) — published v1.2.0
+[2026-05-18T14:32:00Z] RELEASE Digest sha256:c9d1e2f4a7b85c3d — Sigstore keyless OIDC (Fulcio cert + Rekor entry) — published v1.2.0
 [2026-05-18T14:32:01Z] INDEX   Registry updated. Attestation cci-v1 recorded.`}
           </pre>
         </Card>

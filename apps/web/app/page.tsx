@@ -4,6 +4,7 @@ import { WhySection } from "@/components/landing/why-section"
 import { ConceptSection } from "@/components/landing/concept-section"
 import { FeaturesSection } from "@/components/landing/features-section"
 import { CLIRoadmap } from "@/components/landing/cli-roadmap"
+import { SiteFooter } from "@/components/landing/site-footer"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
@@ -54,34 +55,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border/40 py-8">
-        <div className="mx-auto max-w-7xl px-4 lg:px-6">
-          <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-            <div className="flex flex-col items-center gap-0.5 sm:items-start">
-              <p className="text-xs text-muted-foreground">
-                PrimitiveHub, 2026. The trusted cognition registry.
-              </p>
-              <p className="text-[10px] font-mono text-muted-foreground/60 tracking-wide">
-                Powered by{" "}
-                <a
-                  href="https://cyberorca.sa"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-primary/80 transition-colors"
-                >
-                  CyberOrca.sa
-                </a>
-              </p>
-            </div>
-            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-              <Link href="/paper" className="hover:text-foreground transition-colors">Paper</Link>
-              <Link href="/contributors" className="hover:text-foreground transition-colors">Contributors</Link>
-              <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">GitHub</a>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </main>
   )
 }

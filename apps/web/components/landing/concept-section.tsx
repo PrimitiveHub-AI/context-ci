@@ -1,5 +1,4 @@
 import { Card } from "@/components/ui/card"
-import { DemoDataBadge } from "@/components/primitives/demo-data-badge"
 import {
   Code2,
   Palette,
@@ -10,6 +9,8 @@ import {
   Bot,
   Globe,
 } from "lucide-react"
+
+import { loadLatestEvaluation, summarize } from "@/lib/evaluation"
 
 const categories = [
   { name: "Software Engineering", icon: Code2, desc: "Code review, clean code, testing patterns", count: 3 },
@@ -23,6 +24,23 @@ const categories = [
 ]
 
 export function ConceptSection() {
+  const summary = summarize(loadLatestEvaluation())
+  const totalSamples = summary.inSampleSamples + summary.holdoutSamples
+  const engineStats = [
+    {
+      stat: `${summary.totalDetectors}/${summary.totalDetectors}`,
+      label: "Top 10 Detectors",
+    },
+    {
+      stat: totalSamples.toLocaleString(),
+      label: "Labeled Corpus Samples",
+    },
+    {
+      stat: summary.macroF1InSample.toFixed(3),
+      label: `Macro F1 · corpus v${summary.corpusVersion}`,
+    },
+    { stat: "Py = TS", label: "Cross-language Parity" },
+  ]
   return (
     <section className="border-y border-border/40 py-24">
       <div className="mx-auto max-w-7xl px-4 lg:px-6">
@@ -66,26 +84,22 @@ export function ConceptSection() {
           })}
         </div>
 
-        {/* Stats */}
+        {/* Engine stats — read from bench/baseline (latest TS JSON) so
+            the same artifact docs/evaluation.md is generated from
+            anchors what the homepage shows. No drift possible: CI
+            fails if either source moves without the other. */}
         <div className="mt-16 mx-auto max-w-3xl">
           <div className="grid grid-cols-2 gap-px sm:grid-cols-4 rounded-xl border border-border/40 overflow-hidden bg-border/40">
-            {[
-              { stat: "12", label: "Trusted Primitives" },
-              { stat: "55k+", label: "Tokens Curated" },
-              { stat: "94", label: "Avg Quality Score" },
-              { stat: "34k+", label: "Total Installs" },
-            ].map((item) => (
+            {engineStats.map((item) => (
               <div key={item.label} className="bg-card px-4 py-5 text-center">
                 <p className="text-2xl font-bold font-mono text-primary tabular-nums">{item.stat}</p>
                 <p className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">{item.label}</p>
               </div>
             ))}
           </div>
-          <p className="mt-3 flex items-center justify-center gap-2 text-[10px] text-muted-foreground">
-            <DemoDataBadge />
-            <span className="text-muted-foreground/70">
-              seed numbers for the prototype — replaced with live registry counts at v1
-            </span>
+          <p className="mt-3 text-center text-[10px] font-mono text-muted-foreground/70">
+            Measured {summary.measuredAt} · {summary.inSampleSamples} in-sample + {summary.holdoutSamples} holdout · reproduce with{" "}
+            <code className="text-foreground/80">bench/scripts/gate.sh</code>
           </p>
         </div>
       </div>
