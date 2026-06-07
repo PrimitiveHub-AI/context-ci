@@ -1,19 +1,33 @@
 /**
  * Evaluation loader — single source of truth for measured P/R/F1.
  *
- * Reads the freshest committed `bench/baseline/YYYY-MM-DD-ts.json` at
- * build time. `bench/scripts/render-evaluation.py` writes the same
- * numbers into `docs/evaluation.md`, and CI fails if either drifts —
- * so anything the homepage shows comes from the same artifact the
- * scanner-bench gate just measured.
+ * Reads from the latest TS baseline embedded at
+ * `apps/web/lib/evaluation.data.json`. `bench/scripts/render-evaluation.py`
+ * writes the same numbers into `docs/evaluation.md`, and CI fails if
+ * either drifts — so anything the homepage shows comes from the same
+ * artifact the scanner-bench gate just measured.
  *
- * TS is the side we read because ADR-0023 parity is CI-enforced: Py
- * and TS produce byte-identical (tp, fp, tn, fn) per detector or the
- * gate fails. Either file would yield the same numbers; we read TS
- * to keep the loader pure-Node, no Python.
+ * Why embedded JSON instead of a runtime fs read of `bench/baseline/`:
+ * the web app is shipped as a Docker image whose build context is
+ * `apps/web/`. `bench/baseline/` lives one level up at the repo root
+ * and is not copied into the image — a runtime fs read fails with
+ * "/app/bench/baseline not reachable" in any non-local environment.
+ * Embedding the JSON at build time makes the loader deterministic
+ * across dev, Docker, and Next standalone output.
+ *
+ * Keeping it fresh: `apps/web/scripts/sync-evaluation.mjs` copies the
+ * newest `bench/baseline/YYYY-MM-DD-ts.json` over the embedded file.
+ * Run it (or wire it into a prebuild hook) whenever a new baseline
+ * lands. The committed FLOOR.md discipline guarantees the baseline
+ * only ratchets upward, so the embedded copy is stale-safe — it can
+ * only lag behind reality, never overstate it.
+ *
+ * TS is the side we read (not Py) because ADR-0023 parity is
+ * CI-enforced: Py and TS produce byte-identical (tp, fp, tn, fn) per
+ * detector or the gate fails. Either file would yield the same
+ * numbers; we read TS to keep the loader pure JS.
  */
-import { readdirSync, readFileSync } from "node:fs"
-import path from "node:path"
+import baselineData from "./evaluation.data.json"
 
 export interface DetectorScore {
   readonly tp: number
@@ -47,48 +61,13 @@ export interface Evaluation {
   }
 }
 
-const BASELINE_NAME_RE = /^(\d{4}-\d{2}-\d{2})-ts\.json$/
-
 /**
- * Find the bench/baseline directory regardless of where Next is
- * launched from. Mirrors the candidate-list pattern in
- * app/top-10/page.tsx so dev (`cwd === apps/web`) and Next's
- * standalone runtime both resolve.
- */
-function findBaselineDir(): string {
-  const candidates = [
-    path.resolve(process.cwd(), "../../bench/baseline"),
-    path.resolve(process.cwd(), "bench/baseline"),
-    "/repo/bench/baseline",
-  ]
-  for (const candidate of candidates) {
-    try {
-      const entries = readdirSync(candidate)
-      if (entries.some((e) => BASELINE_NAME_RE.test(e))) return candidate
-    } catch {
-      // try next
-    }
-  }
-  throw new Error(
-    `bench/baseline not reachable. Tried: ${candidates.join(", ")}`,
-  )
-}
-
-/**
- * Latest committed TS baseline JSON. "Latest" = largest filename by
- * lexical sort, which works because the filenames are ISO dates.
- * Throws if none are present — fail loud at build time, not silent at
- * render time.
+ * Latest committed TS baseline, embedded at build time. See header
+ * comment for why this is an embedded JSON import rather than an fs
+ * read of `bench/baseline/`.
  */
 export function loadLatestEvaluation(): Evaluation {
-  const dir = findBaselineDir()
-  const dated = readdirSync(dir)
-    .filter((e) => BASELINE_NAME_RE.test(e))
-    .sort()
-  const latest = dated[dated.length - 1]
-  if (!latest) throw new Error(`No bench/baseline/*-ts.json found in ${dir}`)
-  const raw = readFileSync(path.join(dir, latest), "utf8")
-  return JSON.parse(raw) as Evaluation
+  return baselineData as unknown as Evaluation
 }
 
 /**
