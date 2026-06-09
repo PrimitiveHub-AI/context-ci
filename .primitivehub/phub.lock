@@ -4,7 +4,7 @@
     {
       "attestation": "unattested",
       "classification": "claude-md",
-      "digest": "sha256:430db87a73f061888b6276c4718d8766f615ace4eaefe70279845406be77e75c",
+      "digest": "sha256:a20c73df522b63e737f9393356f823dd40fb8cc61a36c09032257772bc5c823b",
       "path": "CLAUDE.md"
     },
     {
@@ -34,6 +34,12 @@
     {
       "attestation": "unattested",
       "classification": "primitive",
+      "digest": "sha256:211e78b11ad62ca3411d14d84e147435f6d3e365c9cd7e8a203982751736784c",
+      "path": "apps/web/content/primitives/discovery-and-design-discipline.md"
+    },
+    {
+      "attestation": "unattested",
+      "classification": "primitive",
       "digest": "sha256:bfae4d802177d2e4e9035c22b2f53b3d522626e2a225b4d91bf1321c036178dc",
       "path": "apps/web/content/primitives/django-ninja-production.md"
     },
@@ -52,13 +58,13 @@
     {
       "attestation": "unattested",
       "classification": "primitive",
-      "digest": "sha256:b018cc834638bea18c8178ffd10c0744658c7b210ab54040d342c18ceca55ea1",
+      "digest": "sha256:1d576334ca77171a452d485afa1792b6b28d30556cc1b8089c87b9e913387d73",
       "path": "apps/web/content/primitives/framer-motion-discipline.md"
     },
     {
       "attestation": "unattested",
       "classification": "primitive",
-      "digest": "sha256:68ba8c8d6194844a76ca7fc42671f5a62db43d31c1e8a194f1fbacdf37462880",
+      "digest": "sha256:bf0df8c542086304d22b0ffd63803989ae9e8d14a8c0bef384e45d8764d40211",
       "path": "apps/web/content/primitives/frontend-design-elite.md"
     },
     {
@@ -76,7 +82,7 @@
     {
       "attestation": "unattested",
       "classification": "primitive",
-      "digest": "sha256:e552be8d25e622f0d3de3e0a1d2616c3eda7c62bfcfc949e911888131de64dda",
+      "digest": "sha256:61e2f9cfdd8f03994987b00706a320f739c8534aa7d6d16e5351d8effe4bdc7b",
       "path": "apps/web/content/primitives/primitive-cross-reference-index.md"
     },
     {
