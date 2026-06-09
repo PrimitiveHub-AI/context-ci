@@ -23,17 +23,19 @@ from typing import Any, cast
 from procrastinate.contrib.django import app
 
 from .pipeline import ScanMode, execute_check
-from .results import mark_done, mark_error, pop_input
+from .results import mark_done, mark_error, pop_input, write_cached_verdict
 
 log = logging.getLogger("primitivehub.check")
 
 
 @app.task(queue="checks", name="primitivehub.run_check")
-def run_check(*, request_id: str, mode: str) -> dict[str, Any]:
+def run_check(*, request_id: str, mode: str, cache_key: str = "") -> dict[str, Any]:
     """Run one queued `/check` scan to completion and store the result.
 
     Always writes a TERMINAL poll record (done or error) so the client
     poll never hangs — even on input expiry or an unexpected exception.
+    On success, also populates the content-addressed verdict cache under
+    `cache_key` so identical future inputs skip the scan entirely.
     Returns a small status dict for observability; the cache record is
     the source of truth the poll endpoint reads.
     """
@@ -63,6 +65,9 @@ def run_check(*, request_id: str, mode: str) -> dict[str, Any]:
 
     if outcome["ok"]:
         mark_done(request_id, outcome["result"])
+        # Populate the dedup cache so identical inputs skip the scan.
+        if cache_key:
+            write_cached_verdict(cache_key, outcome["result"])
     else:
         err = outcome["error"]
         mark_error(request_id, err["code"], err["message"])

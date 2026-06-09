@@ -138,7 +138,21 @@ services:
   valkey:
     image: valkey/valkey:8-alpine
     restart: unless-stopped
-    command: ["valkey-server", "--save", "60", "1", "--appendonly", "no"]
+    # maxmemory + LRU eviction so the check input/result/dedup keys (and
+    # sessions + rate-limit counters) can't grow unbounded and OOM the host
+    # under launch load. All check keys carry TTLs; allkeys-lru is a safe
+    # backstop. Size via VALKEY_MAXMEMORY to the host's budget.
+    command:
+      - "valkey-server"
+      - "--save"
+      - "60"
+      - "1"
+      - "--appendonly"
+      - "no"
+      - "--maxmemory"
+      - "${VALKEY_MAXMEMORY:-256mb}"
+      - "--maxmemory-policy"
+      - "allkeys-lru"
     volumes:
       - valkey_data:/data
     healthcheck:

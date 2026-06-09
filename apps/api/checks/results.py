@@ -19,9 +19,12 @@ otherwise expires on a short TTL.
 
 from __future__ import annotations
 
+import hashlib
 from typing import Any
 
 from django.core.cache import cache
+
+from .verdict import VERDICT_ENGINE_VERSION
 
 # Input must outlive the queue wait + the worst-case scan runtime
 # (github: 2x30s fetch + 30s extraction + scan). 10 min is comfortable
@@ -29,6 +32,12 @@ from django.core.cache import cache
 INPUT_TTL_SECONDS = 10 * 60
 # Verdict results stay pollable for an hour after completion.
 RESULT_TTL_SECONDS = 60 * 60
+# Content-addressed verdict cache. Two users pasting the identical input
+# (the viral case: everyone checks the same trending skill from a tweet)
+# share one scan. Keyed by (mode, input) AND the engine version, so an
+# engine recalibration (e.g. ADR-0041 v0.2) auto-invalidates stale
+# verdicts. TTL bounds staleness + memory.
+VERDICT_CACHE_TTL_SECONDS = 60 * 60
 
 
 def _input_key(request_id: str) -> str:
@@ -84,3 +93,27 @@ def read_status(request_id: str) -> dict[str, Any] | None:
     """Return the poll record, or None if unknown/expired."""
     value = cache.get(_status_key(request_id))
     return value if isinstance(value, dict) else None
+
+
+# ── Content-addressed verdict cache (dedup identical checks) ──────────────
+
+
+def verdict_cache_key(mode: str, raw_input: str) -> str:
+    """Stable key for a (mode, input) pair, scoped to the engine version.
+
+    Hashes the input — the key never embeds raw user content, and the
+    digest is safe to carry through Procrastinate job args (Postgres).
+    """
+    digest = hashlib.sha256(f"{VERDICT_ENGINE_VERSION}\0{mode}\0{raw_input}".encode()).hexdigest()
+    return f"phub-check:verdict:{digest}"
+
+
+def read_cached_verdict(cache_key: str) -> dict[str, Any] | None:
+    """Return a previously-computed verdict result, or None on miss."""
+    value = cache.get(cache_key)
+    return value if isinstance(value, dict) else None
+
+
+def write_cached_verdict(cache_key: str, result: dict[str, Any]) -> None:
+    """Cache a successful verdict result for identical future inputs."""
+    cache.set(cache_key, result, timeout=VERDICT_CACHE_TTL_SECONDS)

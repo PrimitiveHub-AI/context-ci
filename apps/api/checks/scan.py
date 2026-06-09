@@ -18,7 +18,6 @@ from dataclasses import dataclass
 from typing import Any
 
 from checks.verdict import (
-    ClassifiedFinding,
     aggregate_findings,
     class_counts_to_wire,
     classified_finding_to_wire,
@@ -177,9 +176,7 @@ def build_summary(verdicts: tuple[Verdict, ...]) -> dict[str, object]:
     or fetched URL). The engine still produces the new class-separated
     breakdown + derivation.
     """
-    return build_summary_from_files(
-        [FileScan(path="", bytes_count=0, verdicts=verdicts)]
-    )
+    return build_summary_from_files([FileScan(path="", bytes_count=0, verdicts=verdicts)])
 
 
 def build_summary_from_files(files: list[FileScan]) -> dict[str, object]:

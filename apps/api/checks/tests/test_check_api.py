@@ -641,6 +641,64 @@ def test_poll_is_pending_before_worker_runs(client: Client) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Verdict cache (dedup identical checks) + scan-phase budget
+# ---------------------------------------------------------------------------
+
+
+def test_verdict_cache_roundtrip_and_scoping() -> None:
+    from checks.results import (
+        read_cached_verdict,
+        verdict_cache_key,
+        write_cached_verdict,
+    )
+
+    cache.clear()
+    k = verdict_cache_key("content", "hello")
+    assert read_cached_verdict(k) is None
+    write_cached_verdict(k, {"mode": "content", "marker": 1})
+    assert read_cached_verdict(k) == {"mode": "content", "marker": 1}
+    # Distinct input / mode → distinct key.
+    assert verdict_cache_key("content", "hello") != verdict_cache_key("content", "bye")
+    assert verdict_cache_key("content", "hello") != verdict_cache_key("url", "hello")
+
+
+@pytest.mark.django_db
+def test_identical_checks_are_deduped_by_cache(client: Client, run_inline: None) -> None:
+    """A repeat of an identical input is served from cache without enqueuing
+    a second scan — the community-spike protection."""
+    cache.clear()
+    payload = {"mode": "content", "input": "# dedup me\n\nharmless.\n"}
+    first = _post_and_poll(client, payload)
+    assert first["status"] == "done"
+
+    # Second identical request: stub defer so we can prove it's NOT called.
+    with patch("checks.api.run_check.defer") as mock_defer:
+        second = _post_and_poll(client, payload)
+    assert second["status"] == "done"
+    assert mock_defer.call_count == 0  # cache hit → no worker enqueue
+    assert second["result"]["summary"]["trustScore"] == first["result"]["summary"]["trustScore"]
+
+
+def test_scan_extraction_respects_wall_clock_budget(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Once the scan budget is exhausted, remaining files are listed
+    unscanned and `scan_timed_out` is True — no pegging a worker slot."""
+    from checks import pipeline
+    from checks.npx_resolver import ExtractedFile
+
+    monkeypatch.setattr(pipeline, "SCAN_BUDGET_SECONDS", -1.0)  # exhausted at once
+    files = (
+        ExtractedFile(path="a.md", bytes_count=3, content="hi\n"),
+        ExtractedFile(path="b.md", bytes_count=3, content="yo\n"),
+    )
+    scans, skipped, timed_out = pipeline._scan_extraction(files, "pkg", "1.0.0")
+    assert timed_out is True
+    assert skipped == 0
+    assert all(fs.verdicts == () for fs in scans)  # nothing scored once over budget
+
+
+# ---------------------------------------------------------------------------
 # Coordinate parsing for the legitimate scoped/unscoped combinations
 # ---------------------------------------------------------------------------
 

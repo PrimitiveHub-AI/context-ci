@@ -21,6 +21,7 @@ scrubbing the input (see `check_tasks.run_check`).
 
 from __future__ import annotations
 
+import time
 from typing import Any, Literal
 
 from .github_resolver import (
@@ -56,6 +57,15 @@ from .url_fetcher import MAX_RESPONSE_BYTES, UrlFetchError, fetch_url
 # 1 MiB hard cap on pasted content body — per ADR-0034 § 5. Prevents a
 # single request from consuming arbitrary worker memory.
 MAX_CONTENT_BYTES = 1 * 1024 * 1024
+
+# Wall-clock budget for the DETECTOR-SCAN phase of a multi-file archive
+# (npx/github), separate from the 30s extraction budget in npx_resolver.
+# A huge repo (thousands of files) would otherwise run the Top 10 over
+# every file for minutes, pegging a worker concurrency slot and starving
+# the queue. When the budget is hit we return the files scanned so far
+# plus a `scanTimedOut` flag rather than failing — a partial verdict on a
+# pathologically large repo is more useful than an error.
+SCAN_BUDGET_SECONDS = 45.0
 
 ScanMode = Literal["content", "url", "npx", "github"]
 
@@ -146,18 +156,33 @@ def _run_url(raw_input: str, request_id: str) -> dict[str, Any]:
 
 def _scan_extraction(
     files_iter: tuple[ExtractedFile, ...], slug_prefix: str, version: str
-) -> tuple[list[FileScan], int]:
+) -> tuple[list[FileScan], int, bool]:
     """Run the Top 10 over each text file in an extraction.
 
-    Returns (file_scans, skipped_binary_count). Binary files appear in
-    the scan list with empty `verdicts` so the user sees what was in
-    the archive even if nothing was scored on them.
+    Returns (file_scans, skipped_binary_count, scan_timed_out). Binary
+    files appear in the scan list with empty `verdicts` so the user sees
+    what was in the archive even if nothing was scored on them.
+
+    The detector-scan phase is bounded by `SCAN_BUDGET_SECONDS`: once the
+    budget is exhausted we stop scanning further files, list the rest as
+    unscanned (empty verdicts), and return `scan_timed_out=True`. This
+    keeps one pathologically large repo from pegging a worker slot for
+    minutes and starving the queue under load — a partial verdict beats a
+    hung job.
     """
+    deadline = time.monotonic() + SCAN_BUDGET_SECONDS
     file_scans: list[FileScan] = []
     skipped_binary = 0
+    scan_timed_out = False
     for ef in files_iter:
         if ef.content is None:
             skipped_binary += 1
+            file_scans.append(FileScan(path=ef.path, bytes_count=ef.bytes_count, verdicts=()))
+            continue
+        if time.monotonic() > deadline:
+            # Out of budget — list the remaining text files as unscanned
+            # so the user still sees the full archive contents.
+            scan_timed_out = True
             file_scans.append(FileScan(path=ef.path, bytes_count=ef.bytes_count, verdicts=()))
             continue
         verdicts = scan_blob(
@@ -167,7 +192,7 @@ def _scan_extraction(
             file_path=ef.path,
         )
         file_scans.append(FileScan(path=ef.path, bytes_count=ef.bytes_count, verdicts=verdicts))
-    return file_scans, skipped_binary
+    return file_scans, skipped_binary, scan_timed_out
 
 
 def _run_npx(raw_input: str, request_id: str) -> dict[str, Any]:
@@ -179,13 +204,16 @@ def _run_npx(raw_input: str, request_id: str) -> dict[str, Any]:
     except NpxResolveError as exc:
         return _err(exc.code, exc.message)
 
-    file_scans, skipped_binary = _scan_extraction(extraction.files, resolved.name, resolved.version)
+    file_scans, skipped_binary, scan_timed_out = _scan_extraction(
+        extraction.files, resolved.name, resolved.version
+    )
     aggregate = aggregate_files(file_scans)
     summary = build_summary_from_files(file_scans)
     summary["filesScanned"] = sum(1 for fs in file_scans if fs.verdicts)
     summary["filesSkippedBinary"] = skipped_binary
     summary["totalUncompressedBytes"] = extraction.total_uncompressed_bytes
     summary["compressedBytes"] = extraction.compressed_bytes
+    summary["scanTimedOut"] = scan_timed_out
 
     return _ok(
         {
@@ -224,13 +252,16 @@ def _run_github(raw_input: str, request_id: str) -> dict[str, Any]:
         # the npx module. Pass the code through unchanged.
         return _err(exc.code, exc.message)
 
-    file_scans, skipped_binary = _scan_extraction(extraction.files, resolved.name, resolved.version)
+    file_scans, skipped_binary, scan_timed_out = _scan_extraction(
+        extraction.files, resolved.name, resolved.version
+    )
     aggregate = aggregate_files(file_scans)
     summary = build_summary_from_files(file_scans)
     summary["filesScanned"] = sum(1 for fs in file_scans if fs.verdicts)
     summary["filesSkippedBinary"] = skipped_binary
     summary["totalUncompressedBytes"] = extraction.total_uncompressed_bytes
     summary["compressedBytes"] = extraction.compressed_bytes
+    summary["scanTimedOut"] = scan_timed_out
 
     return _ok(
         {

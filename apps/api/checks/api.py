@@ -42,7 +42,14 @@ from .rate_limit import (
     check_rate_limit,
     client_ip,
 )
-from .results import mark_pending, read_status, stash_input
+from .results import (
+    mark_done,
+    mark_pending,
+    read_cached_verdict,
+    read_status,
+    stash_input,
+    verdict_cache_key,
+)
 from .tasks import run_check
 
 router = Router(tags=["checks"])
@@ -188,11 +195,21 @@ def check(
         _sniff_mode(raw_input) if payload.mode == "auto" else payload.mode
     )
 
-    # Hand the input to the worker via Valkey (NOT via job args — those
-    # land in Postgres). Seed the poll record as pending, then defer.
-    stash_input(request_id, raw_input)
-    mark_pending(request_id, mode)
-    run_check.defer(request_id=request_id, mode=mode)
+    # Content-addressed dedup: if an identical (mode, input) was scanned
+    # recently under this engine version, serve the cached verdict without
+    # touching the worker. This is what absorbs a community spike where
+    # everyone checks the same trending skill.
+    cache_key = verdict_cache_key(mode, raw_input)
+    cached = read_cached_verdict(cache_key)
+    if cached is not None:
+        mark_done(request_id, {**cached, "requestId": request_id})
+    else:
+        # Hand the input to the worker via Valkey (NOT via job args — those
+        # land in Postgres). Seed the poll record as pending, then defer.
+        # The cache_key is a hash (no raw content), safe to pass as a job arg.
+        stash_input(request_id, raw_input)
+        mark_pending(request_id, mode)
+        run_check.defer(request_id=request_id, mode=mode, cache_key=cache_key)
 
     out = JsonResponse(
         {"requestId": request_id, "status": "pending", "mode": mode},
