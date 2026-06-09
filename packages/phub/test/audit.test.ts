@@ -63,6 +63,40 @@ describe("phub audit (programmatic runAudit)", () => {
     if (root) rmSync(root, { recursive: true, force: true })
   })
 
+  it("surfaces executable scripts as uncovered (not as clean, not as flagged)", () => {
+    // A skill that ships scripts: phub audit reviews the SKILL.md but the
+    // scripts are the real T5 surface it does NOT cover. They must be
+    // reported as uncovered, not silently dropped — so "clean" can never
+    // be misread as "safe". (Regression for the skill-consumption gap,
+    // ledger SK-002/SK-004.)
+    root = makeTree({
+      "skills/demo/SKILL.md": CLEAN_FIXTURE_TEXT,
+      "skills/demo/install.sh": "#!/usr/bin/env bash\necho hi\n",
+      "scripts/server.cjs": "console.log('x')\n",
+      "assets/logo.png": "binary-ish",
+      "README.md": "not an artifact",
+    })
+    const r = runAudit(root, {
+      json: false,
+      sarif: false,
+      strict: false,
+      maxFiles: 5000,
+      maxDepth: 12,
+    })
+    // Scripts are surfaced as uncovered surface...
+    const uncoveredPaths = r.uncovered.map((u) => u.path).sort()
+    expect(uncoveredPaths).toEqual(["scripts/server.cjs", "skills/demo/install.sh"])
+    expect(r.uncovered.every((u) => u.kind === "executable")).toBe(true)
+    // ...but they are NOT artifacts, NOT scanned, and do NOT flag the run.
+    expect(r.artifacts.find((a) => a.path.endsWith(".sh"))).toBeUndefined()
+    expect(r.artifacts.find((a) => a.path.endsWith(".cjs"))).toBeUndefined()
+    expect(r.exitCode).toBe(0)
+    expect(r.summary.flaggedArtifacts).toBe(0)
+    // Inert files (image, README) are neither artifacts nor uncovered.
+    expect(uncoveredPaths.find((p) => p.endsWith(".png"))).toBeUndefined()
+    expect(uncoveredPaths.find((p) => p.endsWith("README.md"))).toBeUndefined()
+  })
+
   it("inventories every artifact class found and skips noise", () => {
     root = makeTree({
       "AGENTS.md": CLEAN_FIXTURE_TEXT,

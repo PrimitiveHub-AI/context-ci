@@ -27,6 +27,7 @@ const SEVERITY_BADGE: Record<Severity, string> = {
 }
 
 const INVENTORY_PATH_PREVIEW = 3
+const UNCOVERED_PREVIEW = 8
 
 function previewPaths(paths: readonly string[]): string {
   if (paths.length <= INVENTORY_PATH_PREVIEW) return paths.join(", ")
@@ -148,6 +149,27 @@ export function renderAuditHumanReport(result: AuditResult): string {
   if (result.truncated) {
     out.push(`WARN: file-limit reached; results truncated. Re-run with --max-files=<n> to expand.`)
   }
+
+  // Uncovered surface — files present but NOT reviewed by the
+  // context-artifact kernel (executable scripts etc.). Non-failing, but
+  // loud: it stops "clean" from being read as "safe". Capped so a whole-
+  // repo audit (hundreds of source files) doesn't bury the report — the
+  // count is the signal; the list is a sample.
+  if (result.uncovered.length > 0) {
+    out.push(
+      `WARN: uncovered surface (${result.uncovered.length}) — present but NOT reviewed by phub audit`,
+    )
+    out.push(`      (audit covers agent-context artifacts, not executable code — review these separately):`)
+    const shown = result.uncovered.slice(0, UNCOVERED_PREVIEW)
+    for (const u of shown) {
+      out.push(`      ${u.path}   (${u.kind})`)
+    }
+    if (result.uncovered.length > UNCOVERED_PREVIEW) {
+      out.push(`      … (+${result.uncovered.length - UNCOVERED_PREVIEW} more; use --json for the full list)`)
+    }
+    out.push("")
+  }
+
   out.push(summarizeSkipped(result.skipped))
   out.push("")
 
@@ -158,7 +180,11 @@ export function renderAuditHumanReport(result: AuditResult): string {
   const s = result.summary
   const driftFailure = result.lockState?.mode === "check" && result.lockState.hasDrift
   if (s.flaggedArtifacts === 0 && !driftFailure) {
-    out.push(`Result: ${s.totalArtifacts}/${s.totalArtifacts} artifacts clean.`)
+    const tail =
+      result.uncovered.length > 0
+        ? ` — but ${result.uncovered.length} uncovered file${result.uncovered.length === 1 ? "" : "s"} need separate review (see above).`
+        : "."
+    out.push(`Result: ${s.totalArtifacts}/${s.totalArtifacts} artifacts clean${tail}`)
   } else {
     const parts: string[] = []
     if (s.flaggedArtifacts > 0) {

@@ -19,6 +19,7 @@ import { resolve, relative, sep, join, isAbsolute } from "node:path"
 
 import { classify, isTextScannable } from "../audit/classifier.js"
 import { sha256Hex } from "../audit/digest.js"
+import { classifyUncovered, type UncoveredFile } from "../audit/uncovered.js"
 import {
   diffLock,
   isLockDrifted,
@@ -148,12 +149,20 @@ export function runAudit(rootPathArg: string, opts: AuditOptions): AuditResult {
   })()
 
   const artifacts: AuditedArtifact[] = []
+  const uncovered: UncoveredFile[] = []
 
   for (const abs of walked.files) {
     const rel = rootIsFile ? NORM(abs).split("/").pop() ?? abs : NORM(relative(root, abs))
     if (rel.length === 0) continue
     const cls = classify(rel)
-    if (cls === null) continue
+    if (cls === null) {
+      // Not a context artifact. If it's notable surface phub audit does
+      // not review (executable scripts), record it for the warning block
+      // rather than dropping it silently.
+      const kind = classifyUncovered(rel)
+      if (kind !== null) uncovered.push({ path: rel, kind })
+      continue
+    }
 
     let content: Buffer
     try {
@@ -193,6 +202,7 @@ export function runAudit(rootPathArg: string, opts: AuditOptions): AuditResult {
     }
     return a.path < b.path ? -1 : a.path > b.path ? 1 : 0
   })
+  uncovered.sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : 0))
 
   const byClassification: Record<string, number> = {}
   let flaggedArtifacts = 0
@@ -256,6 +266,7 @@ export function runAudit(rootPathArg: string, opts: AuditOptions): AuditResult {
     policySource: resolved.source,
     artifacts,
     skipped: walked.skipped,
+    uncovered,
     truncated: walked.truncated,
     summary,
     lockState,
@@ -347,6 +358,7 @@ export function auditCommand(rootArg: string | undefined, opts: AuditOptions): n
             verdicts: a.adjustedVerdicts.map((adj) => adj.verdict),
           })),
           skipped: result.skipped,
+          uncovered: result.uncovered,
           truncated: result.truncated,
           summary: result.summary,
           lock: result.lockState

@@ -11,6 +11,7 @@ import { type Verdict } from "../scanners/types.js"
 
 import { type ArtifactClass } from "./classifier.js"
 import { type LockDrift, type PhubLock } from "./lock.js"
+import { type UncoveredFile } from "./uncovered.js"
 import { type SkippedEntry } from "./walker.js"
 
 export interface AuditedArtifact {
@@ -65,6 +66,13 @@ export interface AuditResult {
   artifacts: AuditedArtifact[]
   /** Every entry the walker chose not to descend into, with reason. */
   skipped: SkippedEntry[]
+  /**
+   * Walked files that are NOT agent-context artifacts but ARE notable
+   * surface phub audit did not review (e.g. executable scripts). Surfaced
+   * as a non-failing warning so "clean" never reads as "safe". Empty when
+   * the tree holds only context artifacts + inert files.
+   */
+  uncovered: UncoveredFile[]
   /** True iff the walker hit `maxFiles` before exhausting the tree. */
   truncated: boolean
   summary: AuditSummary
