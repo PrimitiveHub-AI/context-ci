@@ -601,6 +601,42 @@ that consume it. Grep before pushing.
 
 ---
 
+### 23. `/check` ran its whole scan inside a single-threaded web request — launch-day DoS waiting to happen — 2026-06-09
+
+**Phase:** 5 (public `/check` surface, ADR-0034)
+**Symptom:** Not a runtime crash yet — found by audit before launch. The
+public `/check` endpoint did outbound tarball fetch (GitHub: `main` then
+`master`, 30 s each) + decompress + untar + run the Top 10 over up to
+20,000 files **synchronously inside the HTTP request**, served by a
+single uvicorn process with no `--workers`.
+**Root cause:** Under Django ASGI, sync views run in
+`sync_to_async(thread_sensitive=True)` — one shared executor thread. So
+`/check` serialized: a single slow scan blocked **every** request in the
+process, including `GET /healthz`. The container healthcheck (10 s
+interval, 5 s timeout) would then fail mid-scan and flap the whole API
+down — not just `/check`. The per-IP rate limit bounds requests per
+client but puts **no ceiling on global concurrency or total work**, so
+launch traffic (or one IP firing 30 GitHub scans) saturates the thread.
+**Fix:** Moved the scan off the request path onto the Procrastinate
+`checks` queue with bounded `--concurrency` (ADR-0044). `POST /check`
+enqueues → `202 + requestId`; `GET /check/{id}` polls. Web tier and
+`/healthz` stay responsive under any scan load; worker concurrency is
+the load ceiling. Input is handed off via Valkey (scrubbed post-scan),
+never via Postgres job args (preserves ADR-0034 § 5).
+**Prevention:** No blocking outbound I/O or unbounded CPU work inside a
+web request on a single-process ASGI server — push it to the worker and
+poll. New public surfaces declare where their heavy work runs in the
+design note. Follow-ups still open: result caching, `mem_limit` on
+`api`/`api-worker`, Valkey `maxmemory`, the `url`-mode DNS-rebinding
+TOCTOU, and the verdict-engine band calibration (prompt injection →
+`clean`).
+**Lesson:** "Rate-limited per IP" is not "load-bounded." A per-client
+limit says nothing about total concurrent server work; bound the
+expensive thing globally (queue + concurrency cap), and never let a
+public endpoint's slow path share a thread with the health check.
+
+---
+
 ## Hallucination log (mistakes I made in design, not runtime)
 
 These are different from bugs — they're places where I (the AI

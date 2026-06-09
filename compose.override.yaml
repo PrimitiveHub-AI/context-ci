@@ -72,7 +72,9 @@ services:
       - "-c"
       - |
         python manage.py migrate procrastinate --noinput && \
-        exec python manage.py procrastinate worker --queues=default
+        exec python manage.py procrastinate worker \
+          --queues=default,checks \
+          --concurrency=${CHECK_WORKER_CONCURRENCY:-2}
     environment:
       DEBUG: "True"
       ALLOWED_HOSTS: "*"

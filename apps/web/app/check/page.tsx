@@ -33,23 +33,60 @@ export default function CheckPage() {
     setError(null)
     setResult(null)
     try {
+      // 1. Enqueue. The scan now runs on the worker (ADR-0034 async
+      //    amendment) so the web tier never blocks on a slow fetch/scan.
       const res = await fetch("/api/v1/check", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mode: "auto", input: input.trim() }),
       })
-      const data = (await res.json()) as
-        | CheckResponse
+      const enqueued = (await res.json()) as
+        | { requestId: string; status: string; mode: string }
         | { error: { code: string; message: string } }
-      if (!res.ok || "error" in data) {
-        const err =
-          "error" in data
-            ? data.error
-            : { code: `http-${res.status}`, message: "The server returned an error." }
-        setError(err)
+      if (!res.ok || "error" in enqueued) {
+        setError(
+          "error" in enqueued
+            ? enqueued.error
+            : { code: `http-${res.status}`, message: "The server returned an error." },
+        )
         return
       }
-      setResult(data)
+
+      // 2. Poll for the verdict with gentle backoff. A github scan of a
+      //    large repo is the worst case; cap total wait generously.
+      const { requestId } = enqueued
+      const deadline = Date.now() + 150_000 // 150s ceiling
+      let delay = 700
+      while (Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, delay))
+        delay = Math.min(delay * 1.4, 2500)
+        const pollRes = await fetch(`/api/v1/check/${requestId}`)
+        if (pollRes.status === 404) {
+          setError({
+            code: "check:expired",
+            message: "This check expired before it finished. Please run it again.",
+          })
+          return
+        }
+        const record = (await pollRes.json()) as
+          | { status: "pending" }
+          | { status: "done"; result: CheckResponse }
+          | { status: "error"; error: { code: string; message: string } }
+        if (record.status === "done") {
+          setResult(record.result)
+          return
+        }
+        if (record.status === "error") {
+          setError(record.error)
+          return
+        }
+        // status === "pending" → keep polling.
+      }
+      setError({
+        code: "check:timeout",
+        message:
+          "The scan is taking longer than expected. It may still finish — try again in a moment.",
+      })
     } catch (exc) {
       setError({
         code: "network",

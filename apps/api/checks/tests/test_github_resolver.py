@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import gzip
 import io
-import json
 import tarfile
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -25,6 +24,10 @@ from checks.github_resolver import (
     parse_coordinate,
 )
 
+# Shared async-roundtrip helper (POST 202 → poll). `run_inline` (conftest)
+# makes the scan run synchronously so the poll is terminal.
+from checks.tests.test_check_api import _post_and_poll
+
 # ---------------------------------------------------------------------------
 # parse_coordinate — shape acceptance
 # ---------------------------------------------------------------------------
@@ -33,7 +36,12 @@ from checks.github_resolver import (
 @pytest.mark.parametrize(
     ("raw", "expected_owner", "expected_repo", "expected_ref"),
     [
-        ("https://github.com/tristanmanchester/agent-skills", "tristanmanchester", "agent-skills", None),
+        (
+            "https://github.com/tristanmanchester/agent-skills",
+            "tristanmanchester",
+            "agent-skills",
+            None,
+        ),
         ("https://github.com/owner/repo", "owner", "repo", None),
         ("https://github.com/owner/repo.git", "owner", "repo", None),
         ("https://github.com/owner/repo/tree/develop", "owner", "repo", "develop"),
@@ -221,7 +229,7 @@ def _fake_response(body: bytes, *, status: int = 200) -> MagicMock:
 
 
 @pytest.mark.django_db
-def test_github_endpoint_clean_repo(client: Any) -> None:
+def test_github_endpoint_clean_repo(client: Any, run_inline: None) -> None:
     """End-to-end github mode: fetch tarball, extract, scan files."""
     cache.clear()
     files = {
@@ -232,19 +240,16 @@ def test_github_endpoint_clean_repo(client: Any) -> None:
     tarball = _make_repo_tarball(files)
 
     with patch.object(github_resolver, "urlopen", return_value=_fake_response(tarball)):
-        response = client.post(
-            "/api/v1/check",
-            data=json.dumps(
-                {
-                    "mode": "auto",
-                    "input": "https://github.com/tristanmanchester/agent-skills --skill convex-nextjs",
-                }
-            ),
-            content_type="application/json",
+        record = _post_and_poll(
+            client,
+            {
+                "mode": "auto",
+                "input": "https://github.com/tristanmanchester/agent-skills --skill convex-nextjs",
+            },
         )
 
-    assert response.status_code == 200
-    body = response.json()
+    assert record["status"] == "done"
+    body = record["result"]
     assert body["mode"] == "github"
     assert body["target"]["kind"] == "github-repo"
     assert body["target"]["name"] == "tristanmanchester/agent-skills"
@@ -255,63 +260,46 @@ def test_github_endpoint_clean_repo(client: Any) -> None:
 
 
 @pytest.mark.django_db
-def test_github_endpoint_explicit_mode(client: Any) -> None:
+def test_github_endpoint_explicit_mode(client: Any, run_inline: None) -> None:
     """`mode=github` works directly without auto-sniffing."""
     cache.clear()
     files = {"README.md": b"# clean\n"}
     tarball = _make_repo_tarball(files)
     with patch.object(github_resolver, "urlopen", return_value=_fake_response(tarball)):
-        response = client.post(
-            "/api/v1/check",
-            data=json.dumps({"mode": "github", "input": "owner/repo"}),
-            content_type="application/json",
-        )
-    assert response.status_code == 200
-    body = response.json()
+        record = _post_and_poll(client, {"mode": "github", "input": "owner/repo"})
+    assert record["status"] == "done"
+    body = record["result"]
     assert body["mode"] == "github"
     assert body["target"]["name"] == "owner/repo"
 
 
 @pytest.mark.django_db
-def test_github_endpoint_404_on_both_default_branches(client: Any) -> None:
-    """Both `main` and `master` 404 → named error code."""
+def test_github_endpoint_404_on_both_default_branches(client: Any, run_inline: None) -> None:
+    """Both `main` and `master` 404 → named error surfaced in the poll record."""
     cache.clear()
     with patch.object(github_resolver, "urlopen", return_value=_fake_response(b"", status=404)):
-        response = client.post(
-            "/api/v1/check",
-            data=json.dumps({"mode": "github", "input": "owner/empty"}),
-            content_type="application/json",
-        )
-    # The fake response doesn't raise HTTPError; status=404 in our fake
-    # makes _http_get_bytes treat status as 200 (it relies on urlopen
-    # to raise). We special-case by having `status` reported as 404 in
-    # the mock: the request handler still attempts to read but body is
-    # empty. This produces github:fetch-failed or github:ref-not-found
-    # depending on path.
-    assert response.status_code == 400
-    code = response.json()["error"]["code"]
-    assert code.startswith("github:")
+        record = _post_and_poll(client, {"mode": "github", "input": "owner/empty"})
+    # The github resolver maps both-branch 404 to a github:* error code,
+    # which the worker stores as a terminal error in the poll record.
+    assert record["status"] == "error"
+    assert record["error"]["code"].startswith("github:")
 
 
 @pytest.mark.django_db
-def test_auto_mode_dispatches_to_content(client: Any) -> None:
+def test_auto_mode_dispatches_to_content(client: Any, run_inline: None) -> None:
     """mode=auto routes raw markdown to `content`."""
     cache.clear()
-    response = client.post(
-        "/api/v1/check",
-        data=json.dumps(
-            {"mode": "auto", "input": "# Hello\n\nA harmless markdown file.\n"}
-        ),
-        content_type="application/json",
+    record = _post_and_poll(
+        client, {"mode": "auto", "input": "# Hello\n\nA harmless markdown file.\n"}
     )
-    assert response.status_code == 200
-    body = response.json()
+    assert record["status"] == "done"
+    body = record["result"]
     assert body["mode"] == "content"
     assert body["summary"]["verdictBand"] == "clean"
 
 
 @pytest.mark.django_db
-def test_auto_mode_dispatches_to_url(client: Any) -> None:
+def test_auto_mode_dispatches_to_url(client: Any, run_inline: None) -> None:
     """mode=auto routes a non-github https URL to `url` mode."""
     cache.clear()
     from checks import url_fetcher
@@ -322,12 +310,9 @@ def test_auto_mode_dispatches_to_url(client: Any) -> None:
     fake.headers = {}
     fake.read = MagicMock(return_value=body_bytes)
     with patch.object(url_fetcher, "urlopen", return_value=fake):
-        response = client.post(
-            "/api/v1/check",
-            data=json.dumps(
-                {"mode": "auto", "input": "https://raw.githubusercontent.com/x/y/main/SKILL.md"}
-            ),
-            content_type="application/json",
+        record = _post_and_poll(
+            client,
+            {"mode": "auto", "input": "https://raw.githubusercontent.com/x/y/main/SKILL.md"},
         )
-    assert response.status_code == 200
-    assert response.json()["mode"] == "url"
+    assert record["status"] == "done"
+    assert record["result"]["mode"] == "url"

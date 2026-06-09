@@ -87,7 +87,9 @@ services:
       - "-c"
       - |
         python manage.py migrate procrastinate --noinput && \
-        exec python manage.py procrastinate worker --queues=default
+        exec python manage.py procrastinate worker \
+          --queues=default,checks \
+          --concurrency=${CHECK_WORKER_CONCURRENCY:-2}
     environment:
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-dev-secret-not-for-production}
       DEBUG: ${DEBUG:-False}
