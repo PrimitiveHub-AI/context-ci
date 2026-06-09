@@ -4,6 +4,8 @@ import Link from "next/link"
 import { AlertCircle, Package2, ArrowRight } from "lucide-react"
 
 import { BundleCard } from "@/components/primitives/bundle-card"
+import { PlannedBadge } from "@/components/ui/planned-badge"
+import { isEnabled } from "@/lib/flags"
 import { useBundles } from "@/lib/api/queries"
 import { bundles as mockBundles } from "@/lib/data/bundles"
 import type { Bundle } from "@/lib/types"
@@ -38,9 +40,10 @@ export function RegistryBundlesSection() {
             <Package2 className="size-4" />
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-foreground">
-              Bundles
-            </h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-semibold text-foreground">Bundles</h2>
+              {!isEnabled("bundles") && <PlannedBadge label="Planned · install" />}
+            </div>
             <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed max-w-xl">
               Curated compositions of trusted primitives for a specific
               role. Install a complete cognition stack with{" "}

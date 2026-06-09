@@ -9,6 +9,8 @@ import { useState } from "react"
 import { OrgPicker } from "@/components/org-picker"
 import { UserMenu } from "@/components/user-menu"
 import { useWhoami } from "@/lib/api/queries"
+import { isEnabled } from "@/lib/flags"
+import { PlannedBadge } from "@/components/ui/planned-badge"
 
 // Ordered by the AV-family funnel (ADR-0040 §1): first touch
 // (Check) → research/encyclopedia (Top 10) → on-demand scan
@@ -31,6 +33,7 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const { data: session } = useWhoami()
   const authenticated = Boolean(session?.authenticated)
+  const authEnabled = isEnabled("auth")
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/60 bg-background/70 backdrop-blur-2xl">
@@ -64,7 +67,7 @@ export function Navbar() {
           </nav>
         </div>
         <div className="hidden items-center gap-1.5 md:flex">
-          <OrgPicker />
+          {authEnabled && <OrgPicker />}
           <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground" asChild>
             <a href="https://github.com" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
               <Github className="size-3.5" />
@@ -73,7 +76,7 @@ export function Navbar() {
           <div className="mx-1.5 h-4 w-px bg-border" />
           {authenticated ? (
             <UserMenu />
-          ) : (
+          ) : authEnabled ? (
             <Button
               variant="ghost"
               size="sm"
@@ -81,6 +84,16 @@ export function Navbar() {
               asChild
             >
               <a href="/auth/login">Sign in</a>
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled
+              title="Accounts — planned with publishing"
+              className="text-muted-foreground/50 text-[13px] h-7 cursor-not-allowed"
+            >
+              Sign in
             </Button>
           )}
           <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 text-[13px] h-7" asChild>
@@ -117,7 +130,16 @@ export function Navbar() {
             ))}
           </nav>
           <div className="mt-3 flex flex-col gap-2 border-t border-border/40 pt-3">
-            <Button variant="outline" size="sm" className="text-[13px]">Sign in</Button>
+            {authEnabled ? (
+              <Button variant="outline" size="sm" className="text-[13px]" asChild>
+                <a href="/auth/login">Sign in</a>
+              </Button>
+            ) : (
+              <div className="flex items-center justify-between rounded-md border border-border/40 px-3 py-2">
+                <span className="text-[13px] text-muted-foreground/60">Sign in</span>
+                <PlannedBadge label="Planned" />
+              </div>
+            )}
             <Button size="sm" className="bg-primary text-primary-foreground text-[13px]" asChild>
               <Link href="/registry">Explore Primitives</Link>
             </Button>

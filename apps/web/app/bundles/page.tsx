@@ -17,5 +17,9 @@ import { permanentRedirect } from "next/navigation"
  * forget the old URL.
  */
 export default function BundlesRedirectPage(): never {
-  permanentRedirect("/registry#bundles")
+  // Target /registry (not #bundles): the bundles section is flag-gated
+  // (off for v1) so the anchor may not exist. The merge into the registry
+  // surface is permanent regardless (ADR-0040 §2); the section reappears
+  // in place when `bundles` is flipped on.
+  permanentRedirect("/registry")
 }

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { PrimitiveCard } from "@/components/primitives/primitive-card"
 import { PrimitiveTable } from "@/components/primitives/primitive-table"
 import { RegistryBundlesSection } from "@/components/primitives/registry-bundles-section"
+import { isEnabled } from "@/lib/flags"
 import { usePrimitives } from "@/lib/api/queries"
 import { primitives as mockPrimitives } from "@/lib/data/primitives"
 import { categories } from "@/lib/data/categories"
@@ -97,7 +98,7 @@ export default function RegistryPage() {
             ADR-0040 §2 (one surface per funnel stage). Renders above
             the primitive search so curated stacks are the first thing
             a visitor sees; the search anchors at #primitives below. */}
-        <RegistryBundlesSection />
+        {isEnabled("bundles") && <RegistryBundlesSection />}
 
         {/* Search bar + view toggle */}
         <div id="primitives" className="scroll-mt-20 flex items-center gap-3 mb-6">

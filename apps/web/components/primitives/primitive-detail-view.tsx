@@ -10,6 +10,8 @@ import { ScoreBadge } from "@/components/primitives/score-badge"
 import { CompatibilityTags } from "@/components/primitives/compatibility-tags"
 import { PipelineStage } from "@/components/primitives/pipeline-stage"
 import { DemoDataBadge } from "@/components/primitives/demo-data-badge"
+import { PlannedBadge } from "@/components/ui/planned-badge"
+import { isEnabled } from "@/lib/flags"
 import { usePrimitive } from "@/lib/api/queries"
 import type { Primitive, PipelineStage as PipelineStageType } from "@/lib/types"
 import {
@@ -224,18 +226,22 @@ export function PrimitiveDetailView({
         <div className="mx-auto max-w-7xl px-4 py-4 lg:px-6">
           <div className="flex items-center gap-3 flex-wrap">
             <span className="text-[9px] uppercase tracking-widest text-muted-foreground font-medium">Export as agent context</span>
-            {["Claude Code", "Cursor Rules", "Codex / AGENTS.md", "v0", "Windsurf"].map(
-              (target) => (
-                <Button
-                  key={target}
-                  variant="outline"
-                  size="sm"
-                  className="gap-1.5 text-[11px] font-mono h-7 border-border/60"
-                >
-                  <ArrowUpRight className="size-2.5" />
-                  {target}
-                </Button>
+            {isEnabled("multiAgentExport") ? (
+              ["Claude Code", "Cursor Rules", "Codex / AGENTS.md", "v0", "Windsurf"].map(
+                (target) => (
+                  <Button
+                    key={target}
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-[11px] font-mono h-7 border-border/60"
+                  >
+                    <ArrowUpRight className="size-2.5" />
+                    {target}
+                  </Button>
+                )
               )
+            ) : (
+              <PlannedBadge label="Planned · one-click export" />
             )}
           </div>
         </div>

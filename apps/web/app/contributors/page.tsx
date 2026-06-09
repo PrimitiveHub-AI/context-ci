@@ -9,6 +9,8 @@ import { useContributors, useReviews } from "@/lib/api/queries"
 import { reviewQueue as mockReviews } from "@/lib/data/reviews"
 import { contributors as mockContributors } from "@/lib/data/contributors"
 import type { Contributor, ReviewItem } from "@/lib/types"
+import { isEnabled } from "@/lib/flags"
+import { ComingSoonPanel } from "@/components/ui/coming-soon"
 import {
   ShieldCheck,
   AlertCircle,
@@ -18,6 +20,7 @@ import {
   XCircle,
   MessageSquare,
   User,
+  Users,
   Star,
   Calendar,
   FileText,
@@ -41,6 +44,23 @@ const statusIcons: Record<string, { icon: React.ElementType; color: string }> = 
 }
 
 export default function ContributorsPage() {
+  // Postponed for v1 — the governance / reputation social layer ships
+  // with publishing (flags.ts → contributors). Gate has no hooks; the
+  // dashboard's hooks live in ContributorsDashboard below.
+  if (!isEnabled("contributors")) {
+    return (
+      <ComingSoonPanel
+        icon={Users}
+        label="Planned · with publishing"
+        title="Contributor & review dashboard"
+        description="Expert review, reputation, and governance ship with publishing. The verifier, /check, and the Context CI Top 10 are live now."
+      />
+    )
+  }
+  return <ContributorsDashboard />
+}
+
+function ContributorsDashboard() {
   const [tab, setTab] = useState<"queue" | "contributors">("queue")
   const reviewsQuery = useReviews()
   const contributorsQuery = useContributors()
