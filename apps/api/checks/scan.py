@@ -1,22 +1,30 @@
-"""Detector orchestration + deterministic trust scoring for `/check`.
+"""Detector orchestration + verdict aggregation for `/check`.
 
 Runs the canonical Python detector set (`get_all_detectors()`) over
 a single content blob OR a collection of blobs (one per file from a
 tarball extraction), and aggregates results into a single response
 shape suitable for the verdict UI.
 
-The trust score is the formula locked in ADR-0034 § 4:
-
-    score = max(0, 100 - 25 * count(FAIL) - 10 * count(WARN))
-
-It's the only aggregate number this module emits. Reproducible from
-the verdict shape alone — no ML, no community signal, no vibes.
+The aggregate score comes from the verdict engine in `verdict.py`
+(ADR-0041) — class-separated, density-aware, fully derivable. The
+old `100 - 25*FAIL - 10*WARN` formula from ADR-0034 § 4 is
+superseded; see `trust_score()` for the back-compat shim retained
+during the transition.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
+from checks.verdict import (
+    ClassifiedFinding,
+    aggregate_findings,
+    class_counts_to_wire,
+    classified_finding_to_wire,
+    score_findings,
+    verdict_band,
+)
 from scanners.registry import get_all_detectors
 from scanners.types import DetectorContext, Severity, Verdict
 
@@ -106,27 +114,29 @@ def scan_blob(
 
 
 def trust_score(verdicts: tuple[Verdict, ...]) -> int:
-    """Per ADR-0034 § 4: deterministic, reproducible aggregate.
+    """Compute the headline score for a single-file verdict tuple.
 
-    Floor at 0; no ceiling beyond 100. Same content → same score.
+    Backward-compatible thin wrapper over the new engine: feeds the
+    verdicts in with an empty file path, classifies, aggregates,
+    scores. Same shape callers use today.
+
+    Per ADR-0041 the score is no longer the
+    `100 - 25*FAIL - 10*WARN` collapse. See `verdict.py` for the
+    class-separated, density-aware engine. The function name is
+    preserved to minimize call-site churn during the transition.
     """
-    fail_count = sum(1 for v in verdicts if v.severity is Severity.FAIL)
-    warn_count = sum(1 for v in verdicts if v.severity is Severity.WARN)
-    return max(0, 100 - 25 * fail_count - 10 * warn_count)
+    findings = aggregate_findings([("", verdicts)])
+    return score_findings(findings).score
 
 
 def trust_band(score: int) -> str:
     """Map a numeric score to one of four named bands.
 
     The UI renders the band as the headline; the number is auxiliary.
+    Unchanged from ADR-0034 § 4 — the band thresholds stay; the
+    formula behind the score is the new ADR-0041 engine.
     """
-    if score >= 90:
-        return "clean"
-    if score >= 70:
-        return "caution"
-    if score >= 40:
-        return "suspicious"
-    return "high-risk"
+    return verdict_band(score)
 
 
 def highest_severity(verdicts: tuple[Verdict, ...]) -> Severity:
@@ -144,6 +154,10 @@ def aggregate_files(files: list[FileScan]) -> tuple[Verdict, ...]:
     Used by the `npx` path where one input expands to many files.
     For single-blob modes (`content`, `url`) the caller passes
     `[single_file]` and gets back its verdicts unchanged.
+
+    Kept for back-compat with the old `summary` shape; the new
+    engine works directly off `FileScan` lists via
+    `aggregate_findings()` — see `build_summary()`.
     """
     flat: list[Verdict] = []
     for fs in files:
@@ -151,23 +165,62 @@ def aggregate_files(files: list[FileScan]) -> tuple[Verdict, ...]:
     return tuple(flat)
 
 
+def _per_file_pairs(files: list[FileScan]) -> list[tuple[str, tuple[Verdict, ...]]]:
+    """Adapter — (file_path, verdicts) tuples for the verdict engine."""
+    return [(fs.path, fs.verdicts) for fs in files]
+
+
 def build_summary(verdicts: tuple[Verdict, ...]) -> dict[str, object]:
-    """Build the `summary` payload sub-tree the verdict UI reads."""
-    fail_count = sum(1 for v in verdicts if v.severity is Severity.FAIL)
-    warn_count = sum(1 for v in verdicts if v.severity is Severity.WARN)
-    info_count = sum(1 for v in verdicts if v.severity is Severity.INFO)
+    """Build the `summary` payload sub-tree the verdict UI reads.
+
+    Single-tuple call sites: the verdicts come from one file (paste
+    or fetched URL). The engine still produces the new class-separated
+    breakdown + derivation.
+    """
+    return build_summary_from_files(
+        [FileScan(path="", bytes_count=0, verdicts=verdicts)]
+    )
+
+
+def build_summary_from_files(files: list[FileScan]) -> dict[str, object]:
+    """Multi-file variant. Used by the `npx` path so density-damping
+    across many files of identical content produces one effective hit.
+
+    Returns the same shape as `build_summary()`. The wire keys are
+    the new ADR-0041 shape (`classCounts`, `derivation`,
+    `engineVersion`, `rubricVersion`) plus the back-compat keys
+    consumers already read (`trustScore`, `verdictBand`, `passed`,
+    `detectorsRun`, `detectorsTriggered`, `failCount`, `warnCount`,
+    `infoCount`, `highestSeverity`).
+    """
+    findings = aggregate_findings(_per_file_pairs(files))
+    score_result = score_findings(findings)
+
+    # Back-compat severity counts. Count over Verdicts (per-detector
+    # results) not per-hint — the old wire shape treated a detector
+    # that fired N times as one `failCount` increment.
+    all_verdicts = [v for fs in files for v in fs.verdicts]
+    fail_count = sum(1 for v in all_verdicts if v.severity is Severity.FAIL)
+    warn_count = sum(1 for v in all_verdicts if v.severity is Severity.WARN)
+    info_count = sum(1 for v in all_verdicts if v.severity is Severity.INFO)
     triggered = fail_count + warn_count
-    score = trust_score(verdicts)
+
     return {
-        "trustScore": score,
-        "verdictBand": trust_band(score),
-        "passed": all(v.passed for v in verdicts),
+        # — back-compat keys, consumers already read these —
+        "trustScore": score_result.score,
+        "verdictBand": score_result.band,
+        "passed": all(v.passed for v in all_verdicts),
         "detectorsRun": len(get_all_detectors()),
         "detectorsTriggered": triggered,
         "failCount": fail_count,
         "warnCount": warn_count,
         "infoCount": info_count,
-        "highestSeverity": highest_severity(verdicts).value,
+        "highestSeverity": highest_severity(tuple(all_verdicts)).value,
+        # — new ADR-0041 keys —
+        "engineVersion": str(score_result.derivation.get("engine", "")),
+        "rubricVersion": str(score_result.derivation.get("rubric", "")),
+        "classCounts": class_counts_to_wire(score_result.class_counts),
+        "derivation": score_result.derivation,
     }
 
 
@@ -177,3 +230,15 @@ def files_payload(files: list[FileScan]) -> list[dict[str, object]]:
 
 def aggregate_verdicts_payload(verdicts: tuple[Verdict, ...]) -> list[dict[str, object]]:
     return [_verdict_to_dict(v) for v in verdicts]
+
+
+def classified_findings_payload(files: list[FileScan]) -> list[dict[str, Any]]:
+    """Top-level `classifiedFindings` block for the `/check` response.
+
+    One entry per classified DiffHint (not per Verdict). Includes the
+    derivation block so the verdict is reviewer-reproducible from the
+    payload alone. New in ADR-0041; consumers that don't read it can
+    safely ignore the key.
+    """
+    findings = aggregate_findings(_per_file_pairs(files))
+    return [classified_finding_to_wire(f) for f in findings]

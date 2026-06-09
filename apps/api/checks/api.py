@@ -51,7 +51,8 @@ from .scan import (
     FileScan,
     aggregate_files,
     aggregate_verdicts_payload,
-    build_summary,
+    build_summary_from_files,
+    classified_findings_payload,
     files_payload,
     scan_blob,
 )
@@ -237,9 +238,10 @@ def _run_content(
             "displayName": "Pasted content",
             "bytes": file_scan.bytes_count,
         },
-        "summary": build_summary(verdicts),
+        "summary": build_summary_from_files([file_scan]),
         "files": files_payload([file_scan]),
         "verdicts": aggregate_verdicts_payload(verdicts),
+        "classifiedFindings": classified_findings_payload([file_scan]),
     }
 
 
@@ -266,9 +268,10 @@ def _run_url(
             "bytes": fetched.bytes_count,
             "maxBytes": MAX_RESPONSE_BYTES,
         },
-        "summary": build_summary(verdicts),
+        "summary": build_summary_from_files([file_scan]),
         "files": files_payload([file_scan]),
         "verdicts": aggregate_verdicts_payload(verdicts),
+        "classifiedFindings": classified_findings_payload([file_scan]),
     }
 
 
@@ -317,7 +320,7 @@ def _run_npx(
         extraction.files, resolved.name, resolved.version
     )
     aggregate = aggregate_files(file_scans)
-    summary = build_summary(aggregate)
+    summary = build_summary_from_files(file_scans)
     summary["filesScanned"] = sum(1 for fs in file_scans if fs.verdicts)
     summary["filesSkippedBinary"] = skipped_binary
     summary["totalUncompressedBytes"] = extraction.total_uncompressed_bytes
@@ -342,6 +345,7 @@ def _run_npx(
         "summary": summary,
         "files": files_payload(file_scans),
         "verdicts": aggregate_verdicts_payload(aggregate),
+        "classifiedFindings": classified_findings_payload(file_scans),
     }
 
 
@@ -364,7 +368,7 @@ def _run_github(
         extraction.files, resolved.name, resolved.version
     )
     aggregate = aggregate_files(file_scans)
-    summary = build_summary(aggregate)
+    summary = build_summary_from_files(file_scans)
     summary["filesScanned"] = sum(1 for fs in file_scans if fs.verdicts)
     summary["filesSkippedBinary"] = skipped_binary
     summary["totalUncompressedBytes"] = extraction.total_uncompressed_bytes
@@ -389,4 +393,5 @@ def _run_github(
         "summary": summary,
         "files": files_payload(file_scans),
         "verdicts": aggregate_verdicts_payload(aggregate),
+        "classifiedFindings": classified_findings_payload(file_scans),
     }
