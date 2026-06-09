@@ -1,7 +1,6 @@
 import Link from "next/link"
-import { FileCheck2, ShieldAlert, BookKey, ArrowUpRight, FlaskConical } from "lucide-react"
+import { FileCheck2, ShieldAlert, BookKey, ArrowUpRight } from "lucide-react"
 
-import { EvaluationLink } from "@/components/primitives/evaluation-link"
 import { loadLatestEvaluation, summarize } from "@/lib/evaluation"
 
 /**
@@ -68,15 +67,11 @@ export function TrustRuntimeSection() {
   const summary = summarize(loadLatestEvaluation())
   const pillars = PILLARS()
 
-  // Per-pillar version label — Pillar 2 (Top 10) carries the measured
-  // F1 headline so the operational claim is on the card that hosts the
-  // taxonomy it measures.
-  const versionLabel = (slug: string): string => {
-    if (slug === "context-ci-top-10-v0.1") {
-      return `v${summary.top10Version} · ${summary.perfectDetectors}/${summary.totalDetectors} at F1 = ${summary.macroF1InSample.toFixed(3)}`
-    }
-    return "v0.1"
-  }
+  // Per-pillar version label — read live from the baseline (no drift).
+  // The macro-F1 metric is stated ONCE on the page, in the Hero pill;
+  // it is deliberately not restated here (homepage-elite-bar.md).
+  const versionLabel = (slug: string): string =>
+    slug === "context-ci-top-10-v0.1" ? `v${summary.top10Version}` : "v0.1"
 
   return (
     <section className="border-y border-border/40 py-24">
@@ -157,80 +152,20 @@ export function TrustRuntimeSection() {
           })}
         </div>
 
-        {/* Measured-headline caption — names the four post-Round-7
-            ledgers the orders call out: scoreboard, corpus map, FP,
-            FN. Pre-launch these resolve to GitHub blobs; on launch
-            day the same paths exist at /docs/* on the public site. */}
-        <div className="mt-8 mx-auto max-w-4xl">
-          <div className="rounded-xl border border-border/40 bg-card/50 px-5 py-4">
-            <div className="flex items-start gap-3">
-              <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/[0.07] text-primary">
-                <FlaskConical className="size-3.5" />
-              </div>
-              <div className="flex-1 text-[12.5px] leading-relaxed text-muted-foreground">
-                Measured against the adversarial corpus on {summary.measuredAt}:{" "}
-                <EvaluationLink className="text-foreground/90 font-mono">
-                  {summary.perfectDetectors}/{summary.totalDetectors}
-                </EvaluationLink>{" "}
-                detectors at{" "}
-                <EvaluationLink className="text-foreground/90 font-mono">
-                  F1 = {summary.macroF1InSample.toFixed(3)}
-                </EvaluationLink>{" "}
-                across{" "}
-                <EvaluationLink proof="corpus" className="text-foreground/90 font-mono">
-                  {summary.inSampleSamples + summary.holdoutSamples}
-                </EvaluationLink>{" "}
-                labeled samples ({summary.inSampleSamples} in-sample +{" "}
-                {summary.holdoutSamples} holdout).{" "}
-                <EvaluationLink proof="floor" className="text-foreground/90">
-                  Python ↔ TypeScript parity
-                </EvaluationLink>{" "}
-                is a CI invariant.{" "}
-                <a
-                  href={`${GH_BASE}/docs/evaluation.md`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-0.5 text-primary/90 hover:text-primary"
-                >
-                  Scoreboard <ArrowUpRight className="size-2.5" />
-                </a>
-                ·{" "}
-                <a
-                  href={`${GH_BASE}/docs/top10-corpus-map.md`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-0.5 text-primary/90 hover:text-primary"
-                >
-                  Corpus map <ArrowUpRight className="size-2.5" />
-                </a>
-                ·{" "}
-                <a
-                  href={`${GH_BASE}/docs/false-positive-resolution.md`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-0.5 text-primary/90 hover:text-primary"
-                >
-                  FP ledger <ArrowUpRight className="size-2.5" />
-                </a>
-                ·{" "}
-                <a
-                  href={`${GH_BASE}/docs/false-negative-resolution.md`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-0.5 text-primary/90 hover:text-primary"
-                >
-                  FN ledger <ArrowUpRight className="size-2.5" />
-                </a>
-                .
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <p className="mt-4 text-center text-[11px] font-mono text-muted-foreground/70">
-          All three pillars ship as versioned public specs · conformance
-          suites in both Python &amp; TypeScript · byte-identical
-          reproducibility
+        {/* One proof path, not a ledger wall. The macro-F1 number lives
+            in the Hero pill; here we point to the scoreboard that holds
+            it — and the corpus/FP/FN ledgers live one hop further in. */}
+        <p className="mt-10 text-center text-[11px] font-mono text-muted-foreground/70">
+          Versioned public specs · Python ↔ TypeScript conformance ·
+          byte-identical reproducibility ·{" "}
+          <a
+            href={`${GH_BASE}/docs/evaluation.md`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-0.5 text-primary/90 hover:text-primary"
+          >
+            see the scoreboard <ArrowUpRight className="size-2.5" />
+          </a>
         </p>
       </div>
     </section>

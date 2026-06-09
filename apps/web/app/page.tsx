@@ -1,22 +1,27 @@
 import { Hero } from "@/components/landing/hero"
+import { ThreatVerifiedSection } from "@/components/landing/threat-verified-section"
 import { TrustRuntimeSection } from "@/components/landing/trust-runtime-section"
-import { WhySection } from "@/components/landing/why-section"
-import { ConceptSection } from "@/components/landing/concept-section"
-import { FeaturesSection } from "@/components/landing/features-section"
 import { CLIRoadmap } from "@/components/landing/cli-roadmap"
 import { SiteFooter } from "@/components/landing/site-footer"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react"
 
+/**
+ * Landing page — 5 sections (homepage-elite-bar.md).
+ *
+ * Each viewport carries one idea and proves the single message
+ * ("verify agent context before the agent reads it"):
+ *   Hero → Threat→Verified → Trust Runtime → CLI → CTA + Footer.
+ * The old WhySection / ConceptSection / FeaturesSection were merged or
+ * cut in the 2026-06-09 subtraction pass — do not re-add without merging.
+ */
 export default function LandingPage() {
   return (
     <main>
       <Hero />
+      <ThreatVerifiedSection />
       <TrustRuntimeSection />
-      <WhySection />
-      <ConceptSection />
-      <FeaturesSection />
       <CLIRoadmap />
 
       {/* Final CTA */}

@@ -2,16 +2,6 @@ import { Terminal } from "lucide-react"
 
 const commands = [
   {
-    cmd: "phub init",
-    label: "Bootstrap",
-    description:
-      "Scaffold a new primitive with spec-conformant frontmatter and required sections.",
-    output: `✓ Created secure-code-review.md
-✓ Spec v0.1 scaffold (8 required sections)
-✓ tokens: 0 / 6000  (heuristic; real count after CI)
-→ Open in the Forge: phub edit secure-code-review.md`,
-  },
-  {
     cmd: "phub validate ./secure-code-review.md",
     label: "Local validation",
     description:
@@ -48,18 +38,6 @@ Rekor inclusion proof verified ………………… OK
 Attestation verdict: Trusted (94/99/87/91)
 Installed → ~/.config/agents/primitives/`,
   },
-  {
-    cmd: "phub verify strict-code-review.md",
-    label: "Offline verify",
-    description:
-      "Re-verify a primitive's content digest, signature, and attestation without re-downloading. For air-gapped CI.",
-    output: `Content Digest: sha256:b7e4f1a9c3d28e5b…
-Digest Algo:    SHA-256
-Signature:      Ed25519 (Sigstore)
-Attestation:    cci-v0.1 — pass (10/10 stages)
-Provenance:     PrimitiveHub Registry
-Status:         VERIFIED`,
-  },
 ]
 
 export function CLIRoadmap() {
@@ -74,13 +52,13 @@ export function CLIRoadmap() {
             </span>
           </div>
           <h2 className="text-2xl font-bold text-foreground sm:text-3xl text-balance">
-            Five commands. Author. Validate. Publish. Install. Verify.
+            Validate locally. Publish signed. Install verified.
           </h2>
           <p className="mt-4 text-sm text-muted-foreground leading-relaxed max-w-xl mx-auto">
             <code className="font-mono text-foreground/80">phub</code> is the
-            open-source command-line interface for PrimitiveHub. Same scanner
-            code as Context CI runs in the cloud — so what passes locally
-            passes on submit, no surprises.
+            open-source CLI for PrimitiveHub. The same scanner that runs in
+            Context CI runs on your machine — what passes locally passes on
+            submit, no surprises.
           </p>
         </div>
 

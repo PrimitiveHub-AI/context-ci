@@ -19,18 +19,21 @@ import { EvaluationLink } from "@/components/primitives/evaluation-link"
 import { loadLatestEvaluation, summarize } from "@/lib/evaluation"
 
 /**
- * Hero.
+ * Hero — one viewport (homepage-elite-bar.md §1).
  *
  * Doctrine-coherent: leads with `docs/doctrine.md` § "Category
- * statement" verbatim — "PrimitiveHub is the Context Firewall for
- * AI agents." Names the artifacts § "The named enemy" calls out
- * (AGENTS.md, SKILL.md, .cursor/rules, mcp.json). Foregrounds the
- * active surface (`phub audit`, ADR-0025) as the lead command and
- * the AV-family funnel (Check → Top 10 → Paper) as the CTAs.
+ * statement" verbatim — "PrimitiveHub is the Context Firewall for AI
+ * agents." Names the artifacts § "The named enemy" calls out
+ * (AGENTS.md, SKILL.md, .cursor/rules, mcp.json). Foregrounds the active
+ * surface (`phub audit`, ADR-0025) as the lead command and the AV-family
+ * funnel (Check → Top 10 → Paper) as the CTAs.
  *
- * Status-pill copy is read live from the evaluation loader so the
- * sentence the first-time visitor reads is the same measured number
- * the corpus regression gate just enforced.
+ * The pipeline grid moved to /validation; the threat before/after moved
+ * into the Threat → Verified section. This is the CANONICAL home of the
+ * macro-F1 metric (the status pill) — it appears nowhere else on the
+ * page. Status-pill copy is read live from the evaluation loader so the
+ * first sentence a visitor reads is the same number the corpus
+ * regression gate just enforced.
  */
 
 // Credibility strip verbs — AV-family lifecycle, not registry features.
@@ -50,15 +53,6 @@ const credibilityPillars = [
   { icon: Repeat, label: "Reproducible" },
 ]
 
-const pipelineSteps = [
-  { step: "01", label: "Raw Markdown", detail: "Unvalidated context files authored by domain experts" },
-  { step: "02", label: "Schema Validation", detail: "Frontmatter checks, structure lint, format compliance" },
-  { step: "03", label: "Safety + Quality Scans", detail: "Injection detection, contradiction scan, token efficiency" },
-  { step: "04", label: "Expert Review", detail: "Human reviewer with domain credentials and reputation score" },
-  { step: "05", label: "Attested Trusted Primitive", detail: "SHA-256 content digest, Sigstore keyless OIDC (Fulcio cert + Rekor entry), versioned, immutably published" },
-  { step: "06", label: "Verified Context Load", detail: "Loaded into the agent only after digest match + Rekor inclusion + Top 10 verdict resolve" },
-]
-
 export function Hero() {
   const summary = summarize(loadLatestEvaluation())
   const totalSamples = summary.inSampleSamples + summary.holdoutSamples
@@ -69,13 +63,13 @@ export function Hero() {
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,oklch(0.78_0.14_195/0.06)_0%,transparent_60%)]" />
       <div className="absolute inset-0 bg-gradient-to-b from-background/0 via-background/40 to-background" />
 
-      <div className="relative mx-auto max-w-7xl px-4 pb-24 pt-24 lg:px-6 lg:pt-32 lg:pb-32">
+      <div className="relative mx-auto max-w-7xl px-4 pb-24 pt-24 lg:px-6 lg:pt-32 lg:pb-28">
         <div className="flex flex-col items-center text-center">
-          {/* Status pill — measured live from bench/baseline so the
-              very first sentence on the site is paper-grade truth.
-              The number is wrapped in <EvaluationLink> so a reader
-              who suspects the claim is one click away from the
-              scoreboard that proves it. */}
+          {/* Status pill — the CANONICAL macro-F1 metric, measured live
+              from bench/baseline so the very first sentence on the site
+              is paper-grade truth. Wrapped in <EvaluationLink> so a
+              reader who suspects the claim is one click from the
+              scoreboard that proves it. Stated here and NOWHERE else. */}
           <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/[0.04] px-3.5 py-1.5">
             <span className="size-1.5 rounded-full bg-primary animate-pulse" />
             <span className="text-[11px] font-mono text-primary/80 tracking-wide">
@@ -93,9 +87,8 @@ export function Hero() {
             for AI agents.
           </h1>
 
-          {/* Subhead — names the artifacts § "The named enemy" calls
-              out + the temporal frame ("before … reads it") + the
-              shipping surfaces. */}
+          {/* Subhead — names the artifacts § "The named enemy" + the
+              temporal frame ("before … reads it") + the surfaces. */}
           <p className="mt-6 max-w-2xl text-[15px] text-muted-foreground leading-relaxed text-pretty">
             We verify every byte of context an AI agent consumes —{" "}
             <code className="font-mono text-foreground/80">AGENTS.md</code>,{" "}
@@ -108,8 +101,8 @@ export function Hero() {
           </p>
 
           {/* Quick command — lead with the active-posture surface
-              (`phub audit`, the ADR-0025 Samurai Cut), not a
-              registry install. */}
+              (`phub audit`, the ADR-0025 Samurai Cut), not a registry
+              install. */}
           <div className="mt-8 flex items-center gap-1.5 rounded-lg border border-border/60 bg-secondary/30 px-4 py-2.5 backdrop-blur-sm">
             <span className="text-xs font-mono text-primary/50 select-none">$</span>
             <code className="text-xs font-mono text-muted-foreground">
@@ -144,9 +137,8 @@ export function Hero() {
             </Button>
           </div>
 
-          {/* Credibility strip — AV-family lifecycle verbs (see
-              comment on `credibilityPillars` for the surface
-              mapping). */}
+          {/* Credibility strip — AV-family lifecycle verbs (see comment
+              on `credibilityPillars` for the surface mapping). */}
           <div className="mt-14 flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
             {credibilityPillars.map((pillar) => {
               const Icon = pillar.icon
@@ -160,73 +152,23 @@ export function Hero() {
               )
             })}
           </div>
-        </div>
 
-        {/* 6-Stage Pipeline flow */}
-        <div className="mt-20 mx-auto max-w-5xl">
-          <p className="text-center text-[10px] font-mono uppercase tracking-[0.2em] text-primary/60 mb-5">
-            From raw markdown to verified context load
+          {/* Reproducibility anchor — keeps the canonical metric honest:
+              no measured number stands on prose alone. Sample count links
+              the corpus spec; gate.sh links the script that reproduces
+              it. */}
+          <p className="mt-8 text-[10px] font-mono text-muted-foreground/70">
+            Measured {summary.measuredAt} against{" "}
+            <EvaluationLink proof="corpus" className="text-foreground/80">
+              {totalSamples} labeled samples
+            </EvaluationLink>{" "}
+            ({summary.inSampleSamples} in-sample + {summary.holdoutSamples} holdout) ·{" "}
+            reproduce with{" "}
+            <EvaluationLink proof="gate">
+              <code className="text-foreground/80">bench/scripts/gate.sh</code>
+            </EvaluationLink>
           </p>
-          <div className="grid grid-cols-2 gap-px md:grid-cols-3 lg:grid-cols-6 rounded-xl border border-border/40 overflow-hidden bg-border/40">
-            {pipelineSteps.map((s) => (
-              <div key={s.step} className="flex flex-col items-center bg-card p-4 text-center">
-                <span className="text-[9px] font-mono uppercase tracking-widest text-primary/50 mb-2">{s.step}</span>
-                <p className="text-[11px] font-semibold text-foreground leading-tight">{s.label}</p>
-                <p className="mt-1.5 text-[9px] text-muted-foreground leading-relaxed">{s.detail}</p>
-              </div>
-            ))}
-          </div>
         </div>
-
-        {/* Before / After — reframed from registry features to the
-            named-enemy attack shapes. Left names what hides in raw
-            agent context (doctrine § "The named enemy"); right
-            names what the firewall does about it (doctrine §
-            "Operating Laws" 1-4). */}
-        <div className="mt-10 mx-auto max-w-4xl grid grid-cols-1 gap-px md:grid-cols-2 rounded-xl border border-border/40 overflow-hidden bg-border/40">
-          <div className="bg-card p-6">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="size-1.5 rounded-full bg-destructive" />
-              <span className="text-[10px] font-mono uppercase tracking-widest text-destructive/80">Raw agent context</span>
-            </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Random Markdown loaded straight into the agent. Prompt
-              injection hidden in a skill file. <code className="font-mono text-foreground/70">npx ... | bash</code> in
-              setup instructions. A <code className="font-mono text-foreground/70">.cursorrules</code> copy-pasted
-              from a Twitter thread. No digest. No attestation. No gate.
-            </p>
-          </div>
-          <div className="bg-card p-6">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="size-1.5 rounded-full bg-success" />
-              <span className="text-[10px] font-mono uppercase tracking-widest text-success/80">Verified agent context</span>
-            </div>
-            <p className="text-sm text-foreground/80 leading-relaxed">
-              Every byte scanned against the Context CI Top 10. SHA-256
-              content digest. Sigstore keyless OIDC attestation. Policy-gated
-              install. Rekor transparency log. Refused at the gate if it
-              doesn&rsquo;t verify.
-            </p>
-          </div>
-        </div>
-
-        {/* Measurement footnote — anchors the pill+caption claim in
-            the reproducibility surface so a curious reader can verify
-            the headline in one click. The sample count links to the
-            corpus spec; the `bench/scripts/gate.sh` code links to the
-            actual script. The discipline: no measured number stands
-            on text alone. */}
-        <p className="mt-6 text-center text-[10px] font-mono text-muted-foreground/70">
-          Measured {summary.measuredAt} against{" "}
-          <EvaluationLink proof="corpus" className="text-foreground/80">
-            {totalSamples} labeled samples
-          </EvaluationLink>{" "}
-          ({summary.inSampleSamples} in-sample + {summary.holdoutSamples} holdout) ·{" "}
-          reproduce with{" "}
-          <EvaluationLink proof="gate">
-            <code className="text-foreground/80">bench/scripts/gate.sh</code>
-          </EvaluationLink>
-        </p>
       </div>
     </section>
   )
