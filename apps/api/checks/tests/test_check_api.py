@@ -1,7 +1,8 @@
 """Tests for the public /check endpoint and its supporting modules.
 
 Covers:
-  - Trust-score formula (deterministic per ADR-0034 § 4).
+  - Verdict scoring (ADR-0041 v0.2 — severity-weighted RISKY, density
+    damping, RISKY_CAP; a single FAIL reads caution, never clean).
   - Coordinate parsing (npx / npm install / scoped / bare).
   - URL guardrails (SSRF, scheme, redirects).
   - Endpoint integration for `mode=content` (no network).
@@ -54,38 +55,66 @@ from scanners.types import DiffHint, Severity, Verdict
 # ---------------------------------------------------------------------------
 
 
-def _v(severity: Severity) -> Verdict:
+def _v(severity: Severity, *, snippet: str = "x", cci_id: str = "CCI-000") -> Verdict:
+    """A synthetic verdict. `snippet` controls density grouping — distinct
+    snippets are distinct RISKY groups; identical ones collapse to one."""
     return Verdict(
         detector_name="t-fake",
         threat_category="Tx",
-        cci_id="CCI-000",
+        cci_id=cci_id,
         severity=severity,
         passed=severity is not Severity.FAIL,
         summary="fake",
-        diff_hints=(DiffHint(line=1, snippet="x", suggestion="y", detail_tag="z"),)
+        diff_hints=(DiffHint(line=1, snippet=snippet, suggestion="y", detail_tag="z"),)
         if severity is not Severity.INFO
         else (),
     )
+
+
+# Scoring engine = ADR-0041 v0.2 (severity-weighted RISKY): FAIL group = 25,
+# WARN group = 8, capped at RISKY_CAP=60. Bands: >=90 clean, >=70 caution,
+# >=40 suspicious, else high-risk. INFO is CLEAN and never moves the score.
 
 
 def test_trust_score_all_clean_is_100() -> None:
     assert trust_score(tuple(_v(Severity.INFO) for _ in range(10))) == 100
 
 
-def test_trust_score_one_warn_is_90() -> None:
-    assert trust_score((_v(Severity.WARN),)) == 90
+def test_trust_score_one_warn_stays_clean() -> None:
+    # One soft signal: 100 - 8 = 92 → still clean.
+    assert trust_score((_v(Severity.WARN),)) == 92
+    assert trust_band(trust_score((_v(Severity.WARN),))) == "clean"
 
 
-def test_trust_score_one_fail_is_75() -> None:
-    assert trust_score((_v(Severity.FAIL),)) == 75
+def test_trust_score_one_fail_is_caution_not_clean() -> None:
+    # The headline fix: a single real FAIL must never read "clean".
+    # 100 - 25 = 75 → caution.
+    score = trust_score((_v(Severity.FAIL),))
+    assert score == 75
+    assert trust_band(score) == "caution"
 
 
-def test_trust_score_three_fails_is_25() -> None:
-    assert trust_score(tuple(_v(Severity.FAIL) for _ in range(3))) == 25
+def test_trust_score_two_distinct_fails_is_suspicious() -> None:
+    # Distinct snippets → two RISKY groups → 100 - 50 = 50 → suspicious.
+    verdicts = (_v(Severity.FAIL, snippet="alpha"), _v(Severity.FAIL, snippet="beta"))
+    score = trust_score(verdicts)
+    assert score == 50
+    assert trust_band(score) == "suspicious"
 
 
-def test_trust_score_floors_at_zero() -> None:
-    assert trust_score(tuple(_v(Severity.FAIL) for _ in range(10))) == 0
+def test_trust_score_risky_is_capped_never_high_risk() -> None:
+    # Many distinct FAILs: penalty is capped at RISKY_CAP=60 → floor 40
+    # (suspicious). Signature matches alone cannot manufacture high-risk.
+    verdicts = tuple(_v(Severity.FAIL, snippet=f"snip-{i}") for i in range(10))
+    score = trust_score(verdicts)
+    assert score == 40
+    assert trust_band(score) == "suspicious"
+
+
+def test_trust_score_density_damps_identical_fails() -> None:
+    # 6 IDENTICAL FAILs collapse to ONE group → 100 - 25 = 75, same as one.
+    verdicts = tuple(_v(Severity.FAIL, snippet="same") for _ in range(6))
+    assert trust_score(verdicts) == 75
 
 
 def test_trust_band_thresholds() -> None:
@@ -100,10 +129,13 @@ def test_trust_band_thresholds() -> None:
 
 
 def test_build_summary_aggregates_counts() -> None:
+    # 1 FAIL + 2 WARN (distinct snippets) + 1 INFO. Counts are per-verdict
+    # (back-compat). Score: 3 RISKY groups = FAIL(25) + WARN(8) + WARN(8)
+    # = 41 → 100 - 41 = 59 → suspicious.
     verdicts = (
-        _v(Severity.FAIL),
-        _v(Severity.WARN),
-        _v(Severity.WARN),
+        _v(Severity.FAIL, snippet="f1"),
+        _v(Severity.WARN, snippet="w1"),
+        _v(Severity.WARN, snippet="w2"),
         _v(Severity.INFO),
     )
     summary = build_summary(verdicts)
@@ -111,8 +143,7 @@ def test_build_summary_aggregates_counts() -> None:
     assert summary["warnCount"] == 2
     assert summary["infoCount"] == 1
     assert summary["detectorsTriggered"] == 3
-    # 100 - 25 - 20 = 55 (suspicious)
-    assert summary["trustScore"] == 55
+    assert summary["trustScore"] == 59
     assert summary["verdictBand"] == "suspicious"
     assert summary["passed"] is False
 
@@ -328,12 +359,12 @@ def test_check_endpoint_content_malicious(client: Client, run_inline: None) -> N
     )
     assert record["status"] == "done"
     body = record["result"]
-    # The async layer's job is to round-trip the verdict faithfully. We
-    # assert the detector-level truth (passed/failCount + the T1 FAIL);
-    # the score→band mapping is the verdict engine's contract, exercised
-    # in test_verdict.py, not here.
     assert body["summary"]["passed"] is False
     assert body["summary"]["failCount"] >= 1
+    # ADR-0041 v0.2: a real (non-quoted) prompt-injection FAIL must NOT
+    # read "clean". It lands in caution-or-worse.
+    assert body["summary"]["verdictBand"] != "clean"
+    assert body["summary"]["verdictBand"] in {"caution", "suspicious", "high-risk"}
     # T1 verdict must be in the list with severity=fail.
     t1 = next(v for v in body["verdicts"] if v["threatCategory"] == "T1")
     assert t1["severity"] == "fail"
@@ -545,11 +576,10 @@ def test_check_endpoint_npx_flags_malicious_skill(client: Client, run_inline: No
         record = _post_and_poll(client, {"mode": "npx", "input": "npx sketchy@0.0.1"})
     assert record["status"] == "done"
     body = record["result"]
-    # See note in the content-malicious test: band calibration is the
-    # verdict engine's contract; here we assert the async round-trip
-    # preserved the detector-level FAIL.
     assert body["summary"]["passed"] is False
     assert body["summary"]["failCount"] >= 1
+    # A malicious skill shipped via npx must not read "clean" (ADR-0041 v0.2).
+    assert body["summary"]["verdictBand"] != "clean"
 
 
 @pytest.mark.django_db

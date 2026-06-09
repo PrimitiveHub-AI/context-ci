@@ -36,15 +36,15 @@ kept in sync per ADR-0023.
 from __future__ import annotations
 
 from collections import Counter
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
 
-from scanners.types import DiffHint, Severity, Verdict
+from scanners.types import Severity, Verdict
 
 # Versioned governance fields. Stay alongside the rubric in this module
 # so a `git blame` on either tells you what changed.
-VERDICT_ENGINE_VERSION = "0.1"
+VERDICT_ENGINE_VERSION = "0.2"  # 0.2: severity-weighted RISKY (a FAIL ≠ clean)
 VERDICT_RUBRIC_VERSION = "0.1"
 
 
@@ -104,14 +104,29 @@ VERDICT_RUBRIC: dict[tuple[str, str], VerdictClass] = {
 # provisional discipline is the no-fake-numbers rule.
 # ─────────────────────────────────────────────────────────────────────────
 
-#: Penalty per unique density-damped RISKY group.
-RISKY_BASE_WEIGHT: float = 10.0
+#: Penalty per unique density-damped RISKY group, by the group's worst
+#: severity. A FAIL outweighs a WARN because the detectors already strip
+#: quoted / code-block matches before emitting FAIL — a surviving FAIL is
+#: a higher-confidence "real, in-band" hit, not a teaching mention.
+#:
+#: Calibration target (v0.2): a single FAIL must never read "clean" — it
+#: lands in `caution` (100 - 25 = 75). One WARN stays clean (100 - 8 = 92);
+#: two WARN tip to caution. Multiple FAILs escalate but stay bounded by
+#: `RISKY_CAP`, so signature matches alone can't manufacture high-risk.
+RISKY_FAIL_WEIGHT: float = 25.0
+RISKY_WARN_WEIGHT: float = 8.0
 
 #: Maximum total penalty contributed by RISKY findings. Floors the
-#: dual-use-heavy repo at `100 - RISKY_CAP` = 40 (low end of caution).
+#: dual-use-heavy repo at `100 - RISKY_CAP` = 40 (suspicious).
 #: A repo cannot reach high-risk via RISKY findings alone — that's
 #: ADR-0041 § 3 "the haystack cannot manufacture a scream."
 RISKY_CAP: float = 60.0
+
+
+def _risky_weight(severity: Severity) -> float:
+    """Per-group RISKY penalty by severity. FAIL > WARN; INFO is never RISKY."""
+    return RISKY_FAIL_WEIGHT if severity is Severity.FAIL else RISKY_WARN_WEIGHT
+
 
 #: Per-MALICIOUS penalty. One MALICIOUS lands the verdict in the
 #: high-risk band; subsequent MALICIOUS findings keep cutting.
@@ -336,13 +351,19 @@ def _density_groups(findings: list[ClassifiedFinding]) -> list[_DensityGroup]:
                 seen_paths.append(m.file_path)
             if len(seen_paths) >= 5:
                 break
+        # Weight by the group's worst severity. A group keyed by
+        # (cci, tag, snippet) is normally severity-uniform, but check for
+        # any FAIL defensively so a FAIL is never discounted to WARN weight.
+        worst = (
+            Severity.FAIL if any(m.severity is Severity.FAIL for m in members) else Severity.WARN
+        )
         groups.append(
             _DensityGroup(
                 cci_id=cci,
                 detail_tag=tag,
                 snippet_norm=norm,
                 n_occurrences=len(members),
-                weight=RISKY_BASE_WEIGHT,
+                weight=_risky_weight(worst),
                 sample_paths=tuple(seen_paths),
             )
         )
@@ -377,7 +398,7 @@ def score_findings(findings: list[ClassifiedFinding]) -> ScoreResult:
         high-risk); two at 20; three+ at 0.
       - Otherwise, RISKY findings are density-damped (one effective
         hit per `(cci_id, detail_tag, normalize_snippet)` group)
-        and the sum is capped at `RISKY_CAP`. Score = `100 − capped`.
+        and the sum is capped at `RISKY_CAP`. Score = `100 - capped`.
 
     The class breakdown is computed across *all* findings — POLICY
     and CLEAN appear in the count even though they don't move the
@@ -396,7 +417,7 @@ def score_findings(findings: list[ClassifiedFinding]) -> ScoreResult:
         # MALICIOUS-dominates branch. No density damping. One MALICIOUS
         # = score 40 (top of high-risk); each additional cuts by 20.
         penalty = MALICIOUS_BASE_PENALTY + (n_malicious - 1) * MALICIOUS_INCREMENTAL_PENALTY
-        score = max(0, 100 - int(round(penalty)))
+        score = max(0, 100 - round(penalty))
         derivation = {
             "rule": "malicious-dominates",
             "engine": VERDICT_ENGINE_VERSION,
@@ -406,20 +427,23 @@ def score_findings(findings: list[ClassifiedFinding]) -> ScoreResult:
             "incremental_penalty": MALICIOUS_INCREMENTAL_PENALTY,
             "raw_penalty": penalty,
         }
-        return ScoreResult(score=score, band=verdict_band(score), class_counts=class_counts, derivation=derivation)
+        return ScoreResult(
+            score=score, band=verdict_band(score), class_counts=class_counts, derivation=derivation
+        )
 
     # No MALICIOUS findings. Density-damp the RISKY pool.
     groups = _density_groups(findings)
     raw_penalty = sum(g.weight for g in groups)
     capped_penalty = min(RISKY_CAP, raw_penalty)
-    score = max(0, 100 - int(round(capped_penalty)))
+    score = max(0, 100 - round(capped_penalty))
     derivation = {
         "rule": "risky-bounded",
         "engine": VERDICT_ENGINE_VERSION,
         "rubric": VERDICT_RUBRIC_VERSION,
         "n_risky_findings": class_counts[VerdictClass.RISKY],
         "n_risky_groups": len(groups),
-        "risky_base_weight": RISKY_BASE_WEIGHT,
+        "risky_fail_weight": RISKY_FAIL_WEIGHT,
+        "risky_warn_weight": RISKY_WARN_WEIGHT,
         "raw_penalty": raw_penalty,
         "risky_cap": RISKY_CAP,
         "capped_penalty": capped_penalty,
@@ -435,7 +459,9 @@ def score_findings(findings: list[ClassifiedFinding]) -> ScoreResult:
             for g in groups[:10]
         ],
     }
-    return ScoreResult(score=score, band=verdict_band(score), class_counts=class_counts, derivation=derivation)
+    return ScoreResult(
+        score=score, band=verdict_band(score), class_counts=class_counts, derivation=derivation
+    )
 
 
 # ─────────────────────────────────────────────────────────────────────────
