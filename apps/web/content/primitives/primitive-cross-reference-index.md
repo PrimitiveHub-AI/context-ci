@@ -45,6 +45,17 @@ keywords: [index, reference, lookup, primitive-map, bloat-control]
 3. Apply the bloat-control discipline — if you reached for 6+ on a
    single PR, surface the breadth to the user and consider splitting.
 
+## Before any surface: discovery & design
+
+Every row below answers *how to build* a known surface. The step that
+comes first — *whether and what to build, and when to stop and ask* — is
+its own cross-cutting primitive, loaded before the table:
+
+| Moment | Primitive to load |
+|---|---|
+| Starting any new feature / surface / behavior change (scaled design gate) | `discovery-and-design-discipline` (Mode B), then the surface row below |
+| A strategic / GTM / opportunity / positioning question | `discovery-and-design-discipline` (Mode A) + `doctrine` |
+
 ## Frontend surfaces
 
 | Surface | Primitives to load |

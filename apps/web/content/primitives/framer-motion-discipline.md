@@ -1,12 +1,12 @@
 ---
 spec_version: "0.1"
 name: framer-motion-discipline
-version: 0.1.0
+version: 0.2.0
 type: design
 domain: frontend
-author: PrimitiveHub Labs (synthesized 2026-05-30 from production motion patterns + Framer Motion 12 docs)
+author: PrimitiveHub Labs (synthesized 2026-05-30 from production motion patterns + Framer Motion 12 docs; v0.2.0 lifts three concrete scroll-entry rules from the rejected `minimalist-ui` skill — ledger SK-004, leonxlnx/taste-skill @3c7017d6 — IntersectionObserver-not-scroll-listener, stagger cadence, ease-out entrance curves. The rest of that skill was rejected as theme-conflicting; see docs/skill-consumption-ledger.md.)
 license: CC-BY-4.0
-tokens: 2400
+tokens: 2600
 token_budget: 3500
 risk_level: low
 content_digest: sha256:pending-cci-v0.1-attestation
@@ -81,6 +81,17 @@ re-renders per second), (c) Radix `Portal` + `AnimatePresence` without
   DON'T disable the state change — the UI must still update; only
   the physical motion goes away.
 
+- **Scroll-entry reveals use viewport detection, never a scroll
+  listener.** For "fade up as it enters the viewport," use motion's
+  `whileInView` (or `useInView` / an `IntersectionObserver`) — never
+  `window.addEventListener('scroll')`, which fires every frame and
+  forces layout reads. Stagger a list with `staggerChildren` / an
+  index-derived delay at **~80ms** cadence; never mount a whole list at
+  once (a wall of simultaneous reveals reads as a flash, not motion).
+  For these entrance fades — where you use a `duration`, not a spring —
+  prefer an **ease-out** curve (e.g. `cubic-bezier(0.16, 1, 0.3, 1)`)
+  over `linear`; quiet sophistication, not a constant-velocity slide.
+
 ## Decision Rules
 
 - **IF tempted to animate `width`/`height`/`top`/`left` THEN** use
@@ -99,6 +110,10 @@ re-renders per second), (c) Radix `Portal` + `AnimatePresence` without
 - **IF the user has `prefers-reduced-motion: reduce` THEN** swap the
   spring for `{ duration: 0 }` — the state change still happens, the
   motion doesn't.
+- **IF building a scroll-triggered entrance THEN** use `whileInView` /
+  `useInView` (`viewport={{ once: true }}` so it fires once), never a
+  scroll-event listener; stagger lists at ~80ms; use an ease-out curve
+  for the duration, not `linear`.
 
 ## Anti-Patterns
 
@@ -131,6 +146,9 @@ re-renders per second), (c) Radix `Portal` + `AnimatePresence` without
       AnimatePresence is involved.
 - [ ] `prefers-reduced-motion` honored (either globally via
       `useReducedMotion()` or per-animation).
+- [ ] Scroll-entry reveals use `whileInView`/`useInView`, not a scroll
+      listener; lists stagger (~80ms) rather than mounting at once; any
+      duration-based entrance uses an ease-out curve, not `linear`.
 - [ ] Component file declares `"use client"` (motion is client-only).
 - [ ] Bundle: `LazyMotion` + `m` used; raw `motion` only where a
       feature isn't in `domAnimation`/`domMax`.

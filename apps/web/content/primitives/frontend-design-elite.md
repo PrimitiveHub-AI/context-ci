@@ -1,12 +1,12 @@
 ---
 spec_version: "0.1"
 name: frontend-design-elite
-version: 0.2.0
+version: 0.3.0
 type: design
 domain: frontend
-author: PrimitiveHub Labs (synthesized from anthropics/claude-code frontend-design skill + maintainer taste calibration; v0.2.0 adds Companion primitives section linking to Tufte + Few)
+author: PrimitiveHub Labs (synthesized from anthropics/skills `frontend-design` SKILL.md + maintainer taste calibration; v0.2.0 adds Companion primitives linking Tufte + Few; v0.3.0 deeply adapts the upstream skill — absorbs its AI-slop detector, "intentionality over intensity" framing, the five aesthetic levers, and a design-thinking pre-step, all re-keyed from upstream's bold-maximalist default to PrimitiveHub's trust-infrastructure restraint. Source audited clean via `phub audit`, then deleted per Hard rule #6.)
 license: CC-BY-4.0
-tokens: 3800
+tokens: 4500
 token_budget: 5000
 risk_level: low
 content_digest: sha256:pending-cci-v0.1-attestation
@@ -28,7 +28,7 @@ do_not_use_when:
   - "Consumer-grade casual apps (PrimitiveHub is infrastructure, not lifestyle)"
 attestation: cci-v0.1
 description: "Premium product UI restraint for trust-infrastructure brands. Information density without clutter. Microcopy with weight. The 'elite' delta you can't get from generic prompting."
-keywords: [ui-design, premium-restraint, microcopy, information-density, trust-ui]
+keywords: [ui-design, premium-restraint, microcopy, information-density, trust-ui, ai-slop-detector, aesthetic-direction]
 references:
   - "https://linear.app/method/principles"
   - "https://vercel.com/design"
@@ -55,7 +55,50 @@ six times.
 The most common AI-output failure: producing UI that is technically
 correct but emotionally generic. This primitive eliminates that.
 
+> **Adapted from the upstream `frontend-design` skill, inverted on
+> purpose.** The upstream skill tells a general agent to "commit to a
+> BOLD aesthetic direction" and pick an extreme (maximalist chaos,
+> grain overlays, asymmetry, custom cursors). For PrimitiveHub that
+> tone decision is *already made and locked*: refined / industrial
+> trust-infrastructure minimalism. So this primitive keeps the
+> upstream **engine** — design with intent, kill AI slop, pull the
+> five aesthetic levers deliberately — but points it at *our* fixed
+> direction. Restraint here is not the absence of a POV; it **is**
+> the POV, executed with the same precision upstream demands of
+> maximalism. On any conflict between an upstream maximalist mechanism
+> and our doctrine/brand-voice, doctrine wins (see
+> [`feedback-priority-stack`](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/feedback_priority_stack.md):
+> truth/taste ordering, and `docs/brand-voice.md`).
+
+## Design thinking before you build
+
+Before writing a line of UI, answer four questions (upstream's
+pre-step, with the Tone axis pinned for us):
+
+- **Purpose** — what does this surface let the user *know* or *do*?
+  Name the single job. A panel without a job is decoration.
+- **Tone** — *locked.* Sigstore / Linear / Stripe / Vercel register:
+  exact, dense, calm, credible. Do **not** "pick an extreme"; the
+  extreme is already chosen and it is restraint. Your creativity goes
+  into executing it flawlessly, not into re-selecting a flavor.
+- **Constraints** — Next.js 16 App Router, Tailwind v4 tokens in
+  `apps/web/app/globals.css`, shadcn/ui composition, existing type
+  scale and spacing. Default to what the codebase already uses.
+- **Differentiation** — the one thing the user remembers should be a
+  moment of *clarity* (the verdict word landing where the eye rests,
+  the digest rendering as believable product surface), never a
+  decorative flourish. Memorable-through-precision, not
+  memorable-through-spectacle.
+
 ## Core Principles
+
+- **Intentionality over intensity.** Upstream's load-bearing line:
+  "Bold maximalism and refined minimalism both work — the key is
+  intentionality, not intensity." We live entirely on the refined
+  side, which raises the bar: with nothing loud to hide behind, every
+  spacing value, type step, and word is exposed. A quiet UI that is
+  *imprecise* reads as cheap faster than a loud one does. Elegance
+  comes from executing the locked vision well — not from adding.
 
 - **Restraint beats expression.** Three deliberate elements feel
   considered; ten elements feel busy. Default to less. Hide the
@@ -99,6 +142,43 @@ correct but emotionally generic. This primitive eliminates that.
   doesn't talk like that. Linear doesn't. Sigstore doesn't.
   PrimitiveHub doesn't.
 
+## The five aesthetic levers
+
+Upstream names five levers and says "max them out." We pull the same
+five — deliberately, in the restrained direction. Pulling a lever the
+wrong way is how a trust surface starts to read as a casual SaaS toy.
+
+- **Typography.** Upstream: "avoid Inter/Arial, pick a distinctive
+  display font." Our re-key: we already run a deliberate, *narrow*
+  pairing (geometric/grotesk display + mono for identifiers); the
+  discipline is consistency, not novelty. Distinctiveness comes from a
+  tight, well-tuned scale and tabular/mono numerals on every
+  identifier — **not** from importing a new characterful font per
+  page. Never introduce a typeface without a token + a reason.
+- **Color & theme.** Upstream wants "dominant colors with sharp
+  accents." We agree on *structure* (one dominant neutral ground, a
+  single sharp accent — our cyan glow) but cap *saturation*: the
+  palette is muted by design. Use the existing `globals.css` tokens;
+  one accent gradient exists (`glow-text-cyan`) and that is the
+  ceiling, not the floor.
+- **Motion.** Upstream wants surprise and staggered page-load reveals.
+  We keep the *mechanism* (one well-orchestrated entrance can beat
+  scattered micro-interactions) but keep it 200–300ms `ease-out`, no
+  bounce, no spring, no custom cursors. Motion clarifies arrival; it
+  never performs. See [[framer-motion-discipline]].
+- **Spatial composition.** Upstream wants "asymmetry, overlap,
+  grid-breaking." We take *intentional negative space and controlled
+  density* from that lever and leave the overlap/diagonal-flow tricks
+  on the shelf — they fight scannability, which is the whole point of
+  a dense trust dashboard. Break the grid only when it encodes
+  meaning (a verdict column that must stand apart), never for drama.
+- **Backgrounds & detail.** Upstream wants "atmosphere: gradient
+  meshes, noise, grain, dramatic shadows." This is where our register
+  diverges hardest: **a solid, calm ground is the correct choice for
+  infrastructure.** Depth, if any, comes from one hairline border or a
+  single low-contrast layer — never grain overlays, mesh gradients, or
+  drop-shadow stacks. Atmosphere here = quiet, not texture.
+
 ## Decision Rules
 
 - **IF you want to make something feel premium THEN** remove rather
@@ -141,6 +221,39 @@ correct but emotionally generic. This primitive eliminates that.
 
 ## Anti-Patterns
 
+### The AI-slop detector (run this first)
+
+Upstream's most transferable gift: a named list of the tells that mark
+UI as machine-generated rather than designed. If any of these is true,
+the surface reads as "AI slop" no matter how clean the code is —
+*these override taste-by-feel*:
+
+- **Default-font tell** — shipping Inter / Roboto / Arial / raw system
+  fonts as the *decision* rather than a deliberate, tokenized choice.
+  (Our pairing is deliberate; don't silently regress to a default.)
+- **Purple-gradient-on-white tell** — the single most cliché
+  AI-design signature. We have exactly one sanctioned accent gradient
+  (`glow-text-cyan`); anything resembling generic purple→white gradient
+  hero treatment is forbidden.
+- **Predictable-layout tell** — three evenly-spaced feature cards with
+  an icon, a bold line, and two lines of grey body, repeated down the
+  page. Cookie-cutter component patterns with no context-specific
+  character. Density and asymmetric *information weight* break this;
+  more cards do not.
+- **Even-timid-palette tell** — color spread evenly across the surface
+  with no dominant ground and no point of emphasis. Reads as
+  unconsidered. One ground + one accent beats five pastels.
+- **Convergence tell** — reaching for the same "safe distinctive"
+  choice every time (e.g. Space Grotesk + a faint mesh). Sameness
+  across surfaces is itself the slop.
+
+Note the deliberate divergence from upstream: upstream fights slop by
+demanding *more* boldness; we fight the same slop with *more precision
+and restraint*. Same enemy ("generic AI aesthetics"), opposite cure —
+because our locked register is infrastructure, not a poster.
+
+### Standing anti-patterns
+
 - **Gradient-everywhere syndrome.** A single accent gradient (we have
   one on `glow-text-cyan`) is fine. Gradients on every card, every
   button, every CTA = casual SaaS.
@@ -160,6 +273,15 @@ correct but emotionally generic. This primitive eliminates that.
 
 ## Review Checklist
 
+- [ ] **AI-slop pass:** none of the five tells (default font,
+      purple→white gradient, predictable card-row layout, timid even
+      palette, convergent "safe" choice) is present.
+- [ ] The four design-thinking questions were answered — Purpose named,
+      Tone is the locked register, Constraints are existing tokens,
+      Differentiation is a moment of clarity not a flourish.
+- [ ] Each of the five levers was pulled in the restrained direction
+      (no new font, accent capped, motion ≤300ms ease-out, no
+      decorative grid-break, solid calm ground).
 - [ ] Could I remove a border, color, shadow, or word without losing
       meaning? If yes, remove it.
 - [ ] Every number on screen is either real or labeled as demo.
@@ -246,6 +368,10 @@ for the full priority stack.
 
 ## References
 
+- Upstream source skill: `anthropics/skills` →
+  `skills/frontend-design/SKILL.md` (the "avoid AI slop, commit to a
+  bold aesthetic direction" skill this primitive inverts and adapts;
+  audited clean and deleted per Hard rule #6).
 - Linear's design principles: `https://linear.app/method/principles`
 - Vercel design system: `https://vercel.com/design`
 - Stripe Docs design language: `https://docs.stripe.com/`
