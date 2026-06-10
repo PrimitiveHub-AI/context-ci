@@ -64,10 +64,14 @@ export function ThreatVerifiedSection() {
             AI agents — Claude Code, Cursor, Codex, Copilot — load Markdown
             skills, rule files, and instruction packages straight into their
             reasoning context, with your shell, your credentials, your tool
-            surface. SLSA, in-toto, and Sigstore cover{" "}
-            <span className="text-foreground/80">code dependencies</span>; nothing
-            covered the cognition the agent loads. That is the gap PrimitiveHub
-            closes.
+            surface. SLSA, in-toto, and Sigstore verify the{" "}
+            <span className="text-foreground/80">code dependencies</span> and
+            their build provenance; they do not judge the semantic instructions
+            an agent reads as context. That is the gap PrimitiveHub closes.
+          </p>
+          <p className="mt-4 max-w-2xl mx-auto rounded-md border border-primary/15 bg-primary/[0.04] px-4 py-2 text-[12px] text-primary/90 leading-relaxed">
+            Fast unverified agent-skill installation is the new{" "}
+            <code className="font-mono text-foreground/90">curl | bash</code>.
           </p>
         </div>
 

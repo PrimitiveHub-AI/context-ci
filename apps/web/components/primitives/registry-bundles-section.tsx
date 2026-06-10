@@ -46,7 +46,7 @@ export function RegistryBundlesSection() {
             </div>
             <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed max-w-xl">
               Curated compositions of trusted primitives for a specific
-              role. Install a complete cognition stack with{" "}
+              role. Install a complete context stack with{" "}
               <code className="font-mono text-foreground/80">phub install --bundle &lt;slug&gt;</code>.
             </p>
           </div>

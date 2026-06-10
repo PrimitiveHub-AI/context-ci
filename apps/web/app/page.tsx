@@ -32,14 +32,15 @@ export default function LandingPage() {
               Get Started
             </p>
             <h2 className="text-2xl font-bold text-foreground sm:text-3xl text-balance">
-              The trusted cognition supply chain
+              Verify the agent-context supply chain
               <br />
-              starts here.
+              before the agent reads it.
             </h2>
             <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
-              Explore trusted primitives, install them into your AI agent, and
-              immediately improve output quality with validated, expert-authored
-              cognition modules. No configuration required.
+              Paste a skill, a URL, or a repo at <Link href="/check" className="text-primary hover:underline">/check</Link> for an
+              instant risk verdict. Run <code className="font-mono text-foreground/80">phub audit</code> in
+              CI to gate every primitive your agent loads. Open-source verifier
+              kernel, CLI, GitHub Action, and MCP runtime gate.
             </p>
             <div className="mt-8 flex items-center justify-center gap-3">
               <Button
@@ -47,13 +48,13 @@ export default function LandingPage() {
                 className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 h-10"
                 asChild
               >
-                <Link href="/registry">
-                  Explore Trusted Primitives
+                <Link href="/check">
+                  Run a Check
                   <ArrowRight className="size-4" />
                 </Link>
               </Button>
               <Button variant="outline" size="lg" className="h-10 border-border/60" asChild>
-                <Link href="/paper">Read the Paper</Link>
+                <Link href="/top-10">Read the Top 10</Link>
               </Button>
             </div>
           </div>

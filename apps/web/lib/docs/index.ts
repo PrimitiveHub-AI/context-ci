@@ -52,7 +52,7 @@ export const DOC_PAGES: readonly DocPage[] = [
     file: "04-phub-lock.md",
     order: 4,
     description:
-      "The canonical lockfile for AI cognition. Drift detection, the four lock flags, integration workflows.",
+      "The canonical lockfile for AI agent context. Drift detection, the four lock flags, integration workflows.",
   },
   {
     slug: "github-action",

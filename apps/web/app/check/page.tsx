@@ -110,7 +110,7 @@ export default function CheckPage() {
                 Check
               </p>
               <h1 className="text-2xl font-bold text-foreground tracking-tight">
-                Paste anything. We tell you if it&rsquo;s safe.
+                Paste anything. We show the risk before your agent reads it.
               </h1>
               <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
                 Drop in a skill, a URL, a GitHub repo, an{" "}
@@ -121,8 +121,8 @@ export default function CheckPage() {
                 </code>{" "}
                 line. We scan it against the Context CI Top 10 before any agent
                 reads it. No account. No install. No execution &mdash; for
-                tarballs, we fetch the bytes and read them, the way an AV scanner
-                reads a binary.
+                tarballs, we fetch the bytes and inspect them, the way an AV
+                scanner inspects a file&rsquo;s bytes.
               </p>
               <div className="mt-4 flex flex-wrap items-center gap-3 text-[10px] font-mono uppercase tracking-[0.18em] text-muted-foreground">
                 <span className="inline-flex items-center gap-1.5">

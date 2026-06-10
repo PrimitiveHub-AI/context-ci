@@ -16,13 +16,13 @@ export default function ValidationPage() {
             Context CI
           </p>
           <h1 className="text-2xl font-bold text-foreground sm:text-3xl text-balance">
-            The validation pipeline for AI cognition
+            The validation pipeline for AI agent context
           </h1>
           <p className="mt-2 text-sm text-muted-foreground max-w-2xl leading-relaxed">
             Every trusted primitive passes through 10 automated and human review stages before
             entering the registry. Schema validation. Safety scanning. Contradiction detection.
             Agent benchmarking. Expert human review. Attested release. This is Context CI --
-            infrastructure-grade validation for cognition files.
+            infrastructure-grade validation for agent-context artifacts.
           </p>
         </div>
       </div>
