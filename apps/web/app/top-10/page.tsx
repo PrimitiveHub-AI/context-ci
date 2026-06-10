@@ -2,6 +2,7 @@ import Link from "next/link"
 import type { Metadata } from "next"
 import { ArrowUpRight, BookOpen } from "lucide-react"
 
+import { AVParallelMap } from "@/components/landing/av-parallel-map"
 import { Top10Card } from "@/components/landing/top10-card"
 import { EvaluationLink } from "@/components/primitives/evaluation-link"
 import { loadLatestEvaluation, summarize } from "@/lib/evaluation"
@@ -71,8 +72,17 @@ export default function TopTenPage() {
         </p>
       </header>
 
+      {/* AV-parallel recognition primer (full) — per ADR-0030 §3 +
+          ADR-0040 §1. Sets the reference frame for the 10 cards
+          below: this is AV for agent context. The buyer already
+          understands this product family; the cards then teach the
+          ten specific threat shapes our scanner emits against. */}
+      <div className="mt-14">
+        <AVParallelMap variant="full" />
+      </div>
+
       {/* 10-card grid — the dashboard, not the dump */}
-      <section className="mt-12 grid grid-cols-1 gap-px sm:grid-cols-2 lg:grid-cols-3 rounded-xl border border-border/40 overflow-hidden bg-border/40">
+      <section className="mt-14 grid grid-cols-1 gap-px sm:grid-cols-2 lg:grid-cols-3 rounded-xl border border-border/40 overflow-hidden bg-border/40">
         {entries.map((entry) => (
           <Top10Card
             key={entry.cci}

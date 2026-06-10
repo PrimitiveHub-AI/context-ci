@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { FileCheck2, ShieldAlert, BookKey, ArrowUpRight } from "lucide-react"
 
+import { AVParallelMap } from "@/components/landing/av-parallel-map"
 import { loadLatestEvaluation, summarize } from "@/lib/evaluation"
 
 /**
@@ -152,10 +153,22 @@ export function TrustRuntimeSection() {
           })}
         </div>
 
+        {/* AV-parallel primer (compact) — recognition before structure.
+            Per ADR-0030 §3 + ADR-0040 §1, PrimitiveHub is agent-context
+            AV plus registry; the buyer (ICP-1 CISO) already understands
+            the AV product family. This sub-block collapses 30 years of
+            category education into a 5-row recognition primer without
+            adding a 6th homepage section (homepage-elite-bar.md
+            discipline preserved). The component is shared with /top-10
+            (full variant) so the framing cannot drift. */}
+        <div className="mt-10">
+          <AVParallelMap variant="compact" />
+        </div>
+
         {/* One proof path, not a ledger wall. The macro-F1 number lives
             in the Hero pill; here we point to the scoreboard that holds
             it — and the corpus/FP/FN ledgers live one hop further in. */}
-        <p className="mt-10 text-center text-[11px] font-mono text-muted-foreground/70">
+        <p className="mt-8 text-center text-[11px] font-mono text-muted-foreground/70">
           Versioned public specs · Python ↔ TypeScript conformance ·
           byte-identical reproducibility ·{" "}
           <a

@@ -25,6 +25,8 @@ import {
   Shield,
 } from "lucide-react"
 
+import { PlannedBadge } from "@/components/ui/planned-badge"
+
 const sampleMarkdown = `---
 spec_version: "0.1"
 name: my-new-primitive
@@ -139,27 +141,101 @@ export default function ForgePage() {
                 validation, inline lint, and section discovery — calibrated to Primitive Spec v0.1.
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 h-8">
-                <Play className="size-3" />
-                Run Validation
-              </Button>
-              <Button variant="outline" size="sm" className="gap-1.5 h-8 border-border/60">
-                <FlaskConical className="size-3" />
-                Test Primitive
-              </Button>
-              <Button variant="outline" size="sm" className="gap-1.5 h-8 border-border/60">
-                <Upload className="size-3" />
-                Submit to Registry
-              </Button>
-              <Button variant="outline" size="sm" className="gap-1.5 h-8 border-border/60">
-                <Download className="size-3" />
-                Export
-              </Button>
-              <Button variant="outline" size="sm" className="gap-1.5 h-8 border-border/60">
-                <Save className="size-3" />
-                Save
-              </Button>
+            <div className="flex flex-col items-end gap-1.5">
+              <div className="flex flex-wrap gap-2">
+                {/* Functional — scrolls to the live lint panel. The
+                    panel itself runs the linter on every keystroke;
+                    this button is the deliberate "show me the
+                    findings now" affordance. */}
+                <Button
+                  size="sm"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 h-8"
+                  onClick={() => {
+                    document.getElementById("forge-lint-output")?.scrollIntoView({
+                      behavior: "smooth",
+                      block: "start",
+                    })
+                  }}
+                >
+                  <Play className="size-3" />
+                  Run Validation
+                </Button>
+
+                {/* Planned — agent-behavior test harness against the
+                    primitive. Phase 5.6 work per execution-plan. */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 h-8 border-border/60 opacity-60 cursor-not-allowed"
+                  disabled
+                  title="Planned — agent-behavior test harness lands in Phase 5.6"
+                >
+                  <FlaskConical className="size-3" />
+                  Test Primitive
+                </Button>
+
+                {/* Planned — registry submission. Pre-launch posture
+                    gates the submit pipeline until ADR-0022 flips. */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 h-8 border-border/60 opacity-60 cursor-not-allowed"
+                  disabled
+                  title="Planned — submission opens when the registry launches (ADR-0022)"
+                >
+                  <Upload className="size-3" />
+                  Submit to Registry
+                </Button>
+
+                {/* Functional — downloads the current editor buffer
+                    as <name>.md. Frontmatter `name` determines the
+                    filename; falls back to `primitive.md`. */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 h-8 border-border/60"
+                  onClick={() => {
+                    const filename =
+                      typeof analysis.fmName === "string" && analysis.fmName !== "—"
+                        ? `${analysis.fmName}.md`
+                        : "primitive.md"
+                    const blob = new Blob([content], { type: "text/markdown" })
+                    const url = URL.createObjectURL(blob)
+                    const a = document.createElement("a")
+                    a.href = url
+                    a.download = filename
+                    document.body.appendChild(a)
+                    a.click()
+                    document.body.removeChild(a)
+                    URL.revokeObjectURL(url)
+                  }}
+                >
+                  <Download className="size-3" />
+                  Export
+                </Button>
+
+                {/* Planned — persistent draft store. Requires a
+                    per-user draft model; deferred until accounts are
+                    live post-launch. */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 h-8 border-border/60 opacity-60 cursor-not-allowed"
+                  disabled
+                  title="Planned — persistent drafts arrive with the post-launch account model"
+                >
+                  <Save className="size-3" />
+                  Save
+                </Button>
+              </div>
+
+              {/* Honesty footnote — 3 of 5 actions are scoped but
+                  not yet live. We say so on the surface instead of
+                  hiding it in a tooltip. */}
+              <p className="text-[10px] font-mono text-muted-foreground/70 flex items-center gap-1.5">
+                <PlannedBadge label="3 of 5 planned" />
+                Test, Submit, Save scoped — Run Validation + Export live now.
+              </p>
             </div>
           </div>
         </div>
@@ -317,8 +393,11 @@ export default function ForgePage() {
               </div>
             </Card>
 
-            {/* Lint output — live from the same linter as the editor squiggles */}
-            <Card className="border-border/40 bg-card p-4">
+            {/* Lint output — live from the same linter as the editor
+                squiggles. The `id` is the scroll target for the
+                "Run Validation" header button; the panel itself runs
+                the linter on every keystroke. */}
+            <Card id="forge-lint-output" className="scroll-mt-24 border-border/40 bg-card p-4">
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="text-[11px] font-semibold text-foreground flex items-center gap-1.5 uppercase tracking-wider">
                   <AlertTriangle className="size-3 text-amber/70" />
@@ -373,7 +452,11 @@ export default function ForgePage() {
               )}
             </Card>
 
-            {/* Target agents */}
+            {/* Target agents — declarative chips, not filters. The
+                `compatible_agents` frontmatter field is the source of
+                truth; these chips reflect it. Removed cursor-pointer
+                and hover-color affordances that suggested clickable
+                filtering (false-affordance fix). */}
             <Card className="border-border/40 bg-card p-4">
               <h3 className="text-[11px] font-semibold text-foreground mb-3 uppercase tracking-wider">
                 Target Agents
@@ -383,12 +466,15 @@ export default function ForgePage() {
                   <Badge
                     key={agent}
                     variant="outline"
-                    className="cursor-pointer text-[10px] font-mono border-border/40 text-muted-foreground hover:border-primary/30 hover:text-foreground transition-colors"
+                    className="text-[10px] font-mono border-border/40 text-muted-foreground"
                   >
                     {agent}
                   </Badge>
                 ))}
               </div>
+              <p className="mt-2 text-[10px] text-muted-foreground/70">
+                Declared in <code className="font-mono text-foreground/80">compatible_agents</code> frontmatter.
+              </p>
             </Card>
           </div>
         </div>
