@@ -38,6 +38,7 @@ function buildColumns(measuredAt: string): readonly Column[] {
         { label: "Primitive Forge", href: "/forge" },
         { label: "Registry", href: "/registry" },
         { label: "Docs (phub CLI, Action, MCP)", href: "/docs" },
+        { label: "Status", href: "/status" },
       ],
     },
     {
