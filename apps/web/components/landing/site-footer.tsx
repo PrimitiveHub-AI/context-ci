@@ -98,6 +98,7 @@ function buildColumns(measuredAt: string): readonly Column[] {
           href: `${GH_BLOB}/SECURITY.md`,
           external: true,
         },
+        { label: "Security & bug bounty", href: "/security" },
         { label: "Contributors", href: "/contributors" },
         { label: "Source on GitHub", href: GH_REPO, external: true },
       ],
