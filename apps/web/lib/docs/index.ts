@@ -31,66 +31,74 @@ export const DOC_PAGES: readonly DocPage[] = [
       "Install pre-launch from the monorepo or post-launch via npm. Three install paths + smoke verification.",
   },
   {
+    slug: "trust-contract",
+    title: "Trust Contract",
+    file: "02-trust-contract.md",
+    order: 2,
+    description:
+      "The wire format every surface speaks: Content Digest + Signature + Attestation + Provenance Chain. How to verify, how to read a bundle, how refusals work.",
+  },
+  {
     slug: "phub-cli",
     title: "phub CLI",
-    file: "02-phub-cli.md",
-    order: 2,
+    file: "03-phub-cli.md",
+    order: 3,
     description:
       "Complete reference for every phub subcommand: scan, audit, watch, install, verify, init. Flags, exit codes, examples.",
   },
   {
     slug: "context-policy",
     title: "Context Policy Language",
-    file: "03-context-policy.md",
-    order: 3,
+    file: "04-context-policy.md",
+    order: 4,
     description:
       "The .primitivehub/policy.yaml spec: per-file allows, severity overrides, glob matching, FP-NNN ledger discipline.",
   },
   {
     slug: "phub-lock",
     title: "phub.lock",
-    file: "04-phub-lock.md",
-    order: 4,
+    file: "05-phub-lock.md",
+    order: 5,
     description:
       "The canonical lockfile for AI agent context. Drift detection, the four lock flags, integration workflows.",
   },
   {
     slug: "github-action",
     title: "GitHub Action",
-    file: "05-github-action.md",
-    order: 5,
+    file: "06-github-action.md",
+    order: 6,
     description:
       "primitivehub/phub-scan composite Action. SARIF upload to Code Scanning, gating PRs, inputs + outputs.",
   },
   {
     slug: "mcp-server",
     title: "MCP Server",
-    file: "06-mcp-server.md",
-    order: 6,
+    file: "07-mcp-server.md",
+    order: 7,
     description:
       "Model Context Protocol server exposing PrimitiveHub to AI agents. Five JSON-RPC tools. Claude / Cursor / Aider integration.",
   },
   {
     slug: "verify-library",
     title: "verify Library",
-    file: "07-verify-library.md",
-    order: 7,
+    file: "08-verify-library.md",
+    order: 8,
     description:
       "@primitivehub/verify — embeddable Trust Bundle verifier. 30-line embed pattern, error codes, TypeScript types.",
   },
   {
     slug: "recipes",
     title: "Recipes",
-    file: "08-recipes.md",
-    order: 8,
+    file: "09-recipes.md",
+    order: 9,
     description:
       "End-to-end workflows: CI-gated project, Claude Code workspace, runtime-checking agent, FP triage cycle.",
   },
   {
     slug: "troubleshooting",
     title: "Troubleshooting",
-    file: "09-troubleshooting.md",
-    order: 9,
+    file: "10-troubleshooting.md",
+    order: 10,
     description:
       "Every error message v0.1 emits + the fix. Organized by surface (install / scan / lock / MCP / Action / verify).",
   },
