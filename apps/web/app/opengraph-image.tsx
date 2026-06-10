@@ -1,6 +1,19 @@
 import { ImageResponse } from "next/og"
 
 import { loadLatestEvaluation, summarize } from "@/lib/evaluation"
+import {
+  BG,
+  CYAN,
+  CYAN_DIM,
+  FG,
+  FG_DIM,
+  FG_MORE_DIM,
+  OG_BACKGROUND_GRADIENT,
+  OG_CONTENT_TYPE,
+  OG_FONT_FAMILY,
+  OG_MONO_FAMILY,
+  OG_SIZE,
+} from "@/lib/og-theme"
 
 /**
  * Open Graph image — the social-card first impression.
@@ -24,15 +37,8 @@ import { loadLatestEvaluation, summarize } from "@/lib/evaluation"
 
 export const runtime = "nodejs"
 export const alt = "PrimitiveHub — the Context Firewall for AI agents"
-export const size = { width: 1200, height: 630 }
-export const contentType = "image/png"
-
-const CYAN = "#22d3e8" // matches the site's primary accent (oklch 0.78 0.14 195)
-const CYAN_DIM = "rgba(34, 211, 232, 0.18)"
-const BG = "#050709"
-const FG = "#f5f7fa"
-const FG_DIM = "rgba(245, 247, 250, 0.72)"
-const FG_MORE_DIM = "rgba(245, 247, 250, 0.42)"
+export const size = OG_SIZE
+export const contentType = OG_CONTENT_TYPE
 
 export default async function OGImage() {
   const summary = summarize(loadLatestEvaluation())
