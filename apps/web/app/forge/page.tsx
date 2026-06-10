@@ -26,6 +26,7 @@ import {
 } from "lucide-react"
 
 import { PlannedBadge } from "@/components/ui/planned-badge"
+import { TrustReadinessPanel } from "@/components/forge/trust-readiness-panel"
 
 const sampleMarkdown = `---
 spec_version: "0.1"
@@ -356,6 +357,25 @@ export default function ForgePage() {
 
           {/* Right panels */}
           <div className="lg:col-span-5 space-y-4">
+            {/* Trust Readiness — Reviewer B's security-aware IDE
+                block. Sits at the top because "will this pass
+                enterprise CI?" is the question an author asks
+                BEFORE they look at the section checklist or the
+                lint findings. Every signal here is already
+                computed on every keystroke by the parent useMemo;
+                this component is presentational. */}
+            <TrustReadinessPanel
+              errors={analysis.errors}
+              warnings={analysis.warnings}
+              infos={analysis.infos}
+              requiredPresent={requiredPresent}
+              requiredTotal={requiredAll.length}
+              tokens={analysis.tokens}
+              fmBudget={analysis.fmBudget}
+              fmRisk={analysis.fmRisk}
+              frontmatterOk={extractFrontmatter(content).ok}
+            />
+
             {/* Sections — live */}
             <Card className="border-border/40 bg-card p-4">
               <h3 className="text-[11px] font-semibold text-foreground mb-3 flex items-center gap-1.5 uppercase tracking-wider">
