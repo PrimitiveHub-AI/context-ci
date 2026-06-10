@@ -147,6 +147,44 @@ export function PrimitiveDetailView({
                 </span>
               </div>
 
+              {/* Etherscan-style inspector strip — every primitive
+                  surfaces three explicit verification paths the same
+                  way Etherscan surfaces View transaction / View
+                  contract / View token. View provenance switches the
+                  in-page tab; the other two link to the relevant
+                  spec § so a reader can verify the contract before
+                  trusting the badge. Per execution-plan PR 5.6.7
+                  (Primitive Explorer) and ADR-0030 §3 (provenance
+                  database AV-family slot). */}
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] font-mono uppercase tracking-wider">
+                <span className="text-muted-foreground/60">inspect</span>
+                <a
+                  href="/specs/trust-contract-v0.1#section-2-content-digest"
+                  className="inline-flex items-center gap-1 rounded-sm border border-primary/20 bg-primary/[0.04] px-1.5 py-0.5 text-primary/85 hover:text-primary hover:border-primary/40"
+                  title="What does the SHA-256 content digest commit to? Read Trust Contract v0.1 § 2"
+                >
+                  <Hash className="size-2.5" />
+                  view digest
+                </a>
+                <a
+                  href="/specs/trust-contract-v0.1#section-4-attestation"
+                  className="inline-flex items-center gap-1 rounded-sm border border-primary/20 bg-primary/[0.04] px-1.5 py-0.5 text-primary/85 hover:text-primary hover:border-primary/40"
+                  title="What does the Context CI attestation predicate claim? Read Trust Contract v0.1 § 4"
+                >
+                  <Fingerprint className="size-2.5" />
+                  view attestation
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("Provenance")}
+                  className="inline-flex items-center gap-1 rounded-sm border border-primary/20 bg-primary/[0.04] px-1.5 py-0.5 text-primary/85 hover:text-primary hover:border-primary/40 uppercase tracking-wider"
+                  title="View the author → validation → review → release chain inline"
+                >
+                  <Shield className="size-2.5" />
+                  view provenance
+                </button>
+              </div>
+
               {/* Compatibility */}
               <div className="mt-3">
                 <CompatibilityTags agents={primitive.compatibleAgents} />
@@ -438,7 +476,7 @@ license: ${primitive.license}
 tokens: ${primitive.tokens}
 token_budget: ${primitive.tokenBudget}
 content_digest: ${primitive.contentDigest}
-signature: null  # ed25519 planned (Sigstore)
+signature: <Sigstore keyless OIDC envelope (Fulcio cert + Rekor entry)>
 attestation: cci-v1
 risk_level: ${primitive.riskLevel}
 compatible_agents:
@@ -661,8 +699,9 @@ When this primitive is loaded, the agent should:
                 Cryptographic Provenance Chain
               </h3>
               <p className="text-xs text-muted-foreground leading-relaxed mb-5">
-                Every trusted primitive carries a SHA-256 content digest and a Context CI attestation
-                record. Ed25519 signing via Sigstore is planned. The provenance chain establishes an
+                Every trusted primitive carries a SHA-256 content digest, a Context CI attestation
+                record, and a Sigstore keyless OIDC signature (Fulcio cert + Rekor entry). The
+                provenance chain establishes an
                 immutable audit trail from authorship through validation to publication.
               </p>
               <div className="space-y-3">
@@ -701,7 +740,7 @@ When this primitive is loaded, the agent should:
 {`$ phub verify ${primitive.fileName}
 Content Digest: ${primitive.contentDigest}
 Digest Algo:    SHA-256
-Signature:      Ed25519 (planned, via Sigstore)
+Signature:      Sigstore keyless OIDC (Fulcio cert + Rekor entry)
 Attestation:    cci-v1 — pass (10/10 stages)
 Provenance:     PrimitiveHub Registry
 Timestamp:      ${primitive.lastUpdated}T14:32:00Z

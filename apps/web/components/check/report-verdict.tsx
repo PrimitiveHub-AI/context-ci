@@ -16,11 +16,43 @@
  * justifies it; for v0.1 the GitHub UI prefill is sufficient.
  */
 
-import { ExternalLink, Flag, Shield } from "lucide-react"
+import { ExternalLink, Flag, Github, Shield } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import type { CheckResponse } from "@/lib/check/types"
+
+/**
+ * Best-effort detector for "the input was a URL the visitor can be
+ * sent back to." We resolve via URL parsing rather than a regex
+ * pattern so we get https / http / git+ / npm: / claude: / etc. for
+ * free, and reject malformed inputs cleanly. Returns the canonical
+ * absolute href for display; `null` when the input wasn't shaped
+ * like a URL the user could meaningfully open.
+ */
+function asReturnableUrl(s: string): string | null {
+  const trimmed = s.trim()
+  if (trimmed.length === 0 || trimmed.length > 2048) return null
+  try {
+    const u = new URL(trimmed)
+    // Only http/https get a "View on …" link — other schemes
+    // (file:, javascript:, data:, custom claude://, etc.) aren't
+    // safe or useful to render as a link.
+    if (u.protocol !== "http:" && u.protocol !== "https:") return null
+    return u.toString()
+  } catch {
+    return null
+  }
+}
+
+function isGithubUrl(s: string): boolean {
+  try {
+    const u = new URL(s)
+    return u.hostname === "github.com" || u.hostname.endsWith(".github.com")
+  } catch {
+    return false
+  }
+}
 
 const GITHUB_NEW_ISSUE_BASE =
   "https://github.com/DevXYZx/primitivehub/issues/new"
@@ -157,7 +189,13 @@ export function ReportVerdict({ result, pastedInput }: ReportVerdictProps) {
   const offerFp = anyTriggered
   const offerFn = !anyTriggered || result.summary.verdictBand === "clean"
 
-  if (!offerFp && !offerFn) return null
+  // "View original" — additive per the parallel session's allow-list.
+  // Only render when the visitor pasted something they can open
+  // (http/https URL); render with a GitHub icon + label when the URL
+  // is github.com so the affordance reads as exactly what it does.
+  const returnableUrl = asReturnableUrl(pastedInput)
+
+  if (!offerFp && !offerFn && !returnableUrl) return null
 
   return (
     <Card className="border-border/40 bg-card/50 p-4">
@@ -213,6 +251,34 @@ export function ReportVerdict({ result, pastedInput }: ReportVerdictProps) {
           <p className="mt-3 text-[10px] font-mono uppercase tracking-[0.16em] text-muted-foreground">
             opens github · no account required to draft · public ledger entry
           </p>
+
+          {/* View original — additive affordance allowed by the
+              parallel-session orders below the report buttons. Renders
+              only when the pasted input parses as an http/https URL
+              the visitor can be sent back to. Label and icon adapt
+              when the host is github.com so the affordance reads as
+              exactly what it does. */}
+          {returnableUrl && (
+            <div className="mt-3 border-t border-border/40 pt-3">
+              <a
+                href={returnableUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-[11px] font-mono text-primary/85 hover:text-primary"
+                title={`Open the original source you pasted at /check (${returnableUrl})`}
+              >
+                {isGithubUrl(returnableUrl) ? (
+                  <Github className="size-3" />
+                ) : (
+                  <ExternalLink className="size-3" />
+                )}
+                {isGithubUrl(returnableUrl)
+                  ? "View source on GitHub"
+                  : "View original"}
+                <ExternalLink className="size-2.5 opacity-50" />
+              </a>
+            </div>
+          )}
         </div>
       </div>
     </Card>
