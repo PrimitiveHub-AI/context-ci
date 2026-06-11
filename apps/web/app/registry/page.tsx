@@ -79,17 +79,42 @@ export default function RegistryPage() {
 
   return (
     <main className="min-h-screen">
-      <div className="border-b border-border/40">
-        <div className="mx-auto max-w-7xl px-4 py-10 lg:px-6">
-          <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-primary mb-2">
+      <div className="relative border-b border-border/40 overflow-hidden">
+        <div
+          aria-hidden
+          className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,oklch(0.78_0.14_195/0.07)_0%,transparent_55%)]"
+        />
+        <div className="bg-grid absolute inset-0 opacity-[0.10]" />
+        <div className="relative mx-auto max-w-7xl px-4 py-12 lg:px-6">
+          <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-primary mb-3">
             Trusted Registry
           </p>
-          <h1 className="text-2xl font-bold text-foreground sm:text-3xl">Primitive Registry</h1>
-          <p className="mt-2 text-sm text-muted-foreground max-w-xl leading-relaxed">
-            Explore, search, and install trusted AI Context Primitives. Every entry is expert-authored,
-            validated through Context CI, versioned with semver, content-addressed by SHA-256 digest,
-            and scored across four quality dimensions. Signed with Sigstore keyless OIDC (Fulcio cert + Rekor entry).
+          <h1 className="text-3xl font-bold text-foreground sm:text-4xl tracking-tight">
+            Every primitive carries a digest, an attestation, and a chain.
+          </h1>
+          <p className="mt-4 text-[15px] text-muted-foreground max-w-2xl leading-relaxed">
+            Browse expert-authored AI Context Primitives. Each entry passes
+            Context CI, semver-versioned, content-addressed by SHA-256
+            digest, scored across four quality dimensions, and signed
+            with Sigstore keyless OIDC (Fulcio cert + Rekor entry).
           </p>
+          <div className="mt-5 flex flex-wrap items-center gap-2 text-[11px] font-mono">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-success/25 bg-success/[0.06] px-3 py-1 text-success/90">
+              <span className="size-1 rounded-full bg-success/80" />
+              digest pinned
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/[0.06] px-3 py-1 text-primary/90">
+              <span className="size-1 rounded-full bg-primary/80" />
+              attested
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber/25 bg-amber/[0.06] px-3 py-1 text-amber/90">
+              <span className="size-1 rounded-full bg-amber/80" />
+              policy-gated
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border/40 bg-card/60 px-3 py-1 text-muted-foreground">
+              Sigstore keyless OIDC
+            </span>
+          </div>
         </div>
       </div>
 
