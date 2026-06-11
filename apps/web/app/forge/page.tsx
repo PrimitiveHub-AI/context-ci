@@ -27,6 +27,9 @@ import {
 
 import { PlannedBadge } from "@/components/ui/planned-badge"
 import { TrustReadinessPanel } from "@/components/forge/trust-readiness-panel"
+import { ForgeSidePanel } from "@/components/forge/forge-side-panel"
+
+const TARGET_AGENTS = ["Claude Code", "Cursor", "Codex", "Copilot", "v0", "Windsurf"] as const
 
 const sampleMarkdown = `---
 spec_version: "0.1"
@@ -376,126 +379,17 @@ export default function ForgePage() {
               frontmatterOk={extractFrontmatter(content).ok}
             />
 
-            {/* Sections — live */}
-            <Card className="border-border/40 bg-card p-4">
-              <h3 className="text-[11px] font-semibold text-foreground mb-3 flex items-center gap-1.5 uppercase tracking-wider">
-                <CheckCircle2 className="size-3 text-success/70" />
-                Sections
-              </h3>
-              <div className="space-y-1.5">
-                {allSections.map((section) => (
-                  <div key={section.name} className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      {section.present ? (
-                        <CheckCircle2 className="size-3 text-success/70" />
-                      ) : section.required ? (
-                        <AlertTriangle className="size-3 text-destructive/70" />
-                      ) : (
-                        <Info className="size-3 text-muted-foreground/70" />
-                      )}
-                      <span
-                        className={`text-[11px] ${
-                          section.present
-                            ? "text-muted-foreground"
-                            : section.required
-                              ? "text-destructive/80"
-                              : "text-muted-foreground/70"
-                        }`}
-                      >
-                        {section.name}
-                      </span>
-                    </div>
-                    <span className="text-[9px] font-mono text-muted-foreground/60">
-                      {section.required ? "required" : "optional"}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </Card>
-
-            {/* Lint output — live from the same linter as the editor
-                squiggles. The `id` is the scroll target for the
-                "Run Validation" header button; the panel itself runs
-                the linter on every keystroke. */}
-            <Card id="forge-lint-output" className="scroll-mt-24 border-border/40 bg-card p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-[11px] font-semibold text-foreground flex items-center gap-1.5 uppercase tracking-wider">
-                  <AlertTriangle className="size-3 text-amber/70" />
-                  Lint Output
-                </h3>
-                <span className="text-[9px] font-mono text-muted-foreground/70">
-                  {analysis.findings.length} finding{analysis.findings.length === 1 ? "" : "s"}
-                </span>
-              </div>
-              {analysis.findings.length === 0 ? (
-                <div className="rounded-md bg-success/[0.04] border border-success/15 px-2.5 py-3 text-center">
-                  <CheckCircle2 className="inline size-3.5 text-success/70 mr-1.5 mb-0.5" />
-                  <span className="text-[11px] text-muted-foreground">
-                    No findings — primitive conforms to Spec v0.1.
-                  </span>
-                </div>
-              ) : (
-                <div className="space-y-2 max-h-72 overflow-y-auto">
-                  {analysis.findings.map((finding, i) => (
-                    <div
-                      key={`${finding.code}-${i}`}
-                      className={`flex items-start gap-2 rounded-md px-2.5 py-2 text-[11px] ${
-                        finding.severity === "error"
-                          ? "bg-destructive/[0.04] border border-destructive/15"
-                          : finding.severity === "warning"
-                            ? "bg-amber/[0.04] border border-amber/15"
-                            : "bg-primary/[0.03] border border-primary/10"
-                      }`}
-                    >
-                      {finding.severity === "error" ? (
-                        <XCircle className="size-3 shrink-0 text-destructive mt-0.5" />
-                      ) : finding.severity === "warning" ? (
-                        <AlertTriangle className="size-3 shrink-0 text-amber mt-0.5" />
-                      ) : (
-                        <Info className="size-3 shrink-0 text-primary mt-0.5" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-muted-foreground leading-relaxed">{finding.message}</p>
-                        <p className="mt-1 flex items-center gap-2 text-[9px] font-mono text-muted-foreground/60">
-                          <span>{finding.code}</span>
-                          {finding.line !== undefined && (
-                            <>
-                              <span className="text-border">·</span>
-                              <span>L{finding.line}</span>
-                            </>
-                          )}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Card>
-
-            {/* Target agents — declarative chips, not filters. The
-                `compatible_agents` frontmatter field is the source of
-                truth; these chips reflect it. Removed cursor-pointer
-                and hover-color affordances that suggested clickable
-                filtering (false-affordance fix). */}
-            <Card className="border-border/40 bg-card p-4">
-              <h3 className="text-[11px] font-semibold text-foreground mb-3 uppercase tracking-wider">
-                Target Agents
-              </h3>
-              <div className="flex flex-wrap gap-1.5">
-                {["Claude Code", "Cursor", "Codex", "Copilot", "v0", "Windsurf"].map((agent) => (
-                  <Badge
-                    key={agent}
-                    variant="outline"
-                    className="text-[10px] font-mono border-border/40 text-muted-foreground"
-                  >
-                    {agent}
-                  </Badge>
-                ))}
-              </div>
-              <p className="mt-2 text-[10px] text-muted-foreground/70">
-                Declared in <code className="font-mono text-foreground/80">compatible_agents</code> frontmatter.
-              </p>
-            </Card>
+            {/* Consolidated inspector — three tabs (Sections / Lint /
+                Agents) replace the three separate cards that used to
+                stack below the Trust Readiness panel. One card, three
+                views. Editor recovers the vertical space. The id stays
+                on the outer card so the "Run Validation" header button
+                still scrolls to the right place. */}
+            <ForgeSidePanel
+              sections={allSections}
+              findings={analysis.findings}
+              agents={[...TARGET_AGENTS]}
+            />
           </div>
         </div>
       </div>
