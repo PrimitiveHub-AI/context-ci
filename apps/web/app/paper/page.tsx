@@ -176,9 +176,56 @@ export default function PaperPage() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-4xl px-4 py-10 lg:px-6 space-y-12">
+      <div className="mx-auto max-w-7xl px-4 py-10 lg:px-6 grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-10">
+        {/* Sticky section outline on lg+ — quick navigation to each
+            section without scroll-thrash. Mobile: hidden (the page
+            scrolls normally). */}
+        <nav
+          aria-label="Paper sections"
+          className="hidden lg:block sticky top-24 self-start"
+        >
+          <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-primary/80 mb-4">
+            Outline
+          </p>
+          <ol className="space-y-1.5 text-[12px]">
+            {[
+              { href: "#abstract", label: "Abstract", num: "00" },
+              { href: "#supply-chain", label: "1. Supply-chain gap", num: "01" },
+              { href: "#top-10", label: "2. The Top 10", num: "02" },
+              { href: "#contributions", label: "3. Contributions", num: "03" },
+              { href: "#evaluation", label: "4. Evaluation", num: "04" },
+              { href: "#case-studies", label: "5. Case studies", num: "05" },
+              { href: "#cite", label: "Citation", num: "—" },
+            ].map((item) => (
+              <li key={item.href}>
+                <a
+                  href={item.href}
+                  className="group flex items-center justify-between gap-2 rounded-md px-2 py-1.5 hover:bg-card/60 transition-colors"
+                >
+                  <span className="text-muted-foreground group-hover:text-foreground truncate">
+                    {item.label}
+                  </span>
+                  <span className="font-mono text-[10px] text-muted-foreground/50 tabular-nums shrink-0">
+                    {item.num}
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ol>
+          <div className="mt-6 rounded-md border border-border/40 bg-card/40 p-3">
+            <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/80 mb-1">
+              Read time
+            </p>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              ≈ 7 minutes scroll · 15 minutes with the corpus + scoreboard
+            </p>
+          </div>
+        </nav>
+
+        {/* Main content column */}
+        <article className="space-y-12 min-w-0 max-w-3xl">
         {/* Abstract */}
-        <section>
+        <section id="abstract" className="scroll-mt-20">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground uppercase tracking-wider mb-4">
             <BookOpen className="size-3.5 text-primary/70" />
             Abstract
@@ -221,7 +268,7 @@ export default function PaperPage() {
         </section>
 
         {/* Research Gap */}
-        <section>
+        <section id="supply-chain" className="scroll-mt-20">
           <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-4">
             1. A supply chain the build pipeline does not cover
           </h2>
@@ -245,7 +292,7 @@ export default function PaperPage() {
         </section>
 
         {/* Threat taxonomy */}
-        <section>
+        <section id="top-10" className="scroll-mt-20">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground uppercase tracking-wider mb-4">
             <ShieldAlert className="size-3.5 text-primary/70" />
             2. The Context CI Top 10
@@ -289,7 +336,7 @@ export default function PaperPage() {
         </section>
 
         {/* Contributions */}
-        <section>
+        <section id="contributions" className="scroll-mt-20">
           <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-4">
             3. Contributions
           </h2>
@@ -309,7 +356,7 @@ export default function PaperPage() {
         </section>
 
         {/* Evaluation */}
-        <section>
+        <section id="evaluation" className="scroll-mt-20">
           <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground uppercase tracking-wider mb-4">
             <FlaskConical className="size-3.5 text-primary/70" />
             4. Evaluation
@@ -401,7 +448,7 @@ export default function PaperPage() {
         </section>
 
         {/* Case Studies */}
-        <section>
+        <section id="case-studies" className="scroll-mt-20">
           <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-4">
             5. Case Studies
           </h2>
@@ -473,6 +520,7 @@ export default function PaperPage() {
             CyberOrca Labs &middot; PrimitiveHub Project &middot; preprint v0.1 &middot; 2026
           </Badge>
         </div>
+        </article>
       </div>
     </main>
   )
