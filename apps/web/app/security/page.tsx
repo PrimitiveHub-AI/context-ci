@@ -106,16 +106,22 @@ const RESPONSE_STAGES: ReadonlyArray<{
 
 export default function SecurityPage() {
   return (
-    <main className="mx-auto max-w-4xl px-4 py-14 lg:px-6">
+    <main className="relative mx-auto max-w-5xl px-4 py-16 lg:px-6">
+      {/* Layered backdrop for depth */}
+      <div
+        aria-hidden
+        className="absolute inset-x-0 top-0 h-80 bg-[radial-gradient(ellipse_at_top,oklch(0.78_0.14_195/0.07)_0%,transparent_55%)] -z-10"
+      />
+
       {/* Header */}
       <header className="mb-12">
         <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-primary mb-3">
           Security
         </p>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl text-balance">
-          Three lanes. One discipline.
+        <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-5xl text-balance">
+          Three lanes. <span className="text-primary glow-text-cyan">One discipline.</span>
         </h1>
-        <p className="mt-4 text-sm text-muted-foreground leading-relaxed max-w-2xl">
+        <p className="mt-5 text-[15px] text-muted-foreground leading-relaxed max-w-2xl">
           PrimitiveHub is &ldquo;agent-context AV plus registry&rdquo; per{" "}
           <a
             href={`${GH_BLOB}/docs/decisions/0030-fp-resolution-and-av-vendor-parallel.md`}
@@ -128,6 +134,18 @@ export default function SecurityPage() {
           . The classical AV-vendor playbook ships three public report
           lanes; we ship the same three from day one.
         </p>
+        <div className="mt-5 flex flex-wrap items-center gap-2 text-[11px] font-mono">
+          <a
+            href="mailto:security@primitivehub.ai?subject=%5Bbounty%5D%20"
+            className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/[0.06] px-3 py-1.5 text-primary/95 hover:text-primary hover:bg-primary/[0.10] transition-colors"
+          >
+            <Mail className="size-3" />
+            security@primitivehub.ai
+          </a>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-border/40 bg-card/60 px-3 py-1.5 text-muted-foreground">
+            ack ≤ 24h · triage ≤ 72h · disclosure 90d
+          </span>
+        </div>
       </header>
 
       {/* The three lanes */}
