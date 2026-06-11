@@ -6,14 +6,15 @@ import {
   AlertOctagon,
   Clock,
   ArrowUpRight,
+  ChevronDown,
 } from "lucide-react"
 
 import { DemoDataBadge } from "@/components/primitives/demo-data-badge"
+import { Sparkline } from "@/components/status/sparkline"
 import {
   loadStatusSnapshot,
   serviceStateLabel,
   uptimeWindow,
-  type DaySample,
   type Incident,
   type Service,
   type ServiceState,
@@ -77,19 +78,16 @@ function cellColor(state: ServiceState): string {
   }
 }
 
-function UptimeBar({ history }: { history: ReadonlyArray<DaySample> }) {
-  return (
-    <div className="flex items-end gap-[2px] h-8 w-full">
-      {history.map((d) => (
-        <div
-          key={d.date}
-          className={`${cellColor(d.state)} flex-1 rounded-sm`}
-          style={{ height: `${Math.max(20, d.uptime - 50) * 2}%` }}
-          title={`${d.date} · ${d.uptime}% uptime · ${serviceStateLabel(d.state)}`}
-        />
-      ))}
-    </div>
-  )
+function stateTone(state: ServiceState): "success" | "amber" | "destructive" {
+  switch (state) {
+    case "operational":
+      return "success"
+    case "degraded":
+      return "amber"
+    case "partial-outage":
+    case "major-outage":
+      return "destructive"
+  }
 }
 
 function ServiceRow({ service }: { service: Service }) {
@@ -97,13 +95,19 @@ function ServiceRow({ service }: { service: Service }) {
   const u7 = uptimeWindow(service.history, 7)
   const u30 = uptimeWindow(service.history, 30)
   return (
-    <div className="border-b border-border/40 px-5 py-4 last:border-b-0">
+    <div className="border-b border-border/40 px-5 py-5 last:border-b-0">
       <div className="flex items-start justify-between gap-4 mb-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <StateIcon state={service.currentState} className={`size-3.5 ${stateColor(service.currentState)}`} />
             <h3 className="text-sm font-semibold text-foreground truncate">{service.name}</h3>
-            <span className={`text-[10px] font-mono uppercase tracking-wider ${stateColor(service.currentState)}`}>
+            <span
+              className={`text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                service.currentState === "operational"
+                  ? "bg-success/[0.08] border border-success/25 text-success/90"
+                  : "bg-amber/[0.08] border border-amber/25 text-amber/90"
+              }`}
+            >
               {serviceStateLabel(service.currentState)}
             </span>
           </div>
@@ -111,19 +115,19 @@ function ServiceRow({ service }: { service: Service }) {
             {service.description}
           </p>
         </div>
-        <div className="hidden md:grid grid-cols-3 gap-3 shrink-0 text-right">
+        <div className="hidden md:flex gap-4 shrink-0 text-right">
           {[
             { label: "24h", value: u24 },
             { label: "7d", value: u7 },
             { label: "30d", value: u30 },
           ].map((w) => (
             <div key={w.label}>
-              <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+              <p className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground/80">
                 {w.label}
               </p>
               <p
-                className={`text-xs font-mono tabular-nums ${
-                  w.value < 99.9 ? "text-amber" : "text-foreground/80"
+                className={`text-[13px] font-mono tabular-nums ${
+                  w.value < 99.9 ? "text-amber" : "text-foreground/85"
                 }`}
               >
                 {w.value.toFixed(3)}%
@@ -132,7 +136,13 @@ function ServiceRow({ service }: { service: Service }) {
           ))}
         </div>
       </div>
-      <UptimeBar history={service.history} />
+      <div className="rounded-md border border-border/30 bg-background/40 p-1.5">
+        <Sparkline history={service.history} tone={stateTone(service.currentState)} height={42} />
+      </div>
+      <div className="mt-1.5 flex items-center justify-between text-[9px] font-mono uppercase tracking-wider text-muted-foreground/60">
+        <span>90 days ago</span>
+        <span>today</span>
+      </div>
     </div>
   )
 }
@@ -201,9 +211,38 @@ function IncidentRow({ incident }: { incident: Incident }) {
 export default function StatusPage() {
   const snap = loadStatusSnapshot()
   const operational = snap.overall === "operational"
+  const activeIncidents = snap.incidents.filter((i) => i.currentStatus !== "resolved")
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-14 lg:px-6">
+      {/* Active incident banner — only renders if any incident is
+          unresolved. Pre-launch sample data has 0 active; banner
+          stays hidden today. */}
+      {activeIncidents.length > 0 && (
+        <div className="mb-6 rounded-xl border border-amber/40 bg-gradient-to-br from-amber/[0.12] via-amber/[0.06] to-transparent p-5 shadow-2xl shadow-amber/10">
+          <div className="flex items-start gap-3">
+            <div className="flex size-9 items-center justify-center rounded-md bg-amber/[0.18] border border-amber/40 text-amber shrink-0">
+              <AlertTriangle className="size-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-amber/90 mb-1">
+                {activeIncidents.length} active incident{activeIncidents.length === 1 ? "" : "s"}
+              </p>
+              <h2 className="text-base font-semibold text-foreground">
+                {activeIncidents[0].title}
+              </h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Affected: <span className="font-mono">{activeIncidents[0].affectedServices.join(", ")}</span>
+                {" · "}
+                <Link href="#incidents" className="text-amber/90 hover:text-amber inline-flex items-center gap-0.5">
+                  Read updates <ChevronDown className="size-2.5" />
+                </Link>
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header — overall state + last-checked + sample disclosure */}
       <header className="mb-10">
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -258,7 +297,7 @@ export default function StatusPage() {
       </section>
 
       {/* Incidents */}
-      <section className="mt-12">
+      <section id="incidents" className="scroll-mt-20 mt-12">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">
             Recent incidents
