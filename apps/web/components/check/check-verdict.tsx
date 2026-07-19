@@ -407,6 +407,16 @@ function DetectorRow({ verdict }: { verdict: CheckVerdictEntry }) {
               <p className="mt-1 text-[10px] text-muted-foreground leading-relaxed">
                 {h.suggestion}
               </p>
+              {h.howToJudge && (
+                <div className="mt-1.5 rounded-sm border-l-2 border-primary/40 bg-primary/[0.04] pl-2 py-1">
+                  <span className="text-[8px] font-mono uppercase tracking-[0.18em] text-primary/70">
+                    Is this a real risk?
+                  </span>
+                  <p className="mt-0.5 text-[10px] text-muted-foreground leading-relaxed">
+                    {h.howToJudge}
+                  </p>
+                </div>
+              )}
             </li>
           ))}
         </ul>

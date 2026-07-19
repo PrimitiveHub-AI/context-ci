@@ -21,6 +21,7 @@ from checks.verdict import (
     aggregate_findings,
     class_counts_to_wire,
     classified_finding_to_wire,
+    finding_guidance,
     score_findings,
     verdict_band,
 )
@@ -68,6 +69,9 @@ def _verdict_to_dict(v: Verdict) -> dict[str, object]:
                 "snippet": h.snippet,
                 "suggestion": h.suggestion,
                 "detailTag": h.detail_tag,
+                # "Show your work": how to tell a true positive from a
+                # false positive for this exact pattern (ADR-0041 trust UX).
+                "howToJudge": finding_guidance(v.cci_id, h.detail_tag),
             }
             for h in v.diff_hints
         ],

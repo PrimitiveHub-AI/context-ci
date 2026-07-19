@@ -17,6 +17,9 @@ export interface CheckDiffHint {
   snippet: string
   suggestion: string
   detailTag: string
+  /** "Show your work": how to tell a true positive from a false positive
+   *  for this pattern (ADR-0041 trust UX). Optional for back-compat. */
+  howToJudge?: string
 }
 
 export interface CheckVerdictEntry {

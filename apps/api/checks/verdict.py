@@ -98,6 +98,80 @@ VERDICT_RUBRIC: dict[tuple[str, str], VerdictClass] = {
 
 
 # ─────────────────────────────────────────────────────────────────────────
+# Adjudication guidance — "show your work"
+# ─────────────────────────────────────────────────────────────────────────
+# A signature match is evidence of a PATTERN, not proof of malice. The
+# Context Firewall's job is not to declare guilt — it's to surface the
+# evidence and tell the human how to tell a true positive from a false
+# positive for the *specific* pattern that fired. This copy is the
+# difference between a linter ("flagged, deal with it") and a guardian
+# ("here's what we found, here's why, here's how you'd know we're wrong").
+#
+# Keyed by `detail_tag` with a generic fallback. Several T1 families are
+# context-aware (the detector already skips matches inside code fences /
+# inline code / frontmatter / quotes), so a SURVIVING finding for those
+# tags is, by construction, in plain prose — the guidance says so.
+
+_CONTEXT_AWARE_NOTE = (
+    " Documented examples inside a ``` code fence, inline `code`, or quotes "
+    "are NOT flagged — this match survived that filter, so it's in plain prose. "
+    "If it's a teaching example, fence it to clear the finding; if it's a real "
+    "directive, remove it."
+)
+
+_FINDING_GUIDANCE: dict[str, str] = {
+    "override-system-instructions": (
+        "This reads as a live instruction telling the agent to disregard its own "
+        "rules — the core move of prompt injection." + _CONTEXT_AWARE_NOTE
+    ),
+    "credential-exfiltration-hint": (
+        "This reads as an instruction to send secrets/credentials somewhere." + _CONTEXT_AWARE_NOTE
+    ),
+    "role-hijack": (
+        "This tries to reassign the agent's persona/role (e.g. 'you are now…'). "
+        "A primitive teaches a pattern; it should not redefine who the agent is. "
+        "Confirm whether it's establishing a role (true positive) or merely "
+        "describing one (possible false positive)."
+    ),
+    "hidden-instructions": (
+        "This is a structural carrier for hidden instructions (a system-labelled "
+        "fence, a `[SYSTEM]:` marker, an instruction-bearing HTML comment). These "
+        "are flagged even inside fences because the fence itself is the vector. "
+        "Confirm whether the block actually issues instructions (true positive) or "
+        "is inert formatting (false positive)."
+    ),
+}
+
+_GENERIC_GUIDANCE = (
+    "A known-risky pattern matched by signature. Read the highlighted snippet in "
+    "its surrounding context to confirm whether it's a real risk or a documented "
+    "example before trusting or rejecting the content."
+)
+
+_CLASS_MEANING: dict[VerdictClass, str] = {
+    VerdictClass.MALICIOUS: (
+        "High-confidence malicious indicator (corroborated beyond a bare signature)."
+    ),
+    VerdictClass.RISKY: (
+        "A known-risky pattern matched by signature. Signatures alone are not proof "
+        "of malice — this needs a human to confirm in context."
+    ),
+    VerdictClass.POLICY: "A licensing/policy marker, not a security risk.",
+    VerdictClass.CLEAN: "No risk signal from this detector.",
+}
+
+
+def finding_guidance(cci_id: str, detail_tag: str) -> str:
+    """How to tell a true positive from a false positive for this pattern."""
+    return _FINDING_GUIDANCE.get(detail_tag, _GENERIC_GUIDANCE)
+
+
+def class_meaning(cls: VerdictClass) -> str:
+    """One-line plain-language meaning of a verdict class."""
+    return _CLASS_MEANING.get(cls, "")
+
+
+# ─────────────────────────────────────────────────────────────────────────
 # Scoring constants — v0.1 provisional, calibrated against the
 # repo-verdict corpus (ADR-0041 § 5). Marked provisional until that
 # corpus has enough samples to fit the parameters; the labeled-as-
@@ -492,4 +566,6 @@ def classified_finding_to_wire(f: ClassifiedFinding) -> dict[str, Any]:
         "suggestion": f.suggestion,
         "filePath": f.file_path,
         "derivation": f.derivation,
+        "classMeaning": class_meaning(f.cls),
+        "howToJudge": finding_guidance(f.cci_id, f.detail_tag),
     }
