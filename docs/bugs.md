@@ -637,6 +637,35 @@ public endpoint's slow path share a thread with the health check.
 
 ---
 
+### 24. Partial deploy: web reloaded, worker didn't → 100% of /check jobs failed — 2026-06-09
+
+**Phase:** 5 (async `/check`, ADR-0044)
+**Symptom:** After adding a `cache_key` arg to the `run_check` task, the
+web tier picked up the new code (auto-reload) but `docker compose up -d
+api-worker` left the worker **running the old code** (its service config
+hadn't changed, so compose didn't recreate it). Every job then errored:
+`TypeError: run_check() got an unexpected keyword argument 'cache_key'`.
+The site looked healthy; every check silently failed.
+**Root cause:** Procrastinate workers do not auto-reload, and `up -d`
+only recreates a service whose config changed. Since the scan logic now
+lives in the worker (ADR-0044), a web-only reload produces a
+**new-web + old-worker** split where the web enqueues job args the old
+worker rejects.
+**Fix:** `docker compose restart api-worker` to force the new code in.
+**Prevention:** Deploy `api` and `api-worker` **together** from the same
+GHCR image (`docker compose -f compose.yaml -f compose.prod.yaml up -d`
+recreates both). Post-deploy smoke check in the runbook: POST a paste,
+poll until `done`, AND confirm the worker logged the new build + is
+draining (`select status,count(*) from procrastinate_jobs group by
+status` shows no growing `todo`/erroring tail). Keep task signatures
+backward-tolerant (new kwargs default-valued) so a brief version skew
+during a rolling restart degrades instead of hard-failing.
+**Lesson:** Moving work to a separate process means deploys are now
+multi-service. "The web reloaded" is not "the deploy succeeded" — the
+worker is where the work runs, so the worker is what you verify.
+
+---
+
 ## Hallucination log (mistakes I made in design, not runtime)
 
 These are different from bugs — they're places where I (the AI
