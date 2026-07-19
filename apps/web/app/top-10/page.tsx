@@ -23,7 +23,7 @@ import { listTop10 } from "@/lib/top10"
  *
  * Pre-launch posture: page metadata robots: noindex inherits from
  * apps/web/app/layout.tsx; the page renders production-parity but
- * does not appear in search results until ADR-0042 launch flips.
+ * does not appear in search results until ADR-0045 launch flips.
  */
 
 export const metadata: Metadata = {

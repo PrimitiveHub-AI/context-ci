@@ -96,7 +96,7 @@ A first-class `phub skill add <url>` that automates steps 1–3 + writes the
 SK-NNN receipt is the intended end-state — it gives Hard-rule #6's named
 enemy (`npx skills add`) a sanctioned, auditable replacement. It is **not**
 built in this ADR: the `phub` CLI is part of the owner-gated public
-distribution repo (`primitivehub/context-ci`, ADR-0042), and adding a
+distribution repo (`primitivehub/context-ci`, ADR-0045), and adding a
 network-fetching subcommand is a load-bearing CLI scope decision that
 waits for an explicit owner greenlight. Distillation stays human/agent
 judgment regardless — a tool can fetch and scan, but it cannot author a

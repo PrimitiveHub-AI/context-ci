@@ -14,7 +14,7 @@ defense layer is the moat, not the storage layer — see Hard rule #9).
 
 - **Domain:** primitivehub.ai (owned, **not yet announced**)
 - **Launch posture (since 2026-06-07):** PRODUCT-FIRST, owner-triggered
-  ([ADR-0042](./docs/decisions/0042-product-first-public-launch-and-distribution-repo.md)).
+  ([ADR-0045](./docs/decisions/0045-product-first-public-launch-and-distribution-repo.md)).
   Paper decoupled and owner-owned; the assistant does not raise it. The
   irreversible go-public flips stay human-only (Hard rule #5).
 
@@ -60,7 +60,7 @@ one before working in its area.
    or labeled `<DemoDataBadge>`
    ([feedback-no-fake-numbers](/home/primitive/.claude/projects/-srv-primitivehub-app/memory/feedback_no_fake_numbers.md)).
 5. **Public exposure is owner-triggered and product-first**
-   ([ADR-0042](./docs/decisions/0042-product-first-public-launch-and-distribution-repo.md)).
+   ([ADR-0045](./docs/decisions/0045-product-first-public-launch-and-distribution-repo.md)).
    The arXiv paper is decoupled and owner-owned — it no longer gates
    launch, and the assistant does not raise it or volunteer paper advice.
    Distribution is one public OSS repo, `primitivehub/context-ci` (verify

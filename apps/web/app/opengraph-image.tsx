@@ -18,7 +18,7 @@ import {
 /**
  * Open Graph image — the social-card first impression.
  *
- * Pre-launch posture (CLAUDE.md hard rule #5 + ADR-0042) keeps this
+ * Pre-launch posture (CLAUDE.md hard rule #5 + ADR-0045) keeps this
  * surface behind noindex; the image only gets fetched when someone
  * with the link previews it (Slack, internal share). Even so, the
  * card needs to read as the locked thesis on first glance — the
