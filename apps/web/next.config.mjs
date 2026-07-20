@@ -1,6 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
+  // Dev-only: allow the localhost origins we reach the dev server from, so
+  // Next 16 does not block cross-origin dev requests (HMR + client-hydration
+  // assets). Without this, client components — e.g. the Forge CodeMirror
+  // editor — can fail to hydrate when the box is reached via 127.0.0.1 or an
+  // SSH tunnel, leaving an empty, un-typable editor. No effect on the
+  // production build.
+  allowedDevOrigins: ["127.0.0.1", "localhost"],
   images: {
     unoptimized: true,
   },
