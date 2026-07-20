@@ -109,3 +109,32 @@ export function estimateTokens(content: string): number {
 export function countLines(content: string): number {
   return content.split("\n").length
 }
+
+// Quote a YAML string scalar only when it needs it (colons, leading/trailing
+// space, or YAML indicators) so simple slugs stay unquoted and readable.
+function toYamlScalar(value: string): string {
+  const v = value.replace(/\r?\n/g, " ")
+  if (v === "") return '""'
+  if (/^\s|\s$/.test(v) || /[:#[\]{}&*!|>'"%@`,]/.test(v)) {
+    return `"${v.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`
+  }
+  return v
+}
+
+/**
+ * Rewrite the `name:` value inside the leading YAML frontmatter so the Forge
+ * metadata "Name" control can be a real, editable input that writes back into
+ * the document — the frontmatter stays the single source of truth. No-ops
+ * when the document has no frontmatter block.
+ */
+export function setFrontmatterName(source: string, newName: string): string {
+  const match = source.match(FRONTMATTER_RE)
+  if (!match) return source
+  const yamlText = match[1]
+  const body = match[2] ?? ""
+  const scalar = toYamlScalar(newName)
+  const newYaml = /^name:.*$/m.test(yamlText)
+    ? yamlText.replace(/^name:.*$/m, `name: ${scalar}`)
+    : `name: ${scalar}\n${yamlText}`
+  return `---\n${newYaml}\n---\n${body}`
+}

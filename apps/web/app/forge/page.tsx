@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { MarkdownEditor } from "@/components/forge/markdown-editor"
 import { lintFrontmatter } from "@/lib/forge/codemirror-linter"
 import { lintForgeContent } from "@/lib/forge/lint"
-import { analyzeSections, estimateTokens, countLines, extractFrontmatter } from "@/lib/forge/parse"
+import { analyzeSections, estimateTokens, countLines, extractFrontmatter, setFrontmatterName } from "@/lib/forge/parse"
 import { linter } from "@codemirror/lint"
 import {
   Play,
@@ -85,6 +85,29 @@ When loaded, the agent should:
 
 export default function ForgePage() {
   const [content, setContent] = useState(sampleMarkdown)
+  const [savedAt, setSavedAt] = useState<number | null>(null)
+
+  // Restore a locally-saved draft on first mount. localStorage is the real
+  // backing store for "Save" in v1 — no account needed; a server-side draft
+  // model is the post-launch upgrade.
+  useEffect(() => {
+    try {
+      const draft = window.localStorage.getItem("forge:draft")
+      if (draft) setContent(draft)
+    } catch {
+      /* localStorage unavailable — ignore */
+    }
+  }, [])
+
+  const handleSaveDraft = () => {
+    try {
+      window.localStorage.setItem("forge:draft", content)
+      setSavedAt(Date.now())
+      setTimeout(() => setSavedAt(null), 2000)
+    } catch {
+      /* localStorage unavailable — ignore */
+    }
+  }
 
   // Live analysis — recomputed on every keystroke (cheap; ~100µs for typical primitives).
   const analysis = useMemo(() => {
@@ -170,12 +193,13 @@ export default function ForgePage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-1.5 h-8 border-border/60 opacity-60 cursor-not-allowed"
+                  className="gap-1.5 h-8 border-border/70 border-dashed text-muted-foreground disabled:opacity-100 cursor-not-allowed"
                   disabled
                   title="Planned — agent-behavior test harness lands in Phase 5.6"
                 >
                   <FlaskConical className="size-3" />
                   Test Primitive
+                  <span className="rounded-sm bg-muted px-1 py-px text-[8px] font-mono uppercase tracking-wider text-muted-foreground">soon</span>
                 </Button>
 
                 {/* Planned — registry submission. Pre-launch posture
@@ -183,12 +207,13 @@ export default function ForgePage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-1.5 h-8 border-border/60 opacity-60 cursor-not-allowed"
+                  className="gap-1.5 h-8 border-border/70 border-dashed text-muted-foreground disabled:opacity-100 cursor-not-allowed"
                   disabled
                   title="Planned — submission opens when the registry launches (ADR-0022)"
                 >
                   <Upload className="size-3" />
                   Submit to Registry
+                  <span className="rounded-sm bg-muted px-1 py-px text-[8px] font-mono uppercase tracking-wider text-muted-foreground">soon</span>
                 </Button>
 
                 {/* Functional — downloads the current editor buffer
@@ -224,21 +249,21 @@ export default function ForgePage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-1.5 h-8 border-border/60 opacity-60 cursor-not-allowed"
-                  disabled
-                  title="Planned — persistent drafts arrive with the post-launch account model"
+                  className="gap-1.5 h-8 border-border/60"
+                  onClick={handleSaveDraft}
+                  title="Save a local draft to this browser (no account needed)"
                 >
                   <Save className="size-3" />
-                  Save
+                  {savedAt ? "Saved" : "Save"}
                 </Button>
               </div>
 
               {/* Honesty footnote — 3 of 5 actions are scoped but
                   not yet live. We say so on the surface instead of
                   hiding it in a tooltip. */}
-              <p className="text-[10px] font-mono text-muted-foreground/70 flex items-center gap-1.5">
-                <PlannedBadge label="3 of 5 planned" />
-                Test, Submit, Save scoped — Run Validation + Export live now.
+              <p className="text-[10px] font-mono text-muted-foreground flex items-center gap-1.5">
+                <PlannedBadge label="2 planned" />
+                Live now: Run Validation, Export, Save · dashed “soon” = planned.
               </p>
             </div>
           </div>
@@ -252,14 +277,19 @@ export default function ForgePage() {
             <div className="flex items-center gap-2">
               <span className="text-[9px] uppercase tracking-widest text-muted-foreground font-medium">Name</span>
               <Input
-                className="h-6 w-44 bg-secondary/30 border-border/40 text-[11px] font-mono px-2"
-                value={analysis.fmName}
-                readOnly
+                className="h-6 w-52 bg-secondary/40 border-border/60 text-[11px] font-mono text-foreground px-2"
+                value={analysis.fmName === "—" ? "" : analysis.fmName}
+                onChange={(e) => setContent(setFrontmatterName(content, e.target.value))}
+                placeholder="my-new-primitive"
+                spellCheck={false}
+                autoCapitalize="off"
+                autoCorrect="off"
+                aria-label="Primitive name — writes to the frontmatter name field"
               />
             </div>
             <div className="flex items-center gap-2">
               <span className="text-[9px] uppercase tracking-widest text-muted-foreground font-medium">Type</span>
-              <Badge variant="outline" className="text-[10px] font-mono border-border/40 text-muted-foreground h-5">
+              <Badge variant="outline" className="text-[10px] font-mono border-border/50 text-foreground/80 h-5">
                 {analysis.fmType}
               </Badge>
             </div>
@@ -283,7 +313,7 @@ export default function ForgePage() {
             </div>
             <div className="flex items-center gap-2">
               <span className="text-[9px] uppercase tracking-widest text-muted-foreground font-medium">License</span>
-              <Badge variant="outline" className="text-[10px] font-mono border-border/40 text-muted-foreground h-5">
+              <Badge variant="outline" className="text-[10px] font-mono border-border/50 text-foreground/80 h-5">
                 {analysis.fmLicense}
               </Badge>
             </div>
@@ -294,7 +324,7 @@ export default function ForgePage() {
               <div className="token-bar w-24 h-1.5">
                 <div
                   className={`token-bar-fill h-full ${
-                    tokenPercent > 90 ? "bg-amber" : "bg-primary/50"
+                    tokenPercent > 90 ? "bg-amber" : "bg-primary/70"
                   }`}
                   style={{ width: `${tokenPercent}%` }}
                 />

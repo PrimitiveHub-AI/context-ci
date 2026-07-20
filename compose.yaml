@@ -64,7 +64,7 @@ services:
       valkey:
         condition: service_started
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8000/api/v1/healthz | grep -q '\"status\":\"ok\"'"]
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8000/api/v1/healthz | grep -q '\"status\": *\"ok\"'"]
       interval: 10s
       timeout: 5s
       retries: 5
