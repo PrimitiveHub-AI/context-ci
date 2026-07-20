@@ -11,11 +11,13 @@ import {
 } from "lucide-react"
 
 import { PlannedBadge } from "@/components/ui/planned-badge"
+import { DemoDataBadge } from "@/components/primitives/demo-data-badge"
 import {
   TerminalBlock,
   TerminalFrame,
   TerminalLine,
 } from "@/components/landing/terminal-frame"
+import { GITHUB_BLOB_BASE } from "@/lib/site"
 
 /**
  * CLI section — rebuilt for the "between PrimitiveHub / skills.sh /
@@ -39,7 +41,7 @@ import {
  * source of truth (unchanged from PR #9).
  */
 
-const GH_BLOB = "https://github.com/DevXYZx/primitivehub/blob/main"
+const GH_BLOB = GITHUB_BLOB_BASE
 
 const DIFFERENTIATORS = [
   {
@@ -168,16 +170,21 @@ export function CLIRoadmap() {
           <div className="lg:col-span-7 flex flex-col">
             <div className="flex items-center gap-2 mb-3">
               <span className="text-[10px] font-mono uppercase tracking-widest text-primary/80">
-                01 · The Samurai Cut
+                01 · Active sweep
               </span>
               <a
                 href={`${GH_BLOB}/docs/decisions/0025-active-posture-and-phub-audit.md`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground/70 hover:text-primary"
+                className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground hover:text-primary"
               >
                 ADR-0025
               </a>
+              <DemoDataBadge
+                label="example output"
+                title="Illustrative phub audit run — representative output, not a live scan."
+                className="ml-auto"
+              />
             </div>
             <h3 className="text-xl font-semibold text-foreground mb-2">
               <code className="font-mono">phub audit</code> — find what you didn&rsquo;t know to scan.

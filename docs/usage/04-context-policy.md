@@ -1,4 +1,4 @@
-# 3. Context Policy Language
+# Context Policy Language
 
 > [← back to index](./README.md) · prev: [phub CLI](./02-phub-cli.md) · next: [phub.lock →](./04-phub-lock.md)
 

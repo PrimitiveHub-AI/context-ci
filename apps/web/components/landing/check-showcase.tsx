@@ -9,6 +9,8 @@ import {
   ArrowRight,
 } from "lucide-react"
 
+import { DemoDataBadge } from "@/components/primitives/demo-data-badge"
+
 /**
  * CheckShowcase — the hero-right "live" /check verdict mock.
  *
@@ -76,7 +78,10 @@ export function CheckShowcase() {
               <ShieldCheck className="size-3 text-primary/70" />
               primitivehub.ai/check
             </div>
-            <div className="w-10" />
+            <DemoDataBadge
+              label="example"
+              title="Illustrative /check verdict — not a live scan. Run a real check at /check."
+            />
           </div>
 
           {/* Input row */}
@@ -85,7 +90,7 @@ export function CheckShowcase() {
               Paste anything
             </p>
             <div className="rounded-lg bg-background/40 border border-border/40 px-3 py-2.5 font-mono text-[12px] text-foreground/80 max-h-20 overflow-hidden relative">
-              <span className="text-muted-foreground/60"># strict-code-review.md</span>
+              <span className="text-foreground/70"># strict-code-review.md</span>
               <br />
               <span className="text-foreground/90">## Setup</span>
               <br />

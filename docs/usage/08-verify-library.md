@@ -1,4 +1,4 @@
-# 7. `@primitivehub/verify` — embeddable verifier
+# `@primitivehub/verify` — embeddable verifier
 
 > [← back to index](./README.md) · prev: [MCP server](./06-mcp-server.md) · next: [Recipes →](./08-recipes.md)
 

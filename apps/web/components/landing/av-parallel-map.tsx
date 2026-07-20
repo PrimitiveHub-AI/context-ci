@@ -6,6 +6,7 @@ import {
   listAVParallelCompact,
   type AVParallelRow,
 } from "@/lib/av-parallel"
+import { GITHUB_BLOB_BASE } from "@/lib/site"
 
 /**
  * AVParallelMap — visualizes ADR-0030 §3 + ADR-0040 §1 directly.
@@ -26,7 +27,7 @@ import {
  *    framing cannot drift between surfaces
  */
 
-const GH_BLOB = "https://github.com/DevXYZx/primitivehub/blob/main"
+const GH_BLOB = GITHUB_BLOB_BASE
 
 function RowTrailingLink({ row }: { row: AVParallelRow }) {
   if (row.href) {

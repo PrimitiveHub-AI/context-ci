@@ -11,6 +11,8 @@ import { contributors as mockContributors } from "@/lib/data/contributors"
 import type { Contributor, ReviewItem } from "@/lib/types"
 import { isEnabled } from "@/lib/flags"
 import { ComingSoonPanel } from "@/components/ui/coming-soon"
+import { DemoDataBadge } from "@/components/primitives/demo-data-badge"
+import { PlannedBadge } from "@/components/ui/planned-badge"
 import {
   ShieldCheck,
   AlertCircle,
@@ -74,9 +76,12 @@ function ContributorsDashboard() {
     <main className="min-h-screen">
       <div className="border-b border-border/40">
         <div className="mx-auto max-w-7xl px-4 py-10 lg:px-6">
-          <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-primary mb-2">
-            Expert Reviewers
-          </p>
+          <div className="mb-2 flex items-center gap-2">
+            <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-primary">
+              Expert Reviewers
+            </p>
+            <DemoDataBadge label="seed data" />
+          </div>
           <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
             Review & Contributor Dashboard
           </h1>
@@ -190,10 +195,11 @@ function ContributorsDashboard() {
                         {item.status}
                       </Badge>
                       {item.status !== "Approved" && item.status !== "Rejected" && (
-                        <div className="flex gap-1.5">
+                        <div className="flex items-center gap-1.5">
                           <Button
                             size="sm"
                             variant="outline"
+                            disabled
                             className="h-6 text-[10px] border-success/20 text-success hover:bg-success/[0.06] px-2"
                           >
                             Approve
@@ -201,10 +207,12 @@ function ContributorsDashboard() {
                           <Button
                             size="sm"
                             variant="outline"
+                            disabled
                             className="h-6 text-[10px] border-destructive/20 text-destructive hover:bg-destructive/[0.06] px-2"
                           >
                             Reject
                           </Button>
+                          <PlannedBadge label="Planned" />
                         </div>
                       )}
                     </div>
@@ -237,7 +245,7 @@ function ContributorsDashboard() {
                     <div className="mt-3 flex items-center gap-3 text-[11px] text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Star className="size-2.5 text-amber/70" />
-                        <span className="font-mono text-foreground/70">{contributor.reputation}</span>
+                        <span className="font-mono text-foreground">{contributor.reputation}</span>
                       </span>
                       {contributor.primitives > 0 && (
                         <span className="flex items-center gap-1">

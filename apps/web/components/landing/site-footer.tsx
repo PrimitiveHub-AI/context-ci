@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Hexagon, ArrowUpRight } from "lucide-react"
 
 import { loadLatestEvaluation, summarize } from "@/lib/evaluation"
+import { GITHUB_REPO_URL, GITHUB_BLOB_BASE, GITHUB_TREE_BASE } from "@/lib/site"
 
 /**
  * Homepage footer. Surfaces the four canonical post-Round-7 artifacts
@@ -15,9 +16,9 @@ import { loadLatestEvaluation, summarize } from "@/lib/evaluation"
  * changing the surface footprint.
  */
 
-const GH_REPO = "https://github.com/DevXYZx/primitivehub"
-const GH_BLOB = `${GH_REPO}/blob/main`
-const GH_TREE = `${GH_REPO}/tree/main`
+const GH_REPO = GITHUB_REPO_URL
+const GH_BLOB = GITHUB_BLOB_BASE
+const GH_TREE = GITHUB_TREE_BASE
 
 type Column = {
   heading: string
@@ -100,7 +101,7 @@ function buildColumns(measuredAt: string): readonly Column[] {
           external: true,
         },
         { label: "Security & bug bounty", href: "/security" },
-        { label: "Contributors", href: "/contributors" },
+        { label: "Contributors", href: "/contributors", soon: true },
         { label: "Source on GitHub", href: GH_REPO, external: true },
       ],
     },
@@ -128,7 +129,7 @@ export function SiteFooter() {
                         href={link.href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="group inline-flex items-start gap-1 text-[12px] leading-snug text-muted-foreground transition-colors hover:text-foreground"
+                        className="group inline-flex items-start gap-1 rounded-sm text-[12px] leading-snug text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                       >
                         <span>{link.label}</span>
                         <ArrowUpRight className="size-2.5 mt-0.5 shrink-0 opacity-50 transition-opacity group-hover:opacity-100" />
@@ -138,11 +139,11 @@ export function SiteFooter() {
                     <li key={link.href}>
                       <Link
                         href={link.href}
-                        className="inline-flex items-center gap-1.5 text-[12px] leading-snug text-muted-foreground transition-colors hover:text-foreground"
+                        className="inline-flex items-center gap-1.5 rounded-sm text-[12px] leading-snug text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                       >
                         <span>{link.label}</span>
                         {link.soon && (
-                          <span className="rounded-sm bg-muted px-1 py-px text-[8px] font-mono uppercase tracking-wider text-muted-foreground/60">
+                          <span className="rounded-sm bg-muted px-1 py-px text-[8px] font-mono uppercase tracking-wider text-muted-foreground">
                             soon
                           </span>
                         )}

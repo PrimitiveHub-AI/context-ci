@@ -4,6 +4,8 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { CompatibilityTags } from "./compatibility-tags"
+import { DemoDataBadge } from "@/components/primitives/demo-data-badge"
+import { PlannedBadge } from "@/components/ui/planned-badge"
 import type { Bundle } from "@/lib/types"
 import { Package, Download, Copy, FileText, ArrowRight } from "lucide-react"
 import { useState } from "react"
@@ -71,8 +73,9 @@ export function BundleCard({ bundle }: { bundle: Bundle }) {
 
         {/* Stats row */}
         <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-          <span>
+          <span className="inline-flex items-center gap-1.5">
             Quality: <span className="font-mono font-semibold text-success">{bundle.qualityAverage}</span>
+            <DemoDataBadge label="demo scores" />
           </span>
           <span className="text-border">|</span>
           <span>{bundle.useCase}</span>
@@ -100,10 +103,17 @@ export function BundleCard({ bundle }: { bundle: Bundle }) {
         </div>
 
         {/* Action */}
-        <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5" size="sm">
-          <Download className="size-3.5" />
-          Install Bundle
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5"
+            size="sm"
+            disabled
+          >
+            <Download className="size-3.5" />
+            Install Bundle
+          </Button>
+          <PlannedBadge label="Planned" />
+        </div>
       </div>
     </Card>
   )

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { EvaluationLink } from "@/components/primitives/evaluation-link"
 import { loadLatestEvaluation, summarize } from "@/lib/evaluation"
+import { GITHUB_REPO_URL } from "@/lib/site"
 import {
   BookOpen,
   Quote,
@@ -30,7 +31,7 @@ import {
  * and the scoreboard link carries the proof.
  */
 
-const GH_REPO = "https://github.com/DevXYZx/primitivehub"
+const GH_REPO = GITHUB_REPO_URL
 const GH_BLOB = `${GH_REPO}/blob/main`
 const SCOREBOARD = `${GH_BLOB}/docs/evaluation.md`
 const PAPER_SRC = `${GH_REPO}/tree/main/paper`
@@ -312,7 +313,7 @@ export default function PaperPage() {
               View as visual cards on /top-10
               <ArrowUpRight className="size-2.5" />
             </Link>
-            <span className="text-muted-foreground/50"> · each card carries the measured F<sub>1</sub>, severity ceiling, and canonical sample link.</span>
+            <span className="text-muted-foreground/70"> · each card carries the measured F<sub>1</sub>, severity ceiling, and canonical sample link.</span>
           </p>
           <Card className="border-border/40 bg-card p-0 overflow-hidden">
             <ul className="divide-y divide-border/40">
@@ -450,7 +451,7 @@ export default function PaperPage() {
         {/* Case Studies */}
         <section id="case-studies" className="scroll-mt-20">
           <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-4">
-            5. Case Studies
+            5. Case studies
           </h2>
           <p className="text-sm text-muted-foreground leading-[1.7] mb-5">
             Five corpus samples — four attacks the pipeline flags and one benign primitive
@@ -493,7 +494,7 @@ export default function PaperPage() {
         {/* Citation */}
         <section id="cite" className="scroll-mt-20">
           <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-4">
-            Cite This Work
+            Cite this work
           </h2>
           <Card className="border-border/40 bg-card p-0 overflow-hidden">
             <div className="border-b border-border/40 bg-secondary/20 px-4 py-1.5">

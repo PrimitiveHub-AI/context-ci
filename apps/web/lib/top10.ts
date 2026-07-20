@@ -16,7 +16,9 @@
  * versioning). Append-only — IDs are never reused.
  */
 
-const GH_BLOB = "https://github.com/DevXYZx/primitivehub/blob/main"
+import { GITHUB_BLOB_BASE } from "@/lib/site"
+
+const GH_BLOB = GITHUB_BLOB_BASE
 
 /** Maximum severity a detector may emit. From the spec § 3 severity model. */
 export type SeverityMax = "warn" | "fail"

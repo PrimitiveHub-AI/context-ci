@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { TrustBadge } from "./trust-badge"
 import { CompatibilityTags } from "./compatibility-tags"
+import { DemoDataBadge } from "@/components/primitives/demo-data-badge"
 import type { Primitive } from "@/lib/types"
 import { Copy, FileText, Download, ArrowRight, Shield } from "lucide-react"
 import { useState } from "react"
@@ -70,7 +71,7 @@ export function PrimitiveCard({ primitive }: { primitive: Primitive }) {
           <div className="token-bar flex-1 h-1.5">
             <div
               className={`token-bar-fill h-full ${
-                tokenPercent > 90 ? "bg-amber" : tokenPercent > 75 ? "bg-primary/70" : "bg-primary/50"
+                tokenPercent > 90 ? "bg-amber" : tokenPercent > 75 ? "bg-primary/70" : "bg-primary/70"
               }`}
               style={{ width: `${tokenPercent}%` }}
             />
@@ -81,6 +82,10 @@ export function PrimitiveCard({ primitive }: { primitive: Primitive }) {
         </div>
 
         {/* Scores */}
+        <div className="flex items-center justify-between">
+          <span className="text-[9px] uppercase tracking-wider text-muted-foreground">Scores</span>
+          <DemoDataBadge label="demo scores" />
+        </div>
         <div className="grid grid-cols-4 gap-2">
           {[
             { label: "QUA", value: primitive.qualityScore },

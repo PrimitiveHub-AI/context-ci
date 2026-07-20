@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { TrustBadge } from "@/components/primitives/trust-badge"
+import { DemoDataBadge } from "@/components/primitives/demo-data-badge"
 import { ArrowUpDown, ArrowUp, ArrowDown, Copy } from "lucide-react"
 import type { Primitive } from "@/lib/types"
 import { cn } from "@/lib/utils"
@@ -119,6 +120,12 @@ export function PrimitiveTable({ primitives }: PrimitiveTableProps) {
 
   return (
     <div className="rounded-xl border border-border/40 bg-card overflow-hidden">
+      <div className="flex items-center justify-end gap-2 border-b border-border/40 px-4 py-2">
+        <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+          Quality / Safety
+        </span>
+        <DemoDataBadge label="demo scores" />
+      </div>
       <Table className="text-[12px]">
         <TableHeader>
           <TableRow className="border-border/40 hover:bg-transparent">
@@ -223,7 +230,7 @@ export function PrimitiveTable({ primitives }: PrimitiveTableProps) {
                       <div
                         className={cn(
                           "token-bar-fill h-full",
-                          tokenPercent > 90 ? "bg-amber" : "bg-primary/50",
+                          tokenPercent > 90 ? "bg-amber" : "bg-primary/70",
                         )}
                         style={{ width: `${Math.min(100, tokenPercent)}%` }}
                       />

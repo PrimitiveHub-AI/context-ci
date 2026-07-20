@@ -1,4 +1,4 @@
-# 6. `@primitivehub/mcp-server` — Model Context Protocol server
+# `@primitivehub/mcp-server` — Model Context Protocol server
 
 > [← back to index](./README.md) · prev: [GitHub Action](./05-github-action.md) · next: [verify library →](./07-verify-library.md)
 

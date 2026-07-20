@@ -193,7 +193,7 @@ export function CheckVerdict({ result, error, isLoading, pastedInput }: CheckVer
                   <span className="text-muted-foreground">/100</span>
                 </span>
               </div>
-              <p className="mt-1 text-xs text-muted-foreground break-all">
+              <p className="mt-1 text-xs text-foreground/90 break-all">
                 {result.target.displayName}
               </p>
             </div>
@@ -378,7 +378,7 @@ function DetectorRow({ verdict }: { verdict: CheckVerdictEntry }) {
         <span className="font-mono text-[11px] text-foreground shrink-0">
           {verdict.cciId || verdict.threatCategory}
         </span>
-        <span className="text-[11px] text-muted-foreground truncate">
+        <span className="text-[11px] text-foreground/90 truncate">
           {verdict.summary}
         </span>
       </button>

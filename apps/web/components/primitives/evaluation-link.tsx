@@ -1,4 +1,5 @@
 import { ArrowUpRight } from "lucide-react"
+import { GITHUB_BLOB_BASE } from "@/lib/site"
 
 /**
  * EvaluationLink — every measured number, one click from its proof.
@@ -25,7 +26,7 @@ import { ArrowUpRight } from "lucide-react"
  * lives at /docs/evaluation without changing this component.
  */
 
-const GH_BLOB = "https://github.com/DevXYZx/primitivehub/blob/main"
+const GH_BLOB = GITHUB_BLOB_BASE
 
 interface EvaluationLinkProps {
   /** Inline content to wrap — typically a measured value or label. */

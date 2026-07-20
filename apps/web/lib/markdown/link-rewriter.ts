@@ -80,3 +80,21 @@ export function rewriteMarkdownLinks(source: string, sourceAbsPath: string): str
 export function stripBackToIndexBanner(source: string): string {
   return source.replace(/^> \[← back to index\][^\n]*\n+/m, "")
 }
+
+/**
+ * Strip an authored in-body "## Table of contents" section — the
+ * sticky "On this page" sidebar (PageToc) already covers it, so
+ * rendering both is a visible duplicate.
+ *
+ * Conservative on purpose: matches only an H2 whose text is literally
+ * "Table of contents" (case-insensitive), and removes everything from
+ * that heading up to — but not including — the next H1/H2 heading (or
+ * end of file). A trailing `---` rule that belongs to the TOC block is
+ * swept up in the range; separators outside the block are untouched.
+ */
+export function stripInBodyTableOfContents(source: string): string {
+  return source.replace(
+    /^##[ \t]+table of contents[ \t]*#*[ \t]*\r?\n(?:(?!^#{1,2}[ \t]).*\r?\n?)*/im,
+    "",
+  )
+}

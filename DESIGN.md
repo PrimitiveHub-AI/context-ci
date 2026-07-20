@@ -110,7 +110,7 @@ raw color.
 | `--card` (`bg-card`) | `oklch(0.15 0.005 260)` | Single-step elevation above background for cards, panels, popovers. No shadow accompanies; elevation comes from value contrast only. |
 | `--secondary` (`bg-secondary`) | `oklch(0.19 0.005 260)` | Quiet surface for input fields, status pill backgrounds, terminal/code blocks. |
 | `--muted` (`bg-muted`) | `oklch(0.17 0.005 260)` | Slightly de-emphasized surface; used for badges representing inactive states. |
-| `--muted-foreground` (`text-muted-foreground`) | `oklch(0.55 0.01 250)` | De-emphasized text. The product's secondary reading register. |
+| `--muted-foreground` (`text-muted-foreground`) | `oklch(0.60 0.01 250)` | De-emphasized text. The product's secondary reading register. Held at 0.60 (not lower) so full-strength muted text clears WCAG AA (~4.8:1 on canvas); the pre-launch audit found 0.55 read as dim/under-AA. Do **not** dim it further with `/50`–`/70` alpha on content that carries information — that lands at ~2:1. |
 | `--border` (`border-border`) | `oklch(0.22 0.005 260)` | Subtle divider; almost always used at 40–60% alpha (`border-border/40`) to keep the canvas calm. |
 
 ### 2.2 Brand and trust signals
@@ -250,15 +250,24 @@ trust products read as "channels of the same content," not as separate
 modes. The Workbench overrides this for its three modes (Author /
 Validate / Test, planned) where pill-style tabs would be appropriate.
 
-### 4.5 Editor ([`apps/web/components/workbench/markdown-editor.tsx`](apps/web/components/workbench/markdown-editor.tsx))
+### 4.5 Editor ([`apps/web/components/forge/markdown-editor.tsx`](apps/web/components/forge/markdown-editor.tsx))
 
-The Workbench uses **CodeMirror 6** with a custom theme matching this
+The Forge uses **CodeMirror 6** with a custom theme matching this
 palette (cyan caret + selection, amber lint-warning underline,
 destructive lint-error underline). Background is transparent to inherit
-the surrounding card. Font: `var(--font-geist-mono)`, 12px, 1.7
-line-height. Gutters use `text-muted-foreground/60`. The editor is
-*calm* — no rainbow syntax, no chromatic noise; markdown highlights are
-weight + subtle hue, not saturated palette.
+the surrounding card. Font: `var(--font-geist-mono)`, 13px, 1.7
+line-height. Gutters use `text-muted-foreground` at full strength. The
+editor is *calm* — no rainbow syntax, no chromatic noise; markdown
+highlights are weight + subtle hue, not saturated palette.
+
+**Calm ≠ dim (non-obvious).** Calm governs the *syntax* register, not
+the base legibility. The editor body is full `--foreground`; the
+open-file label in the card header is `text-foreground/90` (never
+`text-muted-foreground` — that reads as a disabled tab); line numbers
+are full `--muted-foreground` (60%-alpha computed to ~2:1 and read as
+broken). The editor was 12px + a 60%-alpha gutter until the pre-launch
+audit flagged it as looking dim/unfinished — the lesson is that a quiet
+surface still has to read as *present*, not *disabled*.
 
 ### 4.6 Status and metric strips
 

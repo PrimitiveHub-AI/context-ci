@@ -11,6 +11,7 @@ import { UserMenu } from "@/components/user-menu"
 import { useWhoami } from "@/lib/api/queries"
 import { isEnabled } from "@/lib/flags"
 import { PlannedBadge } from "@/components/ui/planned-badge"
+import { GITHUB_REPO_URL } from "@/lib/site"
 
 // Ordered by the AV-family funnel (ADR-0040 §1): first touch
 // (Check) → research/encyclopedia (Top 10) → on-demand scan
@@ -46,18 +47,17 @@ export function Navbar() {
               beta
             </span>
           </Link>
-          <nav className="hidden items-center gap-0.5 md:flex">
+          <nav aria-label="Primary" className="hidden items-center gap-0.5 md:flex">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
+                aria-current={pathname === link.href ? "page" : undefined}
                 className={cn(
-                  "relative inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors",
+                  "relative inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                   pathname === link.href
                     ? "text-foreground"
-                    : link.soon
-                      ? "text-muted-foreground/55 hover:text-muted-foreground"
-                      : "text-muted-foreground hover:text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 {link.label}
@@ -76,7 +76,7 @@ export function Navbar() {
         <div className="hidden items-center gap-1.5 md:flex">
           {authEnabled && <OrgPicker />}
           <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground" asChild>
-            <a href="https://github.com/PrimitiveHub-AI/context-ci" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+            <a href={GITHUB_REPO_URL} target="_blank" rel="noopener noreferrer" aria-label="GitHub">
               <Github className="size-3.5" />
             </a>
           </Button>
@@ -98,6 +98,7 @@ export function Navbar() {
               size="sm"
               disabled
               title="Accounts — planned with publishing"
+              aria-label="Sign in — planned with publishing"
               className="text-muted-foreground/50 text-[13px] h-7 cursor-not-allowed"
             >
               Sign in
@@ -113,20 +114,23 @@ export function Navbar() {
           className="md:hidden text-muted-foreground"
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label="Toggle menu"
+          aria-expanded={mobileOpen}
+          aria-controls="mobile-nav"
         >
           {mobileOpen ? <X className="size-4" /> : <Menu className="size-4" />}
         </Button>
       </div>
       {mobileOpen && (
-        <div className="border-t border-border/40 bg-background px-4 py-3 md:hidden">
-          <nav className="flex flex-col gap-0.5">
+        <div id="mobile-nav" className="border-t border-border/40 bg-background px-4 py-3 md:hidden">
+          <nav aria-label="Mobile" className="flex flex-col gap-0.5">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 onClick={() => setMobileOpen(false)}
+                aria-current={pathname === link.href ? "page" : undefined}
                 className={cn(
-                  "flex items-center justify-between rounded-md px-3 py-2 text-sm transition-colors",
+                  "flex items-center justify-between rounded-md px-3 py-2 text-sm transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                   pathname === link.href
                     ? "text-foreground bg-secondary"
                     : "text-muted-foreground hover:text-foreground"

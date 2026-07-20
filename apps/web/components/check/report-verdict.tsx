@@ -21,6 +21,7 @@ import { ExternalLink, Flag, Github, Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import type { CheckResponse } from "@/lib/check/types"
+import { GITHUB_BLOB_BASE, GITHUB_NEW_ISSUE_URL } from "@/lib/site"
 
 /**
  * Best-effort detector for "the input was a URL the visitor can be
@@ -54,8 +55,7 @@ function isGithubUrl(s: string): boolean {
   }
 }
 
-const GITHUB_NEW_ISSUE_BASE =
-  "https://github.com/DevXYZx/primitivehub/issues/new"
+const GITHUB_NEW_ISSUE_BASE = GITHUB_NEW_ISSUE_URL
 
 // GitHub's URL-prefill body field tolerates ~6-7 KB; truncate the
 // echoed input to be safe across all client browsers.
@@ -103,10 +103,10 @@ function buildReportBody(opts: {
     kind === "fp"
       ? `## False positive submission
 
-\`/check\` flagged this content but I believe it should pass. Per the four-path methodology in [\`docs/false-positive-resolution.md\`](https://github.com/DevXYZx/primitivehub/blob/main/docs/false-positive-resolution.md) § 1, I propose this report be triaged.`
+\`/check\` flagged this content but I believe it should pass. Per the four-path methodology in [\`docs/false-positive-resolution.md\`](${GITHUB_BLOB_BASE}/docs/false-positive-resolution.md) § 1, I propose this report be triaged.`
       : `## False negative submission
 
-\`/check\` passed this content but I believe it contains an attack. Per the four-path methodology in [\`docs/false-negative-resolution.md\`](https://github.com/DevXYZx/primitivehub/blob/main/docs/false-negative-resolution.md) § 1, I propose this report be triaged.`
+\`/check\` passed this content but I believe it contains an attack. Per the four-path methodology in [\`docs/false-negative-resolution.md\`](${GITHUB_BLOB_BASE}/docs/false-negative-resolution.md) § 1, I propose this report be triaged.`
 
   const triagePrompt =
     kind === "fp"

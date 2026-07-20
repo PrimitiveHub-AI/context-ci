@@ -29,7 +29,7 @@ export default function LandingPage() {
         <div className="mx-auto max-w-7xl px-4 lg:px-6">
           <div className="mx-auto max-w-lg text-center">
             <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-primary mb-4">
-              Get Started
+              Start verifying
             </p>
             <h2 className="text-2xl font-bold text-foreground sm:text-3xl text-balance">
               Verify the agent-context supply chain
@@ -49,7 +49,7 @@ export default function LandingPage() {
                 asChild
               >
                 <Link href="/check">
-                  Run a Check
+                  Run a check
                   <ArrowRight className="size-4" />
                 </Link>
               </Button>

@@ -9,6 +9,7 @@ import {
 
 import { AVParallelMap } from "@/components/landing/av-parallel-map"
 import { loadLatestEvaluation, summarize } from "@/lib/evaluation"
+import { GITHUB_BLOB_BASE } from "@/lib/site"
 
 /**
  * Trust Runtime three-pillar section — visual upgrade.
@@ -30,7 +31,7 @@ import { loadLatestEvaluation, summarize } from "@/lib/evaluation"
  * reads as the recognition primer it is, not a stray bullet list.
  */
 
-const GH_BASE = "https://github.com/DevXYZx/primitivehub/blob/main"
+const GH_BASE = GITHUB_BLOB_BASE
 
 type Accent = "primary" | "amber" | "success"
 

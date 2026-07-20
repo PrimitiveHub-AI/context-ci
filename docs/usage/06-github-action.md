@@ -1,4 +1,4 @@
-# 5. GitHub Action — `primitivehub/phub-scan`
+# GitHub Action — `primitivehub/phub-scan`
 
 > [← back to index](./README.md) · prev: [phub.lock](./04-phub-lock.md) · next: [MCP server →](./06-mcp-server.md)
 

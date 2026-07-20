@@ -10,6 +10,7 @@ import {
 } from "lucide-react"
 
 import { PlannedBadge } from "@/components/ui/planned-badge"
+import { GITHUB_BLOB_BASE } from "@/lib/site"
 
 /**
  * /security — top-level security landing.
@@ -27,7 +28,7 @@ import { PlannedBadge } from "@/components/ui/planned-badge"
  * pre-launch.
  */
 
-const GH_BLOB = "https://github.com/DevXYZx/primitivehub/blob/main"
+const GH_BLOB = GITHUB_BLOB_BASE
 
 export const metadata: Metadata = {
   title: "Security — PrimitiveHub",
@@ -380,7 +381,7 @@ function Lane({ icon, tag, title, desc, cta, ctaHref, external, note }: LaneProp
         {cta}
         <ArrowUpRight className="size-3" />
       </a>
-      <p className="mt-2 text-[10px] text-muted-foreground/70 leading-relaxed">{note}</p>
+      <p className="mt-2 text-[11px] text-muted-foreground leading-relaxed">{note}</p>
     </div>
   )
 }

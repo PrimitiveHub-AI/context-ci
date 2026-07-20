@@ -84,6 +84,19 @@ export function PrimitiveDetailView({
     }
   }
 
+  function handleDownloadMarkdown() {
+    if (!hasRealMarkdown) return
+    const blob = new Blob([markdownContent!], { type: "text/markdown" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = primitive.fileName
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <main className="min-h-screen">
       {/* Header */}
@@ -142,7 +155,7 @@ export function PrimitiveDetailView({
               <div className="mt-3 flex items-center gap-2 text-[11px] text-muted-foreground">
                 <Fingerprint className="size-3 text-primary/50" />
                 <span className="font-mono">
-                  <span className="text-muted-foreground/60 mr-1">digest</span>
+                  <span className="text-muted-foreground mr-1">digest</span>
                   {primitive.contentDigest}
                 </span>
               </div>
@@ -209,11 +222,22 @@ export function PrimitiveDetailView({
                 )}
               </div>
               <div className="flex gap-2">
-                <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 flex-1">
+                <Button
+                  size="sm"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 flex-1"
+                  onClick={handleCopyMarkdown}
+                  disabled={!hasRealMarkdown}
+                >
                   <Copy className="size-3.5" />
-                  Copy Markdown
+                  {copiedMd ? "Copied" : "Copy Markdown"}
                 </Button>
-                <Button variant="outline" size="sm" className="gap-1.5 border-border/60">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 border-border/60"
+                  onClick={handleDownloadMarkdown}
+                  disabled={!hasRealMarkdown}
+                >
                   <Download className="size-3.5" />
                   .md
                 </Button>
@@ -243,7 +267,7 @@ export function PrimitiveDetailView({
               <div className="token-bar w-32 h-1.5">
                 <div
                   className={`token-bar-fill h-full ${
-                    tokenPercent > 90 ? "bg-amber" : "bg-primary/50"
+                    tokenPercent > 90 ? "bg-amber" : "bg-primary/70"
                   }`}
                   style={{ width: `${tokenPercent}%` }}
                 />
@@ -647,7 +671,7 @@ When this primitive is loaded, the agent should:
                       v{v.version}
                     </span>
                     <span className="text-xs text-muted-foreground">{v.date}</span>
-                    <span className="text-[10px] font-mono text-muted-foreground/60">{v.sig}</span>
+                    <span className="text-[10px] font-mono text-muted-foreground">{v.sig}</span>
                   </div>
                   {v.version === primitive.version && (
                     <Badge className="bg-success/[0.08] text-success border-success/20 text-[10px] font-mono">
@@ -685,7 +709,7 @@ When this primitive is loaded, the agent should:
                   </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed">{review.comment}</p>
-                <p className="mt-2 text-[10px] text-muted-foreground/60">{review.date}</p>
+                <p className="mt-2 text-[10px] text-muted-foreground">{review.date}</p>
               </Card>
             ))}
           </div>
@@ -723,7 +747,7 @@ When this primitive is loaded, the agent should:
                     <div className="flex-1 min-w-0 pb-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-xs font-semibold text-foreground">{entry.event}</span>
-                        <span className="text-[10px] font-mono text-muted-foreground/60">{entry.timestamp}</span>
+                        <span className="text-[10px] font-mono text-muted-foreground">{entry.timestamp}</span>
                       </div>
                       <p className="text-[11px] text-muted-foreground leading-relaxed mt-0.5">
                         <span className="text-foreground/70">{entry.actor}</span> -- {entry.detail}

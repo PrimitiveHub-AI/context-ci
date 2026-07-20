@@ -1,4 +1,4 @@
-# 1. Getting Started
+# Getting Started
 
 > [← back to index](./README.md) · next: [phub CLI →](./02-phub-cli.md)
 

@@ -86,6 +86,7 @@ export function CheckForm({
           value={input}
           onChange={(e) => onInputChange(e.target.value)}
           onKeyDown={handleKeyDown}
+          aria-label="Paste a skill, CLAUDE.md, URL, GitHub repo, npx command, or any content to check"
           placeholder={
             "https://github.com/owner/repo\nnpx @scope/skill@1.2.3\nclaude skill install owner/repo --skill name\nor paste any markdown / prompt / config…"
           }
@@ -106,7 +107,7 @@ export function CheckForm({
                 <span className="text-[9px] font-mono uppercase tracking-[0.2em] text-muted-foreground/70">
                   detected
                 </span>
-                <span className="text-[11px] font-mono text-foreground">
+                <span className="min-w-0 break-all text-[11px] font-mono text-foreground">
                   {detected.label}
                 </span>
               </div>
@@ -138,7 +139,7 @@ export function CheckForm({
               <Shield className="size-3" />
               Check safety
               <span className="ml-1.5 hidden text-[9px] opacity-70 sm:inline">
-                ⌘&nbsp;⏎
+                ⌘/Ctrl&nbsp;⏎
               </span>
             </>
           )}

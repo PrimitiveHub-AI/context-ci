@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button"
 import {
   ArrowRight,
   BookOpen,
-  Copy,
   ShieldCheck,
   FileSearch,
   Fingerprint,
@@ -16,6 +15,7 @@ import {
 } from "lucide-react"
 
 import { CheckShowcase } from "@/components/landing/check-showcase"
+import { CommandPill } from "@/components/landing/command-pill"
 import { EvaluationLink } from "@/components/primitives/evaluation-link"
 import { loadLatestEvaluation, summarize } from "@/lib/evaluation"
 
@@ -168,27 +168,5 @@ export function Hero() {
         </div>
       </div>
     </section>
-  )
-}
-
-function CommandPill({ label, command }: { label: string; command: string }) {
-  return (
-    <div className="group rounded-lg border border-border/60 bg-secondary/30 backdrop-blur-sm px-3 py-2.5 hover:border-primary/40 hover:bg-secondary/50 transition-colors">
-      <p className="text-[9px] font-mono uppercase tracking-widest text-primary/70 mb-1">
-        {label}
-      </p>
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-mono text-primary/50 select-none">$</span>
-        <code className="flex-1 text-[12px] font-mono text-foreground/90 truncate">
-          {command}
-        </code>
-        <button
-          className="text-muted-foreground/60 hover:text-primary transition-colors"
-          aria-label={`Copy: ${command}`}
-        >
-          <Copy className="size-3" />
-        </button>
-      </div>
-    </div>
   )
 }

@@ -1,4 +1,4 @@
-# 9. Troubleshooting
+# Troubleshooting
 
 > [← back to index](./README.md) · prev: [Recipes](./08-recipes.md)
 

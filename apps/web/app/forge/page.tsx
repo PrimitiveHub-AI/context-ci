@@ -338,10 +338,12 @@ export default function ForgePage() {
           {/* Editor */}
           <div className="lg:col-span-7">
             <Card className="border-border/40 bg-card overflow-hidden">
-              <div className="border-b border-border/40 bg-secondary/20 px-4 py-1.5 flex items-center justify-between">
+              <div className="border-b border-border/40 bg-secondary/40 px-4 py-1.5 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <FileText className="size-3 text-primary/60" />
-                  <span className="text-[11px] font-mono text-muted-foreground">editor.md</span>
+                  <FileText className="size-3 text-primary/80" />
+                  <span className="text-[11px] font-mono text-foreground/90">
+                    {analysis.fmName !== "—" ? `${analysis.fmName}.md` : "primitive.md"}
+                  </span>
                 </div>
                 <div className="flex items-center gap-3 text-[9px] font-mono text-muted-foreground">
                   <span>spec v0.1</span>

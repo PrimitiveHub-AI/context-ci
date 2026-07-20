@@ -15,7 +15,11 @@
   --secondary: oklch(0.19 0.005 260);
   --secondary-foreground: oklch(0.85 0.01 250);
   --muted: oklch(0.17 0.005 260);
-  --muted-foreground: oklch(0.55 0.01 250);
+  /* Secondary reading register. Raised 0.55→0.60 in the pre-launch audit:
+     0.55 computed to ~4.2:1 on the canvas — under the 4.5:1 WCAG AA bar the
+     project's own accessibility primitive mandates. 0.60 clears AA on
+     background/card while staying a clear step below --foreground (0.95). */
+  --muted-foreground: oklch(0.60 0.01 250);
   --accent: oklch(0.78 0.11 85);
   --accent-foreground: oklch(0.10 0.005 260);
   --destructive: oklch(0.55 0.2 25);
@@ -90,6 +94,20 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Respect the OS "reduce motion" setting — the navbar hexagon spin, token-bar
+   width transitions, glows, and every transition-* utility collapse to instant.
+   WCAG 2.3.3 / vestibular safety. Added in the pre-launch audit. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

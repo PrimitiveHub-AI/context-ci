@@ -1,4 +1,4 @@
-# 8. Recipes — end-to-end workflows
+# Recipes — end-to-end workflows
 
 > [← back to index](./README.md) · prev: [verify library](./07-verify-library.md) · next: [Troubleshooting →](./09-troubleshooting.md)
 

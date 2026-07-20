@@ -1,4 +1,4 @@
-# 4. `phub.lock` — the lockfile for AI cognition
+# `phub.lock` — the lockfile for AI cognition
 
 > [← back to index](./README.md) · prev: [Context Policy](./03-context-policy.md) · next: [GitHub Action →](./05-github-action.md)
 

@@ -28,7 +28,7 @@ const phubEditorTheme = EditorView.theme(
     "&": {
       background: "transparent",
       color: "var(--color-foreground)",
-      fontSize: "12px",
+      fontSize: "13px",
       height: "100%",
     },
     ".cm-scroller": {
@@ -44,9 +44,10 @@ const phubEditorTheme = EditorView.theme(
     },
     ".cm-gutters": {
       background: "transparent",
-      color: "color-mix(in oklch, var(--color-muted-foreground) 60%, transparent)",
+      // Line numbers must stay legible — 60%-alpha muted read as broken.
+      color: "var(--color-muted-foreground)",
       borderRight: "1px solid color-mix(in oklch, var(--color-border) 60%, transparent)",
-      fontSize: "10px",
+      fontSize: "11px",
       paddingRight: "8px",
     },
     ".cm-lineNumbers .cm-gutterElement": {

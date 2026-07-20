@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { PrimitiveCard } from "@/components/primitives/primitive-card"
 import { PrimitiveTable } from "@/components/primitives/primitive-table"
 import { RegistryBundlesSection } from "@/components/primitives/registry-bundles-section"
+import { DemoDataBadge } from "@/components/primitives/demo-data-badge"
 import { isEnabled } from "@/lib/flags"
 import { ComingSoonPanel } from "@/components/ui/coming-soon"
 import { usePrimitives } from "@/lib/api/queries"
@@ -311,8 +312,9 @@ function RegistryBrowser() {
             <span>
               <span className="font-mono text-foreground/70 tabular-nums">{totalTokens.toLocaleString()}</span> total tokens
             </span>
-            <span>
+            <span className="inline-flex items-center gap-1.5">
               avg quality <span className="font-mono text-success tabular-nums">{avgQuality}</span>
+              <DemoDataBadge label="demo scores" />
             </span>
           </div>
         </div>

@@ -21,6 +21,7 @@ import {
 } from "@/lib/status"
 import { isEnabled } from "@/lib/flags"
 import { ComingSoonPanel } from "@/components/ui/coming-soon"
+import { GITHUB_BLOB_BASE } from "@/lib/site"
 
 /**
  * /status — public status page (schema staged for Gate G-G).
@@ -129,7 +130,7 @@ function ServiceRow({ service }: { service: Service }) {
               </p>
               <p
                 className={`text-[13px] font-mono tabular-nums ${
-                  w.value < 99.9 ? "text-amber" : "text-foreground/85"
+                  w.value < 99.9 ? "text-amber" : "text-foreground"
                 }`}
               >
                 {w.value.toFixed(3)}%
@@ -362,7 +363,7 @@ export default function StatusPage() {
             to wait for an incident on this page.
           </p>
           <a
-            href="https://github.com/DevXYZx/primitivehub/blob/main/SECURITY.md"
+            href={`${GITHUB_BLOB_BASE}/SECURITY.md`}
             target="_blank"
             rel="noopener noreferrer"
             className="mt-3 inline-flex items-center gap-1 text-xs font-mono text-primary/90 hover:text-primary"

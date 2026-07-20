@@ -1,4 +1,4 @@
-# 2. `phub` CLI Reference
+# `phub` CLI Reference
 
 > [← back to index](./README.md) · prev: [Getting started](./01-getting-started.md) · next: [Context Policy →](./03-context-policy.md)
 
