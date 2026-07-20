@@ -5,6 +5,9 @@ import type { Metadata } from "next"
 import { primitives, findPrimitiveBySlug } from "@/lib/data/primitives"
 import { pipelineStages } from "@/lib/data/pipeline"
 import { PrimitiveDetailView } from "@/components/primitives/primitive-detail-view"
+import { ComingSoonPanel } from "@/components/ui/coming-soon"
+import { isEnabled } from "@/lib/flags"
+import { Package } from "lucide-react"
 
 type PageProps = {
   params: Promise<{ slug: string }>
@@ -59,6 +62,18 @@ async function loadPrimitiveMarkdown(slug: string): Promise<string | null> {
 }
 
 export default async function PrimitiveDetailPage({ params }: PageProps) {
+  if (!isEnabled("registry")) {
+    return (
+      <ComingSoonPanel
+        icon={Package}
+        label="Planned · with publishing"
+        title="Primitive pages"
+        description="Individual primitive pages open when the registry ships. You can scan any primitive now at /check."
+        backHref="/check"
+        backLabel="Go to /check"
+      />
+    )
+  }
   const { slug } = await params
   const primitive = findPrimitiveBySlug(slug)
   if (!primitive) notFound()

@@ -18,12 +18,12 @@ import { PlannedBadge } from "@/components/ui/planned-badge"
 // includes Bundles) → CLI + service docs → research (Paper).
 // Bundles folds into Registry per ADR-0040 §2; Contributors moves
 // to the footer.
-const navLinks = [
+const navLinks: { href: string; label: string; soon?: boolean }[] = [
   { href: "/check", label: "Check" },
   { href: "/top-10", label: "Top 10" },
-  { href: "/validation", label: "Context CI" },
+  { href: "/validation", label: "Context CI", soon: true },
   { href: "/forge", label: "Forge" },
-  { href: "/registry", label: "Registry" },
+  { href: "/registry", label: "Registry", soon: true },
   { href: "/docs", label: "Docs" },
   { href: "/paper", label: "Paper" },
 ]
@@ -52,13 +52,20 @@ export function Navbar() {
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  "relative rounded-md px-2.5 py-1.5 text-[13px] transition-colors",
+                  "relative inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors",
                   pathname === link.href
                     ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
+                    : link.soon
+                      ? "text-muted-foreground/55 hover:text-muted-foreground"
+                      : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 {link.label}
+                {link.soon && (
+                  <span className="rounded-sm bg-muted px-1 py-px text-[8px] font-mono uppercase tracking-wider text-muted-foreground/70">
+                    soon
+                  </span>
+                )}
                 {pathname === link.href && (
                   <span className="absolute bottom-0 left-1/2 h-px w-4 -translate-x-1/2 bg-primary" />
                 )}
@@ -69,7 +76,7 @@ export function Navbar() {
         <div className="hidden items-center gap-1.5 md:flex">
           {authEnabled && <OrgPicker />}
           <Button variant="ghost" size="icon-sm" className="text-muted-foreground hover:text-foreground" asChild>
-            <a href="https://github.com" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+            <a href="https://github.com/PrimitiveHub-AI/context-ci" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
               <Github className="size-3.5" />
             </a>
           </Button>
@@ -97,7 +104,7 @@ export function Navbar() {
             </Button>
           )}
           <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 text-[13px] h-7" asChild>
-            <Link href="/registry">Explore Primitives</Link>
+            <Link href="/check">Run a check</Link>
           </Button>
         </div>
         <Button
@@ -119,13 +126,18 @@ export function Navbar() {
                 href={link.href}
                 onClick={() => setMobileOpen(false)}
                 className={cn(
-                  "rounded-md px-3 py-2 text-sm transition-colors",
+                  "flex items-center justify-between rounded-md px-3 py-2 text-sm transition-colors",
                   pathname === link.href
                     ? "text-foreground bg-secondary"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                {link.label}
+                <span>{link.label}</span>
+                {link.soon && (
+                  <span className="rounded-sm bg-muted px-1 py-px text-[8px] font-mono uppercase tracking-wider text-muted-foreground/70">
+                    soon
+                  </span>
+                )}
               </Link>
             ))}
           </nav>
@@ -141,7 +153,7 @@ export function Navbar() {
               </div>
             )}
             <Button size="sm" className="bg-primary text-primary-foreground text-[13px]" asChild>
-              <Link href="/registry">Explore Primitives</Link>
+              <Link href="/check">Run a check</Link>
             </Button>
           </div>
         </div>

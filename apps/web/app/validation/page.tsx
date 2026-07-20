@@ -6,8 +6,22 @@ import { DemoDataBadge } from "@/components/primitives/demo-data-badge"
 import { pipelineStages } from "@/lib/data/pipeline"
 import { Badge } from "@/components/ui/badge"
 import { ShieldCheck, FileText, Fingerprint, Clock } from "lucide-react"
+import { isEnabled } from "@/lib/flags"
+import { ComingSoonPanel } from "@/components/ui/coming-soon"
 
 export default function ValidationPage() {
+  if (!isEnabled("contextCi")) {
+    return (
+      <ComingSoonPanel
+        icon={ShieldCheck}
+        label="Planned · live pipeline"
+        title="Context CI pipeline"
+        description="The full author → validate → attest pipeline view. You can scan any context artifact today at /check — same detectors, instant verdict."
+        backHref="/check"
+        backLabel="Go to /check"
+      />
+    )
+  }
   return (
     <main className="min-h-screen">
       <div className="border-b border-border/40">

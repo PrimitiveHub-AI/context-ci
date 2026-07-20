@@ -8,6 +8,7 @@ import { PrimitiveCard } from "@/components/primitives/primitive-card"
 import { PrimitiveTable } from "@/components/primitives/primitive-table"
 import { RegistryBundlesSection } from "@/components/primitives/registry-bundles-section"
 import { isEnabled } from "@/lib/flags"
+import { ComingSoonPanel } from "@/components/ui/coming-soon"
 import { usePrimitives } from "@/lib/api/queries"
 import { primitives as mockPrimitives } from "@/lib/data/primitives"
 import { categories } from "@/lib/data/categories"
@@ -22,6 +23,22 @@ type ViewMode = "cards" | "table"
 const VIEW_STORAGE_KEY = "primitivehub:registry-view"
 
 export default function RegistryPage() {
+  if (!isEnabled("registry")) {
+    return (
+      <ComingSoonPanel
+        icon={Package}
+        label="Planned · with publishing"
+        title="Primitive Registry"
+        description="Browse, install, and verify trusted context primitives. The registry ships with publishing — the verifier, /check, and the Context CI Top 10 are live now."
+        backHref="/check"
+        backLabel="Go to /check"
+      />
+    )
+  }
+  return <RegistryBrowser />
+}
+
+function RegistryBrowser() {
   const [query, setQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
   const [selectedAgent, setSelectedAgent] = useState<CompatibleAgent | null>(null)

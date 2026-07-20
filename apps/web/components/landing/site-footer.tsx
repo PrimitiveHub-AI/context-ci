@@ -25,6 +25,7 @@ type Column = {
     label: string
     href: string
     external?: boolean
+    soon?: boolean
   }>
 }
 
@@ -34,11 +35,11 @@ function buildColumns(measuredAt: string): readonly Column[] {
       heading: "Surfaces",
       links: [
         { label: "/check — paste-and-verdict", href: "/check" },
-        { label: "Context CI", href: "/validation" },
-        { label: "Primitive Forge", href: "/forge" },
-        { label: "Registry", href: "/registry" },
+        { label: "Primitive Forge — author & validate", href: "/forge" },
         { label: "Docs (phub CLI, Action, MCP)", href: "/docs" },
-        { label: "Status", href: "/status" },
+        { label: "Context CI", href: "/validation", soon: true },
+        { label: "Registry", href: "/registry", soon: true },
+        { label: "Status", href: "/status", soon: true },
       ],
     },
     {
@@ -137,9 +138,14 @@ export function SiteFooter() {
                     <li key={link.href}>
                       <Link
                         href={link.href}
-                        className="inline-block text-[12px] leading-snug text-muted-foreground transition-colors hover:text-foreground"
+                        className="inline-flex items-center gap-1.5 text-[12px] leading-snug text-muted-foreground transition-colors hover:text-foreground"
                       >
-                        {link.label}
+                        <span>{link.label}</span>
+                        {link.soon && (
+                          <span className="rounded-sm bg-muted px-1 py-px text-[8px] font-mono uppercase tracking-wider text-muted-foreground/60">
+                            soon
+                          </span>
+                        )}
                       </Link>
                     </li>
                   ),
@@ -154,17 +160,8 @@ export function SiteFooter() {
             <Hexagon className="size-3.5 text-primary/70" />
             <span>PrimitiveHub, 2026 — the Context Firewall for AI agents.</span>
           </div>
-          <p className="text-[10px] font-mono text-muted-foreground/60 tracking-wide">
-            A CyberOrca Labs initiative ·{" "}
-            <a
-              href="https://cyberorca.sa"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-primary/80 transition-colors"
-            >
-              CyberOrca.sa
-            </a>
-          </p>
+          {/* CyberOrca Labs attribution hidden for now (owner request 2026-07-20).
+              Restore this block when ready; the LICENSE still credits CyberOrca Labs. */}
         </div>
       </div>
     </footer>

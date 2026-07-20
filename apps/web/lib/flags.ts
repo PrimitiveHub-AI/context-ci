@@ -23,6 +23,12 @@ export const FEATURE_FLAGS = {
   contributors: false,
   /** One-click multi-agent export (manual copy still works without it). */
   multiAgentExport: false,
+  /** Primitive Registry — discovery + install (needs seed catalog + publish). */
+  registry: false,
+  /** Context CI pipeline surface (/validation). Live scanning ships at /check. */
+  contextCi: false,
+  /** Public status page with live metrics (needs the live status backend). */
+  status: false,
 } as const
 
 export type FeatureFlag = keyof typeof FEATURE_FLAGS

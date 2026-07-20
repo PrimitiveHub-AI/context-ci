@@ -1,0 +1,6 @@
+# Context CI public repo — pnpm workspace.
+# Only the publishable packages are workspace members. examples/ is a
+# standalone consumer (it demonstrates real npm consumption: file:-linked
+# pre-launch, swapped to ^0.1.0 once published — ADR-0045 §4 step 8).
+packages:
+  - "packages/*"

@@ -19,6 +19,8 @@ import {
   type Service,
   type ServiceState,
 } from "@/lib/status"
+import { isEnabled } from "@/lib/flags"
+import { ComingSoonPanel } from "@/components/ui/coming-soon"
 
 /**
  * /status — public status page (schema staged for Gate G-G).
@@ -209,6 +211,16 @@ function IncidentRow({ incident }: { incident: Incident }) {
 }
 
 export default function StatusPage() {
+  if (!isEnabled("status")) {
+    return (
+      <ComingSoonPanel
+        icon={Clock}
+        label="Planned · live backend"
+        title="Status page"
+        description="Live uptime and incident history for every PrimitiveHub surface. Goes live when the status backend does."
+      />
+    )
+  }
   const snap = loadStatusSnapshot()
   const operational = snap.overall === "operational"
   const activeIncidents = snap.incidents.filter((i) => i.currentStatus !== "resolved")

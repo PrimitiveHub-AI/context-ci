@@ -1,0 +1,22 @@
+{
+  "name": "context-ci",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Context CI — the Context Firewall for AI agents. Workspace for @primitivehub/verify, @primitivehub/phub, @primitivehub/mcp-server, and the phub-scan GitHub Action.",
+  "license": "MIT",
+  "homepage": "https://primitivehub.ai",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PrimitiveHub-AI/context-ci.git"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck"
+  }
+}
