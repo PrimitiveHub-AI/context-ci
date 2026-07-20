@@ -1,0 +1,8 @@
+{
+  "$schema": "https://primitivehub.ai/phub-lock/v0.1.json",
+  "artifacts": [],
+  "generator": "phub@0.1.0",
+  "root": ".",
+  "top10_version": "0.1",
+  "version": "0.1"
+}

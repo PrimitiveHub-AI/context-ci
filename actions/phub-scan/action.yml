@@ -1,0 +1,148 @@
+name: 'PrimitiveHub Context CI scan'
+description: 'Scan AGENTS.md / CLAUDE.md / .cursorrules for Context CI Top 10 patterns and upload SARIF findings to GitHub Code Scanning.'
+author: 'PrimitiveHub AI / CyberOrca Labs'
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+# ─────────────────────────────────────────────────────────────────────
+# Action surface — what callers configure when adding `uses:` to a workflow.
+# ─────────────────────────────────────────────────────────────────────
+inputs:
+  files:
+    description: |
+      Space-separated list of files to scan. Globs are NOT expanded by
+      the action — pass exact paths or expand in your workflow first.
+      Each path is resolved relative to $GITHUB_WORKSPACE so SARIF
+      `artifactLocation.uri` ends up repo-relative (which is what
+      GitHub Code Scanning needs to render findings on PR diffs).
+    required: false
+    default: 'AGENTS.md CLAUDE.md'
+  sarif-directory:
+    description: 'Directory to write per-file SARIF outputs into (one .sarif per scanned file).'
+    required: false
+    default: 'phub-sarif'
+  upload-sarif:
+    description: |
+      If true (default), uploads `sarif-directory` to GitHub Code
+      Scanning via github/codeql-action/upload-sarif. Requires the
+      caller workflow to grant `security-events: write`.
+    required: false
+    default: 'true'
+  fail-on-findings:
+    description: |
+      If true (default), the action fails the workflow when ANY
+      detector flags content. Set to false when the SARIF upload to
+      Code Scanning is the gate (findings appear in the Security tab
+      regardless of step exit code).
+    required: false
+    default: 'true'
+  phub-source:
+    description: |
+      Where to install phub from. Default 'npm' resolves
+      `@primitivehub/phub` from the public npm registry; use 'local'
+      when running this action from inside the primitivehub monorepo
+      against the in-tree build (see .github/workflows/phub-scan-demo.yml).
+    required: false
+    default: 'npm'
+  phub-version:
+    description: 'When phub-source=npm, the @primitivehub/phub version to install. Default: latest.'
+    required: false
+    default: 'latest'
+
+outputs:
+  sarif-directory:
+    description: 'Path to the directory containing per-file SARIF outputs.'
+    value: ${{ inputs.sarif-directory }}
+  findings-count:
+    description: 'Total number of SARIF results across all scanned files (0 = clean).'
+    value: ${{ steps.scan.outputs.findings-count }}
+
+# ─────────────────────────────────────────────────────────────────────
+# Composite action implementation. Three steps:
+#   1. install phub (npm or local monorepo build)
+#   2. scan each file, write SARIF, count findings
+#   3. upload SARIF directory to GitHub Code Scanning (optional)
+#
+# Per ADR-0023 the binary is `phub`; the npm package is `@primitivehub/phub`.
+# ─────────────────────────────────────────────────────────────────────
+runs:
+  using: composite
+  steps:
+    - name: Setup Node 20
+      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      with:
+        node-version: '20'
+
+    - name: Install @primitivehub/phub (${{ inputs.phub-source }})
+      shell: bash
+      run: |
+        if [ "${{ inputs.phub-source }}" = "local" ]; then
+          echo "::group::Installing phub from local monorepo build"
+          # Caller is expected to have already built packages/verify
+          # and packages/phub. The composite action just symlinks bin/.
+          PHUB_BIN="${GITHUB_WORKSPACE}/packages/phub/bin/phub.js"
+          if [ ! -x "$PHUB_BIN" ]; then
+            echo "::error::phub binary not found at $PHUB_BIN — did you build packages/phub?"
+            exit 1
+          fi
+          mkdir -p "${RUNNER_TEMP}/phub-bin"
+          ln -sf "$PHUB_BIN" "${RUNNER_TEMP}/phub-bin/phub"
+          echo "${RUNNER_TEMP}/phub-bin" >> "$GITHUB_PATH"
+          echo "::endgroup::"
+        else
+          echo "::group::Installing @primitivehub/phub@${{ inputs.phub-version }} from npm"
+          npm install -g "@primitivehub/phub@${{ inputs.phub-version }}"
+          echo "::endgroup::"
+        fi
+        phub --version
+
+    - name: Scan files
+      id: scan
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      run: |
+        set -u
+        mkdir -p "${{ inputs.sarif-directory }}"
+        total_findings=0
+        any_failed=0
+        for f in ${{ inputs.files }}; do
+          if [ ! -f "$f" ]; then
+            echo "::warning file=$f::phub-scan: file does not exist, skipping"
+            continue
+          fi
+          # Slugify path for a stable .sarif filename (slashes → underscores).
+          slug=$(echo "$f" | sed 's:[/]:_:g')
+          sarif_path="${{ inputs.sarif-directory }}/${slug}.sarif"
+          echo "::group::Scanning $f → $sarif_path"
+          # phub exits 1 on findings, 2 on errors. --no-fail flips
+          # finding-exit to 0 so the loop continues; we track
+          # findings via SARIF result count.
+          if ! phub scan "$f" --sarif --no-fail > "$sarif_path"; then
+            echo "::error file=$f::phub scan errored (exit 2) — see step log"
+            any_failed=1
+            continue
+          fi
+          file_findings=$(jq '.runs[0].results | length' "$sarif_path")
+          total_findings=$((total_findings + file_findings))
+          echo "  → $file_findings finding(s)"
+          echo "::endgroup::"
+        done
+        echo "findings-count=${total_findings}" >> "$GITHUB_OUTPUT"
+        echo ""
+        echo "phub-scan summary: ${total_findings} finding(s) across all files"
+        if [ "$any_failed" = "1" ]; then
+          echo "::error::One or more scans errored (exit 2). Failing the job."
+          exit 2
+        fi
+        if [ "${{ inputs.fail-on-findings }}" = "true" ] && [ "${total_findings}" -gt 0 ]; then
+          echo "::error::phub-scan: ${total_findings} finding(s); failing job per fail-on-findings=true."
+          exit 1
+        fi
+
+    - name: Upload SARIF to Code Scanning
+      if: ${{ inputs.upload-sarif == 'true' && always() }}
+      uses: github/codeql-action/upload-sarif@b7351df727350dca84cb9d725d57dcf5bc82ba26 # v3.37.1
+      with:
+        sarif_file: ${{ inputs.sarif-directory }}
+        category: phub-context-ci

@@ -1,0 +1,4 @@
+# Minimum-viable policy: just the version field. Implementations
+# MUST accept this — every other field defaults per spec § 4.1.
+# Equivalent semantically to the implicit default policy (§ 7).
+version: "0.1"

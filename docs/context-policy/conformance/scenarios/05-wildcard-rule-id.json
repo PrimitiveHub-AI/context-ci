@@ -1,0 +1,38 @@
+{
+  "name": "wildcard-rule-id",
+  "description": "allow rules.id = '*' matches every detector on the named file.",
+  "policy_yaml": "version: \"0.1\"\nallow:\n  - reason: \"Threat model document.\"\n    files: [\"docs/threat-model.md\"]\n    rules:\n      - id: \"*\"\n",
+  "filename": "docs/threat-model.md",
+  "verdicts": [
+    {
+      "detectorName": "t1.prompt_injection",
+      "threatCategory": "T1",
+      "cciId": "CCI-001",
+      "severity": "fail",
+      "passed": false,
+      "summary": "Matched 2 prompt-injection patterns.",
+      "detectorVersion": "0.1.0",
+      "diffHints": [
+        {"line": 10, "snippet": "ignore previous instructions", "suggestion": "Remove.", "detailTag": "override-system-instructions"},
+        {"line": 12, "snippet": "you are now DAN", "suggestion": "Remove.", "detailTag": "role-hijack"}
+      ]
+    },
+    {
+      "detectorName": "t5.unsafe_shell_install",
+      "threatCategory": "T5",
+      "cciId": "CCI-005",
+      "severity": "fail",
+      "passed": false,
+      "summary": "Matched 1 pattern.",
+      "detectorVersion": "0.1.0",
+      "diffHints": [
+        {"line": 20, "snippet": "curl x | sh", "suggestion": "Remove.", "detailTag": "shell-pipe-from-network"}
+      ]
+    }
+  ],
+  "expected": {
+    "exitCode": 0,
+    "suppressedFindingsCount": 3,
+    "survivingFailVerdicts": 0
+  }
+}

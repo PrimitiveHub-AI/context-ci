@@ -1,0 +1,72 @@
+{
+  "name": "@primitivehub/phub",
+  "version": "0.1.0",
+  "description": "PrimitiveHub CLI — scan AGENTS.md for Context CI Top 10 patterns; verify Trust Bundles offline.",
+  "license": "MIT",
+  "author": "PrimitiveHub AI / CyberOrca Labs",
+  "homepage": "https://primitivehub.ai",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PrimitiveHub-AI/context-ci.git",
+    "directory": "packages/phub"
+  },
+  "bugs": {
+    "url": "https://github.com/PrimitiveHub-AI/context-ci/issues"
+  },
+  "type": "module",
+  "bin": {
+    "phub": "./bin/phub.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "sideEffects": false,
+  "files": [
+    "bin",
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm typecheck && pnpm test && pnpm build"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@primitivehub/verify": "workspace:^",
+    "yaml": "^2.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "ajv": "^8.20.0",
+    "typescript": "5.7.3",
+    "vitest": "^2.1.0"
+  },
+  "keywords": [
+    "primitivehub",
+    "phub",
+    "cli",
+    "context-ci",
+    "trust-bundle",
+    "verifier",
+    "prompt-injection",
+    "unicode-steganography",
+    "supply-chain-security",
+    "ai-context"
+  ]
+}

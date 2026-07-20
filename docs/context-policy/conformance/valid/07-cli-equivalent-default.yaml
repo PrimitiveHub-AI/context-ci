@@ -1,0 +1,13 @@
+# Explicit form of the implicit default policy (spec § 7). Every
+# implementation MUST produce identical exit-code + finding behavior
+# whether this file is loaded or no policy at all.
+version: "0.1"
+strict: false
+rules:
+  CCI-001:
+    severity: error
+  CCI-002:
+    severity: error
+  CCI-005:
+    severity: error
+allow: []

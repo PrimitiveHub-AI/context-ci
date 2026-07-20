@@ -1,0 +1,8 @@
+# INVALID — every allow entry MUST have a non-empty reason.
+# The required reason field is the audit-trail discipline; allowing
+# anonymous exceptions defeats the entire point.
+version: "0.1"
+allow:
+  - files: ["CLAUDE.md"]
+    rules:
+      - id: "CCI-005"

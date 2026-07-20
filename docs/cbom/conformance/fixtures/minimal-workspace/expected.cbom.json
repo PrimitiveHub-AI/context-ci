@@ -1,0 +1,54 @@
+{
+  "$schema": "https://primitivehub.ai/cbom/v0.1.json",
+  "cbomFormat": "primitivehub-cbom",
+  "cbomVersion": "0.1",
+  "components": [
+    {
+      "attestation": "unattested",
+      "classification": "agents-md",
+      "contentDigest": "sha256:1a5c3b8a64a01496b86abd532edafb844cfec33d009d11a5f48da33b09542573",
+      "path": "AGENTS.md",
+      "sizeBytes": 180
+    },
+    {
+      "attestation": "unattested",
+      "classification": "claude-md",
+      "contentDigest": "sha256:fc1491e91af2f898d9470d919f9ca8c9765a891fb920ee5beb187b7d14c25fab",
+      "path": "CLAUDE.md",
+      "sizeBytes": 199
+    },
+    {
+      "attestation": "unattested",
+      "classification": "primitive",
+      "contentDigest": "sha256:0b64c61d512520fa173b385bbf29a234fd794364a87333b6ee31ef74f726c626",
+      "displayName": "example-primitive",
+      "path": "apps/web/content/primitives/example.md",
+      "primitiveVersion": "0.1.0",
+      "sizeBytes": 239
+    }
+  ],
+  "subject": {
+    "name": "minimal-workspace",
+    "root": "."
+  },
+  "summary": {
+    "attestationStates": {
+      "unattested": 3
+    },
+    "byClassification": {
+      "agents-md": 1,
+      "claude-md": 1,
+      "primitive": 1
+    },
+    "componentCount": 3,
+    "totalBytes": 618
+  },
+  "tool": {
+    "name": "phub",
+    "version": "0.1.0"
+  },
+  "topTen": {
+    "detectorCount": 10,
+    "specVersion": "0.1"
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "name": "@primitivehub/mcp-server",
+  "version": "0.1.0",
+  "description": "MCP server exposing PrimitiveHub verification + scanning to AI agents (Claude, Cursor, Aider, …). Pure transport over @primitivehub/verify + @primitivehub/phub — zero custom trust logic.",
+  "license": "MIT",
+  "author": "PrimitiveHub AI / CyberOrca Labs",
+  "homepage": "https://primitivehub.ai",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PrimitiveHub-AI/context-ci.git",
+    "directory": "packages/mcp-server"
+  },
+  "bugs": {
+    "url": "https://github.com/PrimitiveHub-AI/context-ci/issues"
+  },
+  "type": "module",
+  "bin": {
+    "primitivehub-mcp": "./bin/primitivehub-mcp.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "sideEffects": false,
+  "files": [
+    "bin",
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm typecheck && pnpm test && pnpm build"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@primitivehub/verify": "workspace:^",
+    "@primitivehub/phub": "workspace:^"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "typescript": "5.7.3",
+    "vitest": "^2.1.0"
+  },
+  "keywords": [
+    "primitivehub",
+    "mcp",
+    "model-context-protocol",
+    "ai-agent",
+    "context-ci",
+    "trust-bundle",
+    "verifier",
+    "supply-chain-security",
+    "claude",
+    "cursor"
+  ]
+}

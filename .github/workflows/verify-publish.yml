@@ -1,0 +1,69 @@
+# ─────────────────────────────────────────────────────────────────────
+# @primitivehub/verify — npm publish (gated). workspace model.
+#
+# Three-lock human gate (ADR-0022 mechanism, ADR-0045 §4):
+#   1. workflow_dispatch only — never fires from a push.
+#   2. mandatory LAUNCH-CONFIRMED input.
+#   3. `launch` environment — requires reviewer approval (configure on GitHub).
+# The assistant prepares this; a human pulls the trigger.
+#
+# One-time human setup before first run:
+#   - claim the @primitivehub npm org + enable 2FA
+#   - configure npm Trusted Publishing → PrimitiveHub-AI/context-ci + this path
+#   - create the `launch` GitHub Actions environment with required reviewers
+# ─────────────────────────────────────────────────────────────────────
+name: verify — publish to npm (gated)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_launch:
+        description: "Type 'LAUNCH-CONFIRMED' to proceed. Anything else aborts."
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write # npm provenance via OIDC
+
+jobs:
+  guard:
+    name: launch gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify launch confirmation
+        run: |
+          if [ "${{ inputs.confirm_launch }}" != "LAUNCH-CONFIRMED" ]; then
+            echo "::error::Refusing to publish without explicit LAUNCH-CONFIRMED input (ADR-0045 §4)."
+            exit 1
+          fi
+
+  publish:
+    name: publish @primitivehub/verify
+    needs: guard
+    runs-on: ubuntu-latest
+    environment: launch
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        with:
+          version: 9.0.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install workspace
+        run: pnpm install --frozen-lockfile
+      - name: Build (topological)
+        run: pnpm -r build
+      - name: Test
+        run: pnpm -r test
+
+      # pnpm rewrites any workspace:^ deps to ^<version> on publish.
+      - name: Publish (public, provenance)
+        run: pnpm --filter @primitivehub/verify publish --access public --provenance --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

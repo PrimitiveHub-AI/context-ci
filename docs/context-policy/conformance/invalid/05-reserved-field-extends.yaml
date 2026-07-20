@@ -1,0 +1,4 @@
+# INVALID — extends is a v0.2 reserved field. Implementations MUST
+# reject with an error that mentions v0.2 to forward-guide users.
+version: "0.1"
+extends: "https://example.com/base.yaml"

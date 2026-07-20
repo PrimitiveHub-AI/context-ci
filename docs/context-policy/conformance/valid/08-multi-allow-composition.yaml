@@ -1,0 +1,34 @@
+# Multiple allow entries composing across files + rules + detail_tags.
+# Implementations MUST handle the cross-product correctly: ANY matching
+# allow entry permits the finding.
+version: "0.1"
+strict: true
+rules:
+  CCI-001:
+    severity: warning      # demote globally
+  CCI-005:
+    severity: error
+allow:
+  - reason: "Project context primitives may include hidden-instructions examples for review."
+    files:
+      - "CLAUDE.md"
+      - "AGENTS.md"
+    rules:
+      - id: "CCI-001"
+        detail_tags:
+          - "hidden-instructions"
+  - reason: "Docs about prompt injection mention DAN/jailbreak by definition."
+    files:
+      - "docs/**/*.md"
+    rules:
+      - id: "CCI-001"
+        detail_tags:
+          - "role-hijack"
+          - "override-system-instructions"
+  - reason: "CLAUDE.md teaches T5 attack patterns; docs/bugs.md #25."
+    files:
+      - "CLAUDE.md"
+    rules:
+      - id: "CCI-005"
+        detail_tags:
+          - "npx-arbitrary-install"

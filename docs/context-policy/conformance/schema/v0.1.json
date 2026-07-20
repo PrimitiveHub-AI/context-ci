@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://primitivehub.ai/context-policy/v0.1/schema.json",
+  "title": "PrimitiveHub Context Policy v0.1",
+  "description": "Configuration schema for .primitivehub/policy.yaml. See docs/context-policy-v0.1.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "const": "0.1",
+      "description": "Policy spec version. Must be \"0.1\" for this schema."
+    },
+    "strict": {
+      "type": "boolean",
+      "default": false,
+      "description": "If true, warning-level findings count as failures for exit-code purposes."
+    },
+    "rules": {
+      "type": "object",
+      "description": "Map of CCI ID (CCI-NNN) to per-rule configuration.",
+      "patternProperties": {
+        "^CCI-[0-9]{3}$": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "severity": {
+              "type": "string",
+              "enum": ["error", "warning", "note", "off"],
+              "description": "Override the rule's severity. 'off' disables the rule entirely."
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "allow": {
+      "type": "array",
+      "description": "Per-file allow exceptions. Order does not matter.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["reason", "files", "rules"],
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Free-text justification. REQUIRED. Surfaced in scan output."
+          },
+          "files": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "description": "File path glob. See spec § 4.2."
+            }
+          },
+          "rules": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id"],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "CCI ID (CCI-005), detector name (t5.unsafe_shell_install), threat category (T5), or literal '*'."
+                },
+                "detail_tags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "description": "Specific detail_tag values to allow. Empty/omitted = all tags for this rule."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "extends": {
+      "not": {},
+      "description": "Reserved for v0.2 (base-policy inheritance). Rejected in v0.1."
+    },
+    "actors": {
+      "not": {},
+      "description": "Reserved for v0.2 (author-identity allow rules). Rejected in v0.1."
+    },
+    "metadata": {
+      "not": {},
+      "description": "Reserved for v0.2 (free-form team metadata). Rejected in v0.1."
+    },
+    "notify": {
+      "not": {},
+      "description": "Reserved for v0.2 (notification channels). Rejected in v0.1."
+    }
+  }
+}

@@ -1,0 +1,119 @@
+{
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "creationInfo": {
+    "created": "1970-01-01T00:00:00Z",
+    "creators": [
+      "Tool: phub-0.1.0"
+    ]
+  },
+  "dataLicense": "CC0-1.0",
+  "documentDescribes": [
+    "SPDXRef-File-AGENTS.md",
+    "SPDXRef-File-CLAUDE.md",
+    "SPDXRef-File-apps-web-content-primitives-example.md"
+  ],
+  "documentNamespace": "https://primitivehub.ai/cbom/minimal-workspace#9d10164dc36aa9c968adbb0e835e2810",
+  "files": [
+    {
+      "SPDXID": "SPDXRef-File-AGENTS.md",
+      "annotations": [
+        {
+          "annotationDate": "1970-01-01T00:00:00Z",
+          "annotationType": "OTHER",
+          "annotator": "Tool: phub-cbom-spdx-exporter",
+          "comment": "cbom:classification=agents-md"
+        },
+        {
+          "annotationDate": "1970-01-01T00:00:00Z",
+          "annotationType": "OTHER",
+          "annotator": "Tool: phub-cbom-spdx-exporter",
+          "comment": "cbom:attestation=unattested"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "1a5c3b8a64a01496b86abd532edafb844cfec33d009d11a5f48da33b09542573"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "./AGENTS.md",
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-CLAUDE.md",
+      "annotations": [
+        {
+          "annotationDate": "1970-01-01T00:00:00Z",
+          "annotationType": "OTHER",
+          "annotator": "Tool: phub-cbom-spdx-exporter",
+          "comment": "cbom:classification=claude-md"
+        },
+        {
+          "annotationDate": "1970-01-01T00:00:00Z",
+          "annotationType": "OTHER",
+          "annotator": "Tool: phub-cbom-spdx-exporter",
+          "comment": "cbom:attestation=unattested"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "fc1491e91af2f898d9470d919f9ca8c9765a891fb920ee5beb187b7d14c25fab"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "./CLAUDE.md",
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    },
+    {
+      "SPDXID": "SPDXRef-File-apps-web-content-primitives-example.md",
+      "annotations": [
+        {
+          "annotationDate": "1970-01-01T00:00:00Z",
+          "annotationType": "OTHER",
+          "annotator": "Tool: phub-cbom-spdx-exporter",
+          "comment": "cbom:classification=primitive"
+        },
+        {
+          "annotationDate": "1970-01-01T00:00:00Z",
+          "annotationType": "OTHER",
+          "annotator": "Tool: phub-cbom-spdx-exporter",
+          "comment": "cbom:attestation=unattested"
+        },
+        {
+          "annotationDate": "1970-01-01T00:00:00Z",
+          "annotationType": "OTHER",
+          "annotator": "Tool: phub-cbom-spdx-exporter",
+          "comment": "cbom:displayName=example-primitive"
+        },
+        {
+          "annotationDate": "1970-01-01T00:00:00Z",
+          "annotationType": "OTHER",
+          "annotator": "Tool: phub-cbom-spdx-exporter",
+          "comment": "cbom:primitiveVersion=0.1.0"
+        }
+      ],
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "0b64c61d512520fa173b385bbf29a234fd794364a87333b6ee31ef74f726c626"
+        }
+      ],
+      "copyrightText": "NOASSERTION",
+      "fileName": "./apps/web/content/primitives/example.md",
+      "licenseConcluded": "NOASSERTION",
+      "licenseInfoInFiles": [
+        "NOASSERTION"
+      ]
+    }
+  ],
+  "name": "minimal-workspace",
+  "spdxVersion": "SPDX-2.3"
+}

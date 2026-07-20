@@ -1,0 +1,12 @@
+# Per-rule severity tuning across all three v0.1 detectors.
+# Demotes T2 to warning, disables T5 entirely (legitimate use:
+# scanning a doc that intentionally shows install commands as
+# examples).
+version: "0.1"
+rules:
+  CCI-001:
+    severity: error      # default; explicit for clarity
+  CCI-002:
+    severity: warning    # demote
+  CCI-005:
+    severity: off        # disable

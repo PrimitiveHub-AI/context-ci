@@ -1,0 +1,46 @@
+{
+  "attestation": {
+    "backendName": "noop",
+    "certChainPem": "-----BEGIN CERTIFICATE-----\nNOOP-BACKEND-DETERMINISTIC-8a7823b7e30fae0db50bb5a2de13f390\n-----END CERTIFICATE-----\n",
+    "predicate": {
+      "spec_version": "0.1",
+      "validation": [
+        {
+          "detector_name": "t1.prompt_injection",
+          "detector_version": "0.1.0",
+          "diff_hints": [],
+          "passed": true,
+          "severity": "warn",
+          "summary": "Borderline pattern; reviewer attention recommended.",
+          "threat_category": "T1"
+        }
+      ],
+      "validation_summary": {
+        "failed": 0,
+        "passed": 1,
+        "total": 1
+      },
+      "version_digest": "4097889236a2af26c293033feb964c4cf118c0224e0d063fec0a89e9d0569ef2"
+    },
+    "predicateType": "https://primitivehub.ai/context-ci/v0.1/Attestation",
+    "rekorInclusionProofJson": "{\"checkpoint\":{\"envelope\":\"noop checkpoint for 8a7823b7e30fae0d\"},\"hashes\":[],\"logIndex\":2323129271,\"rootHash\":\"8a7823b7e30fae0db50bb5a2de13f390b2f96f0bc495c278205a9377da6be63d\",\"treeSize\":2323129272}",
+    "rekorLogId": "60e8edb9241f49bacff838443b31e0d69f11bb38b74a501087993806d6404f96",
+    "rekorLogIndex": 2323129271,
+    "signatureB64": "OGE3ODIzYjdlMzBmYWUwZGI1MGJiNWEyZGUxM2YzOTBiMmY5NmYwYmM0OTVjMjc4MjA1YTkzNzdkYTZiZTYzZA==",
+    "signedAt": "2026-05-31T00:00:00+00:00",
+    "statementB64": "Ch9odHRwczovL2luLXRvdG8uaW8vU3RhdGVtZW50L3YxElcKCXdhcm4tb25seRpKCgZzaGEyNTYSQDVmMWVhNzZmMjJlMzllNGRmZjQwNTBhZGY1OTIzMDJjMDdhZWUyMWI4YTEzM2EzMDc4MmM3OGMyYTVjMzk3OGYaM2h0dHBzOi8vcHJpbWl0aXZlaHViLmFpL2NvbnRleHQtY2kvdjAuMS9BdHRlc3RhdGlvbiK0AwpWChJ2YWxpZGF0aW9uX3N1bW1hcnkSQCo+ChMKBmZhaWxlZBIJEQAAAAAAAAAAChIKBXRvdGFsEgkRAAAAAAAA8D8KEwoGcGFzc2VkEgkRAAAAAAAA8D8K7AEKCnZhbGlkYXRpb24S3QEy2gEK1wEq1AEKGwoQZGV0ZWN0b3JfdmVyc2lvbhIHGgUwLjEuMAoXCg90aHJlYXRfY2F0ZWdvcnkSBBoCVDEKQAoHc3VtbWFyeRI1GjNCb3JkZXJsaW5lIHBhdHRlcm47IHJldmlld2VyIGF0dGVudGlvbiByZWNvbW1lbmRlZC4KJgoNZGV0ZWN0b3JfbmFtZRIVGhN0MS5wcm9tcHRfaW5qZWN0aW9uChIKCHNldmVyaXR5EgYaBHdhcm4KEAoKZGlmZl9oaW50cxICMgAKDAoGcGFzc2VkEgIgAQoVCgxzcGVjX3ZlcnNpb24SBRoDMC4xClQKDnZlcnNpb25fZGlnZXN0EkIaQDQwOTc4ODkyMzZhMmFmMjZjMjkzMDMzZmViOTY0YzRjZjExOGMwMjI0ZTBkMDYzZmVjMGE4OWU5ZDA1NjllZjI=",
+    "verifyUrl": "noop://entry/2323129271"
+  },
+  "bundleVersion": "0.1",
+  "content": {
+    "bytesB64": "IyBXYXJuCg==",
+    "mediaType": "text/markdown; charset=utf-8",
+    "sizeBytes": 7
+  },
+  "detailUrl": "/primitive/warn-only?version=1.0.0",
+  "subject": {
+    "contentDigest": "sha256:5f1ea76f22e39e4dff4050adf592302c07aee21b8a133a30782c78c2a5c3978f",
+    "semver": "1.0.0",
+    "slug": "warn-only"
+  }
+}

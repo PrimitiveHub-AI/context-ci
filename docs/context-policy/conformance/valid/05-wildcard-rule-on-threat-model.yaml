@@ -1,0 +1,10 @@
+# Wildcard rule id: every detector is allowed in docs/threat-model.md.
+# Real-world use: the project's own threat model legitimately mentions
+# every attack pattern.
+version: "0.1"
+allow:
+  - reason: "Threat-model document mentions all attack patterns by design."
+    files:
+      - "docs/threat-model.md"
+    rules:
+      - id: "*"

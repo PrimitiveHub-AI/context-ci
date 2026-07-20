@@ -1,0 +1,8 @@
+# Save this to ~/.aider.conf.yml (Aider 0.85+).
+# In-session, `/mcp` shows primitivehub with 4 tools.
+
+mcp-servers:
+  primitivehub:
+    command: npx
+    args:
+      - "@primitivehub/mcp-server"

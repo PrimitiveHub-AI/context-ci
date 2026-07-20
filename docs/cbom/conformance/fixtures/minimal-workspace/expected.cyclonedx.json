@@ -1,0 +1,117 @@
+{
+  "$schema": "http://cyclonedx.org/schema/bom-1.5.schema.json",
+  "bomFormat": "CycloneDX",
+  "components": [
+    {
+      "bom-ref": "cbom:1a5c3b8a64a01496b86abd532edafb844cfec33d009d11a5f48da33b09542573",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "1a5c3b8a64a01496b86abd532edafb844cfec33d009d11a5f48da33b09542573"
+        }
+      ],
+      "name": "AGENTS.md",
+      "properties": [
+        {
+          "name": "cbom:classification",
+          "value": "agents-md"
+        },
+        {
+          "name": "cbom:attestation",
+          "value": "unattested"
+        },
+        {
+          "name": "cbom:sizeBytes",
+          "value": "180"
+        }
+      ],
+      "type": "file"
+    },
+    {
+      "bom-ref": "cbom:fc1491e91af2f898d9470d919f9ca8c9765a891fb920ee5beb187b7d14c25fab",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "fc1491e91af2f898d9470d919f9ca8c9765a891fb920ee5beb187b7d14c25fab"
+        }
+      ],
+      "name": "CLAUDE.md",
+      "properties": [
+        {
+          "name": "cbom:classification",
+          "value": "claude-md"
+        },
+        {
+          "name": "cbom:attestation",
+          "value": "unattested"
+        },
+        {
+          "name": "cbom:sizeBytes",
+          "value": "199"
+        }
+      ],
+      "type": "file"
+    },
+    {
+      "bom-ref": "cbom:0b64c61d512520fa173b385bbf29a234fd794364a87333b6ee31ef74f726c626",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "0b64c61d512520fa173b385bbf29a234fd794364a87333b6ee31ef74f726c626"
+        }
+      ],
+      "name": "apps/web/content/primitives/example.md",
+      "properties": [
+        {
+          "name": "cbom:classification",
+          "value": "primitive"
+        },
+        {
+          "name": "cbom:attestation",
+          "value": "unattested"
+        },
+        {
+          "name": "cbom:sizeBytes",
+          "value": "239"
+        },
+        {
+          "name": "cbom:displayName",
+          "value": "example-primitive"
+        }
+      ],
+      "type": "file",
+      "version": "0.1.0"
+    }
+  ],
+  "metadata": {
+    "component": {
+      "bom-ref": "urn:cbom:subject:minimal-workspace",
+      "name": "minimal-workspace",
+      "type": "application"
+    },
+    "properties": [
+      {
+        "name": "cbom:specVersion",
+        "value": "0.1"
+      },
+      {
+        "name": "cbom:topTen:specVersion",
+        "value": "0.1"
+      },
+      {
+        "name": "cbom:topTen:detectorCount",
+        "value": "10"
+      }
+    ],
+    "tools": [
+      {
+        "name": "phub",
+        "vendor": "PrimitiveHub",
+        "version": "0.1.0"
+      }
+    ]
+  },
+  "serialNumber": "urn:cbom:9d10164dc36aa9c968adbb0e835e2810",
+  "specVersion": "1.5",
+  "version": 1
+}

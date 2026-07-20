@@ -1,0 +1,46 @@
+{
+  "attestation": {
+    "backendName": "noop",
+    "certChainPem": "-----BEGIN CERTIFICATE-----\nNOOP-BACKEND-DETERMINISTIC-44731dca421d809985c7113e425270d4\n-----END CERTIFICATE-----\n",
+    "predicate": {
+      "spec_version": "0.1",
+      "validation": [
+        {
+          "detector_name": "t1.prompt_injection",
+          "detector_version": "0.1.0",
+          "diff_hints": [],
+          "passed": true,
+          "severity": "info",
+          "summary": "No prompt-injection patterns matched.",
+          "threat_category": "T1"
+        }
+      ],
+      "validation_summary": {
+        "failed": 0,
+        "passed": 1,
+        "total": 1
+      },
+      "version_digest": "4097889236a2af26c293033feb964c4cf118c0224e0d063fec0a89e9d0569ef2"
+    },
+    "predicateType": "https://primitivehub.ai/context-ci/v0.1/Attestation",
+    "rekorInclusionProofJson": "{\"checkpoint\":{\"envelope\":\"noop checkpoint for 44731dca421d8099\"},\"hashes\":[],\"logIndex\":1148394954,\"rootHash\":\"44731dca421d809985c7113e425270d43885e0771d3def5f3f244070af9e469c\",\"treeSize\":1148394955}",
+    "rekorLogId": "e0e6f56718f5d0ade71bf8e59b48762e7163cd12467a30ef3d1ad5ea04e53424",
+    "rekorLogIndex": 1148394954,
+    "signatureB64": "NDQ3MzFkY2E0MjFkODA5OTg1YzcxMTNlNDI1MjcwZDQzODg1ZTA3NzFkM2RlZjVmM2YyNDQwNzBhZjllNDY5Yw==",
+    "signedAt": "2026-05-31T00:00:00+00:00",
+    "statementB64": "Ch9odHRwczovL2luLXRvdG8uaW8vU3RhdGVtZW50L3YxEl8KEXBhc3Nlcy1jb250ZXh0LWNpGkoKBnNoYTI1NhJANGNmNzYzNWI4NzcwODcxMWY3Yzc2MzIxYThkNDE1NjI0ZWZjYjg2NTBhNzAxMzgzMGNmNGYxMjAxZGM3N2I5YRozaHR0cHM6Ly9wcmltaXRpdmVodWIuYWkvY29udGV4dC1jaS92MC4xL0F0dGVzdGF0aW9uIqYDClYKEnZhbGlkYXRpb25fc3VtbWFyeRJAKj4KEwoGZmFpbGVkEgkRAAAAAAAAAAAKEgoFdG90YWwSCREAAAAAAADwPwoTCgZwYXNzZWQSCREAAAAAAADwPwreAQoKdmFsaWRhdGlvbhLPATLMAQrJASrGAQobChBkZXRlY3Rvcl92ZXJzaW9uEgcaBTAuMS4wChcKD3RocmVhdF9jYXRlZ29yeRIEGgJUMQoyCgdzdW1tYXJ5EicaJU5vIHByb21wdC1pbmplY3Rpb24gcGF0dGVybnMgbWF0Y2hlZC4KJgoNZGV0ZWN0b3JfbmFtZRIVGhN0MS5wcm9tcHRfaW5qZWN0aW9uChIKCHNldmVyaXR5EgYaBGluZm8KEAoKZGlmZl9oaW50cxICMgAKDAoGcGFzc2VkEgIgAQoVCgxzcGVjX3ZlcnNpb24SBRoDMC4xClQKDnZlcnNpb25fZGlnZXN0EkIaQDQwOTc4ODkyMzZhMmFmMjZjMjkzMDMzZmViOTY0YzRjZjExOGMwMjI0ZTBkMDYzZmVjMGE4OWU5ZDA1NjllZjI=",
+    "verifyUrl": "noop://entry/1148394954"
+  },
+  "bundleVersion": "0.1",
+  "content": {
+    "bytesB64": "IyBQYXNzCgpBIGNsZWFuIHByaW1pdGl2ZS4K",
+    "mediaType": "text/markdown; charset=utf-8",
+    "sizeBytes": 27
+  },
+  "detailUrl": "/primitive/passes-context-ci?version=1.0.0",
+  "subject": {
+    "contentDigest": "sha256:4cf7635b87708711f7c76321a8d415624efcb8650a7013830cf4f1201dc77b9a",
+    "semver": "1.0.0",
+    "slug": "passes-context-ci"
+  }
+}

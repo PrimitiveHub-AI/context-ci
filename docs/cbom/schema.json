@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://primitivehub.ai/cbom/v0.1.json",
+  "title": "Context Bill of Materials v0.1",
+  "description": "Canonical wire format for the agent-context inventory artifact. See docs/cbom-v0.1.md for prose; the structural rules below are normative.",
+  "type": "object",
+  "required": [
+    "$schema",
+    "cbomFormat",
+    "cbomVersion",
+    "components",
+    "subject",
+    "summary",
+    "tool",
+    "topTen"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "const": "https://primitivehub.ai/cbom/v0.1.json"
+    },
+    "cbomFormat": {
+      "type": "string",
+      "const": "primitivehub-cbom"
+    },
+    "cbomVersion": {
+      "type": "string",
+      "const": "0.1"
+    },
+    "tool": {
+      "type": "object",
+      "required": ["name", "version"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 }
+      }
+    },
+    "subject": {
+      "type": "object",
+      "required": ["root"],
+      "additionalProperties": false,
+      "properties": {
+        "root": {
+          "type": "string",
+          "description": "Repo-relative root path. Always relative, never host-absolute."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "topTen": {
+      "type": "object",
+      "required": ["specVersion", "detectorCount"],
+      "additionalProperties": false,
+      "properties": {
+        "specVersion": {
+          "type": "string",
+          "description": "Top 10 spec version the producer was conformant to."
+        },
+        "detectorCount": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of active detectors in the roster at producer time."
+        }
+      }
+    },
+    "components": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Component" }
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "componentCount",
+        "totalBytes",
+        "byClassification",
+        "attestationStates"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "componentCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "totalBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "byClassification": {
+          "type": "object",
+          "patternProperties": {
+            "^[a-z][a-z0-9-]*$": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        },
+        "attestationStates": {
+          "type": "object",
+          "patternProperties": {
+            ".+": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  },
+  "$defs": {
+    "Component": {
+      "type": "object",
+      "required": [
+        "attestation",
+        "classification",
+        "contentDigest",
+        "path",
+        "sizeBytes"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Repo-relative path, forward-slash normalized."
+        },
+        "classification": {
+          "type": "string",
+          "enum": [
+            "agents-md",
+            "claude-md",
+            "cursor-rules",
+            "windsurf-rules",
+            "aider-config",
+            "copilot-instructions",
+            "claude-skill",
+            "claude-agent",
+            "claude-command",
+            "primitive",
+            "skill",
+            "prompt",
+            "mcp-config"
+          ]
+        },
+        "contentDigest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "sizeBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "attestation": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Provenance pointer. One of: 'unattested', 'rekor:<index>', 'registry:<slug>@<semver>', 'url:<url>', 'local:<path>'."
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "primitiveVersion": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}
