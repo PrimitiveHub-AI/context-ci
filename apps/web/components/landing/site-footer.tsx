@@ -2,7 +2,7 @@ import Link from "next/link"
 import { Hexagon, ArrowUpRight } from "lucide-react"
 
 import { loadLatestEvaluation, summarize } from "@/lib/evaluation"
-import { GITHUB_REPO_URL, GITHUB_BLOB_BASE, GITHUB_TREE_BASE } from "@/lib/site"
+import { GITHUB_REPO_URL, docRoute } from "@/lib/site"
 
 /**
  * Homepage footer. Surfaces the four canonical post-Round-7 artifacts
@@ -17,8 +17,6 @@ import { GITHUB_REPO_URL, GITHUB_BLOB_BASE, GITHUB_TREE_BASE } from "@/lib/site"
  */
 
 const GH_REPO = GITHUB_REPO_URL
-const GH_BLOB = GITHUB_BLOB_BASE
-const GH_TREE = GITHUB_TREE_BASE
 
 type Column = {
   heading: string
@@ -48,27 +46,27 @@ function buildColumns(measuredAt: string): readonly Column[] {
       links: [
         {
           label: `Evaluation scoreboard · ${measuredAt}`,
-          href: `${GH_BLOB}/docs/evaluation.md`,
+          href: docRoute("docs/evaluation.md"),
           external: true,
         },
         {
           label: "Top 10 corpus map",
-          href: `${GH_BLOB}/docs/top10-corpus-map.md`,
+          href: docRoute("docs/top10-corpus-map.md"),
           external: true,
         },
         {
           label: "Adversarial corpus v0.2",
-          href: `${GH_BLOB}/docs/corpus-v0.1.md`,
+          href: docRoute("docs/corpus-v0.1.md"),
           external: true,
         },
         {
           label: "False-positive ledger",
-          href: `${GH_BLOB}/docs/false-positive-resolution.md`,
+          href: docRoute("docs/false-positive-resolution.md"),
           external: true,
         },
         {
           label: "False-negative ledger",
-          href: `${GH_BLOB}/docs/false-negative-resolution.md`,
+          href: docRoute("docs/false-negative-resolution.md"),
           external: true,
         },
       ],
@@ -81,7 +79,7 @@ function buildColumns(measuredAt: string): readonly Column[] {
         { label: "Decisions (ADRs)", href: "/decisions" },
         {
           label: "OWASP LLM Top 10 crosswalk",
-          href: `${GH_BLOB}/docs/owasp-llm-top10-crosswalk.md`,
+          href: docRoute("docs/owasp-llm-top10-crosswalk.md"),
           external: true,
         },
       ],
@@ -92,12 +90,12 @@ function buildColumns(measuredAt: string): readonly Column[] {
         { label: "Paper (arXiv preprint v0.1)", href: "/paper" },
         {
           label: "Paper source on GitHub",
-          href: `${GH_TREE}/paper`,
+          href: docRoute("paper"),
           external: true,
         },
         {
           label: "SECURITY.md — report a finding",
-          href: `${GH_BLOB}/SECURITY.md`,
+          href: docRoute("SECURITY.md"),
           external: true,
         },
         { label: "Security & bug bounty", href: "/security" },

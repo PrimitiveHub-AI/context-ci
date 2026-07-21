@@ -17,7 +17,7 @@ import {
   TerminalFrame,
   TerminalLine,
 } from "@/components/landing/terminal-frame"
-import { GITHUB_BLOB_BASE } from "@/lib/site"
+import { docRoute } from "@/lib/site"
 
 /**
  * CLI section — rebuilt for the "between PrimitiveHub / skills.sh /
@@ -41,7 +41,6 @@ import { GITHUB_BLOB_BASE } from "@/lib/site"
  * source of truth (unchanged from PR #9).
  */
 
-const GH_BLOB = GITHUB_BLOB_BASE
 
 const DIFFERENTIATORS = [
   {
@@ -72,7 +71,7 @@ const SECONDARY_SURFACES = [
     title: "Drift detection",
     cmd: "phub audit --check-lock",
     adr: "ADR-0026",
-    adrHref: `${GH_BLOB}/docs/decisions/0026-phub-lock-format-and-drift-detection.md`,
+    adrHref: docRoute("docs/decisions/0026-phub-lock-format-and-drift-detection.md"),
     lines: [
       { text: "▸ reading .primitivehub/phub.lock     20 pinned", intent: "muted" as const },
       { text: "▸ drift", intent: "default" as const },
@@ -86,7 +85,7 @@ const SECONDARY_SURFACES = [
     title: "On-access guard",
     cmd: "phub watch",
     adr: "ADR-0027",
-    adrHref: `${GH_BLOB}/docs/decisions/0027-phub-watch.md`,
+    adrHref: docRoute("docs/decisions/0027-phub-watch.md"),
     lines: [
       { text: "▸ watching process.cwd()", intent: "muted" as const },
       { text: "[07:50:14] CREATED .cursor/rules/temp.md", intent: "default" as const },
@@ -100,7 +99,7 @@ const SECONDARY_SURFACES = [
     title: "Safe install",
     cmd: "phub install strict-code-review@2.1.0",
     adr: "ADR-0028",
-    adrHref: `${GH_BLOB}/docs/decisions/0028-phub-install.md`,
+    adrHref: docRoute("docs/decisions/0028-phub-install.md"),
     lines: [
       { text: "▸ verifying bundle", intent: "muted" as const },
       { text: "  digest match           OK", intent: "pass" as const },
@@ -114,7 +113,7 @@ const SECONDARY_SURFACES = [
     title: "Runtime gate (MCP)",
     cmd: "claude mcp add primitivehub",
     adr: "ADR-0029",
-    adrHref: `${GH_BLOB}/docs/decisions/0029-mcp-runtime-gate.md`,
+    adrHref: docRoute("docs/decisions/0029-mcp-runtime-gate.md"),
     lines: [
       { text: "tool: verify_before_load", intent: "muted" as const },
       { text: "request  { subject: skill:foo@0.3 }", intent: "default" as const },
@@ -139,7 +138,7 @@ export function CLIRoadmap() {
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/[0.04] px-3 py-1 mb-4">
             <Terminal className="size-3 text-primary/80" />
             <span className="text-[10px] font-mono uppercase tracking-widest text-primary/80">
-              Active by default · the 5 surfaces locked in ADR-0025
+              Active by default · a guardian, not a linter
             </span>
           </div>
           <h2 className="text-3xl font-bold text-foreground sm:text-4xl text-balance">
@@ -153,7 +152,7 @@ export function CLIRoadmap() {
             kernel the scoreboard measures. Source published today; the
             npm publish flips on launch day per{" "}
             <a
-              href={`${GH_BLOB}/docs/decisions/0022-publishing-deferred-to-launch.md`}
+              href={docRoute("docs/decisions/0022-publishing-deferred-to-launch.md")}
               target="_blank"
               rel="noopener noreferrer"
               className="text-primary/90 hover:text-primary underline decoration-primary/30 underline-offset-2"
@@ -173,7 +172,7 @@ export function CLIRoadmap() {
                 01 · Active sweep
               </span>
               <a
-                href={`${GH_BLOB}/docs/decisions/0025-active-posture-and-phub-audit.md`}
+                href={docRoute("docs/decisions/0025-active-posture-and-phub-audit.md")}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground hover:text-primary"

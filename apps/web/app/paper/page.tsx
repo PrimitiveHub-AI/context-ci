@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { EvaluationLink } from "@/components/primitives/evaluation-link"
 import { loadLatestEvaluation, summarize } from "@/lib/evaluation"
-import { GITHUB_REPO_URL } from "@/lib/site"
+import { docRoute } from "@/lib/site"
 import {
   BookOpen,
   Quote,
@@ -31,10 +31,6 @@ import {
  * and the scoreboard link carries the proof.
  */
 
-const GH_REPO = GITHUB_REPO_URL
-const GH_BLOB = `${GH_REPO}/blob/main`
-const SCOREBOARD = `${GH_BLOB}/docs/evaluation.md`
-const PAPER_SRC = `${GH_REPO}/tree/main/paper`
 
 // The Context CI Top 10 — stable IDs CCI-001..010. Names and the
 // detector-version map are the source of truth in paper/main.tex
@@ -155,7 +151,7 @@ export default function PaperPage() {
               size="sm"
               className="bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 h-8"
             >
-              <a href={PAPER_SRC} target="_blank" rel="noopener noreferrer">
+              <a href={docRoute("paper")} target="_blank" rel="noopener noreferrer">
                 <FileText className="size-3" />
                 Read the source
                 <ArrowUpRight className="size-3" />
@@ -439,7 +435,7 @@ export default function PaperPage() {
           </div>
 
           <a
-            href={SCOREBOARD}
+            href={docRoute("docs/evaluation.md")}
             target="_blank"
             rel="noopener noreferrer"
             className="mt-4 inline-flex items-center gap-1 text-[11px] font-mono text-primary/90 hover:text-primary"
@@ -475,7 +471,7 @@ export default function PaperPage() {
                     {c.verdict}
                   </span>
                   <a
-                    href={`${GH_BLOB}/${c.samplePath}`}
+                    href={docRoute(c.samplePath)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[10px] font-mono text-muted-foreground/70 hover:text-primary"

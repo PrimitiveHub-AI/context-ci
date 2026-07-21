@@ -10,7 +10,7 @@ import {
 } from "lucide-react"
 
 import { PlannedBadge } from "@/components/ui/planned-badge"
-import { GITHUB_BLOB_BASE } from "@/lib/site"
+import { docRoute } from "@/lib/site"
 
 /**
  * /security — top-level security landing.
@@ -27,8 +27,6 @@ import { GITHUB_BLOB_BASE } from "@/lib/site"
  * scope/process/severity bands themselves are live and committed
  * pre-launch.
  */
-
-const GH_BLOB = GITHUB_BLOB_BASE
 
 export const metadata: Metadata = {
   title: "Security — PrimitiveHub",
@@ -125,7 +123,7 @@ export default function SecurityPage() {
         <p className="mt-5 text-[15px] text-muted-foreground leading-relaxed max-w-2xl">
           PrimitiveHub is &ldquo;agent-context AV plus registry&rdquo; per{" "}
           <a
-            href={`${GH_BLOB}/docs/decisions/0030-fp-resolution-and-av-vendor-parallel.md`}
+            href={docRoute("docs/decisions/0030-fp-resolution-and-av-vendor-parallel.md")}
             target="_blank"
             rel="noopener noreferrer"
             className="text-primary/90 hover:text-primary"
@@ -166,7 +164,7 @@ export default function SecurityPage() {
           title="A missed attack"
           desc="Context CI passed something you believe contains an attack — corpus or detector should catch it."
           cta="FN-NNN ledger"
-          ctaHref={`${GH_BLOB}/docs/false-negative-resolution.md`}
+          ctaHref={docRoute("docs/false-negative-resolution.md")}
           external
           note="Credit in the closure ledger. No cash bounty (research credit currency)."
         />
@@ -176,7 +174,7 @@ export default function SecurityPage() {
           title="A legitimate primitive flagged"
           desc="Context CI flagged a primitive you believe should pass — the four-path triage decides what to do."
           cta="FP-NNN ledger"
-          ctaHref={`${GH_BLOB}/docs/false-positive-resolution.md`}
+          ctaHref={docRoute("docs/false-positive-resolution.md")}
           external
           note="Credit in the closure ledger. No cash bounty (research credit currency)."
         />
@@ -232,7 +230,7 @@ export default function SecurityPage() {
 
         <div className="mt-6 flex flex-wrap gap-3">
           <a
-            href={`${GH_BLOB}/SECURITY-BOUNTY.md`}
+            href={docRoute("SECURITY-BOUNTY.md")}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 rounded-md border border-primary/20 bg-primary/[0.04] px-3 py-1.5 text-xs font-mono text-primary/90 hover:text-primary"
@@ -241,7 +239,7 @@ export default function SecurityPage() {
             <ArrowUpRight className="size-3" />
           </a>
           <a
-            href={`${GH_BLOB}/SECURITY.md`}
+            href={docRoute("SECURITY.md")}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 rounded-md border border-border/60 px-3 py-1.5 text-xs font-mono text-muted-foreground hover:text-foreground"
@@ -319,7 +317,7 @@ export default function SecurityPage() {
         <ul className="space-y-2 text-sm">
           <li>
             <a
-              href={`${GH_BLOB}/docs/bugs.md`}
+              href={docRoute("docs/bugs.md")}
               target="_blank"
               rel="noopener noreferrer"
               className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1"

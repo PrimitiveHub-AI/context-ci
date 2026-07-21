@@ -9,7 +9,7 @@ import {
 
 import { AVParallelMap } from "@/components/landing/av-parallel-map"
 import { loadLatestEvaluation, summarize } from "@/lib/evaluation"
-import { GITHUB_BLOB_BASE } from "@/lib/site"
+import { docRoute } from "@/lib/site"
 
 /**
  * Trust Runtime three-pillar section — visual upgrade.
@@ -31,7 +31,6 @@ import { GITHUB_BLOB_BASE } from "@/lib/site"
  * reads as the recognition primer it is, not a stray bullet list.
  */
 
-const GH_BASE = GITHUB_BLOB_BASE
 
 type Accent = "primary" | "amber" | "success"
 
@@ -66,7 +65,7 @@ const PILLARS: ReadonlyArray<Pillar> = [
     specSlug: "context-ci-top-10-v0.1",
     secondary: {
       label: "Corpus-mapped taxonomy",
-      href: `${GH_BASE}/docs/top10-corpus-map.md`,
+      href: docRoute("docs/top10-corpus-map.md"),
     },
   },
   {
@@ -169,7 +168,7 @@ export function TrustRuntimeSection() {
             Byte-identical reproducibility
           </span>
           <a
-            href={`${GH_BASE}/docs/evaluation.md`}
+            href={docRoute("docs/evaluation.md")}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-primary/90 hover:text-primary"
