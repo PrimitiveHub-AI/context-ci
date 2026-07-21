@@ -26,6 +26,50 @@
 
 ## Active log (most recent first)
 
+### 31. Dev-host absolute path `/srv/primitivehub/app` leaked into public /docs — 2026-07-21
+
+**Phase:** Pre-launch web audit
+**Symptom:** 22 copy-paste command blocks across 6 `docs/usage/*.md` (rendered live at `/docs/<slug>`) contained the literal dev-host path `/srv/primitivehub/app` — `cd /srv/primitivehub/app`, MCP config `args`/`root`/`lockPath`, build aliases. A public reader who checked out `context-ci` anywhere else runs commands that break, and the box path is disclosed.
+**Root cause:** Usage docs were authored on the dev host and pasted real absolute paths into the contributor build/config sections instead of a reader-set placeholder.
+**Fix:** Replaced with `/path/to/context-ci` across the six files.
+**Prevention:** Grep gate before any public-doc change: `grep -rn "/srv/primitivehub" docs/usage` must be empty. Public copy-paste commands use a reader-set placeholder, never a host-absolute path.
+**Lesson:** Anything rendered at a public route is public copy — a path that's real on the box is both a leak and a broken command for everyone else.
+
+---
+
+### 30. GitHub proof-links 404 by design — the public repo is a subset — 2026-07-21
+
+**Phase:** Pre-launch web audit
+**Symptom:** ~25 "proof" links across the site (AV-parallel map, `EvaluationLink`, Top-10 cards, footer, `/paper`, `/security`, cli-roadmap ADR cites) resolved to `github.com/PrimitiveHub-AI/context-ci/blob/main/{docs,bench,paper}/…` and 404'd — including the owner-reported ADR-0022 link.
+**Root cause:** Per [ADR-0045](./decisions/0045-product-first-public-launch-and-distribution-repo.md) the public `context-ci` repo is assembled from a SUBSET of the monorepo (verify + phub + mcp-server + the action) — it never ships `docs/`, `bench/`, or `paper/`. Those deep-links 404 now AND after the repo is pushed. The links assumed the whole monorepo would be public.
+**Fix:** Added `docRoute()` in `apps/web/lib/site.ts` mapping any monorepo path to its in-app home (ADR→/decisions, evaluation/corpus→/paper, FP/FN/bugs/SECURITY→/security, OWASP→/top-10); repointed every caller; consolidated the footer to real in-app destinations.
+**Prevention:** Never deep-link into the private monorepo tree from public UI — the website is the public home for docs/eval/corpus proof. New repo-doc links go through `docRoute()`; only repo-root links (`git clone`, "Source on GitHub") stay GitHub. Crawl gate: rendered pages must show zero `blob/main/(docs|bench|paper)` links.
+**Lesson:** "It'll work once we push the repo" is false when the repo is a subset. Map public → public.
+
+---
+
+### 29. Forge CodeMirror editor rendered dim + un-typable — Next 16 blocked the dev hydration channel — 2026-07-21
+
+**Phase:** Pre-launch web audit
+**Symptom:** The `/forge` editor showed as an empty, dim box that wouldn't accept text, and source edits never hot-reloaded into an open tab. `/forge` returned 200 with the editor container in the SSR HTML, but CodeMirror (client-only) never mounted.
+**Root cause:** Next.js 16 blocks cross-origin dev resources (`/_next/webpack-hmr` + the client dev channel) by default. Reached via `127.0.0.1` (dev binds localhost-only), the origin wasn't allow-listed, so HMR + client hydration for `127.0.0.1` were blocked → the client component never hydrated. Dev-only (production has no HMR/origin gating), but it fully blocked local testing and masked every subsequent edit.
+**Fix:** `allowedDevOrigins: ["127.0.0.1", "localhost"]` in `apps/web/next.config.mjs` + a clean dev-server restart.
+**Prevention:** Any dev server reached via `127.0.0.1`/an SSH tunnel needs its origin in `allowedDevOrigins`. Symptom signature: "client component won't hydrate / HMR silent" + a `⚠ Blocked cross-origin request to Next.js dev resource` log line.
+**Lesson:** A 200 with the SSR shell present does not mean the client hydrated. When interactive client components are dead, check the dev-origin gate before suspecting the component code.
+
+---
+
+### 28. Healthy API reported "unhealthy" — healthcheck grep didn't tolerate JSON whitespace — 2026-07-21
+
+**Phase:** Pre-launch web audit / infra
+**Symptom:** `primitivehub-api-1` sat `(unhealthy)` for weeks though `GET /api/v1/healthz` returned `200 {"status": "ok", "checks": {"db": "ok", "cache": "ok"}}` every 10s.
+**Root cause:** The compose healthcheck piped healthz into `grep -q '"status":"ok"'` (no space), but the JSON serializer emits `"status": "ok"` (space after the colon). The grep never matched → exit 1 → container marked unhealthy. In production that can make an orchestrator kill or de-route the flagship `/check` backend.
+**Fix:** `grep -q '"status": *"ok"'` in `compose.yaml` (tolerant of any whitespace).
+**Prevention:** Match JSON in shell with whitespace-tolerant patterns (`": *"`) or parse with `jq`/python — never assume compact serialization. Verify the healthcheck command against the ACTUAL response body, not the expected one.
+**Lesson:** A green app behind a red healthcheck is worse than a red app — everything looks fine while orchestration quietly fights you.
+
+---
+
 ### 27. Batch false positives on inter-session detector landings (T7 + T9) — 2026-06-04
 
 **Phase:** 5.6 / 5.6.2 / 5.6.3 (T3 / T4 / T6 / T7 / T8 / T9 / T10 detectors landed across multiple PRs since Phase 5.6 opened).

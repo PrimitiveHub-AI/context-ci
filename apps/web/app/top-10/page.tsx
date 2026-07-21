@@ -7,7 +7,6 @@ import { Top10Card } from "@/components/landing/top10-card"
 import { EvaluationLink } from "@/components/primitives/evaluation-link"
 import { loadLatestEvaluation, summarize } from "@/lib/evaluation"
 import { listTop10 } from "@/lib/top10"
-import { GITHUB_REPO_URL } from "@/lib/site"
 
 /**
  * /top-10 — public visual surface for the Context CI Top 10 v0.1
@@ -136,10 +135,10 @@ export default function TopTenPage() {
             ; drift fails the build.
           </p>
           <pre className="mt-4 rounded-md border border-border/40 bg-background/60 px-3 py-2 text-[11px] font-mono text-muted-foreground overflow-x-auto">
-            {`git clone ${GITHUB_REPO_URL}
-cd context-ci
-pnpm install --frozen-lockfile
-bench/scripts/gate.sh         # green = PASS`}
+            {`# run the same detectors the scoreboard measures:
+npx @primitivehub/phub audit
+
+# full corpus evaluation + every measured number: /paper`}
           </pre>
         </div>
       </section>
