@@ -2,18 +2,14 @@ import Link from "next/link"
 import { Hexagon, ArrowUpRight } from "lucide-react"
 
 import { loadLatestEvaluation, summarize } from "@/lib/evaluation"
-import { GITHUB_REPO_URL, docRoute } from "@/lib/site"
+import { GITHUB_REPO_URL } from "@/lib/site"
 
 /**
- * Homepage footer. Surfaces the four canonical post-Round-7 artifacts
- * the audit identified as unreachable: docs/evaluation.md,
- * docs/top10-corpus-map.md, paper/, and SECURITY.md — plus the
- * internal routes a first-time visitor needs to validate the
- * category (top-10, specs, decisions, docs).
- *
- * Pre-launch the four artifacts resolve to GitHub blobs; on launch
- * day the same labels can switch to /docs/<slug> routes without
- * changing the surface footprint.
+ * Homepage footer. Curated in-app routes a first-time visitor needs to
+ * validate the category (check, forge, paper, top-10, specs, decisions,
+ * docs, security). The proof artifacts live on the website, not the
+ * public repo (a subset without docs/bench/paper), so every link resolves
+ * in-app — only "Source on GitHub" (the repo root) is external.
  */
 
 const GH_REPO = GITHUB_REPO_URL
@@ -44,31 +40,8 @@ function buildColumns(measuredAt: string): readonly Column[] {
     {
       heading: "Engine",
       links: [
-        {
-          label: `Evaluation scoreboard · ${measuredAt}`,
-          href: docRoute("docs/evaluation.md"),
-          external: true,
-        },
-        {
-          label: "Top 10 corpus map",
-          href: docRoute("docs/top10-corpus-map.md"),
-          external: true,
-        },
-        {
-          label: "Adversarial corpus v0.2",
-          href: docRoute("docs/corpus-v0.1.md"),
-          external: true,
-        },
-        {
-          label: "False-positive ledger",
-          href: docRoute("docs/false-positive-resolution.md"),
-          external: true,
-        },
-        {
-          label: "False-negative ledger",
-          href: docRoute("docs/false-negative-resolution.md"),
-          external: true,
-        },
+        { label: `Evaluation & corpus · ${measuredAt}`, href: "/paper" },
+        { label: "Detectors T1–T10", href: "/specs/context-ci-top-10-v0.1" },
       ],
     },
     {
@@ -77,27 +50,12 @@ function buildColumns(measuredAt: string): readonly Column[] {
         { label: "Context CI Top 10 v0.1", href: "/top-10" },
         { label: "Specs (Trust Contract, CBOM)", href: "/specs" },
         { label: "Decisions (ADRs)", href: "/decisions" },
-        {
-          label: "OWASP LLM Top 10 crosswalk",
-          href: docRoute("docs/owasp-llm-top10-crosswalk.md"),
-          external: true,
-        },
       ],
     },
     {
       heading: "Project",
       links: [
         { label: "Paper (arXiv preprint v0.1)", href: "/paper" },
-        {
-          label: "Paper source on GitHub",
-          href: docRoute("paper"),
-          external: true,
-        },
-        {
-          label: "SECURITY.md — report a finding",
-          href: docRoute("SECURITY.md"),
-          external: true,
-        },
         { label: "Security & bug bounty", href: "/security" },
         { label: "Contributors", href: "/contributors", soon: true },
         { label: "Source on GitHub", href: GH_REPO, external: true },
