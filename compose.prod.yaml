@@ -40,3 +40,15 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+  # Analytics (ADR-0046) — only runs when COMPOSE_PROFILES=analytics is set.
+  # A Next.js app at idle; a modest cap is plenty on the CX22.
+  umami:
+    pull_policy: always
+    mem_limit: 384m
+    cpus: 0.5
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

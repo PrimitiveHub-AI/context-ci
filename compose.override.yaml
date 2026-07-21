@@ -19,6 +19,12 @@ services:
       WATCHPACK_POLLING: "true"
       # Server-side proxy points at the api container by its service name.
       DJANGO_API_BASE_URL: http://api:8000/api/v1
+      # Umami tracker (ADR-0046). In `next dev`, NEXT_PUBLIC_* is read from
+      # the environment at runtime (no rebuild), so the <Analytics/> script
+      # renders as soon as these are set. Prod bakes them via build args
+      # instead (SSG). Values come from the root .env.
+      NEXT_PUBLIC_UMAMI_SRC: ${NEXT_PUBLIC_UMAMI_SRC:-}
+      NEXT_PUBLIC_UMAMI_WEBSITE_ID: ${NEXT_PUBLIC_UMAMI_WEBSITE_ID:-}
     # OIDC client config lives in apps/web/.env (gitignored). Required:
     #   OIDC_ISSUER_URL, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, OIDC_REDIRECT_URI
     env_file:

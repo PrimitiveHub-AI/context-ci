@@ -26,6 +26,17 @@
 
 ## Active log (most recent first)
 
+### 32. `@vercel/analytics` shipped a dead third-party beacon off-Vercel — 2026-07-21
+
+**Phase:** Pre-launch web audit
+**Symptom:** `apps/web/app/layout.tsx` rendered `<Analytics/>` from `@vercel/analytics` in production. We deploy on Hetzner + Caddy, not Vercel — so it collected nothing into any dashboard we own; it only loaded a third-party beacon to Vercel's servers.
+**Root cause:** `@vercel/analytics` only reports into the Vercel platform. It was added as a default without checking that our deploy target (Hetzner/Caddy; Cloudflare is R2-only per ADR-0005) can consume it. Result: a privacy cost against our self-host posture with zero data return — and a beacon firing pre-launch (noindex, not announced).
+**Fix:** Removed the dependency; replaced with self-hosted Umami ([ADR-0046](./decisions/0046-self-hosted-analytics-umami.md)). New `apps/web/components/analytics.tsx` reads build-time `NEXT_PUBLIC_UMAMI_*` (required — SSG bakes the root layout, so runtime env can't reach the HTML) and renders **nothing** when unset. Every dev/CI build ships beacon-free; the script loads only in the owner's launch build.
+**Prevention:** No third-party analytics/telemetry beacon in the web app — self-hosted only (Hard rule #3 posture). Any new `<script>` that calls an external origin needs an ADR. Grep gate over tracked source: `git ls-files apps/web | xargs grep -l "from ['\"]@vercel/analytics\|googletagmanager\|plausible.io\|posthog"` must be empty (build artifacts under `node_modules`/`.next` don't count).
+**Lesson:** A platform-coupled SDK (`@vercel/analytics`) on non-that-platform infra is worse than nothing — it's a beacon with no payoff. Match the tool to where you actually deploy.
+
+---
+
 ### 31. Dev-host absolute path `/srv/primitivehub/app` leaked into public /docs — 2026-07-21
 
 **Phase:** Pre-launch web audit

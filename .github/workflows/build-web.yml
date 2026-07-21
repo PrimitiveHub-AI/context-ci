@@ -88,5 +88,11 @@ jobs:
           push: ${{ github.event_name == 'push' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # Self-hosted Umami analytics (ADR-0046). Public, non-secret repo
+          # vars — unset until the owner wires a website at launch, so images
+          # ship beacon-free by default. NEXT_PUBLIC_* must be baked at build.
+          build-args: |
+            NEXT_PUBLIC_UMAMI_SRC=${{ vars.NEXT_PUBLIC_UMAMI_SRC }}
+            NEXT_PUBLIC_UMAMI_WEBSITE_ID=${{ vars.NEXT_PUBLIC_UMAMI_WEBSITE_ID }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

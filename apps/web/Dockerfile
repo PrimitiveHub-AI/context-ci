@@ -34,6 +34,15 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+# Self-hosted Umami analytics (ADR-0046). NEXT_PUBLIC_* is inlined at build,
+# so these must be present at `pnpm build` time to reach the SSG'd HTML. Empty
+# by default → the <Analytics/> component renders nothing (no beacon). The
+# launch image is built with real values via build args; see compose.yaml
+# web.build.args and .github/workflows/build-web.yml.
+ARG NEXT_PUBLIC_UMAMI_SRC=""
+ARG NEXT_PUBLIC_UMAMI_WEBSITE_ID=""
+ENV NEXT_PUBLIC_UMAMI_SRC=$NEXT_PUBLIC_UMAMI_SRC
+ENV NEXT_PUBLIC_UMAMI_WEBSITE_ID=$NEXT_PUBLIC_UMAMI_WEBSITE_ID
 RUN pnpm build
 
 # ─────────────────────────────────────────────────────────────────────────────

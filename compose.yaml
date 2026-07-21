@@ -22,6 +22,11 @@ services:
       context: ./apps/web
       dockerfile: Dockerfile
       target: runner
+      args:
+        # Baked into the SSG'd HTML at build time (ADR-0046). Empty → no
+        # analytics beacon. Set both to enable first-party Umami tracking.
+        NEXT_PUBLIC_UMAMI_SRC: ${NEXT_PUBLIC_UMAMI_SRC:-}
+        NEXT_PUBLIC_UMAMI_WEBSITE_ID: ${NEXT_PUBLIC_UMAMI_WEBSITE_ID:-}
     image: ${WEB_IMAGE:-ghcr.io/devxyzx/primitivehub-web:latest}
     restart: unless-stopped
     ports:
@@ -123,7 +128,11 @@ services:
       # Two databases in one Postgres instance: primitivehub (api) + authentik (idp).
       # The init script creates the second one.
       POSTGRES_DB: primitivehub
-      POSTGRES_MULTIPLE_DATABASES: authentik
+      # Three databases in one instance: primitivehub (api) + authentik (idp)
+      # + umami (analytics, ADR-0046). The init script creates the extras —
+      # but only on a FRESH cluster. For an existing cluster, create the
+      # umami DB once by hand (SQL in ADR-0046 § Migration).
+      POSTGRES_MULTIPLE_DATABASES: authentik,umami
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./infra/postgres/init-multi-db.sh:/docker-entrypoint-initdb.d/init-multi-db.sh:ro
@@ -202,6 +211,41 @@ services:
       valkey:
         condition: service_started
     networks: [primitivehub_net]
+
+  # ── Self-hosted analytics (ADR-0046) ──────────────────────────────────────
+  # First-party, privacy-first page analytics. Replaces the @vercel/analytics
+  # beacon (a no-op off-Vercel + a third-party call). Profile-gated like minio
+  # so a plain `docker compose up` dev loop stays lean on the 8GB host; enable
+  # it with `--profile analytics` (dev) or COMPOSE_PROFILES=analytics (prod).
+  # Localhost-bound (Hard rule #3). Stores in its own `umami` DB on the shared
+  # Postgres 17 instance; Umami runs its own schema migrations on boot.
+  umami:
+    image: ghcr.io/umami-software/umami:3.2.0
+    profiles: [analytics]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${UMAMI_PORT:-3001}:3000"
+    environment:
+      DATABASE_URL: postgresql://primitivehub:${POSTGRES_PASSWORD:-dev_password}@postgres:5432/umami
+      DATABASE_TYPE: postgresql
+      APP_SECRET: ${UMAMI_APP_SECRET:-dev-umami-secret-change-in-production}
+      # We don't phone home (on-brand: we are the Context Firewall).
+      DISABLE_TELEMETRY: "1"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3000/api/heartbeat || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks: [primitivehub_net]
+
+  # Public exposure for analytics.primitivehub.ai is handled by the HOST nginx
+  # (a vhost that proxies to 127.0.0.1:${UMAMI_PORT:-3001}) fronted by Cloudflare
+  # proxied DNS → 178.105.164.250. Config: deploy/nginx/analytics.primitivehub.ai.conf.
+  # Umami itself stays localhost-only; no container faces the public interface.
 
 volumes:
   postgres_data:
