@@ -116,7 +116,7 @@ export function AVParallelMap({
       </div>
 
       <div className="mt-8 rounded-xl border border-border/40 overflow-hidden">
-        <div className="grid grid-cols-12 gap-px bg-border/40 text-[10px] font-mono uppercase tracking-widest">
+        <div className="hidden grid-cols-12 gap-px bg-border/40 text-[10px] font-mono uppercase tracking-widest md:grid">
           <div className="bg-card/60 px-4 py-2.5 col-span-4 text-muted-foreground/80">
             What AV does
           </div>
@@ -125,7 +125,7 @@ export function AVParallelMap({
           </div>
           <div className="bg-card/60 px-4 py-2.5 col-span-1" />
         </div>
-        <div className="grid grid-cols-12 gap-px bg-border/40">
+        <div className="grid grid-cols-1 gap-px bg-border/40 md:grid-cols-12">
           {rows.map((row) => (
             <RowTriad key={row.avAnalog} row={row} />
           ))}
@@ -135,21 +135,24 @@ export function AVParallelMap({
   )
 }
 
+// On mobile each row is a stacked bg-card card (grid-cols-1 → one card per
+// row, gap-px dividers between entries). On md+ the wrapper is `contents`
+// so the three inner cells drop into the parent 12-col grid as the table.
 function RowTriad({ row }: { row: AVParallelRow }) {
   return (
-    <>
-      <div className="bg-card px-4 py-3 col-span-4">
+    <div className="bg-card p-4 md:contents">
+      <div className="md:col-span-4 md:bg-card md:px-4 md:py-3">
         <p className="text-sm text-muted-foreground/90">{row.avAnalog}</p>
       </div>
-      <div className="bg-card px-4 py-3 col-span-7">
+      <div className="mt-1.5 md:mt-0 md:col-span-7 md:bg-card md:px-4 md:py-3">
         <p className="text-sm font-medium text-foreground/95">{row.ours}</p>
         <p className="mt-0.5 text-[11px] text-muted-foreground leading-relaxed">
           {row.note}
         </p>
       </div>
-      <div className="bg-card px-3 py-3 col-span-1 flex items-center justify-center">
+      <div className="mt-2 flex items-center md:mt-0 md:col-span-1 md:justify-center md:bg-card md:px-3 md:py-3">
         <RowTrailingLink row={row} />
       </div>
-    </>
+    </div>
   )
 }

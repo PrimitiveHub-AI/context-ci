@@ -54,7 +54,7 @@ export default async function AdrSlugPage({
 
   return (
     <>
-      <aside className="lg:sticky lg:top-24 lg:self-start">
+      <aside className="hidden lg:block lg:sticky lg:top-24 lg:self-start">
         <DecisionsNav currentSlug={slug} />
       </aside>
 

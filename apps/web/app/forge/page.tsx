@@ -340,7 +340,7 @@ export default function ForgePage() {
       {/* Status bar — live counts */}
       <div className="border-b border-border/40">
         <div className="mx-auto max-w-7xl px-4 py-1.5 lg:px-6">
-          <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-muted-foreground">
             <span className="flex items-center gap-1">
               <XCircle className="size-2.5 text-destructive" />
               <span className="tabular-nums">{analysis.errors}</span> errors

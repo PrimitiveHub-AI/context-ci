@@ -111,13 +111,13 @@ export function Navbar() {
         <Button
           variant="ghost"
           size="icon-sm"
-          className="md:hidden text-muted-foreground"
+          className="size-11 md:hidden text-muted-foreground"
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label="Toggle menu"
           aria-expanded={mobileOpen}
           aria-controls="mobile-nav"
         >
-          {mobileOpen ? <X className="size-4" /> : <Menu className="size-4" />}
+          {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
         </Button>
       </div>
       {mobileOpen && (

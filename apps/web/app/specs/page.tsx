@@ -6,7 +6,7 @@ import { SPEC_PAGES } from "@/lib/specs"
 export default function SpecsIndexPage() {
   return (
     <>
-      <aside className="lg:sticky lg:top-24 lg:self-start">
+      <aside className="hidden lg:block lg:sticky lg:top-24 lg:self-start">
         <SpecsNav />
       </aside>
 

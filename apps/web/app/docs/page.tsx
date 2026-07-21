@@ -6,7 +6,7 @@ import { DOC_PAGES } from "@/lib/docs"
 export default function DocsIndexPage() {
   return (
     <>
-      <aside className="lg:sticky lg:top-24 lg:self-start">
+      <aside className="hidden lg:block lg:sticky lg:top-24 lg:self-start">
         <DocsNav />
       </aside>
 

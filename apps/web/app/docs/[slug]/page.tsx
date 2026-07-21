@@ -48,7 +48,7 @@ export default async function DocSlugPage({
 
   return (
     <>
-      <aside className="lg:sticky lg:top-24 lg:self-start">
+      <aside className="hidden lg:block lg:sticky lg:top-24 lg:self-start">
         <DocsNav currentSlug={slug} />
       </aside>
 
