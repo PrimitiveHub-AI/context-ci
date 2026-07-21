@@ -1,5 +1,4 @@
 import { ArrowUpRight } from "lucide-react"
-import { GITHUB_BLOB_BASE } from "@/lib/site"
 
 /**
  * EvaluationLink — every measured number, one click from its proof.
@@ -26,8 +25,6 @@ import { GITHUB_BLOB_BASE } from "@/lib/site"
  * lives at /docs/evaluation without changing this component.
  */
 
-const GH_BLOB = GITHUB_BLOB_BASE
-
 interface EvaluationLinkProps {
   /** Inline content to wrap — typically a measured value or label. */
   children: React.ReactNode
@@ -47,15 +44,16 @@ function resolveProof(p?: string): string {
   switch (p) {
     case undefined:
     case "evaluation":
-      return `${GH_BLOB}/docs/evaluation.md`
     case "corpus-map":
-      return `${GH_BLOB}/docs/top10-corpus-map.md`
     case "corpus":
-      return `${GH_BLOB}/docs/corpus-v0.1.md`
     case "floor":
-      return `${GH_BLOB}/bench/baseline/FLOOR.md`
     case "gate":
-      return `${GH_BLOB}/bench/scripts/gate.sh`
+      // The proof lives in-app on /paper (measured F1, the adversarial
+      // corpus, the reproduction gate). It does NOT live in the public
+      // `context-ci` repo — that repo is a subset (verify + phub +
+      // mcp-server + action) and never ships docs/ or bench/, so a GitHub
+      // blob link there 404s now and after the repo is pushed.
+      return "/paper"
     default:
       return p
   }

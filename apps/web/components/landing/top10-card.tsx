@@ -1,8 +1,8 @@
+import Link from "next/link"
 import { ArrowUpRight, FileText } from "lucide-react"
 
 import { EvaluationLink } from "@/components/primitives/evaluation-link"
 import type { Top10Entry } from "@/lib/top10"
-import { ghBlob } from "@/lib/top10"
 import type { DetectorScore } from "@/lib/evaluation"
 
 /**
@@ -107,17 +107,15 @@ export function Top10Card({ entry, score }: Top10CardProps) {
       </div>
 
       {/* Proof row 3 — canonical sample link */}
-      <a
-        href={ghBlob(entry.canonicalSamplePath)}
-        target="_blank"
-        rel="noopener noreferrer"
+      <Link
+        href="/specs/context-ci-top-10-v0.1"
         className="mt-3 inline-flex items-center gap-1 text-[11px] font-mono text-primary/85 hover:text-primary"
-        title="Canonical adversarial sample for this category — opens the corpus fixture on GitHub"
+        title={`Canonical sample ${entry.canonicalSample} — read the normative definition for ${entry.cci}. The raw adversarial fixtures ship in the private corpus, not the public repo.`}
       >
         <FileText className="size-2.5" />
         {entry.canonicalSample}
         <ArrowUpRight className="size-2.5 opacity-60" />
-      </a>
+      </Link>
     </div>
   )
 }

@@ -56,14 +56,14 @@ const ROWS: readonly AVParallelRow[] = [
     avAnalog: "AV-TEST lab benchmark",
     ours: "Adversarial corpus + measured F1",
     note: "Open labeled corpus; per-detector precision and recall published.",
-    ghPath: "docs/evaluation.md",
+    href: "/paper",
     inCompact: true,
   },
   {
     avAnalog: "Signature database",
     ours: "Detectors T1–T10",
     note: "Mechanical detectors shipping in Python and TypeScript with byte-identical parity.",
-    ghPath: "docs/top10-corpus-map.md",
+    href: "/specs/context-ci-top-10-v0.1",
     inCompact: false,
   },
   {
@@ -91,7 +91,7 @@ const ROWS: readonly AVParallelRow[] = [
     avAnalog: "Allowlist + FP/FN portal",
     ours: "policy.yaml + FP/FN ledgers",
     note: "Numbered ledger discipline; every allow entry references its ledger row.",
-    ghPath: "docs/false-positive-resolution.md",
+    href: "/specs/context-policy-v0.1",
     inCompact: true,
   },
   {

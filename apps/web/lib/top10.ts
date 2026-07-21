@@ -16,10 +16,6 @@
  * versioning). Append-only — IDs are never reused.
  */
 
-import { GITHUB_BLOB_BASE } from "@/lib/site"
-
-const GH_BLOB = GITHUB_BLOB_BASE
-
 /** Maximum severity a detector may emit. From the spec § 3 severity model. */
 export type SeverityMax = "warn" | "fail"
 
@@ -170,9 +166,4 @@ const ENTRIES: readonly Top10Entry[] = [
 
 export function listTop10(): readonly Top10Entry[] {
   return ENTRIES
-}
-
-/** Build a GitHub-blob URL for a path relative to the repo root. */
-export function ghBlob(path: string): string {
-  return `${GH_BLOB}/${path}`
 }
