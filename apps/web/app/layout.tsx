@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
-import { Analytics } from "@vercel/analytics/next"
+import { Analytics } from "@/components/analytics"
 import { Navbar } from "@/components/navbar"
 import { Providers } from "@/components/providers"
 import "./globals.css"
@@ -41,22 +41,9 @@ export const metadata: Metadata = {
     "PrimitiveHub",
     "CyberOrca",
   ],
-  // Pre-launch posture: every page declares itself non-indexable.
-  // Remove this `robots` block on launch day, alongside public/robots.txt
-  // and the X-Robots-Tag header in next.config.mjs.
-  robots: {
-    index: false,
-    follow: false,
-    nocache: true,
-    googleBot: {
-      index: false,
-      follow: false,
-      noimageindex: true,
-      "max-snippet": -1,
-      "max-image-preview": "none",
-      "max-video-preview": -1,
-    },
-  },
+  // Launch posture: the pre-launch `robots` noindex block was removed on
+  // launch day alongside public/robots.txt and the X-Robots-Tag header in
+  // next.config.mjs. Pages are now indexable (Next.js default).
   openGraph: {
     type: "website",
     title: "PrimitiveHub — the Context Firewall for AI agents",
@@ -94,7 +81,9 @@ export default function RootLayout({
             {children}
           </div>
         </Providers>
-        {process.env.NODE_ENV === "production" && <Analytics />}
+        {/* Self-hosted Umami — renders only when the launch image is built
+            with NEXT_PUBLIC_UMAMI_* set; beacon-free otherwise (ADR-0046). */}
+        <Analytics />
       </body>
     </html>
   )
