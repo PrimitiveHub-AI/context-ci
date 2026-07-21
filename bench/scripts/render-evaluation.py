@@ -275,6 +275,18 @@ def render_evaluation(py_doc: dict[str, Any], ts_doc: dict[str, Any]) -> str:
         "replication is invited and the methodology to file a "
         "discrepancy is documented in `SECURITY.md`.\n"
     )
+    lines.append(
+        "9. **Signing backend in the measured configuration.** The "
+        "attestation pipeline builds a real in-toto Statement and "
+        "exercises the full state machine, but the default "
+        "`SIGSTORE_BACKEND` is a staging backend that returns "
+        "non-cryptographic placeholder certificate, signature, and Rekor "
+        "material. The production Sigstore (keyless OIDC) backend is "
+        "selectable but is not the configuration these numbers were "
+        "measured under. Signature and transparency-log claims are "
+        "therefore structural, not cryptographically verified, in v0.1 "
+        "([ADR-0011](./decisions/0011-sigstore-backend-abstraction.md)).\n"
+    )
     return "\n".join(lines) + "\n"
 
 
