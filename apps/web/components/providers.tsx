@@ -3,14 +3,12 @@
  *
  * TanStack QueryClient is constructed once per browser session via
  * `useState(() => …)` so React Strict Mode's double-render in dev
- * doesn't produce two clients fighting over cache. The Devtools panel
- * is dev-only (tree-shaken in prod by the NODE_ENV guard).
+ * doesn't produce two clients fighting over cache.
  */
 
 "use client"
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
 import { useState, type ReactNode } from "react"
 import { OrgContextProvider } from "@/lib/api/org-context"
 
@@ -32,12 +30,7 @@ export function Providers({ children }: { children: ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <OrgContextProvider>
-        {children}
-        {process.env.NODE_ENV === "development" && (
-          <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-right" />
-        )}
-      </OrgContextProvider>
+      <OrgContextProvider>{children}</OrgContextProvider>
     </QueryClientProvider>
   )
 }

@@ -1,6 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
+  // Hide the Next.js dev overlay indicator (the bottom-left "N" build/route
+  // button). Dev-only; never rendered in production, but kept off so the
+  // local view matches the shipped UI.
+  devIndicators: false,
   // Dev-only: allow the localhost origins we reach the dev server from, so
   // Next 16 does not block cross-origin dev requests (HMR + client-hydration
   // assets). Without this, client components — e.g. the Forge CodeMirror
