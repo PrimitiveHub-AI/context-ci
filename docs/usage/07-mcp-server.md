@@ -82,7 +82,7 @@ Then point the host's MCP config at the local binary:
   "mcpServers": {
     "primitivehub": {
       "command": "node",
-      "args": ["/srv/primitivehub/app/packages/mcp-server/bin/primitivehub-mcp.js"]
+      "args": ["/path/to/context-ci/packages/mcp-server/bin/primitivehub-mcp.js"]
     }
   }
 }
@@ -223,8 +223,8 @@ inventory + per-artifact verdicts + project summary.
 
 ```json
 {
-  "root": "/srv/primitivehub/app",
-  "policySource": "/srv/primitivehub/app/.primitivehub/policy.yaml",
+  "root": "/path/to/context-ci",
+  "policySource": "/path/to/context-ci/.primitivehub/policy.yaml",
   "truncated": false,
   "scanClean": true,
   "exitCode": 0,
@@ -241,7 +241,7 @@ inventory + per-artifact verdicts + project summary.
 ### Call
 
 ```bash
-jq -n --arg root "/srv/primitivehub/app" '{
+jq -n --arg root "/path/to/context-ci" '{
   jsonrpc:"2.0", id:1, method:"tools/call",
   params:{ name:"audit_workspace", arguments:{ root:$root } }
 }' | primitivehub-mcp | jq '.result.content[0].text | fromjson | .summary'
@@ -268,9 +268,9 @@ drift. Pure transport over `runAudit` with `lockMode: "check"`.
 
 ```json
 {
-  "root": "/srv/primitivehub/app",
+  "root": "/path/to/context-ci",
   "lockMode": "check",
-  "lockPath": "/srv/primitivehub/app/.primitivehub/phub.lock",
+  "lockPath": "/path/to/context-ci/.primitivehub/phub.lock",
   "missing": false,
   "specVersionMismatch": false,
   "hasDrift": false,
@@ -287,7 +287,7 @@ drift. Pure transport over `runAudit` with `lockMode: "check"`.
 ### Call
 
 ```bash
-jq -n --arg root "/srv/primitivehub/app" '{
+jq -n --arg root "/path/to/context-ci" '{
   jsonrpc:"2.0", id:1, method:"tools/call",
   params:{ name:"check_lock", arguments:{ root:$root } }
 }' | primitivehub-mcp | jq '.result.content[0].text | fromjson | {hasDrift, missing, artifactCount}'
@@ -365,7 +365,7 @@ Agents branch on `reasons[i].code`, not `message`.
 ### Call (workspace-only)
 
 ```bash
-jq -n --arg root "/srv/primitivehub/app" '{
+jq -n --arg root "/path/to/context-ci" '{
   jsonrpc:"2.0", id:1, method:"tools/call",
   params:{ name:"verify_before_load", arguments:{ workspace_root:$root, path:"CLAUDE.md" } }
 }' | primitivehub-mcp | jq '.result.content[0].text | fromjson | {safe, reason_codes: [.reasons[].code]}'
@@ -375,7 +375,7 @@ jq -n --arg root "/srv/primitivehub/app" '{
 
 ```bash
 BUNDLE=$(cat /path/to/trust-bundle.json | jq -c .)
-jq -n --arg root "/srv/primitivehub/app" --argjson bundle "$BUNDLE" '{
+jq -n --arg root "/path/to/context-ci" --argjson bundle "$BUNDLE" '{
   jsonrpc:"2.0", id:1, method:"tools/call",
   params:{ name:"verify_before_load", arguments:{
     workspace_root:$root, path:"CLAUDE.md", bundle:$bundle, level:"structural"

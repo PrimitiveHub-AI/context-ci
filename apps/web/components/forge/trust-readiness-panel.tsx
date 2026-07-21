@@ -216,7 +216,7 @@ export function TrustReadinessPanel(input: ReadinessInput) {
           <Fingerprint className="size-3 text-primary/60" />
           Attestation preview
         </div>
-        <PlannedBadge label="ADR-0022 gated" />
+        <PlannedBadge label="Planned" />
       </div>
 
       {/* Enterprise-policy preflight — fixed list of guarantees the

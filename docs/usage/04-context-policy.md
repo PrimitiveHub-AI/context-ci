@@ -314,7 +314,7 @@ wins over `policy.strict: false`).
 
 ### A real-world project policy
 
-See [`/srv/primitivehub/app/.primitivehub/policy.yaml`](../../.primitivehub/policy.yaml)
+See [`/path/to/context-ci/.primitivehub/policy.yaml`](../../.primitivehub/policy.yaml)
 — the project's own policy with FP-001 + FP-002 entries explaining
 the two known-WAI cases.
 

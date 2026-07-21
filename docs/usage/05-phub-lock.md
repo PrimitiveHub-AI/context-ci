@@ -221,18 +221,18 @@ and the working tree is clean.)
 ### Inspecting the lock
 
 ```bash
-jq '.artifacts | length' /srv/primitivehub/app/.primitivehub/phub.lock
+jq '.artifacts | length' /path/to/context-ci/.primitivehub/phub.lock
 # → 20
 
 jq '.artifacts | map(.classification) | group_by(.) | map({class: .[0], count: length})' \
-   /srv/primitivehub/app/.primitivehub/phub.lock
+   /path/to/context-ci/.primitivehub/phub.lock
 # → classifications + counts
 ```
 
 ### Forcing drift to see the output
 
 ```bash
-echo "<!-- drift -->" >> /srv/primitivehub/app/CLAUDE.md   # don't commit this!
+echo "<!-- drift -->" >> /path/to/context-ci/CLAUDE.md   # don't commit this!
 phub audit --check-lock
 # → modified: 1 artifact (CLAUDE.md). exit 1.
 git checkout CLAUDE.md
@@ -243,7 +243,7 @@ git checkout CLAUDE.md
 
 ```bash
 jq '.artifacts[] | select(.path == "CLAUDE.md")' \
-   /srv/primitivehub/app/.primitivehub/phub.lock
+   /path/to/context-ci/.primitivehub/phub.lock
 ```
 
 ---

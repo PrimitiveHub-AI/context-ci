@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { EvaluationLink } from "@/components/primitives/evaluation-link"
 import { loadLatestEvaluation, summarize } from "@/lib/evaluation"
-import { docRoute } from "@/lib/site"
+import { GITHUB_REPO_URL } from "@/lib/site"
 import {
   BookOpen,
   Quote,
@@ -151,9 +151,9 @@ export default function PaperPage() {
               size="sm"
               className="bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 h-8"
             >
-              <a href={docRoute("paper")} target="_blank" rel="noopener noreferrer">
+              <a href={GITHUB_REPO_URL} target="_blank" rel="noopener noreferrer">
                 <FileText className="size-3" />
-                Read the source
+                Source on GitHub
                 <ArrowUpRight className="size-3" />
               </a>
             </Button>
@@ -309,7 +309,7 @@ export default function PaperPage() {
               View as visual cards on /top-10
               <ArrowUpRight className="size-2.5" />
             </Link>
-            <span className="text-muted-foreground/70"> · each card carries the measured F<sub>1</sub>, severity ceiling, and canonical sample link.</span>
+            <span className="text-muted-foreground"> · each card carries the measured F<sub>1</sub>, severity ceiling, and canonical sample link.</span>
           </p>
           <Card className="border-border/40 bg-card p-0 overflow-hidden">
             <ul className="divide-y divide-border/40">
@@ -434,14 +434,12 @@ export default function PaperPage() {
             </p>
           </div>
 
-          <a
-            href={docRoute("docs/evaluation.md")}
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            href="/top-10"
             className="mt-4 inline-flex items-center gap-1 text-[11px] font-mono text-primary/90 hover:text-primary"
           >
             See the per-detector scoreboard <ArrowUpRight className="size-2.5" />
-          </a>
+          </Link>
         </section>
 
         {/* Case Studies */}
@@ -470,15 +468,13 @@ export default function PaperPage() {
                   >
                     {c.verdict}
                   </span>
-                  <a
-                    href={docRoute(c.samplePath)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[10px] font-mono text-muted-foreground/70 hover:text-primary"
-                    title="Open the canonical adversarial / benign sample on GitHub"
+                  <Link
+                    href="/specs/context-ci-top-10-v0.1"
+                    className="text-[10px] font-mono text-muted-foreground hover:text-primary"
+                    title="Canonical sample — normative definition (the raw fixtures ship in the private corpus)"
                   >
                     {c.sample} &middot; {c.cci} <ArrowUpRight className="inline size-2 -mt-0.5" />
-                  </a>
+                  </Link>
                 </div>
                 <h3 className="text-sm font-semibold text-foreground mb-1.5">{c.title}</h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">{c.desc}</p>

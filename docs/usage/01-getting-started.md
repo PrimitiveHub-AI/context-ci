@@ -71,7 +71,7 @@ Use this path if:
   [ADR-0022](../decisions/0022-publishing-deferred-to-launch.md)).
 
 ```bash
-cd /srv/primitivehub/app
+cd /path/to/context-ci
 
 # Build the dependency stack in order.
 # verify is a file: dep of phub + mcp-server; build it first.
@@ -87,8 +87,8 @@ cd packages/mcp-server && pnpm install && pnpm build && cd -
 Alias the binaries for your shell session:
 
 ```bash
-alias phub="node /srv/primitivehub/app/packages/phub/bin/phub.js"
-alias primitivehub-mcp="node /srv/primitivehub/app/packages/mcp-server/bin/primitivehub-mcp.js"
+alias phub="node /path/to/context-ci/packages/phub/bin/phub.js"
+alias primitivehub-mcp="node /path/to/context-ci/packages/mcp-server/bin/primitivehub-mcp.js"
 
 # Smoke test:
 phub --help | head -10
@@ -111,9 +111,9 @@ The dist/ output is checked into `.gitignore` — rebuild after every
 A one-liner that rebuilds everything:
 
 ```bash
-( cd /srv/primitivehub/app/packages/verify     && pnpm build ) && \
-( cd /srv/primitivehub/app/packages/phub       && pnpm build ) && \
-( cd /srv/primitivehub/app/packages/mcp-server && pnpm build )
+( cd /path/to/context-ci/packages/verify     && pnpm build ) && \
+( cd /path/to/context-ci/packages/phub       && pnpm build ) && \
+( cd /path/to/context-ci/packages/mcp-server && pnpm build )
 ```
 
 ---

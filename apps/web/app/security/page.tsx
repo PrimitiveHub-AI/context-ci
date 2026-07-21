@@ -187,7 +187,7 @@ export default function SecurityPage() {
           <h2 className="text-sm font-mono uppercase tracking-wider text-primary/85">
             Bug bounty programme
           </h2>
-          <PlannedBadge label="payouts at launch (G-G)" />
+          <PlannedBadge label="payouts at launch" />
         </div>
         <h3 className="text-2xl font-bold text-foreground sm:text-3xl text-balance">
           The scope is final. The payout switch flips at launch.

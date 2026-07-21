@@ -31,7 +31,7 @@ yet.
 
 ```bash
 git branch --show-current
-ls /srv/primitivehub/app/packages/phub/bin/phub.js 2>&1
+ls /path/to/context-ci/packages/phub/bin/phub.js 2>&1
 ```
 
 If the bin is missing, switch to a branch that has it (e.g. `main`

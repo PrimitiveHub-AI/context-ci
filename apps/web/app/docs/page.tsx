@@ -81,7 +81,7 @@ export default function DocsIndexPage() {
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
               Every load-bearing architectural choice with context,
-              alternatives, and consequences. ~30 ADRs covering the v0.1
+              alternatives, and consequences. 40+ ADRs covering the v0.1
               surface.
             </p>
           </Link>

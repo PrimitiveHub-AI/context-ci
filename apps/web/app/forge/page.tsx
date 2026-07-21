@@ -258,9 +258,9 @@ export default function ForgePage() {
                 </Button>
               </div>
 
-              {/* Honesty footnote — 3 of 5 actions are scoped but
-                  not yet live. We say so on the surface instead of
-                  hiding it in a tooltip. */}
+              {/* Honesty footnote — 2 of 5 actions are scoped but
+                  not yet live (Save became a live local-draft action).
+                  We say so on the surface instead of hiding it. */}
               <p className="text-[10px] font-mono text-muted-foreground flex items-center gap-1.5">
                 <PlannedBadge label="2 planned" />
                 Live now: Run Validation, Export, Save · dashed “soon” = planned.

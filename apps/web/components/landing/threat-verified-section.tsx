@@ -202,7 +202,7 @@ function ThreatCard({ threats }: { threats: ReadonlyArray<ThreatRow> }) {
             <p className="text-[10px] font-mono uppercase tracking-widest text-destructive/95">
               Raw agent context
             </p>
-            <p className="text-[10px] font-mono text-muted-foreground/70 tracking-wide">
+            <p className="text-[10px] font-mono text-muted-foreground tracking-wide">
               What hides in the bytes
             </p>
           </div>
@@ -245,7 +245,7 @@ function ControlsCard({ controls }: { controls: ReadonlyArray<ControlRow> }) {
             <p className="text-[10px] font-mono uppercase tracking-widest text-success/95">
               Verified agent context
             </p>
-            <p className="text-[10px] font-mono text-muted-foreground/70 tracking-wide">
+            <p className="text-[10px] font-mono text-muted-foreground tracking-wide">
               What the kernel enforces
             </p>
           </div>

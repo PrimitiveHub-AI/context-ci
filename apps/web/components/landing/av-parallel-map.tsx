@@ -80,7 +80,7 @@ export function AVParallelMap({
                 key={row.avAnalog}
                 className="flex items-center gap-2 text-muted-foreground"
               >
-                <span className="text-muted-foreground/70 truncate">
+                <span className="text-muted-foreground truncate">
                   {row.avAnalog}
                 </span>
                 <span className="text-muted-foreground/50">→</span>

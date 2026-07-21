@@ -225,7 +225,7 @@ phub audit . --max-depth 8 --max-files 500
 ### Output — human mode (excerpt)
 
 ```text
-phub audit /srv/primitivehub/app
+phub audit /path/to/context-ci
 
   20 artifacts discovered:
     claude-md       1   CLAUDE.md
