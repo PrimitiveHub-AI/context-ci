@@ -226,9 +226,9 @@ via documented eval harness."*
 | FP-012, FP-013 | KR-3.1 | Resolved Round 3 (CCI-008 detector ratchet shipped). |
 | FN-006..FN-013 + FP-014 | KR-3.1 | Documented v0.2 floor; closes via v0.2.3 / v0.2.4 detector ratchets in a future round. |
 
-**Corpus volume vs KR-3.1.** v0.2 corpus is 60 adversarial + 35
-benign + 10 borderline = 105 samples. The KR target is ≥50 + ≥50 +
-≥20. Adversarial cohort is at target; **benign is short by 15;
+**Corpus volume vs KR-3.1.** v0.2 corpus is 77 adversarial + 37
+benign + 10 borderline = 124 samples. The KR target is ≥50 + ≥50 +
+≥20. Adversarial cohort is at target; **benign is short by 13;
 borderline is short by 10**. The next corpus expansion (v0.3,
 deferred — see ADR-0038 § "Negative") prioritises closing these gaps
 before launching new detector classes.

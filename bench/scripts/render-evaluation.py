@@ -210,20 +210,20 @@ def render_evaluation(py_doc: dict[str, Any], ts_doc: dict[str, Any]) -> str:
         "Cite this section in the paper's threats-to-validity sub-section.\n"
     )
     lines.append(
-        "1. **Corpus size.** v0.2 ships 99 in-sample + 6 holdout = 105 "
-        "labeled samples. Per-detector support ranges from ~30 (CCI-002) "
-        "to ~45 (CCI-007/CCI-009) labels apiece. F1=1.000 on 30 samples "
-        "is the best we can demonstrate at this corpus size; it is NOT "
-        "the same claim as F1=1.000 on 30,000 samples. Corpus expansion "
-        "is the next-round work.\n"
+        "1. **Corpus size.** v0.2 ships 99 in-sample + 25 holdout = 124 "
+        "labeled samples. Per-detector in-sample support ranges from 40 "
+        "(CCI-002) to 45 (CCI-007/CCI-009) labels apiece. F1=1.000 on "
+        "~40 samples is the best we can demonstrate at this corpus size; "
+        "it is NOT the same claim as F1=1.000 on 30,000 samples. Corpus "
+        "expansion is the next-round work.\n"
     )
     lines.append(
-        "2. **Holdout coverage is uneven.** The v0.2 80/20 split shipped "
-        "6 holdout samples (1 per CCI for the six families where we had "
-        "natural variants); CCI-005 / CCI-007 / CCI-009 / CCI-010 "
-        "currently have 0 holdout samples. Their reported holdout F1 = "
-        "n/a — informational. Closing the holdout coverage gap is the "
-        "next corpus round per "
+        "2. **Holdout coverage is uneven in depth.** The v0.2 80/20 split "
+        "ships 25 holdout samples spanning all ten families, but "
+        "per-family depth ranges from 1 sample (CCI-002 / CCI-008 / "
+        "CCI-009 / CCI-010) to 7 (CCI-005). A holdout F1 computed on a "
+        "single sample is informational, not a stable estimate. Deepening "
+        "the thin families is the next corpus round per "
         "[ADR-0038](./decisions/0038-corpus-v0_2-expansion-and-holdout-split.md).\n"
     )
     lines.append(

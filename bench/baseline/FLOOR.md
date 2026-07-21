@@ -6,7 +6,7 @@
 + [ADR-0038 (v0.2 expansion + 80/20 holdout split)](../../docs/decisions/0038-corpus-v0_2-expansion-and-holdout-split.md)
 **Enforcement:** [`.github/workflows/scanner-bench.yml`](../../.github/workflows/scanner-bench.yml)
 **Public scoreboard:** [`docs/evaluation.md`](../../docs/evaluation.md) (auto-generated; CI fails if stale)
-**Active corpus version:** v0.2 (105 samples: 99 in-sample + 6 holdout)
+**Active corpus version:** v0.2 (124 samples: 99 in-sample + 25 holdout)
 
 The most recent committed baseline JSON in this directory is the
 **floor** that the next detector PR must hold. The corpus regression
