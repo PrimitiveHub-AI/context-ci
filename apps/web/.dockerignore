@@ -53,8 +53,12 @@ Thumbs.db
 # Personal / per-developer
 .claude
 
-# Docs and dev-only scripts not needed in the production image
+# Dev-only files not needed in the production image.
+# NOTE: docs/ is deliberately NOT excluded. The /docs, /decisions, and
+# /specs routes read from repo-root docs/ via findDocsRoot(); it is staged
+# into this context by .github/workflows/build-web.yml and baked into the
+# runner image. Excluding it here 404s all ~65 of those pages in prod
+# (the dev container masked this via a runtime ./docs mount).
 README.md
 LICENSE
-docs/
 scripts/

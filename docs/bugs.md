@@ -721,6 +721,46 @@ worker is where the work runs, so the worker is what you verify.
 
 ---
 
+### 25. Prod web image 404s /docs, /decisions, /specs — docs/ excluded from build context — 2026-07-22
+
+**Phase:** Go-live (search-engine indexing, sitemap submission)
+**Symptom:** Preparing the dev→prod cutover for go-live, the production
+web image (`ghcr.io/…/primitivehub-web:latest`) returned **404 for every
+`/docs`, `/decisions`, and `/specs` page** (~65 URLs), while `/`,
+`/primitive/*`, `/check` etc. served 200. The **dev container served all
+of them fine**, so it went unnoticed — the live site was the dev
+container the whole time.
+**Root cause:** Those routes render repo-root `docs/` via
+`findDocsRoot()`. Two things starved the prod image of it: (1)
+`build-web.yml` builds with `context: ./apps/web`, which cannot reach
+repo-root `docs/`; (2) `apps/web/.dockerignore` **explicitly excluded
+`docs/`** ("not needed in the production image" — a wrong assumption).
+The `dev` overlay masked the gap with a `./docs:/docs:ro` mount, so dev
+always worked. A runtime mount does **not** fix the prod image: the pages
+are SSG-prerendered as `notFound()` *at build time* (no docs/ present),
+and `discoverAdrPages()` yields an empty ADR list, so `/sitemap.xml`
+would also omit all 49 ADRs.
+**Fix:** Bake docs into the image. (1) Remove `docs/` from
+`apps/web/.dockerignore`; (2) add a "Stage repo docs into the web build
+context" step (`cp -r docs apps/web/docs`) to `build-web.yml` before the
+docker build; (3) `COPY --from=builder /app/docs ./docs` in the runner
+stage (Next standalone tracing bundles only imported JS, not fs-read data
+dirs). Verified by building the `runner` target locally and confirming
+all ~65 routes 200 and the sitemap carries the full 94 URLs.
+**Prevention:** Anything a route reads from the filesystem at
+build/runtime must be inside the **image**, not supplied only by a dev
+bind-mount — a dev-only mount hides the absence. When a route reads
+outside the app dir, either widen the build context or stage the data in,
+and verify against the *runner* image (not `next dev`) before shipping.
+Add `/docs`, `/decisions/<slug>`, `/specs/<slug>` to the post-deploy
+smoke set so a regression can't reach the index as soft-404s.
+**Lesson:** "Works in dev" can mean "works *because of* dev." The dev
+overlay's conveniences (source mount, docs mount, hot reload) are exactly
+what the prod image lacks — parity has to be checked against the artifact
+that actually ships.
+
+---
+
 ## Hallucination log (mistakes I made in design, not runtime)
 
 These are different from bugs — they're places where I (the AI

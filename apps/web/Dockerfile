@@ -61,6 +61,12 @@ RUN addgroup --system --gid 1001 nodejs \
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Bake repo docs/ so findDocsRoot() resolves /docs, /decisions, /specs at
+# runtime. Next standalone tracing bundles only imported JS, not this
+# fs-read data dir, so it must be copied explicitly. It reaches the build
+# context via the "Stage repo docs" step in .github/workflows/build-web.yml
+# (context is apps/web, which cannot see repo-root docs/ on its own).
+COPY --from=builder --chown=nextjs:nodejs /app/docs ./docs
 
 USER nextjs
 EXPOSE 3000
