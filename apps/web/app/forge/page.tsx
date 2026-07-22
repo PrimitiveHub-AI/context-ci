@@ -1,11 +1,11 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import dynamic from "next/dynamic"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { MarkdownEditor } from "@/components/forge/markdown-editor"
 import { lintFrontmatter } from "@/lib/forge/codemirror-linter"
 import { lintForgeContent } from "@/lib/forge/lint"
 import { analyzeSections, estimateTokens, countLines, extractFrontmatter, setFrontmatterName } from "@/lib/forge/parse"
@@ -28,23 +28,6 @@ import {
 import { PlannedBadge } from "@/components/ui/planned-badge"
 import { TrustReadinessPanel } from "@/components/forge/trust-readiness-panel"
 import { ForgeSidePanel } from "@/components/forge/forge-side-panel"
-
-// CodeMirror is a client-only editor. Load it via next/dynamic with
-// ssr:false so it never server-renders an empty container that then has to
-// hydrate — that SSR+hydration path is the class of bug behind the
-// "dim / can't type" report in the production build. Client-only mount is
-// the standard, robust pattern for CodeMirror in Next.
-const MarkdownEditor = dynamic(
-  () => import("@/components/forge/markdown-editor").then((m) => m.MarkdownEditor),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex min-h-[640px] items-center justify-center text-[11px] font-mono text-muted-foreground">
-        Loading editor…
-      </div>
-    ),
-  },
-)
 
 const TARGET_AGENTS = ["Claude Code", "Cursor", "Codex", "Copilot", "v0", "Windsurf"] as const
 
