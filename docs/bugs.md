@@ -26,6 +26,93 @@
 
 ## Active log (most recent first)
 
+### 34. OG social-card headline rendered overlapping/garbled — Satori flex row never wrapped — 2026-07-22
+
+**Phase:** Go-live (brand-identity rollout, public domain live behind Cloudflare)
+**Symptom:** Sharing `primitivehub.ai` on WhatsApp/iMessage/Slack showed a
+card whose headline — "The Context Firewall for AI agents." — rendered with
+the cyan "Context Firewall" and "for AI agents." **overlapping into
+illegible garbage**. It read as "a messy small screenshot," not a brand
+card. Surfaced when the owner noticed shares looked wrong (and expected the
+*favicon* — but link previews use `og:image`, never the favicon).
+**Root cause:** In [`app/opengraph-image.tsx`](./../apps/web/app/opengraph-image.tsx)
+the headline was a single `display:flex` (row, no `flexWrap`) container
+mixing raw text nodes with a colored `<span>` carrying `marginLeft/Right:18`.
+Satori (next/og) lays flex children out horizontally and **does not
+line-wrap across flex items**; at `fontSize:82` the three items overflowed
+`maxWidth:980` and, without `flexWrap`, collapsed on top of each other
+instead of wrapping. Independent of that, the card still drew the old
+outline hexagon, not the new pHub mark.
+**Fix:** Restructured the headline into explicit `<span>` items with
+`flexWrap:"wrap"` + `columnGap`/`rowGap` → wraps to two clean lines ("The
+Context Firewall" / "for AI agents."). Swapped the hexagon for the pHub
+mark, read from `public/brand/logo-mark.png` as a base64 data URI (Satori
+can't resolve `/brand/*` URLs mid-render), **guarded with try/catch → inline
+hexagon fallback** so a path shift in a future build layout can't 500 the
+card. Two-toned the wordmark (`Primitive` + cyan `Hub`). Verified by
+rendering `/opengraph-image` in a throwaway dev container (200, no overlap,
+mark present).
+**Prevention:** In Satori/next-og, **never lay out multi-part text with a
+bare `display:flex` row** — overflow overlaps, it does not reflow. Any OG
+text spanning >1 visual line needs `flexWrap:"wrap"` (or a column). Assets
+read off disk in an OG route must be try/catch-guarded (standalone build
+layout ≠ dev cwd). Add `/opengraph-image` to the prod smoke check so a
+garbled-or-500 card is caught before shares break.
+**Lesson:** Satori flex rows don't wrap text — the overflow overlaps.
+
+### 33. Live domain was serving `pnpm dev`; its HMR WebSocket dies through Cloudflare → Forge editor never hydrated — 2026-07-22
+
+**Phase:** Go-live (post-launch, public domain live behind Cloudflare)
+**Symptom:** The `/forge` CodeMirror editor was **dim / not typeable on
+`https://primitivehub.ai`**, but **worked perfectly on `localhost:3000`**.
+Reproduced across many sessions; seemed to "randomly break." Chasing a
+prod-hydration ghost I even added `next/dynamic({ssr:false})` (a420c1c),
+which *did* break localhost too ("Loading editor…") — reverted (45beded) —
+but that was a red herring for the domain divergence.
+**Root cause:** The public domain was served by the **dev container
+(`pnpm dev`)** the entire time — host nginx (`sites-available/primitivehub`)
+proxies `primitivehub.ai` → `127.0.0.1:3000`, which was the dev web
+container (a bare `docker compose up` auto-loads `compose.override.yaml` =
+dev; no `COMPOSE_FILE` pinned prod). Next's dev runtime opens a hot-reload
+WebSocket (`wss://…/_next/webpack-hmr`). **Cloudflare (which fronts the
+domain — `server: cloudflare`, DNS → `2a06:98c1::`, not the host IP) fails
+that WS handshake with 520**, so client-side React never finishes booting →
+CodeMirror never mounts → dead editor. `localhost:3000` works because the
+WS connects locally with no Cloudflare in the path. Same class as bug #25:
+*the live site was the dev container.* A failed `docker compose -f
+compose.yaml -f compose.prod.yaml up` (prod overlay is pull-only —
+`pull_policy: always` + host not logged into GHCR → `unauthorized`) had
+also, in a prior attempt, torn down web and left `api` crash-looping → full
+outage.
+**Fix:** Serve the **production build** (`next start`, no HMR WebSocket).
+The `runner`-target image was already built locally
+(`ghcr.io/…/primitivehub-web:latest`) but couldn't launch via the prod
+overlay because it's pull-only. Added a host-local, gitignored overlay
+`compose.deploy-local.yaml` (`image: …web:latest` + `pull_policy: never`)
+and swapped **only** web: `docker compose -f compose.yaml -f
+compose.prod.yaml -f compose.deploy-local.yaml up -d --no-deps web`.
+Verified with a headless browser against the **real domain through
+Cloudflare**: editor mounts, types, zero console errors; `webpack-hmr` refs
+in `/forge` HTML = 0 (prod); all key routes 200. Made durable via
+`scripts/deploy.sh` + `scripts/smoke-prod.sh` + a `COMPOSE_FILE` pin so a
+bare `docker compose up` on the host can no longer serve dev; runbook in
+[`docs/deploy.md`](./deploy.md).
+**Prevention:** **Never serve `next dev` on a public/CDN-fronted domain.**
+Dev-mode HMR needs a WebSocket most CDNs won't proxy cleanly — the failure
+is silent (page half-hydrates) and origin-dependent, so it hides on
+`localhost`. `scripts/smoke-prod.sh` runs post-deploy against the **CDN
+edge** and asserts `webpack-hmr` is absent (prod mode) + a client component
+mounts. The prod overlay is pull-only, so a local build can't ship with the
+documented command — either push to GHCR (`docker login` + `pull`) or use
+the `pull_policy: never` overlay (both wired into `scripts/deploy.sh`).
+**Lesson:** "Works on localhost, broken on the domain" with a client
+component that won't hydrate ⇒ suspect the *serving mode* (dev vs prod) and
+the *path in front of the origin* (CDN/WebSocket), not the component. The
+whole "favicon commit broke it" theory was wrong: the artifact was fine;
+the deployment was `pnpm dev` behind Cloudflare.
+
+---
+
 ### 32. `@vercel/analytics` shipped a dead third-party beacon off-Vercel — 2026-07-21
 
 **Phase:** Pre-launch web audit
