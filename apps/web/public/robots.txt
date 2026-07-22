@@ -1,8 +1,83 @@
-# PrimitiveHub — public. Crawlers and search engines are welcome.
+# PrimitiveHub — public. Search engines are welcome; the corpus is not
+# training data.
 #
 # The pre-launch "Disallow: /" wall was lifted on launch day alongside the
 # `robots` metadata in app/layout.tsx and the X-Robots-Tag header in
 # next.config.mjs.
+#
+# Policy (owner decision, launch/noindex-lift-go-live):
+#   - Traditional search engines: full access (drives discovery).
+#   - AI *retrieval / citation* bots: allowed — being cited in AI answers
+#     is distribution for a "trusted AI context" registry.
+#   - AI *bulk training* crawlers: blocked — the primitive corpus is the
+#     product, not free training data.
+# robots.txt is honor-system, not enforcement; well-behaved crawlers obey.
+# Crawlers pick the single most-specific matching group, so the explicit
+# groups below override the default `*` group for those agents.
 
+Sitemap: https://primitivehub.ai/sitemap.xml
+
+# ── Default: everything else is welcome ──────────────────────────────
 User-agent: *
+Allow: /
+
+# ── AI bulk-training crawlers: blocked ───────────────────────────────
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: Applebot-Extended
+Disallow: /
+
+User-agent: meta-externalagent
+Disallow: /
+
+User-agent: FacebookBot
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: Amazonbot
+Disallow: /
+
+User-agent: Diffbot
+Disallow: /
+
+User-agent: Omgilibot
+Disallow: /
+
+User-agent: cohere-ai
+Disallow: /
+
+# ── AI retrieval / citation bots: explicitly allowed ─────────────────
+# (Covered by the default `*` Allow too; named here to document intent
+#  and survive any future tightening of the default group.)
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: Claude-SearchBot
 Allow: /
