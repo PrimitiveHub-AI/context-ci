@@ -1,9 +1,10 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Github, Menu, X, Hexagon } from "lucide-react"
+import { Github, Menu, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
 import { OrgPicker } from "@/components/org-picker"
@@ -41,8 +42,17 @@ export function Navbar() {
       <div className="mx-auto flex h-12 max-w-7xl items-center justify-between px-4 lg:px-6">
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2 text-foreground group">
-            <Hexagon className="size-4.5 text-primary transition-transform group-hover:rotate-12" />
-            <span className="text-[13px] font-semibold tracking-tight">PrimitiveHub</span>
+            <Image
+              src="/brand/logo-mark.png"
+              alt=""
+              width={17}
+              height={24}
+              priority
+              className="h-6 w-auto transition-transform duration-200 group-hover:scale-105"
+            />
+            <span className="text-[13px] font-semibold tracking-tight">
+              Primitive<span className="text-primary">Hub</span>
+            </span>
             <span className="hidden rounded-sm bg-primary/10 px-1.5 py-0.5 text-[9px] font-mono text-primary sm:inline-block">
               beta
             </span>

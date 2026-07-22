@@ -24,6 +24,17 @@ export const metadata: Metadata = {
     "We verify every byte of context an AI agent consumes — AGENTS.md, SKILL.md, .cursor/rules, mcp.json — against the Context CI Top 10, before the agent reads it. Open-source verifier kernel, CLI, GitHub Action, and MCP runtime gate. A CyberOrca Labs initiative.",
   applicationName: "PrimitiveHub",
   authors: [{ name: "CyberOrca Labs" }],
+  // Identity assets live in `public/brand/` (drop-zone — see its README).
+  // Replacing a file there with the same name updates the site with no
+  // code change. SVG is the primary favicon; .ico/.png are fallbacks.
+  icons: {
+    icon: [
+      { url: "/brand/favicon.ico", sizes: "any" },
+      { url: "/brand/icon-32.png", type: "image/png", sizes: "32x32" },
+      { url: "/brand/icon-192.png", type: "image/png", sizes: "192x192" },
+    ],
+    apple: [{ url: "/brand/apple-icon.png", sizes: "180x180" }],
+  },
   keywords: [
     "Context Firewall",
     "Context CI",
