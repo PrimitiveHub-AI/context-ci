@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs"
+import { join } from "node:path"
+
 import { ImageResponse } from "next/og"
 
 import { loadLatestEvaluation, summarize } from "@/lib/evaluation"
@@ -14,6 +17,26 @@ import {
   OG_MONO_FAMILY,
   OG_SIZE,
 } from "@/lib/og-theme"
+
+/**
+ * PrimitiveHub mark, inlined as a base64 data URI. Satori (next/og) can't
+ * resolve `/brand/*` public URLs during render, so we read the file off
+ * disk once at module load and embed it. runtime is "nodejs" (below), so
+ * fs is available. cwd is the web app root (`apps/web` in dev, `/app` in
+ * the prod standalone image) — both hold `public/brand/logo-mark.png`.
+ *
+ * Guarded: if the read ever fails (e.g. a path shift in a future build
+ * layout), we fall back to the inline hexagon rather than 500-ing the
+ * card. A broken share preview beats no share preview.
+ */
+const LOGO_MARK: string | null = (() => {
+  try {
+    const bytes = readFileSync(join(process.cwd(), "public", "brand", "logo-mark.png"))
+    return `data:image/png;base64,${bytes.toString("base64")}`
+  } catch {
+    return null
+  }
+})()
 
 /**
  * Open Graph image — the social-card first impression.
@@ -70,17 +93,23 @@ export default async function OGImage() {
             width: "100%",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M12 2L21 7L21 17L12 22L3 17L3 7L12 2Z"
-                stroke={CYAN}
-                strokeWidth="1.8"
-                strokeLinejoin="round"
-              />
-            </svg>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            {LOGO_MARK ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={LOGO_MARK} width={34} height={50} alt="" />
+            ) : (
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M12 2L21 7L21 17L12 22L3 17L3 7L12 2Z"
+                  stroke={CYAN}
+                  strokeWidth="1.8"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            )}
             <div style={{ display: "flex", fontSize: 26, fontWeight: 600, letterSpacing: -0.2 }}>
-              PrimitiveHub
+              <span style={{ display: "flex" }}>Primitive</span>
+              <span style={{ display: "flex", color: CYAN }}>Hub</span>
             </div>
           </div>
           <div
@@ -119,14 +148,20 @@ export default async function OGImage() {
           <div
             style={{
               display: "flex",
+              flexWrap: "wrap",
+              alignItems: "baseline",
+              columnGap: 20,
+              rowGap: 4,
               fontSize: 82,
               fontWeight: 700,
               letterSpacing: -2,
               lineHeight: 1.05,
-              maxWidth: 980,
+              maxWidth: 1040,
             }}
           >
-            The <span style={{ color: CYAN, marginLeft: 18, marginRight: 18 }}>Context Firewall</span> for AI agents.
+            <span style={{ display: "flex" }}>The</span>
+            <span style={{ display: "flex", color: CYAN }}>Context Firewall</span>
+            <span style={{ display: "flex" }}>for AI agents.</span>
           </div>
 
           <div
