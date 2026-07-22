@@ -15,6 +15,7 @@ import {
   OG_MONO_FAMILY,
   OG_SIZE,
 } from "@/lib/og-theme"
+import { BrandLockup, WrappingText } from "@/lib/og-brand"
 
 /**
  * /paper OG image — the citation-grade card.
@@ -66,17 +67,7 @@ export default async function PaperOG() {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M12 2L21 7L21 17L12 22L3 17L3 7L12 2Z"
-                stroke={CYAN}
-                strokeWidth="1.8"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <div style={{ display: "flex", fontSize: 26, fontWeight: 600, letterSpacing: -0.2 }}>
-              PrimitiveHub
-            </div>
+            <BrandLockup />
             <div
               style={{
                 display: "flex",
@@ -111,18 +102,20 @@ export default async function PaperOG() {
         {/* Middle — title + thesis. Title is doctrine-locked and
             long; the subhead is the one-line framing. */}
         <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-          <div
+          <WrappingText
             style={{
-              display: "flex",
               fontSize: 56,
               fontWeight: 700,
               letterSpacing: -1.4,
               lineHeight: 1.1,
               maxWidth: 1040,
+              columnGap: 12,
             }}
-          >
-            Context CI: A Threat Taxonomy and Static-Validation Pipeline for the <span style={{ color: CYAN, marginLeft: 12 }}>agent-context supply chain</span>.
-          </div>
+            segments={[
+              { text: "Context CI: A Threat Taxonomy and Static-Validation Pipeline for the" },
+              { text: "agent-context supply chain.", style: { color: CYAN } },
+            ]}
+          />
 
           <div
             style={{

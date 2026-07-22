@@ -15,6 +15,7 @@ import {
   OG_MONO_FAMILY,
   OG_SIZE,
 } from "@/lib/og-theme"
+import { BrandLockup } from "@/lib/og-brand"
 
 /**
  * /top-10 OG image — the threat-encyclopedia card.
@@ -65,17 +66,7 @@ export default async function TopTenOG() {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M12 2L21 7L21 17L12 22L3 17L3 7L12 2Z"
-                stroke={CYAN}
-                strokeWidth="1.8"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <div style={{ display: "flex", fontSize: 26, fontWeight: 600, letterSpacing: -0.2 }}>
-              PrimitiveHub
-            </div>
+            <BrandLockup />
             <div
               style={{
                 display: "flex",

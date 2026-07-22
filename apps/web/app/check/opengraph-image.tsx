@@ -14,6 +14,7 @@ import {
   OG_MONO_FAMILY,
   OG_SIZE,
 } from "@/lib/og-theme"
+import { BrandLockup, WrappingText } from "@/lib/og-brand"
 
 /**
  * /check OG image — the public funnel-entry card.
@@ -60,17 +61,7 @@ export default function CheckOG() {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M12 2L21 7L21 17L12 22L3 17L3 7L12 2Z"
-                stroke={CYAN}
-                strokeWidth="1.8"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <div style={{ display: "flex", fontSize: 26, fontWeight: 600, letterSpacing: -0.2 }}>
-              PrimitiveHub
-            </div>
+            <BrandLockup />
             <div
               style={{
                 display: "flex",
@@ -119,23 +110,22 @@ export default function CheckOG() {
             </div>
           </div>
 
-          <div
+          <WrappingText
             style={{
-              display: "flex",
               fontSize: 26,
               lineHeight: 1.4,
               color: FG_DIM,
               maxWidth: 1000,
+              columnGap: 8,
             }}
-          >
-            Drop in a skill, a URL, a GitHub repo, an{" "}
-            <span style={{ color: FG, fontFamily: OG_MONO_FAMILY, marginLeft: 6, marginRight: 6 }}>npx</span>{" "}
-            command, or a{" "}
-            <span style={{ color: FG, fontFamily: OG_MONO_FAMILY, marginLeft: 6, marginRight: 6 }}>
-              claude skill install
-            </span>{" "}
-            line. We scan it against the Context CI Top 10 before any agent reads it.
-          </div>
+            segments={[
+              { text: "Drop in a skill, a URL, a GitHub repo, an" },
+              { text: "npx", style: { color: FG, fontFamily: OG_MONO_FAMILY } },
+              { text: "command, or a" },
+              { text: "claude skill install", style: { color: FG, fontFamily: OG_MONO_FAMILY } },
+              { text: "line. We scan it against the Context CI Top 10 before any agent reads it." },
+            ]}
+          />
         </div>
 
         {/* Bottom — surface name + URL */}
