@@ -51,13 +51,23 @@ can't resolve `/brand/*` URLs mid-render), **guarded with try/catch → inline
 hexagon fallback** so a path shift in a future build layout can't 500 the
 card. Two-toned the wordmark (`Primitive` + cyan `Hub`). Verified by
 rendering `/opengraph-image` in a throwaway dev container (200, no overlap,
-mark present).
+mark present). **The same bug hid in two of the three per-route cards** —
+the `/check` subhead (`npx` / `claude skill install` code spans) and the
+`/paper` headline (cyan phrase) both overflowed and clipped off the right
+edge; `/top-10` was single-line-safe. Swept all four onto shared
+[`lib/og-brand.tsx`](./../apps/web/lib/og-brand.tsx) primitives — a
+`BrandLockup` (mark + two-tone wordmark, one source of truth) and a
+`WrappingText` (word-level `display:flex` spans inside `flexWrap:"wrap"`,
+structurally immune to the overlap). `tsc --noEmit` clean.
 **Prevention:** In Satori/next-og, **never lay out multi-part text with a
 bare `display:flex` row** — overflow overlaps, it does not reflow. Any OG
-text spanning >1 visual line needs `flexWrap:"wrap"` (or a column). Assets
+text spanning >1 visual line needs `flexWrap:"wrap"` (or a column) — reach
+for the shared `WrappingText` helper instead of hand-rolling flex text, and
+`BrandLockup` for the logo, so a new OG card can't reintroduce this. Assets
 read off disk in an OG route must be try/catch-guarded (standalone build
-layout ≠ dev cwd). Add `/opengraph-image` to the prod smoke check so a
-garbled-or-500 card is caught before shares break.
+layout ≠ dev cwd). Add **every** OG route (`/opengraph-image`, `/check`,
+`/paper`, `/top-10`) to the prod smoke check so a garbled-or-500 card is
+caught before shares break.
 **Lesson:** Satori flex rows don't wrap text — the overflow overlaps.
 
 ### 33. Live domain was serving `pnpm dev`; its HMR WebSocket dies through Cloudflare → Forge editor never hydrated — 2026-07-22
