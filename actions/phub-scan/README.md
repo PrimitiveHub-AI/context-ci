@@ -14,9 +14,9 @@ instructions, the agent executes them silently. Context CI Top 10
 catalogues these patterns; this Action runs them on every PR.
 
 Per [ADR-0023](../../docs/decisions/0023-phub-cli-and-detector-parity.md)
-this Action is the GitHub-native delivery surface for the same
-detector trifecta (T1 / T2 / T5) that the server-side Context CI
-pipeline runs.
+this Action is the GitHub-native delivery surface for the same detector
+roster — all ten Context CI Top 10 categories (CCI-001…010) — that the
+`phub` CLI and the server-side Context CI pipeline run.
 
 ## Usage
 
@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: primitivehub/phub-scan@v0.1.0
+      - uses: primitivehub/context-ci/actions/phub-scan@v0.1.0
         with:
           files: 'AGENTS.md CLAUDE.md .cursorrules'
           fail-on-findings: 'true'
@@ -87,15 +87,15 @@ If you set `upload-sarif: 'false'`, you can drop `security-events: write`.
   Scanning; merging is not blocked. Good for adopting Context CI
   on existing repos without immediately failing every PR.
 
-## Pre-launch note
+## Install source
 
-Per [ADR-0022](../../docs/decisions/0022-publishing-deferred-to-launch.md)
-`@primitivehub/phub` is not yet on the npm public registry. The
-`phub-source: 'npm'` path will fail until the launch publish.
-Until then, the `phub-source: 'local'` path is used by
+By default the Action installs `@primitivehub/phub` from npm
+(`phub-source: 'npm'`; pin `phub-version` in production). The
+`phub-source: 'local'` path builds phub from an in-tree monorepo checkout
+instead — used by
 [`.github/workflows/phub-scan-demo.yml`](../../.github/workflows/phub-scan-demo.yml)
-to prove the end-to-end Action shape against the in-tree monorepo
-build.
+to exercise the full Action shape (install → scan → SARIF upload) in CI
+without depending on the registry.
 
 ## License
 

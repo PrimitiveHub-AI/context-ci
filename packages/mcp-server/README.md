@@ -86,7 +86,7 @@ mcp-servers:
     args: ["@primitivehub/mcp-server"]
 ```
 
-See [`examples/`](./examples/) for full end-to-end configurations.
+See [`examples/`](./examples/) for complete host configurations.
 
 ## Tools
 

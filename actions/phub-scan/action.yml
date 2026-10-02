@@ -1,6 +1,6 @@
 name: 'PrimitiveHub Context CI scan'
 description: 'Scan AGENTS.md / CLAUDE.md / .cursorrules for Context CI Top 10 patterns and upload SARIF findings to GitHub Code Scanning.'
-author: 'PrimitiveHub Labs / CyberOrca Labs'
+author: 'PrimitiveHub AI / CyberOrca Labs'
 branding:
   icon: 'shield'
   color: 'blue'
@@ -70,7 +70,7 @@ runs:
   using: composite
   steps:
     - name: Setup Node 20
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
       with:
         node-version: '20'
 
@@ -142,7 +142,7 @@ runs:
 
     - name: Upload SARIF to Code Scanning
       if: ${{ inputs.upload-sarif == 'true' && always() }}
-      uses: github/codeql-action/upload-sarif@v3
+      uses: github/codeql-action/upload-sarif@b7351df727350dca84cb9d725d57dcf5bc82ba26 # v3.37.1
       with:
         sarif_file: ${{ inputs.sarif-directory }}
         category: phub-context-ci

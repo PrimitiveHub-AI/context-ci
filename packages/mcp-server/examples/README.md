@@ -13,10 +13,8 @@ all three are required to satisfy Gate G-D acceptance.
 | Cursor | [`cursor-mcp.json`](./cursor-mcp.json) | `.cursor/mcp.json` (per project) |
 | Aider | [`aider.conf.yml`](./aider.conf.yml) | `~/.aider.conf.yml` (Aider 0.85+) |
 
-Each config assumes `@primitivehub/mcp-server` is on npm. Pre-launch
-(per [ADR-0022](../../../docs/decisions/0022-publishing-deferred-to-launch.md)
-the package is not yet published) the same configs work by pointing
-`command` at the local binary:
+Each config assumes `@primitivehub/mcp-server` is on npm. To run against a
+local build from source instead, point `command` at the local binary:
 
 ```diff
 - "command": "npx",

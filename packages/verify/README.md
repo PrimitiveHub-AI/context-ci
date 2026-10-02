@@ -106,8 +106,8 @@ The v0.2 roadmap reintroduces:
 Until then: structural + policy verification is enough for the
 "is this bundle malformed or rejected by Context CI?" gate.
 The cryptographic claims of who-signed-what are not yet checked by
-this library; the producing PrimitiveHub instance does enforce them
-end-to-end, so the trust chain is intact when you trust the issuer.
+this library; the producing PrimitiveHub instance enforces them at
+publish time, so the trust chain is intact when you trust the issuer.
 
 ## Conformance
 

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Offline-first verifier for PrimitiveHub Trust Bundles. Zero runtime deps. Conformant to Trust Contract v0.1.",
   "license": "MIT",
-  "author": "PrimitiveHub Labs / CyberOrca Labs",
+  "author": "PrimitiveHub AI / CyberOrca Labs",
   "homepage": "https://primitivehub.ai",
   "repository": {
     "type": "git",

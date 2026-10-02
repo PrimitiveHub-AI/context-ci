@@ -36,7 +36,7 @@ Commands:
   cbom [path]          Emit a Context Bill of Materials (CBOM v0.1) for the
                        workspace. ADR-0033. JSON inventory of every
                        agent-context artifact.
-  scan <file>          Scan a markdown file for Context CI Top 10 patterns (T1/T2/T5 in v0.1)
+  scan <file>          Scan a markdown file for Context CI Top 10 patterns (all ten detectors)
   verify <bundle>      Verify a Trust Bundle JSON file (wraps @primitivehub/verify)
   init                 Write a starter AGENTS.md in the current directory
   help [command]       Show help (general or per-command)
@@ -56,8 +56,8 @@ Docs:
 const SCAN_HELP = `phub scan <file>
 
 Scan a markdown file (typically AGENTS.md) for Context CI Top 10
-detector matches. Runs T1 prompt-injection, T2 Unicode-steganography,
-and T5 unsafe-shell-install detectors in v0.1.
+detector matches. Runs all ten detectors (CCI-001…010) by default;
+restrict with --detector.
 
 Flags:
   --json                Output JSON (includes policySource + policyAllowed)

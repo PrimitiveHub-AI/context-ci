@@ -6,15 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this library tracks the Trust Contract spec version (per ADR-0015).
 `0.1.x` of this library is conformant to Trust Contract v0.1.
 
-## [Unreleased]
+## [0.1.0] — 2026-07-21
 
-## [0.1.0] — 2026-05-31
-
-**Not yet published to npm.** Per ADR-0022, the npm publish is gated
-to the project launch event (paper publication, target Q3 2026).
-The publish workflow infrastructure lands in this release; the actual
-`pnpm publish` is a deliberate human action gated behind GitHub
-Actions environment approval.
+The v0.1 launch release. Published to npm at launch — the `pnpm publish`
+is a deliberate human action gated behind GitHub Actions environment
+approval (ADR-0022 three-lock; [ADR-0045](../../docs/decisions/0045-product-first-public-launch-and-distribution-repo.md),
+product-first).
 
 ### Added
 
@@ -59,5 +56,4 @@ the arbiter.
 
 See README "Known limitations of v0.1" for the v0.2 roadmap.
 
-[Unreleased]: https://github.com/DevXYZx/primitivehub/compare/verify-v0.1.0...HEAD
 [0.1.0]: https://github.com/DevXYZx/primitivehub/releases/tag/verify-v0.1.0

@@ -3,39 +3,23 @@
  * The MCP wrapper has its own tests in packages/mcp-server/test/.
  */
 
-import { mkdtempSync, mkdirSync, writeFileSync, existsSync } from "node:fs"
+import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
-import { dirname, join, resolve } from "node:path"
-import { fileURLToPath } from "node:url"
+import { join, resolve } from "node:path"
 
 import { describe, expect, it } from "vitest"
 
 import { verifyBeforeLoad } from "../src/commands/verify-before-load.js"
 import { runAudit } from "../src/commands/audit.js"
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
-
-function findRepoRoot(): string {
-  let cursor = __dirname
-  for (let i = 0; i < 10; i++) {
-    if (existsSync(join(cursor, ".primitivehub", "phub.lock"))) return cursor
-    const parent = resolve(cursor, "..")
-    if (parent === cursor) break
-    cursor = parent
-  }
-  throw new Error("could not locate repo root")
-}
-
-const REPO_ROOT = findRepoRoot()
-
 /**
  * Build a tmp workspace with:
  *   - AGENTS.md (content from caller)
  *   - .primitivehub/phub.lock sealed against current state (if seal=true)
  */
-function makeWorkspace(opts: { agentsContent: string; seal: boolean }): string {
+function makeWorkspace(opts: { agentsContent: string; seal: boolean; filename?: string }): string {
   const tmp = mkdtempSync(join(tmpdir(), "vbl-"))
-  writeFileSync(join(tmp, "AGENTS.md"), opts.agentsContent, "utf8")
+  writeFileSync(join(tmp, opts.filename ?? "AGENTS.md"), opts.agentsContent, "utf8")
   if (opts.seal) {
     runAudit(tmp, {
       json: false,
@@ -63,8 +47,13 @@ describe("verifyBeforeLoad — happy path", () => {
     expect(result.checks.artifact.flagged).toBe(false)
   })
 
-  it("returns safe against the project's own sealed CLAUDE.md", () => {
-    const result = verifyBeforeLoad({ workspaceRoot: REPO_ROOT, path: "CLAUDE.md" })
+  it("returns safe against a sealed CLAUDE.md", () => {
+    const ws = makeWorkspace({
+      agentsContent: "# Context CI\n\nContributor context.\n",
+      seal: true,
+      filename: "CLAUDE.md",
+    })
+    const result = verifyBeforeLoad({ workspaceRoot: ws, path: "CLAUDE.md" })
     expect(result.safe).toBe(true)
     expect(result.reasons).toEqual([])
   })

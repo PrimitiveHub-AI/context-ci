@@ -51,6 +51,25 @@ function makeWorkspace(content: string, seal: boolean): string {
   return tmp
 }
 
+// A sealed tmp workspace whose CLAUDE.md is clean + in-lock — the portable
+// stand-in for "a sealed project CLAUDE.md" so these tests do not depend on the
+// real repo root having a sealed CLAUDE.md (it does not in the public repo).
+function makeSealedClaudeWorkspace(): string {
+  const tmp = mkdtempSync(join(tmpdir(), "vbl-mcp-claude-"))
+  writeFileSync(join(tmp, "CLAUDE.md"), "# Context CI\n\nContributor context.\n", "utf8")
+  runAudit(tmp, {
+    json: false,
+    sarif: false,
+    strict: false,
+    detectors: [],
+    maxFiles: 100,
+    maxDepth: 4,
+    lockMode: "update",
+  })
+  return tmp
+}
+const SEALED_WS = makeSealedClaudeWorkspace()
+
 function parseEnvelope(envelope: { content: Array<{ text: string }>; isError: boolean }): {
   payload: { safe: boolean; reasons: Array<{ code: string; message: string }>; checks: object }
   isError: boolean
@@ -81,9 +100,9 @@ describe("verify_before_load — argument validation", () => {
 
 /* ─────────────────────────────────────────────────────────────────── */
 describe("verify_before_load — composite gate (no bundle)", () => {
-  it("safe=true against the project's own sealed CLAUDE.md", async () => {
+  it("safe=true against a sealed CLAUDE.md", async () => {
     const res = await callVerifyBeforeLoad({
-      workspace_root: REPO_ROOT,
+      workspace_root: SEALED_WS,
       path: "CLAUDE.md",
     })
     const { payload, isError } = parseEnvelope(res)
@@ -116,7 +135,7 @@ describe("verify_before_load — bundle integration", () => {
   it("safe=true when workspace gate passes AND bundle verifies (structural)", async () => {
     const bundle = JSON.parse(readFileSync(VALID_BUNDLE, "utf8"))
     const res = await callVerifyBeforeLoad({
-      workspace_root: REPO_ROOT,
+      workspace_root: SEALED_WS,
       path: "CLAUDE.md",
       bundle,
       level: "structural",
@@ -129,7 +148,7 @@ describe("verify_before_load — bundle integration", () => {
   it("safe=false when bundle fails verification, even when workspace gate would pass", async () => {
     const bundle = JSON.parse(readFileSync(INVALID_BUNDLE, "utf8"))
     const res = await callVerifyBeforeLoad({
-      workspace_root: REPO_ROOT,
+      workspace_root: SEALED_WS,
       path: "CLAUDE.md",
       bundle,
       level: "structural",
@@ -143,7 +162,7 @@ describe("verify_before_load — bundle integration", () => {
 
   it("rejects unparseable bundle string with BUNDLE_PARSE_ERROR", async () => {
     const res = await callVerifyBeforeLoad({
-      workspace_root: REPO_ROOT,
+      workspace_root: SEALED_WS,
       path: "CLAUDE.md",
       bundle: "this { is not json",
     })
@@ -155,7 +174,7 @@ describe("verify_before_load — bundle integration", () => {
   it("accepts bundle as a JSON string (auto-parses) AND as a parsed object", async () => {
     const bundleStr = readFileSync(VALID_BUNDLE, "utf8")
     const resStr = await callVerifyBeforeLoad({
-      workspace_root: REPO_ROOT,
+      workspace_root: SEALED_WS,
       path: "CLAUDE.md",
       bundle: bundleStr,
       level: "structural",
@@ -164,7 +183,7 @@ describe("verify_before_load — bundle integration", () => {
 
     const bundleObj = JSON.parse(bundleStr)
     const resObj = await callVerifyBeforeLoad({
-      workspace_root: REPO_ROOT,
+      workspace_root: SEALED_WS,
       path: "CLAUDE.md",
       bundle: bundleObj,
       level: "structural",
@@ -177,7 +196,7 @@ describe("verify_before_load — bundle integration", () => {
 describe("verify_before_load — checks envelope shape", () => {
   it("always populates checks.{workspace, lock, artifact, bundle}", async () => {
     const res = await callVerifyBeforeLoad({
-      workspace_root: REPO_ROOT,
+      workspace_root: SEALED_WS,
       path: "CLAUDE.md",
     })
     const { payload } = parseEnvelope(res)

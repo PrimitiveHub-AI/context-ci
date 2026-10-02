@@ -11,10 +11,6 @@ Zero runtime deps beyond
 
 ## Install
 
-After launch (per
-[ADR-0022](../../docs/decisions/0022-publishing-deferred-to-launch.md)
-the package is not yet on npm):
-
 ```bash
 # No-install invocation:
 npx @primitivehub/phub --help
@@ -42,7 +38,7 @@ phub audit [<path>]               # discover + classify + scan every artifact un
 phub watch [<path>]               # daemonized audit — runs on every fs event (ADR-0027)
 phub install <slug@semver> | --bundle <p> | --url <u>
                                   # safe-install — verify, write, lock (ADR-0028)
-phub scan <file>                  # T1/T2/T5 detectors on a single file (v0.1)
+phub scan <file>                  # run all ten Top 10 detectors on a single file
 phub verify <bundle.json>         # @primitivehub/verify wrapper
 phub init                         # write starter AGENTS.md
 ```
@@ -179,15 +175,22 @@ npx @primitivehub/phub scan AGENTS.md
 ```text
 phub scan AGENTS.md
 
-[FAIL] t1.prompt_injection (CCI-001) — Matched 2 prompt-injection patterns; review before signing.
-  L17  Ignore previous instructions
-         Remove or rephrase (override-system-instructions); …
+[FAIL] t1.prompt_injection (CCI-001) — Matched 1 prompt-injection pattern; review before signing.
+  L5  Ignore all previous instructions
+         Remove or rephrase (override-system-instructions); this pattern is consistent with prompt injection.
 [INFO] t2.unicode_steganography (CCI-002) — No Unicode-steganography patterns matched.
-[FAIL] t5.unsafe_shell_install (CCI-005) — Matched 1 unsafe-shell-install pattern; …
-  L23  curl https://example.com/install.sh | bash
-         Remove or rephrase (shell-pipe-from-network); …
+[INFO] t3.encoded_payloads (CCI-003) — No encoded-payload patterns matched.
+[INFO] t4.remote_fetch (CCI-004) — No remote-fetch patterns matched.
+[FAIL] t5.unsafe_shell_install (CCI-005) — Matched 1 unsafe-shell-install pattern; this is the Shai-Hulud supply-chain vector.
+  L10  curl https://get.example.com/install.sh | bash
+         Remove or rephrase (shell-pipe-from-network); this is the Shai-Hulud vector — remote code fetched and executed without verification.
+[INFO] t6.credential_exfiltration (CCI-006) — No credential-exfiltration patterns matched.
+[INFO] t7.poisoned_naming (CCI-007) — No poisoned-naming patterns matched.
+[INFO] t8.fake_citation (CCI-008) — No fake-citation patterns matched.
+[INFO] t9.copyright_contamination (CCI-009) — No copyright-contamination patterns matched.
+[INFO] t10.context_bloat (CCI-010) — No context-bloat patterns matched.
 
-Result: 2 of 3 detectors flagged content. Review before publishing.
+Result: 2 of 10 detectors flagged content. Review before publishing.
 ```
 
 | Flag | Default | What it does |
@@ -234,8 +237,8 @@ the rationale.
 
 Pipe the SARIF output into a file and upload via
 [`github/codeql-action/upload-sarif`](https://github.com/github/codeql-action),
-or use the [`primitivehub/phub-scan`](../../actions/phub-scan/)
-composite action which wraps the whole flow (per
+or use the [PrimitiveHub Context CI action](../../actions/phub-scan/)
+which wraps the whole flow (per
 [ADR-0024](../../docs/decisions/0024-sarif-and-github-action.md)).
 
 ## `phub verify`
@@ -339,28 +342,43 @@ if (result.exitCode === 1) {
 
 ## What v0.1 ships
 
-- T1 — prompt injection (override instructions, role hijack, hidden
-  instructions, credential-exfiltration hints) → `CCI-001`
-- T2 — Unicode steganography (zero-width, bidi-control, tag-character,
-  mixed-script confusable) → `CCI-002`
-- T5 — unsafe shell install (curl|bash, npx, pip from URL/git,
-  install-instruction-to-agent) → `CCI-005`
+All ten Context CI Top 10 categories ship, each a TypeScript port of the
+canonical Python detector in `apps/api/scanners/` — pattern sets mirrored
+byte-for-byte and held in lockstep by a cross-implementation
+scanner-conformance suite
+([ADR-0023](../../docs/decisions/0023-phub-cli-and-detector-parity.md)):
 
-The detectors are TypeScript ports of the canonical Python detectors
-in `apps/api/scanners/`. Pattern sets mirror the Python source
-byte-for-byte; per
-[ADR-0023](../../docs/decisions/0023-phub-cli-and-detector-parity.md)
-a future PR adds a cross-implementation scanner-conformance suite
-analogous to `docs/trust-contract/conformance/`.
+- **T1** — prompt injection (override instructions, role hijack, hidden
+  instructions, credential-exfiltration hints) → `CCI-001`
+- **T2** — Unicode steganography (zero-width, bidi-control, tag-character,
+  mixed-script confusable) → `CCI-002`
+- **T3** — encoded payloads (long base64/hex + decode-and-execute) → `CCI-003`
+- **T4** — remote fetch at load (fetch-then-run at context load) → `CCI-004`
+- **T5** — unsafe shell install (curl|bash, npx, pip from URL/git,
+  install-instruction-to-agent) → `CCI-005`
+- **T6** — credential exfiltration → `CCI-006`
+- **T7** — poisoned naming / typosquats → `CCI-007`
+- **T8** — fake citation → `CCI-008`
+- **T9** — copyright contamination → `CCI-009`
+- **T10** — context bloat → `CCI-010`
+
+Every detector runs by default; restrict with `--detector`. Also shipping:
+SARIF 2.1.0 output (`--sarif`) for GitHub Code Scanning, `--json` for CI, the
+Context Policy Language allow-list, `phub watch` on-access mode, and the
+`.primitivehub/phub.lock` drift gate.
+
+**Detector maturity:** the CCI-001 / CCI-002 / CCI-005 trifecta is measured
+against the adversarial corpus
+([ADR-0032](../../docs/decisions/0032-adversarial-corpus-and-detector-precision-recall.md));
+the other seven are implemented and conformance-tested, with adversarial-corpus
+precision/recall hardening on the v0.2/v0.3 roadmap.
 
 ## What v0.1 does NOT ship
 
-- T3, T4, T6-T10 detectors — Phase 5 ramp; landing as the Python
-  detectors land. Each gets a TS port in the same PR that ships the
-  Python implementation.
-- SARIF output for GitHub Code Scanning — Gate G-C follow-up.
+- Full Sigstore signature + cert-chain + Rekor inclusion-proof verification in
+  the JS verifier — steps 3–6 are stubbed (v0.2; see the
+  [`@primitivehub/verify`](../verify/) README).
 - `phub login` / `phub publish` — Phase 6+ (registry write surface).
-- Watch mode, fix mode — pending demand signal.
 - Markdown-AST awareness (currently flags fenced code blocks too) —
   v0.2 across both Python and TS.
 
