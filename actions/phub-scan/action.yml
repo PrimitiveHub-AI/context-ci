@@ -89,6 +89,9 @@ runs:
           mkdir -p "${RUNNER_TEMP}/phub-bin"
           ln -sf "$PHUB_BIN" "${RUNNER_TEMP}/phub-bin/phub"
           echo "${RUNNER_TEMP}/phub-bin" >> "$GITHUB_PATH"
+          # $GITHUB_PATH only affects *subsequent* steps; export for THIS
+          # step too so the `phub --version` sanity check below resolves.
+          export PATH="${RUNNER_TEMP}/phub-bin:$PATH"
           echo "::endgroup::"
         else
           echo "::group::Installing @primitivehub/phub@${{ inputs.phub-version }} from npm"
