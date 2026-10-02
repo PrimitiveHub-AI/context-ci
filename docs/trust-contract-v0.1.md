@@ -9,7 +9,7 @@
 >
 > **Version:** `0.1`
 >
-> **Authoring:** PrimitiveHub Labs / CyberOrca Labs.
+> **Authoring:** PrimitiveHub AI / CyberOrca Labs.
 >
 > **Reference implementation:** the PrimitiveHub HTTP Trust API
 > (`apps/api/registry/api.py`) and `@primitivehub/verify` library

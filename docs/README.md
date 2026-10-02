@@ -40,6 +40,12 @@ classes of document live here:
 
 ## Strategic foundation (operational + team-facing)
 
+- **[Glossary](./glossary.md)** — Decoder for the acronyms used across
+  commit messages, ADRs, evaluation tables, and ledgers: `CCI` / `Tn`,
+  `ADR`, `FP` / `FN`, `P/R/F1`, `CBOM`, `RLS`, `OIDC`, and the locked
+  cryptographic vocabulary. Start here when a `CCI-007` or `FN-004`
+  reference is opaque.
+
 - **[Vision](./vision.md)** — Why PrimitiveHub exists. The
   agent-context-as-supply-chain thesis. 1 / 3 / 10-year horizon. The
   North Star every decision is checked against.

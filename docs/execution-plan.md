@@ -225,11 +225,18 @@ The work that moves PrimitiveHub from "product" to "infrastructure."
 | Polish | Paper draft v1.0 | `docs/paper/` populated. Threat-model citations correct. Evaluation results from Phase 5 detectors included. Top 10 spec referenced. CBOM spec referenced. |
 | Polish | Public status page schema | Schema in place, dashboards staged. **Not yet public-facing** (noindex preserved). |
 
-### Weeks 17–18 — Launch (2026-09-21 → 2026-09-30, paper-coordinated)
+### Weeks 17–18 — Launch (2026-09-21 → 2026-09-30, ~~paper-coordinated~~)
 
-This is Phase 10 in `docs/roadmap.md`. Two weeks of pre-flight, then
-paper-coordinated public launch. Nothing new ships in code; everything
-ships in posture.
+> **Superseded 2026-06-07 by [ADR-0045](./decisions/0045-product-first-public-launch-and-distribution-repo.md):**
+> launch is now **product-first, owner-triggered** — no longer gated on the
+> arXiv paper (which is decoupled and owner-owned). Distribution is one public
+> repo `primitivehub/context-ci` + npm. The package publish can happen
+> whenever the owner triggers it; the website DNS/noindex flip still waits on
+> Explorer + Forge round-trip + `/check` + a seed catalog. The dated week
+> numbers below are now indicative, not binding.
+
+This is Phase 10 in `docs/roadmap.md`. Pre-flight, then owner-triggered
+public launch. Nothing new ships in code; everything ships in posture.
 
 | Track | Deliverable | Acceptance |
 |-------|-------------|------------|

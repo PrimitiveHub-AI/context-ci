@@ -322,7 +322,7 @@ registering an OIDC identity that resembles a trusted one.
 distance from existing trusted-primitive names; any new submission within a
 similarity threshold of an existing trusted primitive is blocked from
 self-service publish and routed to maintainer review. Author OIDC identities
-are bound via Sigstore; "PrimitiveHub Labs" cannot be claimed by an arbitrary
+are bound via Sigstore; "PrimitiveHub AI" cannot be claimed by an arbitrary
 GitHub account. Visual confusables (Cyrillic 'а' vs. Latin 'a', etc.) are
 detected by normalizing to ASCII-only canonical names.
 

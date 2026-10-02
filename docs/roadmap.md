@@ -419,9 +419,15 @@ Shai-Hulud incident, xz, etc. are correct and current.
 **Success metric:** Paper accepted at a venue (or arXiv preprint with
 ≥5 citations within 90 days of posting).
 
-### Phase 10 — Public launch (Q3 2026, paper-coordinated)
+### Phase 10 — Public launch (~~Q3 2026, paper-coordinated~~ → product-first, owner-triggered)
 
-**Goal:** The site goes public on the same day the paper appears.
+> **Superseded 2026-06-07 by [ADR-0045](./decisions/0045-product-first-public-launch-and-distribution-repo.md):**
+> launch is **product-first**, decoupled from the (owner-owned) arXiv paper.
+> Distribution = one public repo `primitivehub/context-ci` + npm. Irreversible
+> go-public flips are human-only. Package publish need not wait on the paper;
+> the website flip waits on Explorer + Forge round-trip + `/check` + seed catalog.
+
+**Goal:** The product goes public when it's ready, on the owner's trigger.
 First impression matters: every surface ships in trust-defining
 state.
 

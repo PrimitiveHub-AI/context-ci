@@ -10,7 +10,7 @@
 > CCI-011 etc.; deprecated categories stay in the taxonomy marked
 > **Status: Deprecated** with the year of deprecation.
 >
-> **Authoring:** PrimitiveHub Labs / CyberOrca Labs.
+> **Authoring:** PrimitiveHub AI / CyberOrca Labs.
 >
 > **Companion specs:** [Trust Contract
 > v0.1](./trust-contract-v0.1.md) (the wire format whose attestation
