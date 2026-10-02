@@ -3,7 +3,7 @@ import type { ReviewItem } from "@/lib/types"
 export const reviewQueue: ReviewItem[] = [
   {
     primitive: "agent-anti-hallucination.md",
-    author: "PrimitiveHub Labs",
+    author: "PrimitiveHub AI",
     status: "Needs Security Review",
     submittedAt: "2026-05-24",
     comments: 3,
@@ -12,7 +12,7 @@ export const reviewQueue: ReviewItem[] = [
   },
   {
     primitive: "react-performance-engineering.md",
-    author: "PrimitiveHub Labs",
+    author: "PrimitiveHub AI",
     status: "Benchmark Failed",
     reviewer: "Sarah Chen",
     submittedAt: "2026-05-21",

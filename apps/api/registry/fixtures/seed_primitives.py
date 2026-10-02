@@ -35,7 +35,7 @@ class PrimitiveFixture(TypedDict):
 
 
 SEED_ORG_SLUG = "primitivehub-labs"
-SEED_ORG_NAME = "PrimitiveHub Labs"
+SEED_ORG_NAME = "PrimitiveHub AI"
 SEED_REGISTRY_SLUG = "public"
 SEED_REGISTRY_NAME = "Public Registry"
 

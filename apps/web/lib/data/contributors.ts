@@ -2,7 +2,7 @@ import type { Contributor } from "@/lib/types"
 
 export const contributors: Contributor[] = [
   {
-    name: "PrimitiveHub Labs",
+    name: "PrimitiveHub AI",
     role: "Maintainer",
     primitives: 8,
     reviews: 24,
