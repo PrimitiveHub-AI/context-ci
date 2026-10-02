@@ -133,9 +133,7 @@ def is_in_mention_context(content: str, match_start: int, match_end: int) -> boo
         return True
     if _MENTION_AFTER_RE.search(after):
         return True
-    if _LIST_BEFORE_RE.search(before) and _LIST_AFTER_RE.search(after):
-        return True
-    return False
+    return bool(_LIST_BEFORE_RE.search(before) and _LIST_AFTER_RE.search(after))
 
 
 # ---------------------------------------------------------------------------
@@ -159,12 +157,11 @@ def is_in_declaration_context(content: str, match_start: int, match_end: int) ->
     if _DECLARATION_AFTER_RE.search(after):
         return True
     before = content[max(0, match_start - 30) : match_start]
-    if _DECLARATION_BEFORE_RE.search(before):
-        return True
-    return False
+    return bool(_DECLARATION_BEFORE_RE.search(before))
 
 
 # ----- is_in_quoted_phrase ---------------------------------------------------
+
 
 def is_in_quoted_phrase(content: str, match_start: int, match_end: int) -> bool:
     """True iff the match is wrapped by a matching pair of ASCII single or

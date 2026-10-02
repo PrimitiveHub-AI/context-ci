@@ -45,7 +45,9 @@ import re
 
 from .types import DetectorContext, DiffHint, Severity, Verdict
 
-OVERSIZED_THRESHOLD_CHARS = 32000  # approximately 8K tokens; 2x headroom over the largest project primitive
+OVERSIZED_THRESHOLD_CHARS = (
+    32000  # approximately 8K tokens; 2x headroom over the largest project primitive
+)
 EXCESSIVE_REPETITION_THRESHOLD = 0.20  # 20% of non-trivial lines duplicated
 WHITESPACE_STUFFING_THRESHOLD = 0.40  # 40% blank lines
 HEADING_PROLIFERATION_RATIO = 200  # one h2 per N chars triggers the flag
@@ -193,10 +195,7 @@ def _check_emoji_density(content: str) -> DiffHint | None:
     if non_ws_count == 0:
         return None
     density_ratio = emoji_count / non_ws_count
-    if (
-        density_ratio <= EMOJI_DENSITY_RATIO
-        and max_run < EMOJI_CONSECUTIVE_RUN_THRESHOLD
-    ):
+    if density_ratio <= EMOJI_DENSITY_RATIO and max_run < EMOJI_CONSECUTIVE_RUN_THRESHOLD:
         return None
     return DiffHint(
         line=1,
@@ -284,17 +283,19 @@ _PRIMITIVE_PATH_MARKERS: tuple[str, ...] = (
     "/.claude/skills/",
     "/.cursor/rules/",
 )
-_PRIMITIVE_BASENAMES: frozenset[str] = frozenset({
-    "skill.md",
-    "agents.md",
-    "claude.md",
-    "cursor.md",
-    "codex.md",
-    "system.md",
-    "prompt.md",
-    "primitive.md",
-    ".cursorrules",
-})
+_PRIMITIVE_BASENAMES: frozenset[str] = frozenset(
+    {
+        "skill.md",
+        "agents.md",
+        "claude.md",
+        "cursor.md",
+        "codex.md",
+        "system.md",
+        "prompt.md",
+        "primitive.md",
+        ".cursorrules",
+    }
+)
 
 
 def _looks_like_primitive(file_path: str) -> bool:

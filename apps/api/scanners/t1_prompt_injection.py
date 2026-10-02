@@ -163,10 +163,12 @@ _MAX_HINTS_PER_VERDICT = 10
 # live injection. The OTHER families (`hidden-instructions` syntactic
 # carriers, `role-hijack`) stay context-unaware because they ARE
 # designed to use fence-like structures as the attack vector.
-_CONTEXT_AWARE_TAGS: frozenset[str] = frozenset({
-    "override-system-instructions",
-    "credential-exfiltration-hint",
-})
+_CONTEXT_AWARE_TAGS: frozenset[str] = frozenset(
+    {
+        "override-system-instructions",
+        "credential-exfiltration-hint",
+    }
+)
 
 # Cap on snippet length in the diff hint. Long captures risk rendering
 # attacker-controlled content prominently in the reviewer UI.

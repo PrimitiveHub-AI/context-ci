@@ -93,93 +93,95 @@ _PATENT_PROGRAM_START_YEAR = 1790
 # citations), preprint servers, and large open-access publishers.
 # (Source: top-200 publishers + university registrants by DOI
 # registration volume.)
-_ACCEPTED_DOI_PREFIXES: frozenset[str] = frozenset({
-    # ─── Major commercial publishers ───
-    "10.1006",   # Academic Press (now Elsevier)
-    "10.1007",   # Springer
-    "10.1016",   # Elsevier (volume leader)
-    "10.1017",   # Cambridge University Press
-    "10.1038",   # Nature
-    "10.1051",   # EDP Sciences
-    "10.1057",   # Palgrave Macmillan
-    "10.1075",   # John Benjamins
-    "10.1080",   # Taylor & Francis
-    "10.1093",   # Oxford University Press
-    "10.1109",   # IEEE
-    "10.1126",   # Science / AAAS
-    "10.1145",   # ACM
-    "10.1146",   # Annual Reviews
-    "10.1162",   # MIT Press
-    "10.1177",   # SAGE Publications
-    "10.1186",   # BMC / SpringerOpen
-    "10.1198",   # American Statistical Association
-    "10.1207",   # LEA / Lawrence Erlbaum
-    "10.1257",   # American Economic Association
-    "10.1287",   # INFORMS (operations research)
-    "10.1364",   # Optica (formerly OSA)
-    "10.1371",   # PLOS
-    "10.1503",   # CMA (Canadian Medical Assoc)
-    "10.1525",   # UC Press
-    "10.1542",   # AAP (Pediatrics)
-    "10.1561",   # NOW Publishers (foundations + trends)
-    "10.1613",   # JAIR
-    "10.2105",   # APHA (public health)
-    "10.2139",   # SSRN
-    "10.2200",   # Morgan & Claypool / Synthesis Lectures
-    "10.2202",   # De Gruyter
-    "10.2307",   # JSTOR
-    "10.3322",   # American Cancer Society
-    "10.3389",   # Frontiers
-    "10.3390",   # MDPI
-    "10.4135",   # SAGE Reference
-    "10.4314",   # African Journals OnLine
-    "10.5210",   # First Monday
-    "10.5281",   # Zenodo
-    "10.5772",   # IntechOpen
-    "10.5061",   # Dryad
-    "10.5067",   # NASA (Earth-science data)
-    "10.7287",   # PeerJ Preprints
-    "10.7551",   # MIT Press (some imprints)
-    "10.7717",   # PeerJ
-    # ─── Preprint / repository servers ───
-    "10.13140",  # ResearchGate
-    "10.21437",  # ISCA (Interspeech)
-    "10.31219",  # OSF (general)
-    "10.31234",  # PsyArXiv
-    "10.31235",  # SocArXiv
-    "10.31222",  # MarXiv (marine science)
-    "10.36227",  # TechRxiv (engineering preprints)
-    "10.48550",  # arXiv (DOI form)
-    "10.6084",   # Figshare
-    # ─── Universities + research institutions ───
-    "10.1184",   # Carnegie Mellon University
-    "10.7916",   # Columbia University
-    "10.7298",   # Cornell University Library
-    "10.7910",   # Dataverse (Harvard)
-    "10.13016",  # University of Connecticut
-    "10.17615",  # UNC Chapel Hill repositories
-    "10.18034",  # Linköping University
-    "10.22152",  # Penn State
-    "10.23943",  # Princeton University Press
-    "10.24432",  # UC Irvine ML Repository
-    "10.25394",  # UC San Diego
-    "10.34740",  # MIT DSpace
-    "10.34894",  # ETH Zurich
-    # ─── Open-access scholarly orgs ───
-    "10.18653",  # ACL Anthology
-    "10.21105",  # JOSS
-    "10.14778",  # VLDB
-    "10.13039",  # Crossref Funding ID
-    # ─── US federal research orgs (critical for security/CS citations) ───
-    "10.6028",   # NIST (US National Institute of Standards and Technology)
-    "10.2172",   # OSTI (US DOE)
-    "10.18434",  # NIST (alternate)
-    "10.25333",  # USGS
-    # ─── International standards bodies ───
-    "10.3403",   # BSI (British Standards Institute)
-    # ─── Government agencies ───
-    "10.21236",  # DTIC (US DoD)
-})
+_ACCEPTED_DOI_PREFIXES: frozenset[str] = frozenset(
+    {
+        # ─── Major commercial publishers ───
+        "10.1006",  # Academic Press (now Elsevier)
+        "10.1007",  # Springer
+        "10.1016",  # Elsevier (volume leader)
+        "10.1017",  # Cambridge University Press
+        "10.1038",  # Nature
+        "10.1051",  # EDP Sciences
+        "10.1057",  # Palgrave Macmillan
+        "10.1075",  # John Benjamins
+        "10.1080",  # Taylor & Francis
+        "10.1093",  # Oxford University Press
+        "10.1109",  # IEEE
+        "10.1126",  # Science / AAAS
+        "10.1145",  # ACM
+        "10.1146",  # Annual Reviews
+        "10.1162",  # MIT Press
+        "10.1177",  # SAGE Publications
+        "10.1186",  # BMC / SpringerOpen
+        "10.1198",  # American Statistical Association
+        "10.1207",  # LEA / Lawrence Erlbaum
+        "10.1257",  # American Economic Association
+        "10.1287",  # INFORMS (operations research)
+        "10.1364",  # Optica (formerly OSA)
+        "10.1371",  # PLOS
+        "10.1503",  # CMA (Canadian Medical Assoc)
+        "10.1525",  # UC Press
+        "10.1542",  # AAP (Pediatrics)
+        "10.1561",  # NOW Publishers (foundations + trends)
+        "10.1613",  # JAIR
+        "10.2105",  # APHA (public health)
+        "10.2139",  # SSRN
+        "10.2200",  # Morgan & Claypool / Synthesis Lectures
+        "10.2202",  # De Gruyter
+        "10.2307",  # JSTOR
+        "10.3322",  # American Cancer Society
+        "10.3389",  # Frontiers
+        "10.3390",  # MDPI
+        "10.4135",  # SAGE Reference
+        "10.4314",  # African Journals OnLine
+        "10.5210",  # First Monday
+        "10.5281",  # Zenodo
+        "10.5772",  # IntechOpen
+        "10.5061",  # Dryad
+        "10.5067",  # NASA (Earth-science data)
+        "10.7287",  # PeerJ Preprints
+        "10.7551",  # MIT Press (some imprints)
+        "10.7717",  # PeerJ
+        # ─── Preprint / repository servers ───
+        "10.13140",  # ResearchGate
+        "10.21437",  # ISCA (Interspeech)
+        "10.31219",  # OSF (general)
+        "10.31234",  # PsyArXiv
+        "10.31235",  # SocArXiv
+        "10.31222",  # MarXiv (marine science)
+        "10.36227",  # TechRxiv (engineering preprints)
+        "10.48550",  # arXiv (DOI form)
+        "10.6084",  # Figshare
+        # ─── Universities + research institutions ───
+        "10.1184",  # Carnegie Mellon University
+        "10.7916",  # Columbia University
+        "10.7298",  # Cornell University Library
+        "10.7910",  # Dataverse (Harvard)
+        "10.13016",  # University of Connecticut
+        "10.17615",  # UNC Chapel Hill repositories
+        "10.18034",  # Linköping University
+        "10.22152",  # Penn State
+        "10.23943",  # Princeton University Press
+        "10.24432",  # UC Irvine ML Repository
+        "10.25394",  # UC San Diego
+        "10.34740",  # MIT DSpace
+        "10.34894",  # ETH Zurich
+        # ─── Open-access scholarly orgs ───
+        "10.18653",  # ACL Anthology
+        "10.21105",  # JOSS
+        "10.14778",  # VLDB
+        "10.13039",  # Crossref Funding ID
+        # ─── US federal research orgs (critical for security/CS citations) ───
+        "10.6028",  # NIST (US National Institute of Standards and Technology)
+        "10.2172",  # OSTI (US DOE)
+        "10.18434",  # NIST (alternate)
+        "10.25333",  # USGS
+        # ─── International standards bodies ───
+        "10.3403",  # BSI (British Standards Institute)
+        # ─── Government agencies ───
+        "10.21236",  # DTIC (US DoD)
+    }
+)
 _DOI_RE = re.compile(r"\b(?:DOI:?\s*|doi\.org/)(10\.\d{4,9})/([^\s\"',]+)", re.IGNORECASE)
 
 # Vague-citation triggers. The detector flags these IF no URL / DOI /

@@ -16,7 +16,6 @@ from scanners.markdown_context import (
     is_in_inline_code,
 )
 
-
 # ---------------------------------------------------------------------------
 # Frontmatter
 # ---------------------------------------------------------------------------
@@ -113,7 +112,7 @@ class TestInlineCode:
         assert len(ctx.inline_code_ranges) == 0
 
     def test_ignores_backticks_inside_frontmatter(self) -> None:
-        md = "---\ntitle: \"`backticks` in frontmatter\"\n---\nbody\n"
+        md = '---\ntitle: "`backticks` in frontmatter"\n---\nbody\n'
         ctx = analyze_markdown_context(md)
         assert len(ctx.inline_code_ranges) == 0
 

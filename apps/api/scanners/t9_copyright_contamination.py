@@ -403,7 +403,9 @@ class T9CopyrightContaminationDetector:
 
         for pattern, tag in _COMPILED:
             for match in pattern.finditer(ctx.content):
-                if is_in_frontmatter(match.start(), md_ctx) or is_in_inline_code(match.start(), md_ctx):
+                if is_in_frontmatter(match.start(), md_ctx) or is_in_inline_code(
+                    match.start(), md_ctx
+                ):
                     continue
                 if is_in_declaration_context(ctx.content, match.start(), match.end()):
                     continue

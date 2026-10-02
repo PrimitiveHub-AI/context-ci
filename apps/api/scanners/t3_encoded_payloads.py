@@ -133,9 +133,7 @@ def _line_for(content: str, position: int) -> int:
     return content.count("\n", 0, position) + 1
 
 
-def _scan_long_encoded_blobs(
-    content: str, md_ctx: MarkdownContext | None = None
-) -> list[DiffHint]:
+def _scan_long_encoded_blobs(content: str, md_ctx: MarkdownContext | None = None) -> list[DiffHint]:
     """Find long base64 + hex runs.
 
     v0.2.0: skip matches inside frontmatter / fenced code / inline
@@ -150,7 +148,9 @@ def _scan_long_encoded_blobs(
         for match in pattern.finditer(content):
             if len(hints) >= _MAX_HINTS_PER_VERDICT:
                 return hints
-            if md_ctx is not None and is_in_any_code_or_frontmatter(match.start(), md_ctx, match.end()):
+            if md_ctx is not None and is_in_any_code_or_frontmatter(
+                match.start(), md_ctx, match.end()
+            ):
                 continue
             raw = match.group(0)
             hints.append(
@@ -169,15 +169,15 @@ def _scan_long_encoded_blobs(
     return hints
 
 
-def _scan_instructions(
-    content: str, md_ctx: MarkdownContext | None = None
-) -> list[DiffHint]:
+def _scan_instructions(content: str, md_ctx: MarkdownContext | None = None) -> list[DiffHint]:
     hints: list[DiffHint] = []
     for pattern, tag in _COMPILED_INSTRUCTIONS:
         for match in pattern.finditer(content):
             if len(hints) >= _MAX_HINTS_PER_VERDICT:
                 return hints
-            if md_ctx is not None and is_in_any_code_or_frontmatter(match.start(), md_ctx, match.end()):
+            if md_ctx is not None and is_in_any_code_or_frontmatter(
+                match.start(), md_ctx, match.end()
+            ):
                 continue
             raw = match.group(0)
             hints.append(

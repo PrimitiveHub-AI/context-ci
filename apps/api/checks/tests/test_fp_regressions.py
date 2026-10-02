@@ -71,12 +71,9 @@ def test_t7_does_not_fire_on_canonical_vendor_names(content: str) -> None:
     """
     detector = T7PoisonedNamingDetector()
     verdict = detector.run(_ctx(content))
-    typosquat_hints = [
-        h for h in verdict.diff_hints if h.detail_tag == "vendor-typosquat"
-    ]
+    typosquat_hints = [h for h in verdict.diff_hints if h.detail_tag == "vendor-typosquat"]
     assert typosquat_hints == [], (
-        f"vendor-typosquat fired on canonical name in: {content!r}\n"
-        f"hints: {typosquat_hints}"
+        f"vendor-typosquat fired on canonical name in: {content!r}\nhints: {typosquat_hints}"
     )
 
 
@@ -93,15 +90,11 @@ def test_t7_does_not_fire_on_canonical_vendor_names(content: str) -> None:
         ("G0ogle Cloud (zero for o).\n", True),  # 0-for-o
     ],
 )
-def test_t7_still_fires_on_real_typosquats(
-    content: str, expected_hit: bool
-) -> None:
+def test_t7_still_fires_on_real_typosquats(content: str, expected_hit: bool) -> None:
     """The actual typosquat shapes still get caught — no regression."""
     detector = T7PoisonedNamingDetector()
     verdict = detector.run(_ctx(content))
-    typosquat_hints = [
-        h for h in verdict.diff_hints if h.detail_tag == "vendor-typosquat"
-    ]
+    typosquat_hints = [h for h in verdict.diff_hints if h.detail_tag == "vendor-typosquat"]
     if expected_hit:
         assert len(typosquat_hints) >= 1, (
             f"Expected vendor-typosquat to fire on {content!r}, but got: {verdict}"
@@ -114,7 +107,7 @@ def test_t7_still_fires_on_real_typosquats(
 
 _APACHE_HEADER = (
     "/*\n"
-    " * Licensed under the Apache License, Version 2.0 (the \"License\");\n"
+    ' * Licensed under the Apache License, Version 2.0 (the "License");\n'
     " * you may not use this file except in compliance with the License.\n"
     " * You may obtain a copy of the License at\n"
     " *     http://www.apache.org/licenses/LICENSE-2.0\n"
@@ -137,9 +130,7 @@ def test_t9_does_not_fire_on_apache_header_at_top_of_source_file() -> None:
         for h in verdict.diff_hints
         if h.detail_tag in {"permissive-license-header", "gpl-header", "cc-attribution-required"}
     ]
-    assert license_hints == [], (
-        f"License-family hit fired in header region: {license_hints}"
-    )
+    assert license_hints == [], f"License-family hit fired in header region: {license_hints}"
 
 
 def test_t9_does_not_fire_on_license_file() -> None:
@@ -148,14 +139,8 @@ def test_t9_does_not_fire_on_license_file() -> None:
     # Apache header appearing far below the header-region threshold.
     long_license = "\n".join(f"// line {i}" for i in range(60)) + "\n" + _APACHE_HEADER
     verdict = detector.run(_ctx(long_license, file_path="LICENSE"))
-    license_hints = [
-        h
-        for h in verdict.diff_hints
-        if h.detail_tag in {"permissive-license-header"}
-    ]
-    assert license_hints == [], (
-        f"License-family hit fired in LICENSE file: {license_hints}"
-    )
+    license_hints = [h for h in verdict.diff_hints if h.detail_tag in {"permissive-license-header"}]
+    assert license_hints == [], f"License-family hit fired in LICENSE file: {license_hints}"
 
 
 @pytest.mark.parametrize(
@@ -172,14 +157,8 @@ def test_t9_does_not_fire_on_license_file() -> None:
 def test_t9_exempts_license_named_files(file_path: str) -> None:
     detector = T9CopyrightContaminationDetector()
     verdict = detector.run(_ctx(_APACHE_HEADER, file_path=file_path))
-    license_hints = [
-        h
-        for h in verdict.diff_hints
-        if h.detail_tag in {"permissive-license-header"}
-    ]
-    assert license_hints == [], (
-        f"License-family hit fired in {file_path}: {license_hints}"
-    )
+    license_hints = [h for h in verdict.diff_hints if h.detail_tag in {"permissive-license-header"}]
+    assert license_hints == [], f"License-family hit fired in {file_path}: {license_hints}"
 
 
 def test_t9_still_fires_on_license_text_buried_deep_in_a_non_license_file() -> None:
@@ -192,11 +171,7 @@ def test_t9_still_fires_on_license_text_buried_deep_in_a_non_license_file() -> N
     detector = T9CopyrightContaminationDetector()
     deep_content = "\n".join(f"# Section {i}" for i in range(60)) + "\n" + _APACHE_HEADER
     verdict = detector.run(_ctx(deep_content, file_path="SKILL.md"))
-    license_hints = [
-        h
-        for h in verdict.diff_hints
-        if h.detail_tag == "permissive-license-header"
-    ]
+    license_hints = [h for h in verdict.diff_hints if h.detail_tag == "permissive-license-header"]
     assert len(license_hints) >= 1, (
         f"Expected T9 to still flag deep license boilerplate; got: {verdict}"
     )

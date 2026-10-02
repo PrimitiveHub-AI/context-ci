@@ -125,13 +125,37 @@ _VENDOR_ALT = "|".join(re.escape(v) for v in _VENDORS)
 _HIGH_TRUST_PACKAGES: tuple[str, ...] = (
     # npm — most-downloaded utility packages historically used as
     # typosquat / maintainer-compromise vectors
-    "lodash", "express", "react", "vue", "axios", "dotenv",
-    "ua-parser-js", "eslint", "prettier", "webpack", "vite",
-    "next", "nuxt", "babel", "rollup", "tailwindcss", "svelte",
-    "moment", "jquery", "underscore",
+    "lodash",
+    "express",
+    "react",
+    "vue",
+    "axios",
+    "dotenv",
+    "ua-parser-js",
+    "eslint",
+    "prettier",
+    "webpack",
+    "vite",
+    "next",
+    "nuxt",
+    "babel",
+    "rollup",
+    "tailwindcss",
+    "svelte",
+    "moment",
+    "jquery",
+    "underscore",
     # PyPI — high-trust packages with known supply-chain incidents
-    "requests", "urllib3", "numpy", "pandas", "django",
-    "flask", "pytest", "sqlalchemy", "pyyaml", "setuptools",
+    "requests",
+    "urllib3",
+    "numpy",
+    "pandas",
+    "django",
+    "flask",
+    "pytest",
+    "sqlalchemy",
+    "pyyaml",
+    "setuptools",
 )
 _HIGH_TRUST_PACKAGE_ALT = "|".join(re.escape(p) for p in _HIGH_TRUST_PACKAGES)
 
@@ -143,22 +167,22 @@ _HIGH_TRUST_PACKAGE_ALT = "|".join(re.escape(p) for p in _HIGH_TRUST_PACKAGES)
 # (e.g. `[A4O0]nthropic` matched "Anthropic" itself, `[O0]kta` matched
 # "Okta", `M[i1l]crosoft` matched "Microsoft").
 _TYPOSQUAT_PATTERNS = (
-    r"\bAnthrop1c\b",            # 1-for-i in Anthropic
-    r"\b4nthropic\b",            # 4-for-A in Anthropic
-    r"\b0nthropic\b",            # 0-for-A (debatable but distinctive)
-    r"\b0penAI\b",               # 0-for-O in OpenAI
-    r"\b0pen[Aa][Ii]\b",         # 0-for-O + casing variants
-    r"\bOp3nAI\b",               # 3-for-e in OpenAI
-    r"\bG0ogle\b",               # 0-for-o in Google (first o)
-    r"\bGo0gle\b",               # 0-for-o in Google (second o)
-    r"\bGoog1e\b",               # 1-for-l in Google
-    r"\bM1crosoft\b",            # 1-for-i in Microsoft
-    r"\bMlcrosoft\b",            # l-for-i in Microsoft (visual confusable)
-    r"\bClaud3\b",               # 3-for-e in Claude
-    r"\bGPT4-?official\b",       # GPT4-official impersonation
-    r"\bM3ta\b",                 # 3-for-e in Meta
-    r"\b0kta\b(?!\w)",           # 0-for-O in Okta
-    r"\bSt1ipe\b",               # 1-for-r in Stripe (visually weak; kept for symmetry)
+    r"\bAnthrop1c\b",  # 1-for-i in Anthropic
+    r"\b4nthropic\b",  # 4-for-A in Anthropic
+    r"\b0nthropic\b",  # 0-for-A (debatable but distinctive)
+    r"\b0penAI\b",  # 0-for-O in OpenAI
+    r"\b0pen[Aa][Ii]\b",  # 0-for-O + casing variants
+    r"\bOp3nAI\b",  # 3-for-e in OpenAI
+    r"\bG0ogle\b",  # 0-for-o in Google (first o)
+    r"\bGo0gle\b",  # 0-for-o in Google (second o)
+    r"\bGoog1e\b",  # 1-for-l in Google
+    r"\bM1crosoft\b",  # 1-for-i in Microsoft
+    r"\bMlcrosoft\b",  # l-for-i in Microsoft (visual confusable)
+    r"\bClaud3\b",  # 3-for-e in Claude
+    r"\bGPT4-?official\b",  # GPT4-official impersonation
+    r"\bM3ta\b",  # 3-for-e in Meta
+    r"\b0kta\b(?!\w)",  # 0-for-O in Okta
+    r"\bSt1ipe\b",  # 1-for-r in Stripe (visually weak; kept for symmetry)
 )
 
 _OFFICIAL_CLAIM_PATTERNS: tuple[tuple[str, str], ...] = (
@@ -230,20 +254,45 @@ _TYPOSQUAT_TUPLES: tuple[tuple[str, str], ...] = tuple(
 # Lockstep with packages/phub/src/scanners/t7-poisoned-naming.ts § v0.3.0.
 _CONFUSABLES_MAP: dict[str, str] = {
     # Cyrillic uppercase
-    "А": "A", "В": "B", "С": "C", "Е": "E",
-    "Н": "H", "І": "I", "К": "K", "М": "M",
-    "О": "O", "Р": "P", "Ѕ": "S", "Т": "T",
+    "А": "A",
+    "В": "B",
+    "С": "C",
+    "Е": "E",
+    "Н": "H",
+    "І": "I",
+    "К": "K",
+    "М": "M",
+    "О": "O",
+    "Р": "P",
+    "Ѕ": "S",
+    "Т": "T",
     "Х": "X",
     # Cyrillic lowercase
-    "а": "a", "с": "c", "е": "e", "о": "o",
-    "р": "p", "ѕ": "s",
+    "а": "a",
+    "с": "c",
+    "е": "e",
+    "о": "o",
+    "р": "p",
+    "ѕ": "s",
     # Greek uppercase
-    "Α": "A", "Β": "B", "Ε": "E", "Η": "H",
-    "Ι": "I", "Κ": "K", "Μ": "M", "Ν": "N",
-    "Ο": "O", "Ρ": "P", "Τ": "T", "Υ": "Y",
-    "Χ": "X", "Ϲ": "C",
+    "Α": "A",
+    "Β": "B",
+    "Ε": "E",
+    "Η": "H",
+    "Ι": "I",
+    "Κ": "K",
+    "Μ": "M",
+    "Ν": "N",
+    "Ο": "O",
+    "Ρ": "P",
+    "Τ": "T",
+    "Υ": "Y",
+    "Χ": "X",
+    "Ϲ": "C",
     # Greek lowercase
-    "α": "a", "ο": "o", "ρ": "p",
+    "α": "a",
+    "ο": "o",
+    "ρ": "p",
 }
 
 
@@ -270,11 +319,7 @@ _HOMOGLYPH_WORD_RE = re.compile(
     r"[A-Za-z0-9._Ͱ-ϿЀ-ӿ\-]*"
 )
 
-_ALL_PATTERNS = (
-    _OFFICIAL_CLAIM_PATTERNS
-    + _FALSE_AFFILIATION_PATTERNS
-    + _TYPOSQUAT_TUPLES
-)
+_ALL_PATTERNS = _OFFICIAL_CLAIM_PATTERNS + _FALSE_AFFILIATION_PATTERNS + _TYPOSQUAT_TUPLES
 
 _COMPILED = tuple(
     (re.compile(pattern, re.IGNORECASE | re.MULTILINE), tag) for pattern, tag in _ALL_PATTERNS
@@ -307,7 +352,7 @@ def _hint_for_match(content: str, match: re.Match[str], tag: str) -> DiffHint:
             "Vendor name appears with a non-ASCII letter visually identical to the "
             "canonical Latin spelling (Cyrillic / Greek confusable). This is the "
             "classic visual-impersonation shape and never benign in primitive content. "
-            'If this is a foreign-language reference, use the language\'s native '
+            "If this is a foreign-language reference, use the language's native "
             'spelling (e.g. "Антропик") rather than a mixed-script form.'
         ),
     }
@@ -340,7 +385,9 @@ class T7PoisonedNamingDetector:
 
         for pattern, tag in _COMPILED:
             for match in pattern.finditer(ctx.content):
-                if is_in_frontmatter(match.start(), md_ctx) or is_in_inline_code(match.start(), md_ctx):
+                if is_in_frontmatter(match.start(), md_ctx) or is_in_inline_code(
+                    match.start(), md_ctx
+                ):
                     continue
                 if tag == "vendor-typosquat" and is_in_mention_context(
                     ctx.content, match.start(), match.end()

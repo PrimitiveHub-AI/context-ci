@@ -24,10 +24,8 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import List, Tuple
 
-
-OffsetRange = Tuple[int, int]
+OffsetRange = tuple[int, int]
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,8 +38,8 @@ class MarkdownContext:
     """
 
     frontmatter_end_offset: int = 0
-    fenced_ranges: Tuple[OffsetRange, ...] = field(default_factory=tuple)
-    inline_code_ranges: Tuple[OffsetRange, ...] = field(default_factory=tuple)
+    fenced_ranges: tuple[OffsetRange, ...] = field(default_factory=tuple)
+    inline_code_ranges: tuple[OffsetRange, ...] = field(default_factory=tuple)
 
 
 _FENCE_RE = re.compile(r"^( {0,3})(`{3,}|~{3,})\s*([^`\n]*)$")
@@ -80,10 +78,7 @@ def _detect_frontmatter(content: str) -> int:
             if content[line_end] == "\r" and line_end + 1 < n and content[line_end + 1] == "\n":
                 return line_end + 2
             return line_end + 1
-        if content[line_end : line_end + 2] == "\r\n":
-            pos = line_end + 2
-        else:
-            pos = line_end + 1
+        pos = line_end + 2 if content[line_end : line_end + 2] == "\r\n" else line_end + 1
     # Unclosed frontmatter — treat as no frontmatter to avoid
     # swallowing the whole document.
     return 0
@@ -102,8 +97,8 @@ def _next_line_break_or_end(content: str, from_pos: int) -> int:
     return n
 
 
-def _detect_fenced_ranges(content: str, skip_until: int) -> List[OffsetRange]:
-    ranges: List[OffsetRange] = []
+def _detect_fenced_ranges(content: str, skip_until: int) -> list[OffsetRange]:
+    ranges: list[OffsetRange] = []
     pos = skip_until
     n = len(content)
     while pos < n:
@@ -115,10 +110,7 @@ def _detect_fenced_ranges(content: str, skip_until: int) -> List[OffsetRange]:
             marker_char = marker[0]
             marker_len = len(marker)
             range_start = pos
-            if content[line_end : line_end + 2] == "\r\n":
-                cursor = line_end + 2
-            else:
-                cursor = line_end + 1
+            cursor = line_end + 2 if content[line_end : line_end + 2] == "\r\n" else line_end + 1
             closed = False
             close_re = re.compile(
                 r"^( {0,3})(" + re.escape(marker_char) + r"{" + str(marker_len) + r",})\s*$"
@@ -144,34 +136,25 @@ def _detect_fenced_ranges(content: str, skip_until: int) -> List[OffsetRange]:
                 ranges.append((range_start, n))
                 return ranges
         else:
-            if content[line_end : line_end + 2] == "\r\n":
-                pos = line_end + 2
-            else:
-                pos = line_end + 1
+            pos = line_end + 2 if content[line_end : line_end + 2] == "\r\n" else line_end + 1
     return ranges
 
 
 def _detect_inline_code_ranges(
     content: str,
     skip_until: int,
-    fenced_ranges: List[OffsetRange],
-) -> List[OffsetRange]:
-    ranges: List[OffsetRange] = []
+    fenced_ranges: list[OffsetRange],
+) -> list[OffsetRange]:
+    ranges: list[OffsetRange] = []
     pos = skip_until
     n = len(content)
     while pos < n:
         line_end = _next_line_break_or_end(content, pos)
         if _is_in_ranges(pos, fenced_ranges):
-            if content[line_end : line_end + 2] == "\r\n":
-                pos = line_end + 2
-            else:
-                pos = line_end + 1
+            pos = line_end + 2 if content[line_end : line_end + 2] == "\r\n" else line_end + 1
             continue
         _scan_line_for_inline_code(content, pos, line_end, ranges)
-        if content[line_end : line_end + 2] == "\r\n":
-            pos = line_end + 2
-        else:
-            pos = line_end + 1
+        pos = line_end + 2 if content[line_end : line_end + 2] == "\r\n" else line_end + 1
     return ranges
 
 
@@ -179,7 +162,7 @@ def _scan_line_for_inline_code(
     content: str,
     line_start: int,
     line_end: int,
-    out: List[OffsetRange],
+    out: list[OffsetRange],
 ) -> None:
     i = line_start
     while i < line_end:
@@ -205,10 +188,7 @@ def _scan_line_for_inline_code(
 
 
 def _is_in_ranges(offset: int, ranges) -> bool:
-    for start, end in ranges:
-        if start <= offset < end:
-            return True
-    return False
+    return any(start <= offset < end for start, end in ranges)
 
 
 def is_in_frontmatter(offset: int, ctx: MarkdownContext) -> bool:
@@ -248,18 +228,10 @@ def is_in_any_code_or_frontmatter(
     (start outside inline code, end inside). Single-offset callers
     keep v0.2.1 semantics.
     """
-    if (
-        is_in_frontmatter(offset, ctx)
-        or is_in_fence(offset, ctx)
-        or is_in_inline_code(offset, ctx)
-    ):
+    if is_in_frontmatter(offset, ctx) or is_in_fence(offset, ctx) or is_in_inline_code(offset, ctx):
         return True
     if end is not None and end > offset:
         tail = end - 1
-        if (
-            is_in_frontmatter(tail, ctx)
-            or is_in_fence(tail, ctx)
-            or is_in_inline_code(tail, ctx)
-        ):
+        if is_in_frontmatter(tail, ctx) or is_in_fence(tail, ctx) or is_in_inline_code(tail, ctx):
             return True
     return False

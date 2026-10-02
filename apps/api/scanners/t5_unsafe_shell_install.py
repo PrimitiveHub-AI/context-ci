@@ -58,6 +58,7 @@ from .markdown_context import (
     is_in_any_code_or_frontmatter,
 )
 from .semantic_context import is_in_negation_context
+from .types import DetectorContext, DiffHint, Severity, Verdict
 
 # v0.2.4 (Round 6 fix 2 — closes FN-009): imperative directive
 # keywords that, when appearing within ±3 lines BEFORE a fence,
@@ -95,16 +96,14 @@ def _is_directive_referenced_fence(content: str, fence: tuple[int, int]) -> bool
     return bool(_DIRECTIVE_RE.search(window))
 
 
-def _is_in_directive_referenced_fence(
-    content: str, offset: int, md_ctx: MarkdownContext
-) -> bool:
+def _is_in_directive_referenced_fence(content: str, offset: int, md_ctx: MarkdownContext) -> bool:
     """True iff ``offset`` is inside a fence whose preceding prose
     directs the agent to execute its contents."""
     fence = fence_containing(offset, md_ctx)
     if fence is None:
         return False
     return _is_directive_referenced_fence(content, fence)
-from .types import DetectorContext, DiffHint, Severity, Verdict
+
 
 # ─────────────────────────────────────────────────────────────────────
 # Pattern families. Each (regex, tag) tuple — the tag becomes
@@ -390,9 +389,7 @@ class T5UnsafeShellInstallDetector:
                 # rather than documentary example. Negation still wins.
                 if is_in_any_code_or_frontmatter(
                     match.start(), md_ctx
-                ) and not _is_in_directive_referenced_fence(
-                    ctx.content, match.start(), md_ctx
-                ):
+                ) and not _is_in_directive_referenced_fence(ctx.content, match.start(), md_ctx):
                     continue
                 if is_in_negation_context(ctx.content, match.start()):
                     continue

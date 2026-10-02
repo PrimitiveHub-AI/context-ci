@@ -93,8 +93,11 @@ ignore = [
 # codepoints — that's the attack payload being tested. RUF001/002/003
 # is the same defense family; allow these rules on this file only.
 "**/tests/test_scanners_t2.py" = ["RUF001", "RUF002", "RUF003"]
-# T2 detector source contains the codepoints in its lookup tables.
-"**/scanners/t2_unicode_steganography.py" = ["RUF001", "RUF002", "RUF003"]
+# Detector sources legitimately contain confusable Cyrillic/Greek/ASCII
+# codepoints in lookup tables + fixtures (t2 steganography, t7 poisoned-naming,
+# t5/t10 message strings) — that IS the attack surface they detect. The
+# ambiguous-unicode family (RUF001/002/003) is noise here; allow it across scanners.
+"**/scanners/*.py" = ["RUF001", "RUF002", "RUF003"]
 
 [tool.ruff.format]
 quote-style = "double"
