@@ -57,3 +57,5 @@ jobs:
 
       - name: Publish (public, provenance)
         run: pnpm --filter @primitivehub/mcp-server publish --access public --provenance --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

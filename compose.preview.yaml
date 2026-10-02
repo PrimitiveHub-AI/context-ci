@@ -1,0 +1,62 @@
+# Preview overlay — dev-mode web on a second loopback port.
+#
+# The base `web` service in compose.yaml runs the prebuilt production
+# image on 127.0.0.1:3000 (that's what nginx proxies to primitivehub.ai).
+# `web-preview` is a SEPARATE service that runs pnpm dev with a live
+# source mount, on 127.0.0.1:3100. Two servers, two ports:
+#
+#   127.0.0.1:3000 → web        → production image, prebuilt
+#   127.0.0.1:3100 → web-preview → dev image, live source mount
+#
+# Bring up:
+#   docker compose -f compose.yaml -f compose.preview.yaml up -d web-preview
+#
+# Tear down (leaves production web + api + db running):
+#   docker compose -f compose.yaml -f compose.preview.yaml stop web-preview
+#   docker compose -f compose.yaml -f compose.preview.yaml rm -f web-preview
+#
+# The preview container talks to the SAME api / postgres / valkey the
+# production stack uses, over the shared primitivehub_net network. Every
+# request the preview handles is a real one — the only isolation is the
+# render layer (Next.js dev vs Next.js prod build).
+#
+# Localhost-only per Hard rule #3: port maps 127.0.0.1:3100 → :3000, no
+# 0.0.0.0. This is a review surface, not a public one.
+
+services:
+  web-preview:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+      target: dev
+    image: primitivehub-web:dev
+    command: ["pnpm", "dev"]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${WEB_PREVIEW_PORT:-3100}:3000"
+    environment:
+      NODE_ENV: development
+      HOSTNAME: 0.0.0.0
+      PORT: "3000"
+      WATCHPACK_POLLING: "true"
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      DJANGO_API_BASE_URL: http://api:8000/api/v1
+      NEXT_PUBLIC_UMAMI_SRC: ""
+      NEXT_PUBLIC_UMAMI_WEBSITE_ID: ""
+    env_file:
+      - path: ./apps/web/.env
+        required: false
+    volumes:
+      # Bind mount the source tree so every save triggers a hot reload.
+      # The isolated node_modules + .next volumes prevent the container's
+      # build artifacts from leaking back into the host tree and
+      # confusing the production build.
+      - ./apps/web:/app
+      - preview_node_modules:/app/node_modules
+      - preview_next_cache:/app/.next
+      - ./docs:/docs:ro
+    networks: [primitivehub_net]
+
+volumes:
+  preview_node_modules:
+  preview_next_cache:

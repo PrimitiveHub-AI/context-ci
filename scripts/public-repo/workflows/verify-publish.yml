@@ -65,3 +65,5 @@ jobs:
       # pnpm rewrites any workspace:^ deps to ^<version> on publish.
       - name: Publish (public, provenance)
         run: pnpm --filter @primitivehub/verify publish --access public --provenance --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

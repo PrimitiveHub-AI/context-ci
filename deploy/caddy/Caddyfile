@@ -1,0 +1,43 @@
+# PrimitiveHub launch reverse proxy.
+#
+# Caddy terminates TLS for primitivehub.ai and proxies to the localhost-bound
+# `web` container (Next.js, container port 3000) over the internal compose
+# network. The web app forwards /api/v1/* to Django internally, so Caddy only
+# needs to know about `web`.
+#
+# ── TLS decision (pick ONE; see the launch runbook) ─────────────────────────
+# This Caddyfile uses Caddy's automatic HTTPS (Let's Encrypt). That works when
+# Cloudflare DNS for primitivehub.ai is set to **DNS-only (grey cloud)** so the
+# ACME HTTP-01/TLS-ALPN challenge reaches this origin directly.
+#
+# If instead you keep Cloudflare **proxied (orange cloud)** — recommended for
+# DDoS/WAF and to hide the origin IP — Cloudflare intercepts the ACME
+# challenge, so automatic Let's Encrypt will NOT complete. In that case either:
+#   (a) install a Cloudflare Origin CA certificate and replace the site block
+#       below with an explicit `tls /path/cert.pem /path/key.pem`, and set the
+#       Cloudflare SSL/TLS mode to **Full (strict)**; or
+#   (b) build Caddy with the caddy-dns/cloudflare plugin and use the DNS-01
+#       challenge with a scoped Cloudflare API token.
+# Never use Cloudflare "Flexible" mode — it makes the CF↔origin hop plain HTTP
+# and Django's SECURE_SSL_REDIRECT will infinite-loop.
+# ────────────────────────────────────────────────────────────────────────────
+
+primitivehub.ai, www.primitivehub.ai {
+	encode zstd gzip
+
+	# Trust Cloudflare's forwarded-proto so Django sees https end-to-end.
+	# (SECURE_PROXY_SSL_HEADER = X-Forwarded-Proto in apps/api settings.)
+	reverse_proxy web:3000 {
+		header_up X-Forwarded-Proto {scheme}
+		header_up X-Forwarded-Host {host}
+	}
+
+	# Redirect the apex/www pair to a single canonical host if desired.
+	# @www host www.primitivehub.ai
+	# redir @www https://primitivehub.ai{uri} permanent
+
+	log {
+		output stdout
+		format console
+	}
+}

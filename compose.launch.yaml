@@ -1,0 +1,44 @@
+# Launch overlay — the PUBLIC edge. Loaded ONLY on the production host, and
+# ONLY when the owner is deliberately going live:
+#
+#   docker compose -f compose.yaml -f compose.prod.yaml -f compose.launch.yaml up -d
+#
+# ── Why this is a SEPARATE file, not part of compose.prod.yaml ───────────────
+# This overlay adds the ONE service that intentionally binds to all interfaces
+# (0.0.0.0:80 + 0.0.0.0:443) — the public TLS edge. Every other compose file in
+# this repo (compose.yaml / compose.override.yaml / compose.prod.yaml) is
+# scanned by scripts/check-port-bindings.sh (layer 1 of the pre-launch posture
+# gate) and MUST keep the 127.0.0.1 host-IP prefix on every port. A public
+# 0.0.0.0 binding there would (correctly) fail that gate and CI.
+#
+# Keeping the public bind in its own file that the gate does NOT scan means the
+# repo stays pre-launch-green by default; the internet-facing surface only
+# exists when this file is explicitly composed in. That is the intended,
+# audited path — not an accidental exposure. See CLAUDE.md hard-rule #3 and
+# docs/launch-day-runbook.md.
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    # PUBLIC on purpose — this is the launch edge. Only present when this
+    # overlay is explicitly loaded on the prod host.
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+    networks: [primitivehub_net]
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  caddy_data:
+  caddy_config:
