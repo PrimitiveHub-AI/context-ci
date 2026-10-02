@@ -58,7 +58,7 @@ jobs:
       # Refuse to publish if file: deps on verify or phub are still in
       # package.json — these MUST be swapped to ^0.1.0 before launch
       # per the ADR-0022 playbook.
-      - name: Reject file: deps (must be npm-resolved at publish)
+      - name: "Reject file: deps (must be npm-resolved at publish)"
         working-directory: packages/mcp-server
         run: |
           if grep -E '"@primitivehub/(verify|phub)": "file:' package.json; then

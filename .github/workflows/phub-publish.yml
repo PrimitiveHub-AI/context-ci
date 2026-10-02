@@ -58,7 +58,7 @@ jobs:
       # Pre-launch the file: link is in place; the launch-day playbook
       # (ADR-0022) flips the dep to ^0.1.0 BEFORE this workflow runs.
       # If this workflow detects a file: dep, it aborts loudly.
-      - name: Reject file: dep on verify (must be npm-resolved at publish)
+      - name: "Reject file: dep on verify (must be npm-resolved at publish)"
         working-directory: packages/phub
         run: |
           if grep -q '"@primitivehub/verify": "file:' package.json; then
