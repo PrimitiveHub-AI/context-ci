@@ -20,7 +20,10 @@ by-digest verdict cache. Correctness-critical; moves slowly and deliberately.
 ## Open items
 - [ ] CCI-005 false-positive: resolve or document (see docs/false-positive-resolution.md).
 - [ ] Trust-score calibration review vs holdout (recall 0.832).
-- [ ] Reputation-layer / verdict-cache scope — BLOCKED on phub-strategy decision (see that ledger).
+- [ ] Reputation-layer / verdict-cache scope — BLOCKED on phub-strategy owner-ratify (see that ledger).
+      Option-neutral task ready on ratify: **re-key verdict cache from `raw_input` → resolved content
+      digest** (results.py:107), use `phub.lock` manifest hash for repo/skill tree identity, wire to
+      durable `GET /api/v1/trust/by-digest/<hash>`. Un-defers ADR-0044. Fixes stale URL verdicts too.
 
 ## Decisions / ADRs
 ADR-0041 (verdict+scoring), ADR-0042 (session isolation), ADR-0044 (async pipeline).

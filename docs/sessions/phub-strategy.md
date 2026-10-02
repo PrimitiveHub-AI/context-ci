@@ -18,11 +18,33 @@ launch posture, GTM, and the parked reputation-layer decision.
   Some docs still say lowercase primitivehub/context-ci (stale).
 - Positioning explored: "between PrimitiveHub, skills.sh, and coolify.io"; hero = /check + phub CLI.
 
+## Recommendation (2026-10-02 — ADVISORY, owner ratifies before any build)
+**Option (b) now, architected (a)-ready.** Build internal catalog substrate; defer the public
+verdict API (and its liability) behind the human-only irreversible flip. Reject (c) as an
+end-state (undifferentiated — GitHub ships a convenience scanner in a quarter), but you get its
+perf-cache for free inside (b).
+
+Why (priority stack: security > truth > tenant > … > velocity):
+- (a) public reputation layer = publishing verdicts about third-party content you don't own →
+  real legal/trust liability. Not a pre-launch move. Keep it *reachable*, not *shipped*.
+- (b) builds the moat substrate — the seed catalog the DNS/noindex flip is gated on — with no
+  liability, and stays flippable to (a). Best risk-adjusted compounding.
+
+The one move that forecloses no option (do this regardless of a/b/c):
+- **Re-key the verdict cache on resolved CONTENT digest, not `raw_input`** (verified today:
+  apps/api/checks/results.py:107 keys on `VERDICT_ENGINE_VERSION\0mode\0raw_input`). This is a
+  strict fix — kills stale URL verdicts within TTL + enables cross-URL dedup — AND is the exact
+  plumbing (a) needs later. Deferred in ADR-0044; un-defer it.
+- Multi-file identity (repo/skill) → hash the `phub.lock` manifest as the tree digest; wire to the
+  existing durable `GET /api/v1/trust/by-digest/<hash>` (ADR-0013).
+- Cache key versions on detectors (Top10) AND scoring engine (ADR-0023 lockstep) — else immutable
+  cache serves stale-safe verdicts, a false-negative vector.
+- Demand/popularity → eviction + pre-warm ONLY, never the verdict. No "trending skills" surface.
+
 ## Open items
-- [ ] **PARKED DECISION (since 2026-07-21): by-digest verdict cache** — public reputation layer
-      vs internal catalog engine vs perf cache. Owner thinking; no option chosen.
-      Guardrail: demand → eviction only, never the verdict (trending surface = skills.sh = not us).
-      Resolving this UNBLOCKS phub-check-engine reputation work.
+- [ ] **OWNER RATIFY** the recommendation above (parked since 2026-07-21). Until ratified, build
+      only the option-neutral plumbing (digest re-key), nothing public-facing.
+- [ ] On ratify → hand the digest re-key task to phub-check-engine (its ledger open-item #3).
 - [ ] Reconcile stale repo-name references (lowercase → PrimitiveHub-AI).
 - [ ] Priority stack when primitives clash: security > truth > tenant > spec > stack > data > a11y > taste > velocity.
 
