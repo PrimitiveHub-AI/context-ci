@@ -2,6 +2,11 @@
 
 > Read this first, then `memory/*`, then the session ledger you are resuming.
 > Last updated: 2026-10-02 · Repo branch of record: `launch/noindex-lift-go-live`
+>
+> **State 2026-10-02:** all prior-session uncommitted work committed per-cluster, branch
+> reconciled with origin (merge `cfa83cb`) and pushed; working tree clean. The historical
+> transcript is archived (redacted) on local branch `session-archive` — not pushed; push only
+> if the GitHub repo is private. See [TRIAGE-2026-10-02.md](TRIAGE-2026-10-02.md) for the full log.
 
 PrimitiveHub = CyberOrca Labs' "GitHub Enterprise for AI Context Primitives".
 Work is split into **6 bounded-context sessions**. One session owns one context; a
