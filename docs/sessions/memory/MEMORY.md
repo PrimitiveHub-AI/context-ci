@@ -1,0 +1,21 @@
+- [PrimitiveHub project](project_primitivehub.md) — CyberOrca Labs initiative; "GitHub Enterprise for AI Context Primitives"; target stack + phased build plan
+- [Launch posture: PRODUCT-FIRST (2026-06-07)](project_launch_posture.md) — paper decoupled & owner-owned (don't raise it); ship via one public repo (real GitHub org PrimitiveHub-AI → PrimitiveHub-AI/context-ci; docs still say lowercase primitivehub/context-ci, stale) + npm scope @primitivehub; irreversible flips (repo/npm/DNS/noindex) stay human-only. ADR-0045.
+- [Paper reports measured truth](project_paper_measured_truth.md) — paper/public numbers echo the committed baseline (in-sample F1=0.991 w/ CCI-005 FP; TS holdout recall 0.832), never the stale all-1.000 claim
+- [/check reputation-layer decision — PARKED 2026-07-21](project_check_reputation_layer.md) — by-digest verdict cache: public reputation layer vs internal catalog engine vs perf cache; owner thinking it through, no option chosen; guardrail: demand → eviction only, never the verdict (trending surface = skills.sh = not-us)
+- [Deploy topology](project_deploy_topology.md) — 127.0.0.1:3000 IS production (nginx proxies primitivehub.ai → it, runs pnpm dev on the live working tree); editing apps/web deploys instantly; preview safely on a 2nd loopback port from a worktree
+- [Package manager: pnpm](feedback_pnpm.md) — project uses pnpm-lock.yaml; never run npm install
+- [Containerize everything](feedback_containerize.md) — every service runs in Docker; no host installs; dev = docker compose
+- [Localhost-only binding](feedback_localhost_only.md) — every dev server binds to 127.0.0.1, never 0.0.0.0; pre-launch posture is absolute
+- [No fake numbers](feedback_no_fake_numbers.md) — every UI metric must be reproducible-for-the-paper or labeled as DemoDataBadge
+- [Load expert primitives](feedback_load_primitives.md) — read content/primitives/* before frontend or backend work; CLAUDE.md at project root auto-loads
+- [Audit methodology](feedback_audit_methodology.md) — 5-layer audit (Feature Map / BA / SA / UX / Data+API) gates "done"
+- [Self-audit before reporting done](feedback_self_audit.md) — walk the universal + per-PR checklist before claiming work complete
+- [Doctrine bloat control](feedback_bloat_control.md) — max 5-10 primitives per feature decision; compress before advise
+- [Priority stack for conflicts](feedback_priority_stack.md) — security > truth > tenant > spec > stack > data > a11y > taste > velocity; tiebreaker when primitives clash
+- [Never delete held code](feedback_never_delete_held_code.md) — HELD markers mean staged, not dead
+- [User prompt-validation workflow](user_workflow.md) — user often passes prompts from another AI assistant for me to evaluate before executing
+- [Extract reusable components actively](feedback_extract_reusable.md) — for every component/helper/SDK, consciously evaluate whether similar concepts should be unified; never skip the check
+- [Skill-consumption receipt](feedback_skill_consumption_receipt.md) — log every external-skill ingest as Fetch→Audit→Distill→Delete+Disposition; audit the WHOLE tree (phub audit only covers SKILL.md); pin source SHA; reject is a valid outcome
+- [Offer test commands on ship](feedback_offer_test_commands.md) — every user-facing surface gets a copy-paste "Try it now" block before moving to next plan; user explicitly called this out
+- [No Claude/Anthropic attribution](feedback_no_claude_attribution.md) — no Co-Authored-By trailer on this project; ownership = "PrimitiveHub AI / CyberOrca Labs"; but KEEP product refs (CLAUDE.md, claude-* classes, corpus attack fixtures, $ANTHROPIC_API_KEY, integration targets)
+- [Product, not paper, for GTM](feedback_product_not_paper.md) — revenue/ARR/fundraising/GTM reasoning treats PrimitiveHub as a product solving a present-day problem (GitHub-for-AI-context); paper is not the gating event
