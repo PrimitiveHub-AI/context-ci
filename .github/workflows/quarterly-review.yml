@@ -70,7 +70,7 @@ jobs:
             packages/phub/pnpm-lock.yaml
             bench/scripts/pnpm-lock.yaml
 
-      - name: Build verify (phub's file: dependency — must build first)
+      - name: "Build verify (phub's file: dependency — must build first)"
         working-directory: packages/verify
         run: |
           pnpm install --frozen-lockfile
