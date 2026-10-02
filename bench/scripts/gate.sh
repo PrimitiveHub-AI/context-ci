@@ -21,6 +21,18 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO_ROOT"
 
+# Preflight — refuse to run a parity-only gate. Without uv + a built phub, the
+# measure steps below fail and (pre-fix) left a FALSE "GATE: PASS" that only
+# compared stale baselines. Fail loudly and actionably instead (ADR-0023 / FLOOR.md).
+MISSING=()
+command -v uv >/dev/null 2>&1 || MISSING+=("uv — Python runner for apps/api measure")
+[[ -f packages/phub/dist/audit/uncovered.js ]] || MISSING+=("built packages/phub — run: pnpm -C packages/phub build")
+if (( ${#MISSING[@]} > 0 )); then
+  echo "gate: toolchain not ready — refusing to run; a gate that cannot measure must not PASS:" >&2
+  printf '  - %s\n' "${MISSING[@]}" >&2
+  exit 1
+fi
+
 # Latest baseline per language. YYYY-MM-DD-<lang>.json sorts lex ==
 # chronologically. nullglob → empty array if none exist.
 shopt -s nullglob
@@ -51,27 +63,21 @@ TS_STATUS=0
 PARITY_STATUS=0
 
 echo "==> Py: measure --gate --baseline ${PY_FLOOR}"
-if ! uv run --project apps/api python bench/scripts/measure.py \
-      --no-baseline --gate --baseline "${PY_FLOOR}" >"$PY_OUT" 2>&1; then
-  PY_STATUS=$?
-fi
+uv run --project apps/api python bench/scripts/measure.py \
+    --no-baseline --gate --baseline "${PY_FLOOR}" >"$PY_OUT" 2>&1 || PY_STATUS=$?
 [[ "${VERBOSE:-0}" == "1" ]] && cat "$PY_OUT"
 tail -n 12 "$PY_OUT"
 echo
 
 echo "==> TS: measure --gate --baseline ${TS_FLOOR}"
-if ! (cd bench/scripts && pnpm -s tsx measure.ts \
-      --no-baseline --gate --baseline "../../${TS_FLOOR}") >"$TS_OUT" 2>&1; then
-  TS_STATUS=$?
-fi
+(cd bench/scripts && pnpm -s tsx measure.ts \
+    --no-baseline --gate --baseline "../../${TS_FLOOR}") >"$TS_OUT" 2>&1 || TS_STATUS=$?
 [[ "${VERBOSE:-0}" == "1" ]] && cat "$TS_OUT"
 tail -n 12 "$TS_OUT"
 echo
 
 echo "==> Parity: compare ${PY_FLOOR##*/} vs ${TS_FLOOR##*/} (ADR-0023)"
-if ! python3 bench/scripts/parity_check.py >"$PARITY_OUT" 2>&1; then
-  PARITY_STATUS=$?
-fi
+python3 bench/scripts/parity_check.py >"$PARITY_OUT" 2>&1 || PARITY_STATUS=$?
 cat "$PARITY_OUT"
 echo
 
