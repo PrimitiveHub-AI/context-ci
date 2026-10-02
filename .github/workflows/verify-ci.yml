@@ -50,10 +50,22 @@ jobs:
 
       # Asserts package.json files allowlist resolves, exports match dist,
       # and the final tarball fits Gate G-B size budget. Does not publish.
-      - name: pnpm publish --dry-run
-        run: pnpm publish --dry-run --no-git-checks
+      - name: pnpm publish --dry-run (packaging validation)
+        run: |
+          # Packaging validation only. An already-published version is NOT a CI
+          # failure here — the real publish is gated in verify-publish.yml. Treat
+          # version-exists as a warning so a not-yet-bumped version can't flood red CI.
+          if pnpm publish --dry-run --no-git-checks 2>&1 | tee /tmp/dryrun.log; then
+            exit 0
+          fi
+          if grep -q 'cannot publish over the previously published versions' /tmp/dryrun.log; then
+            echo "::warning::Version already published — packaging validated; bump version to release."
+            exit 0
+          fi
+          echo "::error::publish --dry-run failed for a reason other than an already-published version."
+          exit 1
 
-      - name: Tarball size budget (Gate G-B: < 50KB packed)
+      - name: "Tarball size budget (Gate G-B: < 50KB packed)"
         run: |
           tarball=$(pnpm pack 2>&1 | tail -n 1)
           size=$(stat -c%s "$tarball")

@@ -1,6 +1,6 @@
 {
   "name": "@primitivehub/mcp-server",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP server exposing PrimitiveHub verification + scanning to AI agents (Claude, Cursor, Aider, …). Pure transport over @primitivehub/verify + @primitivehub/phub — zero custom trust logic.",
   "license": "MIT",
   "author": "PrimitiveHub AI / CyberOrca Labs",
