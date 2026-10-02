@@ -3,10 +3,18 @@
 > Read this first, then `memory/*`, then the session ledger you are resuming.
 > Last updated: 2026-10-02 · Repo branch of record: `launch/noindex-lift-go-live`
 >
+> **🟢 LIVE — post-launch.** PrimitiveHub launched **2026-07-22** (noindex lifted, commit `8c71e7d`);
+> primitivehub.ai serves publicly (HTTP 200, Cloudflare, indexable). We are in **continuous
+> development of a live product**, NOT pre-launch. Consequences: `scripts/check-pre-launch-posture.sh`
+> is EXPECTED to "FAIL" now (public DNS/proxy/noindex-off) — run it in inverse mode. The "human-only
+> boundary flips" (repo-public, npm, DNS, noindex) are DONE. Pre-launch memory files
+> (`feedback_localhost_only`, `project_launch_posture`) are historically stale — verify before trusting.
+> Every change must keep the regression gate green (`bench/scripts/gate.sh`, fixed 2026-10-02).
+>
 > **State 2026-10-02:** all prior-session uncommitted work committed per-cluster, branch
-> reconciled with origin (merge `cfa83cb`) and pushed; working tree clean. The historical
-> transcript is archived (redacted) on local branch `session-archive` — not pushed; push only
-> if the GitHub repo is private. See [TRIAGE-2026-10-02.md](TRIAGE-2026-10-02.md) for the full log.
+> reconciled with origin (merge `cfa83cb`) and pushed; working tree clean; **real gate GREEN**
+> (no regression, Py↔TS parity). Historical transcript archived (redacted) on local `session-archive`
+> (not pushed). See [TRIAGE-2026-10-02.md](TRIAGE-2026-10-02.md) for the full log.
 
 PrimitiveHub = CyberOrca Labs' "GitHub Enterprise for AI Context Primitives".
 Work is split into **6 bounded-context sessions**. One session owns one context; a
