@@ -55,3 +55,26 @@ Thumbs.db
 
 # Claude Code — personal/local settings only; shared agents/commands stay tracked
 .claude/settings.local.json
+
+# public-repo assembly output (scripts/build-public-repo.sh) — build artifact, not committed here
+dist-public/
+
+# host-local deploy overlay — run the LOCALLY-built prod image without a GHCR
+# pull (compose.prod.yaml is pull-only). Host-specific stopgap; see bugs.md.
+compose.deploy-local.yaml
+
+# LaTeX / paper build artifacts — generated from paper/*.tex.
+# Keep sources: *.tex, *.bib, *.csl, Makefile, ieee_base.docx template, scripts/, sections/.
+paper/*.aux
+paper/*.bbl
+paper/*.blg
+paper/*.fdb_latexmk
+paper/*.fls
+paper/*.out
+paper/*.toc
+paper/*.synctex.gz
+paper/*.pdf
+paper/main.docx
+paper/main-ieee.docx
+paper/PrimitiveHub_Context_CI_Camera_Ready_FINAL.docx
+paper/primitivehub-paper-src.tar.gz
