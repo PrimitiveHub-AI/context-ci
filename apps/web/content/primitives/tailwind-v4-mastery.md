@@ -4,7 +4,7 @@ name: tailwind-v4-mastery
 version: 0.2.0
 type: design
 domain: frontend
-author: PrimitiveHub Labs (synthesized from public skills + maintainer knowledge; v0.2.0 enrichment adds @theme inline mechanics, @plugin/@variant, double-wrap gotcha)
+author: PrimitiveHub AI (synthesized from public skills + maintainer knowledge; v0.2.0 enrichment adds @theme inline mechanics, @plugin/@variant, double-wrap gotcha)
 license: CC-BY-4.0
 tokens: 3900
 token_budget: 5000

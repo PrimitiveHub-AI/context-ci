@@ -4,7 +4,7 @@ name: nextjs-16-app-router
 version: 0.2.0
 type: engineering
 domain: frontend
-author: PrimitiveHub Labs (synthesized from wsimmonds/claude-nextjs-skills + vercel-labs/next-skills + maintainer knowledge; v0.2.0 enrichment adds Server Actions, parallel/intercepting routes, proxy.ts, React.cache, after(), View Transitions)
+author: PrimitiveHub AI (synthesized from wsimmonds/claude-nextjs-skills + vercel-labs/next-skills + maintainer knowledge; v0.2.0 enrichment adds Server Actions, parallel/intercepting routes, proxy.ts, React.cache, after(), View Transitions)
 license: CC-BY-4.0
 tokens: 5600
 token_budget: 6500

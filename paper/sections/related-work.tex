@@ -1,161 +1,95 @@
-% Related Work — v0.2 prose. Target: ~1.5 pages.
-% Six subsections: supply chain, prompt-injection defense, OWASP,
-% AV-vendor methodology, Unicode security, measurement.
+% Related Work. Every cite key here must also appear in references.bib;
+% the paper-check CI gate enforces it. External anchors: SLSA, in-toto,
+% Sigstore, the incident set, Perez, Greshake, Wallace, OWASP,
+% Christodorescu (static malware detection), UTS39, Gabrilovich
+% (homograph), Powers, Kohavi (holdout), MITRE CVE, USPTO.
 
 \section{Related Work}
 \label{sec:related}
 
 \subsection{Software supply-chain provenance}
 
-The last decade of software-supply-chain work focused on the
-build pipeline. SLSA~\cite{SLSA:2023:provenance-spec} formalises
-build-provenance levels; in-toto~\cite{in-toto:2016:supply-chain}
-provides the predicate-based attestation framework PrimitiveHub
-inherits; Sigstore~\cite{Sigstore:2021:keyless-signing} provides
-keyless signing via OIDC for the public-registry path. The
-common thread is verifying that a compiled artifact originated
-from a specific source commit and was signed by an authorized
-identity. PrimitiveHub extends the chain by adding a semantic-
-validation layer that runs \emph{before} the signing step:
-content the chain would otherwise validate as authentic-but-
-unsafe is rejected at registry-publish time.
-
-The chain of supply-chain incidents that motivates this
-extension is well-cataloged. SolarWinds in
-2020~\cite{SolarWinds:2020:supply-chain}, Codecov in
-2021~\cite{Codecov:2021:bash-uploader},
-\verb|ua-parser-js|~\cite{ua-parser-js:2021:npm-typosquat} the
-same year, \verb|eslint-config-prettier| in
-2024~\cite{eslint-config-prettier:2024:maintainer-compromise},
-\verb|xz-utils| (CVE-2024-3094) the same
-year~\cite{xz-utils:2024:CVE-2024-3094}, and the September 2025
-Shai-Hulud npm worm~\cite{Shai-Hulud:2025:npm-worm}. Each one
-either exploited or motivated a specific defense layer in the
-SLSA / Sigstore / in-toto stack. PrimitiveHub's Top 10 names
-the analogous defense layer for agent-context primitives.
+A decade of supply-chain work targeted the build pipeline.
+SLSA~\cite{SLSA:2023:provenance-spec} formalizes provenance levels;
+in-toto~\cite{in-toto:2016:supply-chain} provides the predicate-based
+attestation framework we inherit; Sigstore~\cite{Sigstore:2021:keyless-signing}
+provides keyless signing for the public-registry path. All verify that a
+compiled artifact came from a specific commit and was signed by an
+authorized identity. PrimitiveHub adds a semantic-validation step
+\emph{before} signing, so content the chain would otherwise certify as
+authentic-but-unsafe is rejected at publish time. The incident record
+that motivates the extension is well
+cataloged~\cite{SolarWinds:2020:supply-chain,Codecov:2021:bash-uploader,ua-parser-js:2021:npm-typosquat,eslint-config-prettier:2024:maintainer-compromise,xz-utils:2024:CVE-2024-3094,Shai-Hulud:2025:npm-worm};
+each exploited or motivated a layer of the SLSA/Sigstore/in-toto stack,
+and the Top~10 names the analogous layer for agent context.
 
 \subsection{Prompt-injection defense}
 
-Prior work on prompt-injection defense has focused on runtime
-mitigations. Greshake et al.~\cite{Greshake:2023:prompt-injection-survey}
-catalog the indirect-prompt-injection attack surface and discuss
-runtime-side defenses: input filtering, retrieval sanitization,
-output post-processing, and instruction-hierarchy training.
-Wallace et al.~\cite{Wallace:2024:instruction-hierarchy} formalise
-training the LLM itself to recognise privileged versus
-non-privileged instruction sources at inference time. Both lines
-operate at agent execution time; both leave the cost of a
-detected attack (credentials lost, side effects committed)
-partly paid before the defense fires.
+Prior prompt-injection work is largely runtime. Perez and
+Ribeiro~\cite{Perez:2022:ignore-previous-prompt} first characterized
+goal-hijacking and prompt-leaking attacks on deployed models. Greshake et
+al.~\cite{Greshake:2023:prompt-injection-survey} catalog the indirect
+injection surface and its runtime mitigations: input filtering,
+retrieval sanitization, output post-processing. Wallace et
+al.~\cite{Wallace:2024:instruction-hierarchy} train the model to rank
+privileged against unprivileged instruction sources at inference time.
+Both operate at execution time, and both leave part of a caught attack's
+cost already paid. PrimitiveHub moves the check earlier: detectors run at
+publish time, verification runs at load time, and the artifact reaches
+the agent only after passing. The shift mirrors the package-manager move
+from ``warn on install'' to ``block known-bad.'' The two lines are
+complementary: a runtime defense catches what the static pass missed,
+and the static pass keeps the runtime defense's workload smaller.
 
-PrimitiveHub takes a different position. Its detectors run at
-registry-publish time; verification runs at agent-load time.
-The artifact never reaches the consuming agent unless it passed
-the Top 10. The discipline shift is the same one package
-managers made between ``warn on install'' and ``block install
-of known-bad'' --- pulling the defense earlier in the pipeline.
-The two lines are complementary: a runtime-side defense will
-catch attacks our static pass missed; our static pass keeps the
-runtime-side defense's workload manageable by blocking the
-known-bad shapes before they reach the model.
+\subsection{OWASP Top 10 for LLM applications}
 
-\subsection{OWASP Top 10 for LLM Applications}
+The OWASP Top~10 for LLM Applications~\cite{OWASP:2025:llm-top10} spans
+prompt injection (LLM01), insecure output handling, training-data
+poisoning, supply-chain risk (LLM05), and others. Our Top~10 overlaps it
+at LLM01 and LLM05, the slice detectable statically on content; the
+crosswalk documents the alignment row by row and disclaims the runtime
+categories (insecure output handling, denial of service, post-inference
+disclosure) as out of scope rather than claiming coverage.
 
-OWASP's Top 10 for LLM Applications
-2025~\cite{OWASP:2025:llm-top10} defines a ten-category
-taxonomy spanning prompt injection (LLM01), insecure output
-handling (LLM02), training-data poisoning (LLM03), model denial
-of service (LLM04), supply-chain vulnerabilities (LLM05), and
-five others covering sensitive-information disclosure, insecure
-plugin design, excessive agency, overreliance, and model theft.
-PrimitiveHub's Top 10 overlaps the OWASP catalog at the
-LLM01 (prompt injection) and LLM05 (supply chain) categories;
-the crosswalk in \texttt{docs/owasp-llm-top10-crosswalk.md}
-documents the alignment row-by-row.
+\subsection{Antivirus methodology}
 
-The scope boundary is explicit. OWASP's runtime categories
-(LLM02 insecure output handling, LLM04 denial of service, LLM06
-post-inference disclosure) require defense layers a static
-content scan cannot provide; those layers are typically
-provider-side or proxy-side, not registry-side. PrimitiveHub
-covers the LLM01 + LLM05 slice that is detectable statically on
-primitive content. The crosswalk explicitly disclaims the
-runtime layers as out of scope rather than claiming coverage.
-
-\subsection{Antivirus industry methodology}
-
-The antivirus industry has spent two decades formalising
-scanner-as-product. The product-family map (signature DB / FP
-submission portal / allowlist DB / on-access guard / boot-time
-scan / HIPS / cloud lookup / provenance), the append-only FP/FN
-ledger discipline, the quarterly re-review cadence, the per-
-detector versioning, and the corpus-as-ground-truth practice
-are well-evidenced in
-industry~\cite{AntivirusTaxonomy:2010s:industry-practice}.
-PrimitiveHub adopts this map row-for-row (ADR-0030 \S 3).
-
-What carries over is methodology: paired FP and FN ledgers,
-four-path triage classification (edit content / narrow allow +
-ledger / detector ratchet / escalate), corpus as the regression
-contract, F\textsubscript{1} as the operational metric, quarterly
-re-review of every ledger entry. What is new is the substrate:
-agent-context primitives are markdown documents with semantic
-content, not binary executables. The detection techniques
-diverge accordingly --- regex pools with markdown-context
-awareness, UTS \#39 skeleton comparison for vendor names,
-codepoint-class density checks --- even when the surrounding
-methodology stays AV-industry-standard.
+The antivirus field established rule-based malicious-pattern detection
+and the practice of maintaining it as a
+product~\cite{Christodorescu:2003:static-malware,Alvarez:2014:yara}.
+PrimitiveHub adapts the operational scaffolding around that detection,
+namely append-only false-positive and false-negative ledgers,
+per-detector versioning, and a corpus that serves as ground truth, to the
+agent-context substrate. What changes is the substrate: primitives are
+markdown documents with semantic content, not binaries, so the detection
+techniques diverge (regex pools with markdown-context awareness, skeleton
+comparison for vendor names, codepoint-density checks) even as the
+surrounding discipline stays AV-standard.
 
 \subsection{Unicode-based attacks}
 
-PrimitiveHub's T7 detector uses the UTS \#39 skeleton method
-for confusable identifier
-detection~\cite{UTS39:2024:unicode-confusables}. The method is
-standardised; its application to vendor-name impersonation in
-agent-context content is the new operational target. The
-phishing-domain literature has documented confusables-based
-attack detection at internet scale for nearly a
-decade~\cite{Confusables:2017:phishing-detection}; bringing the
-technique into the primitive-registry space extends it to a
-new defense surface where the same attacker tradecraft has
-been observed in field reports.
-
-The scope of the v0.3.1 detector --- 43 single-word vendors in
-the curated list, with the generic skeleton method
-automatically extending to every added vendor --- explicitly
-defers the full confusables.txt + UAX \#31 identifier-domain
-generalisation until the vendor list outgrows manual curation
-(see Section~\ref{sec:conclusion}).
+The confusables detector uses the UTS~\#39 skeleton
+method~\cite{UTS39:2024:unicode-confusables}. The method is
+standardized; applying it to vendor-name impersonation in agent context
+is the new target. Homograph and confusable attacks have been documented
+against internationalized domain names for over two
+decades~\cite{Gabrilovich:2002:homograph}; we bring the same tradecraft
+to the primitive registry, where the same attacker behavior appears in
+field reports.
 
 \subsection{Measurement methodology}
 
-PrimitiveHub's precision / recall / F\textsubscript{1}
-measurements use the standard binary-classification convention
-documented in
-Powers~\cite{Powers:2011:evaluation-precision-recall}.
-Macro-averaging across the ten detectors is unweighted (each
-CCI category is a separate defense layer; sample frequency is
-not a class-imbalance argument). The holdout discipline
-follows the train/test split tradition industry has used since
-the 1990s~\cite{HoldoutValidation:1995:tradition}, applied
-per-detector with the 80/20 ratio documented in
-ADR-0038~\cite{primitivehub:2026:adr-0038}.
-
-The per-sample reproducibility surface ---
-\verb|bench/cli/replay.py| --- has no direct analogue in the
-classical AV literature, where signature-database internals
-were typically proprietary. The closer analogue is the open
-test-corpus pattern from compiler-conformance work (the Ada
-ACATS suite, the Khronos OpenGL test pool), where labeled
-inputs and per-test outcomes are public so independent
-implementations can be measured comparably. PrimitiveHub's
-corpus + replay tool sit in the same tradition: open inputs,
-open scoring code, open per-sample verdicts.
-
-The CVE taxonomy (cited in CCI-008 invalid-CVE
-detection)~\cite{MITRE:CVE:1999:taxonomy} and the US Patent
-issuance taxonomy (cited in CCI-008 invalid-patent
-detection)~\cite{USPTO:1790:patent-system} are the authority
-catalogs whose absence-of-an-identifier signals our detector
-reads as ``fake citation.'' Both are external taxonomies the
-detector consults as ground truth at runtime.
+The precision/recall/F\textsubscript{1} convention follows
+Powers~\cite{Powers:2011:evaluation-precision-recall}, with unweighted
+macro-averaging because each category is a separate defense. The
+held-out discipline follows the train/test tradition long standard in
+machine learning~\cite{Kohavi:1995:cross-validation}, applied per
+detector at an 80/20 ratio~\cite{primitivehub:2026:adr-0038}. The
+per-sample replay surface has no direct analogue in classical AV work,
+where signature databases were proprietary; the closer parallel is the
+open conformance-suite tradition, where labeled inputs and per-test
+outcomes are public so independent implementations can be compared. The
+fake-citation detector consults two external authority taxonomies as
+ground truth at runtime: the CVE catalog~\cite{MITRE:CVE:1999:taxonomy}
+and the US patent issuance record~\cite{USPTO:1790:patent-system}. The
+open held-out coverage gaps are tracked as future
+work~\cite{primitivehub:2026:eval-limitations}.

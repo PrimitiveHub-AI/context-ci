@@ -4,7 +4,7 @@ name: valkey-caching-patterns
 version: 0.1.0
 type: architecture
 domain: backend
-author: PrimitiveHub Labs (synthesized 2026-05-29 from Redis/Valkey production patterns + Next.js "use cache" doctrine)
+author: PrimitiveHub AI (synthesized 2026-05-29 from Redis/Valkey production patterns + Next.js "use cache" doctrine)
 license: CC-BY-4.0
 tokens: 3400
 token_budget: 5000

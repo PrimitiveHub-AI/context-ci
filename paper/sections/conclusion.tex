@@ -1,98 +1,83 @@
-% Conclusion — v0.2 prose. Target: ~1 page. Summary + future work
-% + closing.
+% Conclusion. Summary + future work + close. Numbers match the
+% evaluation section: in-sample macro F1 0.991, held-out Python recall
+% 1.000 / TypeScript recall 0.832.
 
 \section{Conclusion and Future Work}
 \label{sec:conclusion}
 
 \subsection{Summary}
 
-% Source: docs/threat-model.md § 1, docs/evaluation.md macro F1.
 AI-agent context is a new class of supply-chain artifact, and the
-existing supply-chain controls --- SLSA, in-toto, Sigstore, and
-package-manager provenance --- do not address it. A primitive can
-be signed by an authorized maintainer, content-digest-verified,
-and unchanged since signing, and still tell the consuming agent
-to fetch a remote URL and execute the response. The missing layer
-is a semantic-validation step that scans the primitive's prose
-for known attack shapes before the primitive reaches the agent's
-load path.
+existing controls (SLSA, in-toto, Sigstore, package-manager provenance)
+do not reach it. A primitive can be signed, \contentdigest{}-verified,
+and unchanged since signing, and still tell the consuming agent to fetch
+a remote URL and run the response. The missing layer is a semantic check
+that scans a primitive's prose for known attack shapes before it reaches
+the agent's load path.
 
-This paper presented PrimitiveHub, a registry plus
-static-analysis pipeline that closes that gap. We contributed a
-ten-category threat taxonomy (the Context CI Top 10), a
-105-sample labeled corpus split into in-sample and holdout
-slices, two byte-identical detector implementations measured
-against the corpus by a CI-enforced regression gate, an
-antivirus-industry-modeled FP/FN ledger discipline, and an
-open-source pipeline that a reviewer can reproduce in under ten
-minutes. On the v0.2 corpus the detectors achieve macro
-F\textsubscript{1} of 1.000 on both slices with cross-language
-parity intact. The corpus + ledger + gate together are the
-discipline that lets future measurements at larger corpus sizes
-be comparable to this one.
+We presented PrimitiveHub, a registry and static-analysis pipeline that
+adds that layer. The contributions are a ten-category threat taxonomy
+defined operationally; a 124-sample labeled corpus split into in-sample
+and held-out slices; two engines whose verdicts a CI gate holds
+identical on the in-sample slice; an AV-style paired-ledger discipline;
+and an open pipeline a reviewer can rerun from a clean clone. On the
+in-sample slice the detectors reach a macro F\textsubscript{1} of 0.991,
+with one known precision item. On the held-out slice the Python engine
+recovers all 25 attacks and the TypeScript engine recovers 18, a result
+we report rather than tune away because it is the clearest evidence the
+measurement is real. The corpus, the ledgers, and the gate are what let
+a future measurement at a larger size be compared against this one.
 
 \subsection{Future work}
 
-% Source: docs/evaluation.md § Limitations; FN ledger entries 7-13.
-The current measurement is honest about what it does not yet
-prove. The corpus is small (105 samples; per-detector support
-30--45); F\textsubscript{1} on this size is the best we can
-demonstrate at this corpus size, not a claim that no errors
-exist. Five lines of future work follow directly from the
-limitations enumerated in Section~\ref{sec:evaluation}:
+\paragraph{Close the cross-engine recall gap} The most immediate work is
+bringing the TypeScript engine's held-out recovery up to the Python
+engine's. Each of the seven misses is a lockstep ratchet (Path C)
+recorded in the false-negative ledger, with the corresponding corpus
+sample locking the fix.
 
-\paragraph{Corpus expansion to per-detector support past 100
-samples.} The next round of corpus work targets a tenfold growth
-in per-detector support. The discipline that prevents this from
-becoming an exercise in tuning is the holdout split itself: every
-expansion must include holdout samples that the detectors are
-\emph{not} permitted to be tuned against until the closure round.
+\paragraph{Resolve the CCI-005 false positive} The single in-sample
+false positive on the unsafe-shell-install detector is the open
+precision item, resolvable through a prose edit (Path A) or a detector
+narrowing (Path C) measured against the corpus.
 
-\paragraph{Closing the four zero-holdout detectors.} CCI-005,
-CCI-007, CCI-009, and CCI-010 currently have zero holdout
-samples; their reported holdout F\textsubscript{1} is
-informational only. Closing this coverage gap is the immediate
-corpus-side work documented in
-\cite{primitivehub:2026:eval-limitations} and is scheduled for
-the round following this paper's submission.
+\paragraph{Expand the corpus, with held-out parity} The next round
+targets a tenfold growth in per-detector support and at least three
+held-out samples per detector, so the overfit probe is as dense as the
+training slice. Every expansion ships held-out samples the detectors are
+not permitted to tune against until the closure round.
 
-\paragraph{Multilingual adversarial samples.} Adversarial samples
-are presently authored primarily in English. Russian, Chinese,
-Arabic, and Spanish variants are scheduled for v0.3 to test
-detection beyond the English-language phrasing bias. The
-per-language addition is bounded by a UTS \#39-style script
-identifier discipline so detection generalizes rather than
-hand-codes per-language patterns.
+\paragraph{Multilingual adversarial samples} Russian, Chinese, Arabic,
+and Spanish variants are scheduled for v0.3 to test detection beyond the
+English-language phrasing bias, bounded by a script-identifier
+discipline so detection generalizes rather than hard-codes per language.
 
-\paragraph{Runtime gating.} The MCP gate
-(\verb|verify_before_load|) currently rejects unsigned primitives
-but does not re-run the Top 10 at agent-load time. A primitive
-that was clean at registry-publish time but has since been
-tampered with in transit, or that arrives via a lock-file path
-the signing chain did not cover, slips past the static gate. A
-future round closes this gap so even a corrupted lock file
-cannot deliver a known-bad primitive to a running agent.
+\paragraph{Runtime gating and full confusables} The agent-side
+\texttt{verify\_before\_load} gate enforces signature and lock-digest
+integrity, but does not yet re-run the full Top~10 inside the MCP server
+at the moment of load (the detectors are reachable there only through
+the separate \texttt{scan\_text} tool). A later round folds the full
+re-scan into the gate, so even a corrupted lock file cannot deliver a
+known-bad primitive to a running agent. Separately, the confusables
+detector will grow from the 35-vendor list to the full UTS~\#39
+distribution and UAX~\#31 identifier rules, an expansion that is mostly
+data, since the algorithm is unchanged.
 
-\paragraph{Generic Unicode confusables at full scope.} The T7
-v0.3.0 detector scopes the UTS \#39 skeleton method to the
-project's 35-entry vendor list. The full confusables.txt mapping
-(roughly 6\,000 entries) plus UAX \#31 identifier-domain rules is
-the natural extension when the vendor list outgrows its current
-scope. We expect this expansion to be code-light --- the table
-is data, the algorithm is unchanged.
+\subsection{Closing}
 
-\subsection{Closing thoughts}
-
-% Source: docs/decisions/0030; docs/false-{positive,negative}-resolution.md.
-Agent-context AV is a new product category. The numbers in this
-paper are the first measurement, not the last. The discipline
-that makes them comparable to future measurements is the corpus +
-ledger + gate triad described in
-Sections~\ref{sec:implementation} and~\ref{sec:evaluation}: a
-public corpus that doubles as the regression contract, append-only
-numbered ledgers for every false-positive and false-negative
-finding, and a CI gate that fails the merge on F\textsubscript{1}
-regression or cross-language drift. Independent replication is
-explicitly invited at our public security contact and credited in
-the ledger closure log. The corpus is the steering wheel; this
-paper is the first map of where the wheel has been pointed.
+Static validation of agent-context artifacts is an emerging defense
+layer between provenance verification and runtime instruction handling.
+This release should be read as a reproducible first measurement and a
+benchmark \emph{seed}, not a mature detector benchmark: its contribution
+is to fix the artifact class, the threat taxonomy, the measurement
+contract, and the reproducibility path that larger evaluations can build
+on, and the numbers are the first datapoint produced under that contract
+rather than a settled performance claim. What makes them comparable to
+future ones is the discipline behind them: a public corpus that doubles
+as the regression contract, numbered append-only ledgers for every
+false positive and false negative, and a CI gate that fails the merge on
+in-sample regression or cross-language drift. We invite independent
+replication at our public security contact and credit it in the ledger.
+The corpus is therefore not only an evaluation set but the mechanism by
+which future detector changes remain comparable to the measurements
+reported here.

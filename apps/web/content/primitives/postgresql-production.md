@@ -4,7 +4,7 @@ name: postgresql-production
 version: 0.2.0
 type: architecture
 domain: backend
-author: PrimitiveHub Labs (synthesized 2026-05-29 from PG 16+ production knowledge; v0.2.0 adds fillfactor/HOT updates, lateral joins for top-N, SKIP LOCKED for queues, pg_repack vs VACUUM FULL, EXISTS over COUNT)
+author: PrimitiveHub AI (synthesized 2026-05-29 from PG 16+ production knowledge; v0.2.0 adds fillfactor/HOT updates, lateral joins for top-N, SKIP LOCKED for queues, pg_repack vs VACUUM FULL, EXISTS over COUNT)
 license: CC-BY-4.0
 tokens: 4200
 token_budget: 5500

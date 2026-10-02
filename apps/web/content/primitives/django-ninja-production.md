@@ -4,7 +4,7 @@ name: django-ninja-production
 version: 0.1.0
 type: engineering
 domain: backend
-author: PrimitiveHub Labs (synthesized 2026-05-29 from Django 5 production patterns, adapted from DRF to Ninja)
+author: PrimitiveHub AI (synthesized 2026-05-29 from Django 5 production patterns, adapted from DRF to Ninja)
 license: CC-BY-4.0
 tokens: 4200
 token_budget: 6000

@@ -4,7 +4,7 @@ name: design-md-spec
 version: 0.1.0
 type: design
 domain: frontend
-author: PrimitiveHub Labs (synthesized from google-labs-code/stitch-skills design-md)
+author: PrimitiveHub AI (synthesized from google-labs-code/stitch-skills design-md)
 license: CC-BY-4.0
 tokens: 2600
 token_budget: 4000

@@ -4,7 +4,7 @@ name: ddia-multi-tenant
 version: 0.1.0
 type: architecture
 domain: backend
-author: PrimitiveHub Labs (synthesized 2026-05-29 from Martin Kleppmann's "Designing Data-Intensive Applications")
+author: PrimitiveHub AI (synthesized 2026-05-29 from Martin Kleppmann's "Designing Data-Intensive Applications")
 license: CC-BY-4.0
 tokens: 4200
 token_budget: 6000

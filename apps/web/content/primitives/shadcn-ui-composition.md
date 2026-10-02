@@ -4,7 +4,7 @@ name: shadcn-ui-composition
 version: 0.2.0
 type: design
 domain: frontend
-author: PrimitiveHub Labs (synthesized from shadcn/ui upstream + google-labs-code/stitch-skills shadcn-ui + maintainer knowledge; v0.2.0 enrichment adds Radix compound pattern, asChild composition, forceMount with AnimatePresence, data-[state=*] styling, portal gotchas)
+author: PrimitiveHub AI (synthesized from shadcn/ui upstream + google-labs-code/stitch-skills shadcn-ui + maintainer knowledge; v0.2.0 enrichment adds Radix compound pattern, asChild composition, forceMount with AnimatePresence, data-[state=*] styling, portal gotchas)
 license: CC-BY-4.0
 tokens: 4200
 token_budget: 5000

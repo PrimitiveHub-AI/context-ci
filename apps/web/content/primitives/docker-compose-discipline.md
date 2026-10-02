@@ -4,7 +4,7 @@ name: docker-compose-discipline
 version: 0.1.1
 type: engineering
 domain: infrastructure
-author: PrimitiveHub Labs (synthesized 2026-05-30 from production Docker patterns + maintainer experience)
+author: PrimitiveHub AI (synthesized 2026-05-30 from production Docker patterns + maintainer experience)
 license: CC-BY-4.0
 tokens: 3600
 token_budget: 5000

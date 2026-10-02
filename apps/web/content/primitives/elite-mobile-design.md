@@ -4,7 +4,7 @@ name: elite-mobile-design
 version: 1.0.0
 type: design
 domain: product-design
-author: PrimitiveHub Labs
+author: PrimitiveHub AI
 license: CC-BY-4.0
 tokens: 4200
 token_budget: 5000

@@ -1,13 +1,18 @@
 # `paper/` — arXiv submission source
 
-> **Status:** v0.1 skeleton. Section outlines + claim-stubs in place;
-> prose fill-in is the next round's work. Numbers and corpus references
-> come from the auto-generated artifacts under `docs/` so the paper
-> stays in sync with the gate.
+> **Status:** Full draft in the **IEEE conference template**
+> (`IEEEtran`, two-column). All eight sections carry publication prose.
+> Every number traces to `bench/baseline/2026-06-07-{py,ts}.json` via
+> `docs/evaluation.md` — including the imperfect ones. The paper reports
+> the measured state: in-sample macro F1 = 0.991 (one CCI-005 false
+> positive), and a held-out cross-engine recall gap (Python 1.000,
+> TypeScript 0.832). Re-run `bench/scripts/gate.sh` and bump the version
+> macros in `main.tex` before submission so the tables stay current.
 >
-> **Target venue:** arXiv (cs.CR + cs.SE cross-list).
-> **Target submission date:** TBD — set once the corpus has matured
-> past v0.2 holdout-completeness.
+> **Target venue:** arXiv (cs.CR + cs.SE cross-list), IEEE-conference
+> formatted for a security venue submission.
+> **Target submission date:** TBD — set once the cross-engine holdout
+> gap is closed and the corpus has matured past v0.2.
 
 ## What's here
 
@@ -36,7 +41,7 @@ repo. The paper cites the source, not the number directly:
 |---|---|---|
 | Per-detector P/R/F1 | `docs/evaluation.md` | Re-run `bench/scripts/gate.sh` → re-generate via `bench/scripts/render-evaluation.py` → re-render paper |
 | Threat taxonomy | `docs/threat-model.md` + `docs/top10-corpus-map.md` | Update the corresponding section in those files first; paper text echoes them |
-| Detector implementation | `apps/api/scanners/` + `packages/phub/src/scanners/` | Version numbers cited via `\detectorversion{tN}` macros in `main.tex` (TBD) |
+| Detector implementation | `apps/api/scanners/` + `packages/phub/src/scanners/` | Version numbers cited via the `\tonever`..`\ttenver` macros in `main.tex` |
 | Reproducibility command | `bench/scripts/gate.sh` + `bench/cli/replay.py` | Cited verbatim in the Evaluation section |
 | External citations | `docs/paper-bibliography.md` | Source of truth for `references.bib`; regenerate when bibliography rows change |
 
@@ -46,19 +51,18 @@ strings against the source-of-truth files).
 
 ## How to build
 
-Not yet wired. v0.2 will add a `Makefile` with:
-
 ```
-make paper        # latexmk -pdf main.tex
-make paper-check  # diff cited numbers vs docs/evaluation.md
-make paper-clean  # rm aux files
+make paper        # latexmk -pdf main.tex   (needs TeX Live / MacTeX)
+make paper-check  # citation-coverage gate  (no TeX needed; CI runs this)
+make paper-clean  # rm latexmk aux files
 ```
 
-For now: each `.tex` file is a skeleton with subsections, claim
-stubs (one per intended argument), and `% TODO:` comments marking
-the prose that still needs to be written.
+`make paper-check` is the CI gate: it verifies every `\cite{}` key in
+`sections/*.tex` resolves in `references.bib`. The document class is
+`IEEEtran` (conference mode); the full draft renders with any standard
+TeX distribution.
 
-## Authoring discipline (v0.1)
+## Authoring discipline
 
 - **No invented numbers.** Every percent / fraction / count comes
   from `docs/evaluation.md`, `bench/baseline/*.json`, or the corpus
@@ -80,17 +84,19 @@ the prose that still needs to be written.
 
 | Section | Status | Owner |
 |---|---|---|
-| Abstract | skeleton (claim stubs) | mhm |
-| Introduction | skeleton (claim stubs) | mhm |
-| Threat Model | skeleton (10 subsections, one per CCI) | mhm |
-| System Design | skeleton (5 subsections) | mhm |
-| Implementation | skeleton (4 subsections) | mhm |
-| Evaluation | skeleton (numbers + Limitations stub) | mhm |
-| Related Work | skeleton (cites paper-bibliography.md) | mhm |
-| Conclusion | skeleton | mhm |
+| Abstract | full prose; measured numbers | mhm |
+| Introduction | full prose | mhm |
+| Threat Model | full prose (10 subsections, one per CCI) | mhm |
+| System Design | full prose (5 surfaces, 3 pillars) | mhm |
+| Implementation | full prose (parity, gate, ledgers, reproducer) | mhm |
+| Evaluation | full prose; in-sample + held-out tables | mhm |
+| Related Work | full prose | mhm |
+| Conclusion | full prose | mhm |
 
-All sections are READ-OUT-LOUD-able as a structural outline; none
-have publication-ready prose.
+All sections carry publication-ready prose. The numbers reflect the
+`2026-06-07` baseline; the one in-sample false positive and the
+cross-engine held-out recall gap are reported in the Evaluation section
+rather than smoothed over.
 
 ## Decision log
 
@@ -99,3 +105,11 @@ have publication-ready prose.
   under `paper/sections/`. References in `paper/references.bib`.
   This mirrors the standard arXiv submission structure and lets the
   paper draft evolve PR-by-PR (each section as its own commit).
+- **2026-06-07 — recast into the IEEE conference template + measured
+  numbers.** `main.tex` switched from `article` to `IEEEtran`
+  (conference). All sections rewritten as full prose. Evaluation aligned
+  to the committed `bench/baseline/2026-06-07` JSONs: the earlier
+  all-`1.000` claims were stale relative to the measured artifacts, so
+  the paper now reports macro F1 = 0.991 in-sample and the held-out
+  Python-vs-TypeScript recall gap. Detector-version macros updated to
+  the current scanner versions.

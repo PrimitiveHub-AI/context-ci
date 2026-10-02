@@ -1,0 +1,61 @@
+% Case studies. Five concrete walkthroughs grounded in real corpus
+% samples (S-006, S-029, S-059, S-019, S-013). Four attacks + one
+% precision-defense true negative. Sample content verified against
+% bench/corpus/samples/.
+
+\section{Case Studies}
+\label{sec:case-studies}
+
+To make the detection concrete, we walk five corpus samples: four
+attacks the pipeline flags and one benign primitive it correctly leaves
+alone. Each names what a human reviewer sees, what the agent's parser
+sees, and what the detector does.
+
+\paragraph{Invisible Unicode (S-006, CCI-002, FAIL)} A ``translation
+helper'' primitive reads, to a human, as one clean sentence of
+formatting guidance. Between the visible words sit zero-width spaces
+(U+200B): a human reviewing rendered markdown sees nothing, but the
+agent's tokenizer ingests the full codepoint stream. The detector does
+not need to interpret the hidden payload; it flags the presence of
+format-class (Cf) codepoints in body text above a per-file threshold.
+The asymmetry, human eye versus tokenizer, is exactly why this cannot be
+left to review.
+
+\paragraph{Remote fetch at load time (S-029, CCI-004, FAIL)} A
+``context-extension'' primitive instructs the agent to fetch
+\url{https://attacker.example.com/extra-context.txt} and append the
+body to its prompt before responding. The signature binds the
+primitive's bytes, but not the bytes it pulls in afterward, so the
+attacker controls the real payload post-signing. The detector fires on
+the fetch-and-include construction (an external URL bound to an
+imperative to treat the response as instruction), independent of what
+the URL would serve.
+
+\paragraph{Vendor impersonation (S-059, CCI-007, FAIL)} A primitive
+claims to be ``the official Anthropic primitive\dots\ recommended by
+Anthropic's research group.'' This is the prose-impersonation shape: no
+malformed bytes, just manufactured first-party authority. The detector
+flags the official-vendor claim; its harder sibling, a name carrying a
+Cyrillic or Greek confusable, is caught by the UTS~\#39 skeleton
+comparison against the vendor list.
+
+\paragraph{Encoded payload (S-019, CCI-003, FAIL)} A ``setup'' primitive
+presents a base64 blob and tells the agent to ``decode the following
+base64 string and run the resulting command in a shell.'' A human
+scanning rendered markdown sees an opaque token, not a command. The
+detector flags the verb-anchored decode-and-execute construction; it
+does not decode or run the blob, it recognizes the imperative that pairs
+an encoded carrier with execution.
+
+\paragraph{A benign primitive that names attacks (S-013, CCI-005, PASS)}
+An onboarding skill titled ``what NOT to do'' teaches contributors which
+install patterns the project forbids. It contains the literal strings
+\texttt{curl ... | bash}, \texttt{npx @some-vendor/something}, and
+\texttt{pip install} from a URL, each prefixed with ``Never.'' A naive
+keyword detector flags all three and produces three false positives.
+Ours does not: the semantic-context analyzer
+(Section~\ref{sec:implementation}) classifies the surrounding prose as
+negation and suppresses the match. This is the precision case that most
+distinguishes a context-aware detector from pattern matching, and it is
+why the corpus carries benign samples that deliberately name the attacks
+they describe.

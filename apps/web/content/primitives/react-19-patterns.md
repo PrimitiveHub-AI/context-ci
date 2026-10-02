@@ -4,7 +4,7 @@ name: react-19-patterns
 version: 0.1.0
 type: engineering
 domain: frontend
-author: PrimitiveHub Labs (synthesized 2026-05-30 from React 19 release notes + production patterns)
+author: PrimitiveHub AI (synthesized 2026-05-30 from React 19 release notes + production patterns)
 license: CC-BY-4.0
 tokens: 3200
 token_budget: 4500

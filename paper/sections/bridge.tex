@@ -1,0 +1,53 @@
+% Conceptual bridge. Maps each element of the classical software supply
+% chain to its agent-context analogue. Pure exposition; placed after the
+% Introduction so the rest of the paper can lean on the mapping. The
+% right column is anchored in PrimitiveHub's own vocabulary.
+
+\section{From Software to Agent-Context Supply Chains}
+\label{sec:bridge}
+
+The agent-context supply chain is not a metaphor borrowed loosely from
+software packaging; it is the same chain with a different artifact at
+each link. Classical supply-chain security hardened the path from source
+code to a running binary. The agent-context path runs from a written
+primitive to an action a model takes, and every defense built for the
+first path has a counterpart on the second.
+Table~\ref{tab:bridge} states the correspondence; the rest of the paper
+fills it in.
+
+\begin{table}[t]
+\centering
+\caption{Each element of the classical software supply chain has an
+agent-context analogue. The right column names the artifact or control
+this paper studies; parenthetical tags point to the relevant Context CI
+category.}
+\label{tab:bridge}
+\small
+\begin{tabular}{@{}p{0.46\columnwidth} p{0.46\columnwidth}@{}}
+\toprule
+\textbf{Software supply chain} & \textbf{Agent-context supply chain} \\
+\midrule
+Source code            & Context primitive \\
+Build artifact         & Trust Bundle \\
+SBOM                   & CBOM (context bill of materials) \\
+Package registry       & Primitive registry \\
+Malware signature      & Context CI detector \\
+Dependency confusion   & Poisoned naming / impersonation (CCI-007) \\
+Postinstall script     & Unsafe shell-install instruction (CCI-005) \\
+Runtime exploit        & Tool-call / shell / credential misuse \\
+Build provenance       & Trust Contract \\
+Antivirus scanner      & Static semantic context scanner \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The correspondence is load-bearing in two directions. It lets us inherit
+methodology that already works: content addressing, signed attestations,
+append-only ledgers, and a labeled corpus that doubles as a regression
+contract. It also marks where the analogy stops. A malware signature
+matches bytes; a Context CI detector must read prose as a model would,
+because the attack is carried in language, not opcodes. A postinstall
+script executes on the host; an unsafe-install \emph{instruction}
+executes only if a model chooses to follow it. The defense therefore
+sits one step earlier than antivirus ever did: not at the moment of
+execution, but at the moment a primitive is admitted to the chain.

@@ -4,7 +4,7 @@ name: tufte-data-visualization
 version: 0.1.0
 type: design
 domain: frontend
-author: PrimitiveHub Labs (synthesized 2026-05-29 from Edward Tufte's "Visual Display of Quantitative Information")
+author: PrimitiveHub AI (synthesized 2026-05-29 from Edward Tufte's "Visual Display of Quantitative Information")
 license: CC-BY-4.0
 tokens: 3400
 token_budget: 5000

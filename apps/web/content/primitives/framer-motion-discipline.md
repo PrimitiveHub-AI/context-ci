@@ -4,7 +4,7 @@ name: framer-motion-discipline
 version: 0.2.0
 type: design
 domain: frontend
-author: PrimitiveHub Labs (synthesized 2026-05-30 from production motion patterns + Framer Motion 12 docs; v0.2.0 lifts three concrete scroll-entry rules from the rejected `minimalist-ui` skill — ledger SK-004, leonxlnx/taste-skill @3c7017d6 — IntersectionObserver-not-scroll-listener, stagger cadence, ease-out entrance curves. The rest of that skill was rejected as theme-conflicting; see docs/skill-consumption-ledger.md.)
+author: PrimitiveHub AI (synthesized 2026-05-30 from production motion patterns + Framer Motion 12 docs; v0.2.0 lifts three concrete scroll-entry rules from the rejected `minimalist-ui` skill — ledger SK-004, leonxlnx/taste-skill @3c7017d6 — IntersectionObserver-not-scroll-listener, stagger cadence, ease-out entrance curves. The rest of that skill was rejected as theme-conflicting; see docs/skill-consumption-ledger.md.)
 license: CC-BY-4.0
 tokens: 2600
 token_budget: 3500

@@ -1,95 +1,99 @@
-% PrimitiveHub: Context CI for the agent-context supply chain
+% Context CI: a threat taxonomy and static-validation pipeline for the
+% agent-context supply chain.
 %
-% arXiv submission v0.1 skeleton — Round 8 PR 8.1.
+% IEEE conference template (IEEEtran, conference mode).
 %
-% Build (not yet wired):
-%   latexmk -pdf main.tex
+% Build:
+%   latexmk -pdf main.tex            (needs TeX Live / MacTeX)
+%   make paper-check                 (citation-coverage gate; no TeX needed)
 %
-% Sources of truth (paper text echoes; never invents):
-%   docs/evaluation.md            per-detector P/R/F1
-%   docs/top10-corpus-map.md      CCI ↔ sample ID mapping
-%   docs/corpus-v0.1.md           corpus methodology
+% Sources of truth (the paper echoes these; it never invents a number):
+%   docs/evaluation.md            per-detector P/R/F1 (auto-generated)
+%   bench/baseline/*.json         the measured tuples behind every table
+%   bench/corpus/manifest.yaml    corpus composition + holdout flags
 %   docs/threat-model.md          threat taxonomy
+%   apps/api/scanners/            detector versions cited via macros below
 %   docs/paper-bibliography.md    external citations
-%   docs/false-{positive,negative}-resolution.md   methodology ledgers
+%   docs/false-{positive,negative}-resolution.md   ledger methodology
 
-\documentclass[11pt,letterpaper]{article}
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
 
-\usepackage[margin=1in]{geometry}
-\usepackage{microtype}
-\usepackage{hyperref}
-\usepackage{url}
+\usepackage{cite}
+\usepackage{amsmath,amssymb}
 \usepackage{booktabs}
-\usepackage{tabularx}
+\usepackage{array}
+\usepackage{graphicx}
 \usepackage{listings}
 \usepackage{xcolor}
-\usepackage{graphicx}
-\usepackage{cleveref}
+\usepackage{url}
+\usepackage[hidelinks]{hyperref}
 
-% Banned vocabulary lint hook (manual for v0.1; CI-enforced later).
-% See docs/brand-voice.md for the list — do not ship words like
-% "revolutionary," "seamlessly," "leverage," "synergy" in this paper.
+% Banned-vocabulary discipline (docs/brand-voice.md): no "leverage,"
+% "seamless," "revolutionary," "state-of-the-art," "at scale" in
+% isolation. The paper is the project's most-cited prose; voice
+% consistency starts here.
 
-% Cryptographic vocabulary macros — keeps the locked terminology
-% from CLAUDE.md consistent across all sections.
+% Locked cryptographic vocabulary (CLAUDE.md). Never write "SHA-256
+% signed" -- SHA-256 is a hash, not a signature.
 \newcommand{\contentdigest}{content digest}
-\newcommand{\signature}{Ed25519 signature}
-\newcommand{\attestation}{Context CI attestation}
-\newcommand{\provenancechain}{provenance chain}
+\newcommand{\edsig}{Ed25519 signature}
 
-% Detector version macros — keep in sync with the registry. When a
-% detector's version bumps, update here AND re-render evaluation.md.
-\newcommand{\tonever}{0.2.1}     % T1 prompt injection
-\newcommand{\ttwover}{0.2.0}     % T2 unicode steganography
+% Detector versions -- kept in sync with apps/api/scanners/ and
+% packages/phub/src/scanners/. Both engines ship the same version per
+% detector. When a version bumps, update here AND re-run gate.sh so
+% the evaluation tables stay honest.
+\newcommand{\tonever}{0.2.2}     % T1 prompt injection
+\newcommand{\ttwover}{0.1.0}     % T2 unicode steganography
 \newcommand{\tthreever}{0.2.3}   % T3 encoded payloads
-\newcommand{\tfourver}{0.2.2}    % T4 remote fetch
-\newcommand{\tfivever}{0.2.4}    % T5 unsafe shell install
-\newcommand{\tsixver}{0.2.0}     % T6 credential exfiltration
-\newcommand{\tsevenver}{0.3.0}   % T7 poisoned naming
+\newcommand{\tfourver}{0.2.3}    % T4 remote fetch
+\newcommand{\tfivever}{0.2.7}    % T5 unsafe shell install
+\newcommand{\tsixver}{0.2.2}     % T6 credential exfiltration
+\newcommand{\tsevenver}{0.3.2}   % T7 poisoned naming
 \newcommand{\teightver}{0.2.3}   % T8 fake citation
 \newcommand{\tninever}{0.2.3}    % T9 copyright contamination
-\newcommand{\ttenver}{0.1.2}     % T10 context bloat
+\newcommand{\ttenver}{0.1.3}     % T10 context bloat
 
-\title{%
-  PrimitiveHub: Treating AI Agent Context as Supply-Chain Material%
-}
-
-\author{%
-  CyberOrca Labs%
-  \thanks{Correspondence: \texttt{security@primitivehub.ai}.
-  Source + corpus + reproducer:
-  \url{https://github.com/DevXYZx/primitivehub}.}%
-}
-
-\date{Draft v0.1 — \today}
-
-\hypersetup{
-  pdftitle={PrimitiveHub: Treating AI Agent Context as Supply-Chain Material},
-  pdfauthor={CyberOrca Labs},
-  pdfkeywords={AI safety, supply-chain security, prompt injection, MCP, agent context}
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  frame=single,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  aboveskip=0.6em,belowskip=0.4em
 }
 
 \begin{document}
+
+\title{Context CI: A Threat Taxonomy and Static-Validation Pipeline\\
+for the Agent-Context Supply Chain}
+
+\author{\IEEEauthorblockN{CyberOrca Labs}
+\IEEEauthorblockA{\textit{PrimitiveHub Project}\\
+Correspondence: \texttt{security@primitivehub.ai}\\
+Artifact, corpus, and reproducer: \url{https://github.com/DevXYZx/primitivehub}}}
 
 \maketitle
 
 \input{sections/abstract.tex}
 
+\begin{IEEEkeywords}
+supply-chain security, prompt injection, AI agents, static analysis,
+software provenance, model context protocol
+\end{IEEEkeywords}
+
 \input{sections/introduction.tex}
-
+\input{sections/bridge.tex}
 \input{sections/threat-model.tex}
-
 \input{sections/system-design.tex}
-
 \input{sections/implementation.tex}
-
 \input{sections/evaluation.tex}
-
+\input{sections/case-studies.tex}
 \input{sections/related-work.tex}
-
 \input{sections/conclusion.tex}
 
-\bibliographystyle{plain}
+\bibliographystyle{IEEEtran}
 \bibliography{references}
 
 \end{document}

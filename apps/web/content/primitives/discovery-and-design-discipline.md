@@ -4,7 +4,7 @@ name: discovery-and-design-discipline
 version: 0.1.0
 type: process
 domain: product-engineering
-author: PrimitiveHub Labs (synthesized 2026-06-09 from two external skills, consumed per Hard rule #6 — read into /tmp, audited clean via `phub audit`, distilled, sources deleted: obra/superpowers `brainstorming` SKILL.md + anthropics/knowledge-work-plugins `product-brainstorming` SKILL.md. Re-keyed from their generic/foreign-path defaults to PrimitiveHub's ADR + decision-algorithm + PR workflow. The upstream browser "visual companion" server feature was deliberately NOT adopted — it is an executable T5 surface and suggested `--host 0.0.0.0`, which violates Hard rule #3.)
+author: PrimitiveHub AI (synthesized 2026-06-09 from two external skills, consumed per Hard rule #6 — read into /tmp, audited clean via `phub audit`, distilled, sources deleted: obra/superpowers `brainstorming` SKILL.md + anthropics/knowledge-work-plugins `product-brainstorming` SKILL.md. Re-keyed from their generic/foreign-path defaults to PrimitiveHub's ADR + decision-algorithm + PR workflow. The upstream browser "visual companion" server feature was deliberately NOT adopted — it is an executable T5 surface and suggested `--host 0.0.0.0`, which violates Hard rule #3.)
 license: CC-BY-4.0
 tokens: 5200
 token_budget: 6500

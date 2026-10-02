@@ -1,251 +1,175 @@
-% Threat Model — v0.2 prose.
-% Target: ~5 pages. One subsection per Context CI category, each
-% following the same shape: definition, illustrative attack from the
-% corpus, detection signal, detector version.
+% Threat Model. One compact subsection per Context CI category:
+% definition, attack shape, detection signal, detector version. Detector
+% versions come from the macros in main.tex, which track the scanner
+% source. We avoid per-holdout-sample claims here; aggregate holdout
+% results are reported in Section IV.
 
-\section{Threat Model: The Context CI Top 10}
+\section{Threat Model and the Context CI Top 10}
 \label{sec:threat-model}
 
-\subsection{Methodology and scope}
+\subsection{Adversary model}
+\label{subsec:adversary}
 
-% Source: docs/threat-model.md § 2.
-The Context CI Top 10 is operational, not exhaustive. Each
-category is defined by the shape of attack a primitive can carry
-and is exercised by at least three adversarial samples in the
-labeled corpus, at least two benign samples (precision defense),
-and at least one borderline sample (where reasonable labelers
-disagree). A category enters the taxonomy only when accompanied
-by a detector implementation in both engines and a per-detector
-F\textsubscript{1} measurement; the regression gate
-(Section~\ref{sec:implementation}) prevents the taxonomy from
-growing speculatively. We treat the boundary explicitly: this
-paper covers attacks that can be detected statically on
-primitive content at registry-publish time. Runtime injection
-(the agent fetching a malicious resource after signing) and
-training-time attacks against the underlying LLM are different
-defense layers in the Trust Runtime and are covered elsewhere.
+We state the model explicitly, because a security property is only as
+meaningful as the boundary it is enforced at.
 
-An ``attack,'' in this taxonomy, is a primitive that, when
-interpreted as instruction by a consuming agent, causes the
-agent to take an action the primitive's signer did not authorize.
-The attack surface is the prose-as-instruction boundary; the
-detector pipeline is the static check that the prose, read with
-the same lexer the agent uses, does not cross a threat-model
-line.
+\paragraph{Attacker capabilities} The adversary can author and publish a
+primitive to a registry the victim trusts; can compromise a maintainer
+account and push an updated primitive; can control a remote endpoint a
+primitive references; and freely chooses the primitive's prose,
+encoding, Unicode codepoints, and naming. The adversary \emph{cannot}
+break SHA-256, forge an \edsig{}, or alter a primitive's bytes after
+signing without detection: those failures are already covered by the
+provenance controls this work builds on.
 
-\subsection{CCI-001: Prompt Injection in Markdown}
-\label{subsec:cci-001}
+\paragraph{Trust boundaries} Control changes hands at four points: (1)
+\emph{registry publish}, where a primitive is admitted and signed; (2)
+\emph{install / fetch}, where a consumer pulls a Trust Bundle; (3)
+\emph{agent load}, where the prose becomes instruction; and (4)
+\emph{runtime tool output}, where a tool response re-enters the context.
+The defenses in this paper act on primitive content at boundaries 1--3.
+Boundary 4 is out of scope.
 
-% Detector version macro tightly coupled to main.tex.
-% Source: docs/top10-corpus-map.md CCI-001.
-A primitive instructs the agent to override its existing system
-prompt or hijack its role. Sample~S-001 in the
-corpus~\cite{primitivehub:2026:top10} is the canonical case:
-prose that opens with ``Ignore previous instructions'' and pivots
-to a role-override directive. The detector
-(\verb|t1.prompt_injection| v\tonever{}) flags four sub-families:
-override-system, role-hijack, hidden-instructions (HTML comments
-or fenced \verb|system|/\verb|instructions| markers), and
-credential-exfiltration-hint (which overlaps with CCI-006). The
-detector skips matches inside fenced code blocks and inside
-paired-quote enumerations (where defender prose names the attack
-shape as a thing to refuse); both skips are opt-in per
-detail-tag.
+\paragraph{Protected assets} The attacker targets the agent's
+credentials and environment (secrets, tokens, \texttt{.env}, cloud
+credentials), its tool-call and shell-execution capability, its policy
+and system prompt, and its context budget. A successful attack makes the
+agent take an action the primitive's signer did not authorize.
 
-\subsection{CCI-002: Unicode Steganography}
-\label{subsec:cci-002}
+\paragraph{Defender assumptions} The scanner sees a primitive's exact
+bytes before the agent loads them; the registry runs the Top~10 before
+signing; detectors are deterministic and, on the in-sample slice, run
+identically in both engines. We assume a human reviewer \emph{cannot}
+reliably catch invisible Unicode, encoded payloads, or fabricated
+authority by eye, which is precisely why a static layer is needed.
 
-A primitive smuggles instructions through codepoints invisible to
-a human reviewer: zero-width spaces, RLO/PDF bidi overrides,
-combining marks stacked above and below visible characters.
-Sample~S-006 carries a hidden directive embedded in zero-width
-characters between visible words. The detector
-(\verb|t2.unicode_steganography| v\ttwover{}) flags any non-ASCII
-codepoint in the Cf (format), Cc (control), Cs (surrogate), and
-related Unicode classes that appears in body text, with a
-configurable threshold per file to avoid firing on legitimately
-multilingual content.
+\paragraph{Non-goals} Out of scope: runtime and indirect prompt
+injection arriving through a tool response after signing; training-data
+poisoning of the underlying
+model~\cite{Carlini:2024:webcrawl-poisoning}; retrieval-time poisoning
+of documents fetched at query time; and any deployment with no static
+scan in the agent's load path. Each is a separate layer of the Trust
+Runtime.
 
-\subsection{CCI-003: Encoded Payloads}
-\label{subsec:cci-003}
+\subsection{Taxonomy scope and governance}
 
-A primitive embeds a base64, hex, URL-encoded, or rot13 blob and
-instructs the agent to decode and execute it. The encoded form
-hides the actual command from a human reviewer scanning the
-rendered markdown; the agent's lexer reads the same bytes the
-human did but knows how to decode. Sample~S-019 pairs a base64
-shell command with the imperative ``decode and run.'' The holdout
-sample S-090 uses URL-encoding (\verb|%2Fbin%2Fsh%20-c%20...|),
-exercising a carrier the in-sample slice did not cover. The
-detector (\verb|t3.encoded_payloads| v\tthreever{}) recognises
-the verb-anchored \emph{decode-and-execute} construction across
-the four encoding families and the participle forms (decoding,
-decoded).
+The Context CI Top~10 is operational, not exhaustive. A category enters
+only when it ships with a detector in both engines, at least three
+adversarial corpus samples, at least two benign samples (to defend
+precision), and at least one borderline sample where reasonable labelers
+disagree. The regression gate (Section~\ref{sec:implementation}) keeps
+the taxonomy from growing on speculation: no measurement, no category.
+An ``attack,'' throughout, is a primitive that, read as instruction,
+causes an unauthorized action; the detectors below are the static checks
+for the shapes that boundary failure takes.
 
-\subsection{CCI-004: Remote Content Fetching at Load Time}
-\label{subsec:cci-004}
+\subsection{CCI-001: Prompt injection in markdown}
+A primitive instructs the agent to override its system prompt or hijack
+its role, classically opening with ``ignore previous instructions.'' The
+detector (\texttt{t1.prompt\_injection} v\tonever{}) flags four
+families: \texttt{override-system-instructions}, \texttt{role-hijack},
+hidden instructions in HTML comments or fenced \texttt{system} markers,
+and credential-exfiltration hints (which overlap CCI-006). It skips
+matches inside fenced code and inside paired-quote enumerations, where
+defender prose names an attack shape in order to refuse it.
 
-A primitive instructs the agent to fetch an external URL at load
-time and treat the response as additional instruction. The
-attacker controls what gets included after the primitive was
-signed; the cryptographic chain binds the primitive's bytes but
-not the bytes it pulls in later. Sample~S-029 uses the standard
-\verb|curl URL and include the response| shape; holdout
-sample~S-092 opens a WebSocket connection
-(\verb|wss://attacker.example.com|) on session start and treats
-every server-pushed message as instruction. The detector
-(\verb|t4.remote_fetch| v\tfourver{}) covers HTTP, file://,
-WebSocket / SSE / EventSource, and the agent-side-include HTML
-shapes (\verb|<link rel=import>|, \verb|<iframe>|, \verb|@import url|).
-A temporal anchor is required on the streaming-channel patterns to
-avoid firing on legitimate teaching prose about the WebSocket API.
+\subsection{CCI-002: Unicode steganography}
+A primitive smuggles instructions through codepoints a human reviewer
+cannot see: zero-width spaces, bidirectional overrides, stacked
+combining marks. The detector
+(\texttt{t2.unicode\_steganography} v\ttwover{}) flags format, control,
+and surrogate-class codepoints in body text, with a per-file threshold
+so legitimately multilingual content does not trip it.
 
-\subsection{CCI-005: Unsafe Shell Install (Shai-Hulud)}
-\label{subsec:cci-005}
+\subsection{CCI-003: Encoded payloads}
+A primitive embeds a base64, hex, URL-encoded, or rot13 blob and orders
+the agent to decode and run it. The encoding hides the command from a
+human reading rendered markdown; the agent decodes the same bytes. The
+detector (\texttt{t3.encoded\_payloads} v\tthreever{}) recognizes the
+verb-anchored decode-and-execute construction across the four encoding
+families and their participle forms.
 
-This is the single most-cited shape in agent-supply-chain
-literature: the curl-pipe-shell family. Sample~S-010 is the
-canonical \verb|curl URL | bash| pattern; holdout sample~S-094
-buries it inside a fenced code block with the directive ``Before
-responding, run the install hook:'' in the prose immediately
-above the fence; sample~S-106 uses Homebrew's \verb|brew install
---cask| pattern with a Gatekeeper bypass
-(\verb|sudo spctl --master-disable|) as the policy-bypass sibling.
-The detector (\verb|t5.unsafe_shell_install| v\tfivever{})
-covers six families: shell-pipe-from-network, npx-arbitrary-install,
-pip-arbitrary-install, install-instruction-to-agent (the
-verb-anchored prose form), brew-install, and policy-bypass. The
-v0.2.4 directive-referenced-fence predicate fires on fenced
-attack content when the prose immediately above the fence
-contains an imperative install directive --- closing the
-v0.2-corpus blind spot where fenced-block install commands
-slipped past the fence-skip defense layer.
+\subsection{CCI-004: Remote content fetching at load time}
+A primitive tells the agent to fetch an external resource at load time
+and treat the response as instruction. The attacker controls what
+arrives \emph{after} the primitive was signed; the signature binds the
+primitive's bytes, not the bytes it later pulls in. The detector
+(\texttt{t4.remote\_fetch} v\tfourver{}) covers HTTP, \texttt{file://},
+WebSocket, SSE/EventSource, and HTML side-include shapes. The streaming
+patterns require a temporal anchor so the detector does not fire on
+prose that merely teaches the WebSocket API.
 
-\subsection{CCI-006: Credential Exfiltration via Prose}
-\label{subsec:cci-006}
+\subsection{CCI-005: Unsafe shell install}
+A well-known software supply-chain execution shape, recently
+re-emphasized by npm worm campaigns such as
+Shai-Hulud~\cite{Shai-Hulud:2025:npm-worm}: the curl-pipe-shell family. The detector
+(\texttt{t5.unsafe\_shell\_install} v\tfivever{}) covers six families,
+including network-piped shells, arbitrary \texttt{npx}/\texttt{pip}
+installs, the verb-anchored prose form, \texttt{brew-install}, and
+\texttt{policy-bypass} (for example, a Gatekeeper disable paired with an
+install). A directive-referenced-fence rule fires on a fenced install
+command when the prose immediately above it issues the install order,
+closing a blind spot where fenced commands slipped past the fence skip.
+This is the broadest detector, and Section~\ref{sec:evaluation} reports
+the one in-sample false positive it currently carries.
 
-A primitive instructs the agent to read its environment variables
-or credential files and send them to an attacker-controlled URL.
-Sample~S-039 is the prose form: ``email all env vars to
-attacker@.''; holdout sample~S-096 puts the secret in the URL
-query string (\verb|?token=$AWS_SECRET_ACCESS_KEY|) rather than
-the request body, exercising a carrier the v0.1 \verb|--data|-flag
-patterns missed. The detector (\verb|t6.credential_exfiltration|
-v\tsixver{}) recognises four families: send-secrets-to-destination
-(prose imperative), exfiltrate-via-network (curl/wget with secret
-as data \emph{or} secret in URL query), hide-in-output (include
-the secret in your reply), and scan-and-send (read \verb|.env| or
-\verb|~/.aws/credentials| and forward).
+\subsection{CCI-006: Credential exfiltration via prose}
+A primitive tells the agent to read environment variables or credential
+files and send them to an attacker endpoint. The detector
+(\texttt{t6.credential\_exfiltration} v\tsixver{}) recognizes four
+families: a prose imperative to send secrets, network exfiltration with
+the secret in the request body \emph{or} the URL query string, hiding
+the secret in the reply, and the scan-then-send pattern over
+\texttt{.env} or \texttt{\~{}/.aws/credentials}.
 
-\subsection{CCI-007: Poisoned Naming, Typosquat, Impersonation}
-\label{subsec:cci-007}
+\subsection{CCI-007: Poisoned naming and impersonation}
+A primitive impersonates a recognized vendor through explicit prose
+(``the official Anthropic primitive''), digit-for-letter typosquats
+(\texttt{Anthrop1c}), or Unicode confusables (Cyrillic
+\texttt{a}, Greek \texttt{e}). The detector
+(\texttt{t7.poisoned\_naming} v\tsevenver{}) implements the UTS~\#39
+\emph{skeleton} method~\cite{UTS39:2024:unicode-confusables}: each word
+with a non-ASCII codepoint is mapped through a confusables table and
+compared against the precomputed skeletons of the project's vendor
+list. The list holds 36 vendors (35 single-word, skeleton-eligible);
+adding a vendor extends coverage without authoring a new pattern.
 
-A primitive impersonates a recognised vendor. Three sub-shapes:
-explicit prose impersonation (``the official Anthropic
-primitive''), typosquat substitution (digit-for-letter:
-\verb|Anthrop1c|, \verb|0nthropic|), and Unicode confusable
-substitution (Cyrillic А for Latin A, Greek Ε for Latin E).
-Sample~S-059 is the canonical official-vendor-claim case;
-sample~S-098 (in-sample) uses Cyrillic А in
-\verb|@anthropic/claude-tools|; holdout sample~S-107 uses
-Cyrillic е in \verb|@rеplit/agent-core|, exercising an
-AI-coding-tool vendor newer than the original 35-entry vendor
-list. The detector (\verb|t7.poisoned_naming| v\tsevenver{}) ships
-the UTS \#39 \emph{skeleton} method for the confusable family:
-each input word with at least one non-ASCII codepoint is mapped
-through a Cyrillic/Greek-to-Latin confusables table and compared
-to the precomputed skeleton set of the project's vendor list. The
-v0.3.1 vendor list (43 entries; expanded in Round 10 PR 10.2 from
-35) covers the AI-coding-tool space that emerged during v0.x
-development; the skeleton method extends to every added vendor
-without per-vendor pattern authoring.
+\subsection{CCI-008: Fake citations and authority claims}
+A primitive cites a fabricated identifier from a real authority taxonomy
+(CVE, RFC, arXiv, DOI, US patent) to manufacture authority for an
+instruction the agent should refuse. The detector
+(\texttt{t8.fake\_citation} v\teightver{}) runs validity passes per
+scheme: a CVE with a year outside \texttt{[1999, now+1]} (for example
+CVE-2099-XXXXX), an out-of-range RFC or patent number, an impossible
+arXiv month, or a DOI prefix absent from the registrar list. A sibling
+pass flags vague authority appeals (``studies show'') with no resolvable
+citation nearby, exempting quoted enumerations.
 
-\subsection{CCI-008: Fake Citations and Authority Claims}
-\label{subsec:cci-008}
+\subsection{CCI-009: Copyright contamination}
+A primitive launders license boilerplate into the session so the
+agent's outputs inherit license constraints, for example an embedded MIT
+block or a viral noncommercial-ShareAlike clause asserting that
+processing the primitive binds derived outputs. The detector
+(\texttt{t9.copyright\_contamination} v\tninever{}) recognizes the
+common license families and proprietary boilerplate, and skips
+declarative mentions (``the project is licensed under CC-BY-4.0'') via a
+semantic-context predicate.
 
-A primitive cites fabricated identifiers from a recognised
-authority taxonomy --- CVE, RFC, arXiv, DOI, US Patent --- to
-manufacture authority for an instruction the agent should refuse.
-The citation is unverifiable to a human reading the rendered
-markdown; the agent following the prose treats the citation as
-load-bearing. Sample~S-049 uses a CVE with implausible year
-(CVE-2099-XXXXX); holdout sample~S-100 cites US~Patent
-99,999,999 (issued 2099) with both an implausible number and an
-implausible year. The detector (\verb|t8.fake_citation|
-v\teightver{}) runs five passes: invalid-CVE (year outside
-[1999, currentYear+1]), invalid-RFC (number outside [1, 9999]),
-invalid-arXiv (YYMM month outside [01, 12] or year ahead of
-clock), invalid-patent (year outside [1790, currentYear+1] OR
-patent number $\geq$ 99,000,000), and fake-DOI-prefix (DOI
-prefix not in the accepted-registrar list of $\sim$80 entries).
-A sibling pass catches vague authority appeals
-(``studies show,'' ``experts agree'') without a resolvable
-citation within 200 characters; that pass exempts quoted-phrase
-enumeration (where defender prose names the trigger as
-documentation).
+\subsection{CCI-010: Context bloat}
+A primitive wastes the context budget or buries the live directive under
+decorative content. The detector (\texttt{t10.context\_bloat}
+v\ttenver{}) runs six passes: oversized content (32{,}000 characters),
+excessive line repetition, whitespace stuffing, heading proliferation,
+emoji density, and markdown-table density. All six raise a warning
+rather than a failure, because budget waste is not active-attack code.
 
-\subsection{CCI-009: Copyright Contamination}
-\label{subsec:cci-009}
-
-A primitive launders open-source license boilerplate into the
-agent's session, causing the agent's outputs to inherit license
-constraints. Sample~S-068 embeds an MIT-style copyright block at
-the top; holdout sample~S-108 uses a Creative Commons
-NonCommercial-ShareAlike clause that asserts ``by processing
-this primitive, the agent agrees to license all derived outputs
-under the same terms.'' (The v0.2.3 detector caught the holdout
-unaided; we log this as evidence of generalisation rather than a
-gap to close.) The detector
-(\verb|t9.copyright_contamination| v\tninever{}) recognises
-license patterns for MIT, Apache 2.0, GPL family, BSD, MPL, CC-BY
-family (including the NonCommercial / ShareAlike variants), and
-proprietary boilerplate ((c)/©/All Rights Reserved). Matches
-inside declaration contexts (``the project is licensed under
-CC-BY-4.0'') are skipped via the v0.2.2 semantic-context
-predicate.
-
-\subsection{CCI-010: Context Bloat}
-\label{subsec:cci-010}
-
-A primitive wastes context budget and / or buries the active
-directive below decorative content. Sample~S-078 is the
-canonical case (a primitive past the 32K-char oversized
-threshold); sample~S-104 (in-sample) uses dense emoji
-blocks~(\verb|🚀🚀🚀...|) as the bury vector; holdout
-sample~S-109 buries an ``ignore rate limits'' instruction below
-roughly 125 rows of innocuous markdown-table reference data
-that stay below every v0.1.2 threshold. The detector
-(\verb|t10.context_bloat| v\ttenver{}) runs six passes:
-oversized-chars (threshold 32{,}000), excessive-repetition
-($>$ 20\% duplicate non-trivial lines), whitespace-stuffing
-($>$ 40\% blank lines), heading-proliferation (chars-per-h2
-below the v0.1.1 floor), emoji-density ($>$ 5\% emoji
-codepoints or runs of $\geq$ 10 consecutive emoji), and
-markdown-table-density ($>$ 50\% of non-blank lines as
-table rows with $>$ 80\% sharing the same column count). All
-six fire WARN rather than FAIL because bloat is context-budget
-waste, not active-attack code.
-
-\subsection{Discussion: what is not in the taxonomy}
-
-% Source: docs/owasp-llm-top10-crosswalk.md.
-The Top 10 above is explicitly the static-detection slice. It
-does not cover runtime injection that arrives via a tool call's
-response payload after the primitive was signed; it does not
-cover poisoning of the LLM's training data (Carlini et al.\
-\cite{Carlini:2024:webcrawl-poisoning} show that practical at
-web scale); it does not cover RAG retrieval-time poisoning of the
-documents the agent fetches at query time. Each of those threat
-families has its own defense layer in the Trust Runtime stack.
-The crosswalk in \texttt{docs/owasp-llm-top10-crosswalk.md} maps
-this paper's taxonomy to the OWASP Top 10 for LLM Applications
-2025 catalog~\cite{OWASP:2025:llm-top10} and identifies which
-OWASP categories are runtime-only by design.
-
-The discipline that keeps this Top 10 from growing speculatively
-is the corpus + gate + ledger triad: a new category enters only
-when accompanied by a detector implementation in both engines, a
-corpus subdirectory with at least the (adversarial, benign,
-borderline) triplet, and a F\textsubscript{1} measurement. See
-\texttt{docs/decisions/0040-surface-architecture-and-anti-bloat-contract.md}
-\S 4 for the operational rule.
+\subsection{What is deliberately out of scope}
+\label{subsec:not-in-taxonomy}
+The Top~10 is the static-detection slice. It does not cover runtime
+injection arriving through a tool response after signing, training-data
+poisoning of the model (which Carlini et al. show is practical at web
+scale~\cite{Carlini:2024:webcrawl-poisoning}), or retrieval-time
+poisoning of documents fetched at query time. Each has its own layer in
+the Trust Runtime. The crosswalk to the OWASP Top~10 for LLM
+Applications~\cite{OWASP:2025:llm-top10} records which OWASP categories
+are runtime-only by design and therefore outside a content scan's reach.

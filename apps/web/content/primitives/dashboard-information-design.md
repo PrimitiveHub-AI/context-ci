@@ -4,7 +4,7 @@ name: dashboard-information-design
 version: 0.1.0
 type: design
 domain: frontend
-author: PrimitiveHub Labs (synthesized 2026-05-29 from Stephen Few's "Information Dashboard Design")
+author: PrimitiveHub AI (synthesized 2026-05-29 from Stephen Few's "Information Dashboard Design")
 license: CC-BY-4.0
 tokens: 3200
 token_budget: 5000

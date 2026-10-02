@@ -4,7 +4,7 @@ name: frontend-design-elite
 version: 0.3.0
 type: design
 domain: frontend
-author: PrimitiveHub Labs (synthesized from anthropics/skills `frontend-design` SKILL.md + maintainer taste calibration; v0.2.0 adds Companion primitives linking Tufte + Few; v0.3.0 deeply adapts the upstream skill — absorbs its AI-slop detector, "intentionality over intensity" framing, the five aesthetic levers, and a design-thinking pre-step, all re-keyed from upstream's bold-maximalist default to PrimitiveHub's trust-infrastructure restraint. Source audited clean via `phub audit`, then deleted per Hard rule #6.)
+author: PrimitiveHub AI (synthesized from anthropics/skills `frontend-design` SKILL.md + maintainer taste calibration; v0.2.0 adds Companion primitives linking Tufte + Few; v0.3.0 deeply adapts the upstream skill — absorbs its AI-slop detector, "intentionality over intensity" framing, the five aesthetic levers, and a design-thinking pre-step, all re-keyed from upstream's bold-maximalist default to PrimitiveHub's trust-infrastructure restraint. Source audited clean via `phub audit`, then deleted per Hard rule #6.)
 license: CC-BY-4.0
 tokens: 4500
 token_budget: 5000

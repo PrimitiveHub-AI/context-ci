@@ -1,45 +1,39 @@
-% Abstract — v0.2 prose.
-% Word budget: ≤ 250. Every number sourced from docs/evaluation.md;
-% every claim has a source-of-truth file noted in % Source: comments.
+% Abstract. Every number sourced from bench/baseline/2026-06-07-*.json
+% via docs/evaluation.md. We report the measured state, including the
+% imperfections, because a perfect score on a corpus this size would be
+% the least credible thing we could publish.
 
 \begin{abstract}
+Modern AI agents do not only execute code; they also obey context.
+Skills, system-prompt fragments, Model Context Protocol (MCP) server
+descriptions, and repository-level \texttt{AGENTS.md} files all shape an
+agent's behavior
+at load time, before the user issues a request. Existing supply-chain
+controls can verify who signed such an artifact and whether its bytes
+changed, but not the harder question: whether the signed prose is safe
+for an agent to follow. A context primitive can pass every provenance
+check and still tell the agent to fetch remote instructions, run a shell
+command, leak credentials, or trust a fabricated authority claim.
 
-% Source: docs/threat-model.md § 1; docs/vision.md.
-AI agents load a new class of supply-chain artifact: \emph{context
-primitives} — skills, system prompts, MCP server descriptions,
-\texttt{AGENTS.md} files, and \texttt{.claude/skills} directories
-that the agent treats as instruction at load time. Existing
-supply-chain controls (SLSA, in-toto, Sigstore, package-manager
-provenance) verify who produced an artifact and that its bytes
-have not changed since signing, but they do not verify that the
-artifact's prose, when interpreted as instruction, is safe to
-follow.
+We present Context CI, a static-validation pipeline for this
+agent-context supply chain, implemented in the PrimitiveHub registry. It
+is organized around the Context CI Top~10, a ten-category operational
+taxonomy in which each attack class is tied to implemented detectors,
+labeled corpus samples, and reproducible measurements. To test
+portability and implementation drift, we implement every detector twice,
+in Python and
+TypeScript, and measure both engines against the same 124-sample corpus
+under a CI regression gate and a per-sample replay tool.
 
-% Source: docs/top10-corpus-map.md § Coverage summary;
-% docs/evaluation.md macro F1; docs/decisions/0023 (parity).
-We present PrimitiveHub, a registry plus static-analysis pipeline
-that closes this gap. The pipeline scans every primitive against a
-ten-category threat taxonomy (the \emph{Context CI Top 10}) before
-the primitive enters the registry. We ship two byte-identical
-implementations — Python and TypeScript — measured against a
-shared corpus of 105 labeled samples (99 in-sample plus 6 holdout)
-and gated by a corpus regression contract that prevents per-PR
-detector drift. Macro F\textsubscript{1} is 1.000 on both the
-in-sample and holdout slices, with cross-language verdict-count
-parity intact.
-
-% Source: docs/false-positive-resolution.md +
-% docs/false-negative-resolution.md;
-% bench/scripts/gate.sh, bench/cli/replay.py.
-The methodology mirrors antivirus-industry practice: append-only
-FP and FN ledgers, a four-path triage discipline, and a corpus
-that doubles as the regression contract. The entire pipeline is
-open-source and reproducible from a fresh clone in under ten
-minutes; reviewers can re-run any specific sample through the
-deterministic replay tool we ship. We discuss limitations
-(English-language phrasing bias, synthesized provenance for most
-adversarial samples, no runtime-injection coverage) honestly so
-the result is comparable to future measurements at larger corpus
-sizes.
-
+On the 99-sample in-sample slice the two engines agree byte-for-byte and
+reach a macro F\textsubscript{1} of 0.991. The 25-sample held-out slice
+exposes a more important diagnostic result: the Python engine catches
+all 25 attacks while the TypeScript engine catches 18, with the misses
+concentrated in the unsafe-shell-install, credential-exfiltration,
+prompt-injection, and poisoned-naming categories. We report that gap
+rather than tune it away; it is what a held-out diagnostic is built to
+surface, and the in-sample gate alone would hide it. The corpus,
+taxonomy, detectors, gate, and replay workflow are open source and
+reproducible from a clean clone, providing an initial benchmark
+foundation for semantic validation of the agent-context supply chain.
 \end{abstract}

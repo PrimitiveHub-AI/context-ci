@@ -4,7 +4,7 @@ name: primitive-cross-reference-index
 version: 0.1.0
 type: reference
 domain: meta
-author: PrimitiveHub Labs (2026-05-30)
+author: PrimitiveHub AI (2026-05-30)
 license: CC-BY-4.0
 tokens: 1800
 token_budget: 2500

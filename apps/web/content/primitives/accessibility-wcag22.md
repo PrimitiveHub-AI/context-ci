@@ -4,7 +4,7 @@ name: accessibility-wcag22
 version: 0.1.0
 type: design
 domain: frontend
-author: PrimitiveHub Labs (synthesized 2026-05-29 from WCAG 2.2 AA + ARIA Authoring Practices)
+author: PrimitiveHub AI (synthesized 2026-05-29 from WCAG 2.2 AA + ARIA Authoring Practices)
 license: CC-BY-4.0
 tokens: 3600
 token_budget: 5000

@@ -1,333 +1,358 @@
-% Evaluation — v0.2 prose.
-% Target: ~4 pages. The core empirical section. Every number cited
-% sources from docs/evaluation.md; the per-detector table is
-% inline rather than appendix-deferred.
+% Evaluation. The core empirical section. Every number sourced from
+% bench/baseline/2026-06-07-{py,ts}.json via docs/evaluation.md. We
+% report the measured state, imperfections included.
 
 \section{Evaluation}
 \label{sec:evaluation}
 
 \subsection{Research questions}
 
-The corpus + measurement pipeline is built to answer four
-questions about the detector suite, each falsifiable against the
-labeled data:
-
+The corpus and measurement pipeline answer four questions, each
+falsifiable against the labeled data:
 \begin{description}
-  \item[RQ1.] Per detector, what are precision, recall, and
-    F\textsubscript{1}\,?
-  \item[RQ2.] Do the detectors generalise beyond the samples
-    used during detector iteration?
-  \item[RQ3.] Do two independent implementations of the same
-    detector produce verdicts that agree byte-for-byte?
-  \item[RQ4.] Where does the measurement fall short?
+  \item[RQ1] Per detector, what are precision, recall, and
+    F\textsubscript{1} on samples the detectors were tuned against?
+  \item[RQ2] Do the detectors generalize to held-out samples they were
+    not tuned against?
+  \item[RQ3] Do two independent engines agree byte-for-byte?
+  \item[RQ4] Where does the measurement fall short?
 \end{description}
-
-Sections~\ref{subsec:eval-results} through
-\ref{subsec:eval-limitations} report each in turn. The numbers
-in this section source from
-\verb|docs/evaluation.md|~\cite{primitivehub:2026:eval} and the
-JSON baselines under \verb|bench/baseline/|; the discipline
-documented in
-\texttt{paper/README.md}~\cite{primitivehub:2026:paper-readme}
-forbids invented numbers, so every quantitative claim here can
-be traced back through the source-of-truth files to the
-detector + corpus combination that generated it.
+Every quantity below traces to
+\texttt{docs/evaluation.md}~\cite{primitivehub:2026:eval} and the JSON
+baselines under \texttt{bench/baseline/}; the authoring
+discipline~\cite{primitivehub:2026:paper-readme} forbids any number not
+produced by that pipeline.
 
 \subsection{Corpus}
 
-% Source: docs/corpus-v0.1.md; bench/corpus/manifest.yaml.
-The Adversarial Corpus v0.2 ships 109 labeled samples, split
-into 99 in-sample (used during detector iteration) and 10
-holdout (reserved as the overfit detector). Sample distribution
-across labels: 52 adversarial in-sample plus 10 adversarial
-holdout (62 total adversarial), 37 benign in-sample (no benign
-holdouts in v0.2 by design --- the holdout's purpose is
-overfit-recall not overfit-precision), and 10 borderline
-in-sample (where reasonable labelers could mark either way).
-Per-category support ranges from 30 to 45 samples in the
-in-sample slice; the holdout slice carries 1 sample per
-detector after Round~9's coverage closure.
+The Adversarial Corpus v0.2 ships 124 labeled samples: 99 in-sample,
+used during detector iteration, and 25 held out. The in-sample slice is
+52 adversarial, 37 benign, and 10 borderline (where reasonable labelers
+could mark either way). The held-out slice is 25 adversarial samples;
+it carries no benign samples by design, because its purpose is to detect
+overfit recall, not overfit precision. Per-detector in-sample support
+ranges from roughly 30 (CCI-002) to 45 (CCI-007, CCI-009). Of the 77
+adversarial samples across both slices, 66 are marked
+\texttt{incident\_reference: synthesized}, composed to exercise a
+specific shape, and 11 carry real-incident
+provenance~\cite{primitivehub:2026:corpus-spec}. Each sample records a
+primary CCI category, an expected verdict in \{PASS, WARN, FAIL\}, and a
+provenance note. Authoring and review are by repository maintainers; the
+corpus is append-only, and removing a sample requires an ADR-level
+justification.
 
-Labeling discipline is documented in
-\verb|docs/corpus-v0.1.md|~\cite{primitivehub:2026:corpus-spec}.
-Each sample carries a primary CCI category, an expected verdict
-($\in$ \{PASS, WARN, FAIL\}), and a textual provenance note
-(\verb|incident_reference: synthesized| when not drawn from an
-observed in-the-wild incident). Authoring and review are by repo
-maintainers; no crowdsourced labels in v0.2. The corpus is
-append-only; sample removal requires an
-ADR-level justification.
+\subsection{Scoring}
 
-The corpus license is CC-BY-4.0 (corpus content) so external
-researchers can adapt the labeled samples in their own work and
-cite this paper as the source.
+Per sample, we score the \emph{primary} detector, the one whose category
+matches the sample's label. An adversarial or borderline sample scores a
+true positive if the verdict severity meets or exceeds the expected
+severity, and a false negative otherwise. A benign sample scores a false
+positive if any detector raises a verdict at or above WARN, and a true
+negative if it stays silent. Cross-trip firing (detector $X$ on detector
+$Y$'s adversarial content) collapses into the false-positive/true-negative
+dimension only, since there is no ground truth for $X$ on $Y$-family
+attacks. Per-detector precision, recall, and F\textsubscript{1} use the
+standard formulas~\cite{Powers:2011:evaluation-precision-recall};
+macro-averaging is unweighted, because each category is a separate
+defense rather than a frequency class.
 
-\subsection{Methodology}
+The held-out slice is measured and reported separately, and the
+regression gate does not enforce it~\cite{primitivehub:2026:adr-0038}.
+That is deliberate: a gate that optimized the held-out numbers would
+turn the overfit probe into another training set. The parity check
+(\texttt{bench/scripts/parity\_check.py}) compares per-detector tuples
+across engines and exits non-zero on drift.
 
-% Source: bench/scripts/measure.{ts,py}; docs/decisions/0032.
-Per-sample, per-detector scoring follows the standard binary-
-classification convention adapted to the multi-CCI setting:
+\subsection{In-sample results (RQ1, RQ3)}
+\label{subsec:eval-in-sample}
 
-\begin{itemize}
-  \item For the sample's \emph{primary} detector (the detector
-        whose \verb|cci_id| matches the sample's primary
-        category):
-    \begin{itemize}
-      \item adversarial or borderline sample + verdict severity
-            $\geq$ expected $\Rightarrow$ TP
-      \item adversarial or borderline + verdict severity
-            $<$ expected $\Rightarrow$ FN
-      \item benign + verdict severity $\geq$ WARN
-            $\Rightarrow$ FP
-      \item benign + verdict severity = PASS
-            $\Rightarrow$ TN
-    \end{itemize}
-  \item For \emph{other} detectors (cross-trip), only the
-        FP/TN dimension applies (we have no ground truth for
-        what detector X should do on detector Y's adversarial
-        content):
-    \begin{itemize}
-      \item benign + flagged $\Rightarrow$ FP on the other
-            detector
-      \item benign + clean $\Rightarrow$ TN on the other
-            detector
-    \end{itemize}
-\end{itemize}
+Table~\ref{tab:in-sample} reports the in-sample slice. Both engines
+produce byte-identical tuples, so a single column serves for both. Nine
+of ten detectors score precision, recall, and F\textsubscript{1} of
+1.000. The exception is CCI-005, the unsafe-shell-install detector and
+the broadest in the suite: it raises one false positive on a benign
+sample, giving precision 0.833 and F\textsubscript{1} 0.909 at recall
+1.000. The macro figures are precision 0.983, recall 1.000, and
+F\textsubscript{1} 0.991. We report the false positive rather than
+relabel it away; it is the current precision item for CCI-005 and a
+candidate for either a prose edit (Path A) or a lockstep detector
+narrowing (Path C). Cross-language parity is intact on every in-sample
+sample, answering RQ3 in the affirmative for this slice.
 
-Per-detector precision, recall, and F\textsubscript{1} use the
-standard formulas. Macro-averaging is unweighted across the
-ten detectors (no class-imbalance argument applies because each
-CCI category is a separate defense, not a sample-frequency
-class).
-
-The holdout slice is measured and reported separately. Per
-ADR-0038~\cite{primitivehub:2026:adr-0038}, holdout
-F\textsubscript{1} is informational --- the regression gate does
-not enforce holdout regressions because the gate is what would
-let the detectors be tuned against the holdout (defeating its
-purpose). Instead, the holdout closure round (Round 7 PR 7.1
-plus Round 10 PR 10.1 / 10.2 / 10.3 in this paper's git history)
-ratchets the detectors to close the holdout gaps as a separate
-exercise, with each closure recorded in the FN ledger.
-
-Cross-language parity: every measurement runs both Py and TS
-engines against the same sample bytes. The parity check at
-\verb|bench/scripts/parity_check.py| compares per-detector
-\verb|(tp, fp, tn, fn)| tuples and exits non-zero on any drift.
-
-\subsection{Results}
-\label{subsec:eval-results}
-
-% Source: docs/evaluation.md (auto-generated).
-The headline result, against the v0.2 corpus as of submission:
-macro F\textsubscript{1} = 1.000 on the 99-sample in-sample
-slice and 1.000 on the 10-sample holdout slice, with precision
-and recall individually 1.000 on every detector that has a
-sample in the relevant slice, and cross-language verdict-count
-parity intact for every detector on every sample.
-
-Table~\ref{tab:per-detector-in-sample} reports the per-detector
-breakdown on the in-sample slice. Both engines produce
-byte-identical \verb|(tp, fp, tn, fn)| tuples, so we report a
-single column.
-
-\begin{table}[h]
+\begin{table*}[t]
 \centering
-\small
-\begin{tabular}{lrrrrrrrr}
+\caption{In-sample results on corpus v0.2 (99 samples). Both Python and
+TypeScript engines produce identical \texttt{(tp, fp, tn, fn)} tuples;
+parity is intact for all ten detectors. Source:
+\texttt{bench/baseline/2026-06-07-\{py,ts\}.json}.}
+\label{tab:in-sample}
+\begin{tabular}{l r r r r r r r r}
 \toprule
 Detector & Precision & Recall & F\textsubscript{1} & TP & FP & TN & FN & Support \\
 \midrule
-CCI-001 & 1.000 & 1.000 & 1.000 &  4 & 0 & 36 & 0 & 41 \\
-CCI-002 & 1.000 & 1.000 & 1.000 &  3 & 0 & 37 & 0 & 40 \\
-CCI-003 & 1.000 & 1.000 & 1.000 &  7 & 0 & 37 & 0 & 44 \\
-CCI-004 & 1.000 & 1.000 & 1.000 &  7 & 0 & 37 & 0 & 44 \\
-CCI-005 & 1.000 & 1.000 & 1.000 &  5 & 0 & 37 & 0 & 42 \\
-CCI-006 & 1.000 & 1.000 & 1.000 &  7 & 0 & 37 & 0 & 44 \\
-CCI-007 & 1.000 & 1.000 & 1.000 &  8 & 0 & 37 & 0 & 45 \\
-CCI-008 & 1.000 & 1.000 & 1.000 &  7 & 0 & 37 & 0 & 44 \\
-CCI-009 & 1.000 & 1.000 & 1.000 &  8 & 0 & 37 & 0 & 45 \\
-CCI-010 & 1.000 & 1.000 & 1.000 &  6 & 0 & 37 & 0 & 43 \\
+CCI-001 & 1.000 & 1.000 & 1.000 & 4 & 0 & 37 & 0 & 41 \\
+CCI-002 & 1.000 & 1.000 & 1.000 & 3 & 0 & 37 & 0 & 40 \\
+CCI-003 & 1.000 & 1.000 & 1.000 & 7 & 0 & 37 & 0 & 44 \\
+CCI-004 & 1.000 & 1.000 & 1.000 & 7 & 0 & 37 & 0 & 44 \\
+CCI-005 & 0.833 & 1.000 & 0.909 & 5 & 1 & 36 & 0 & 42 \\
+CCI-006 & 1.000 & 1.000 & 1.000 & 7 & 0 & 37 & 0 & 44 \\
+CCI-007 & 1.000 & 1.000 & 1.000 & 8 & 0 & 37 & 0 & 45 \\
+CCI-008 & 1.000 & 1.000 & 1.000 & 7 & 0 & 37 & 0 & 44 \\
+CCI-009 & 1.000 & 1.000 & 1.000 & 8 & 0 & 37 & 0 & 45 \\
+CCI-010 & 1.000 & 1.000 & 1.000 & 6 & 0 & 37 & 0 & 43 \\
 \midrule
-\textbf{Macro} & \textbf{1.000} & \textbf{1.000} & \textbf{1.000} & --- & --- & --- & --- & --- \\
+\textbf{Macro} & \textbf{0.983} & \textbf{1.000} & \textbf{0.991} & --- & --- & --- & --- & --- \\
 \bottomrule
 \end{tabular}
-\caption{Per-detector in-sample precision, recall, and
-F\textsubscript{1} on the v0.2 corpus (99-sample slice). Both
-Py and TS engines report identical tuples; cross-language
-parity intact for all 10 detectors.}
-\label{tab:per-detector-in-sample}
-\end{table}
+\end{table*}
 
-Table~\ref{tab:per-detector-holdout} reports the holdout slice
-after Round~10's three closure PRs. The 10-sample slice has 1
-sample per detector following Round~9's coverage expansion;
-ten of ten detectors report F\textsubscript{1} = 1.000.
+\subsection{Held-out results (RQ2)}
+\label{subsec:eval-holdout}
 
-\begin{table}[h]
+Table~\ref{tab:holdout} reports the 25 held-out adversarial samples.
+Here the two engines diverge, and the divergence is the finding. The
+Python engine recovers all 25 attacks (macro recall 1.000). The
+TypeScript engine recovers 18, missing seven: three of seven in CCI-005,
+two of three in CCI-006, one of three in CCI-001, and one of four in
+CCI-007. Its macro recall is 0.832 and its macro F\textsubscript{1} is
+0.888 (precision stays 1.000, since the held-out slice has no benign
+samples to false-fire on).
+
+\begin{table}[t]
 \centering
-\small
-\begin{tabular}{lrrrrrr}
+\caption{Held-out results on corpus v0.2 (25 adversarial samples, no
+benign). Precision is 1.000 throughout, so we report recovery. The
+Python engine recovers all 25; the TypeScript engine recovers 18. The
+gate does not optimize this slice. Source:
+\texttt{bench/baseline/2026-06-07-\{py,ts\}.json}.}
+\label{tab:holdout}
+\begin{tabular}{l r r r r r}
 \toprule
-Detector & Precision & Recall & F\textsubscript{1} & TP & FN & Support \\
+ & & \multicolumn{2}{c}{Python} & \multicolumn{2}{c}{TypeScript} \\
+\cmidrule(lr){3-4}\cmidrule(lr){5-6}
+Detector & Support & TP & Recall & TP & Recall \\
 \midrule
-CCI-001 & 1.000 & 1.000 & 1.000 & 1 & 0 & 1 \\
-CCI-002 & 1.000 & 1.000 & 1.000 & 1 & 0 & 1 \\
-CCI-003 & 1.000 & 1.000 & 1.000 & 1 & 0 & 1 \\
-CCI-004 & 1.000 & 1.000 & 1.000 & 1 & 0 & 1 \\
-CCI-005 & 1.000 & 1.000 & 1.000 & 1 & 0 & 1 \\
-CCI-006 & 1.000 & 1.000 & 1.000 & 1 & 0 & 1 \\
-CCI-007 & 1.000 & 1.000 & 1.000 & 1 & 0 & 1 \\
-CCI-008 & 1.000 & 1.000 & 1.000 & 1 & 0 & 1 \\
-CCI-009 & 1.000 & 1.000 & 1.000 & 1 & 0 & 1 \\
-CCI-010 & 1.000 & 1.000 & 1.000 & 1 & 0 & 1 \\
+CCI-001 & 3 & 3 & 1.000 & 2 & 0.667 \\
+CCI-002 & 1 & 1 & 1.000 & 1 & 1.000 \\
+CCI-003 & 2 & 2 & 1.000 & 2 & 1.000 \\
+CCI-004 & 2 & 2 & 1.000 & 2 & 1.000 \\
+CCI-005 & 7 & 7 & 1.000 & 4 & 0.571 \\
+CCI-006 & 3 & 3 & 1.000 & 1 & 0.333 \\
+CCI-007 & 4 & 4 & 1.000 & 3 & 0.750 \\
+CCI-008 & 1 & 1 & 1.000 & 1 & 1.000 \\
+CCI-009 & 1 & 1 & 1.000 & 1 & 1.000 \\
+CCI-010 & 1 & 1 & 1.000 & 1 & 1.000 \\
 \midrule
-\textbf{Macro} & \textbf{1.000} & \textbf{1.000} & \textbf{1.000} & --- & --- & --- \\
+\textbf{Total / Macro} & \textbf{25} & \textbf{25} & \textbf{1.000} & \textbf{18} & \textbf{0.832} \\
 \bottomrule
 \end{tabular}
-\caption{Per-detector holdout precision, recall, and
-F\textsubscript{1} on the v0.2 corpus (10-sample slice).
-The slice carries 10 adversarial samples (1 per detector); no
-benign samples in the holdout by design. Cross-language parity
-intact.}
-\label{tab:per-detector-holdout}
 \end{table}
 
-The detector versions referenced in the tables are:
-CCI-001 v\tonever{}, CCI-002 v\ttwover{}, CCI-003 v\tthreever{},
-CCI-004 v\tfourver{}, CCI-005 v\tfivever{},
-CCI-006 v\tsixver{}, CCI-007 v\tsevenver{},
-CCI-008 v\teightver{}, CCI-009 v\tninever{},
-CCI-010 v\ttenver{}.
+\subsection{Reading the gap}
 
-\subsection{What the holdout proves}
+The contrast between the two tables is the paper's most useful result.
+The in-sample gate guarantees that the engines agree on every sample
+they have seen, and they do. The held-out slice removes that guarantee
+and asks a harder question: when a new attack arrives, do both engines
+catch it? For the Python engine the answer is yes across all 25; for the
+TypeScript port it is no for seven. The misses concentrate in the
+detectors with the most held-out support (CCI-005 and CCI-006), which is
+where a port is most likely to lag the canonical engine on shapes it was
+never tuned against. These are open findings, not closed claims. Each is
+a candidate for a lockstep ratchet (Path C) recorded in the
+false-negative ledger, and each will move the TypeScript engine toward
+the Python engine's held-out recovery in a later round.
 
-% Source: FN ledger entries FN-007 through FN-017.
-The six holdout samples in the original v0.2 split (the four
-zero-holdout detectors received their first holdout in Round~9
-PR~9.3) were authored simultaneously with the FN ledger entries
-that named the resolution vector each detector would need to
-catch them. That ordering matters: the prediction was committed
-before the closure was measured. Round~7 PR~7.1 closed
-FN-007 (URL-encoded decode-and-run), FN-008 (WebSocket load-time
-fetch), and FN-012 (US Patent fake-citation) by shipping the
-predicted detector ratchets. Round~10 PR~10.1, 10.2, and 10.3
-closed FN-014 (Homebrew install + Gatekeeper bypass), FN-015
-(Cyrillic confusable on unsupported vendor), FN-010 (env-var
-$\to$ query-string exfil), and FN-017 (markdown-table-density
-bury). Each closure shipped the resolution vector named in its
-ledger entry, with the F\textsubscript{1} delta recorded in the
-closure log.
+The combined reading of RQ1 and RQ2 is therefore: the detectors
+are saturated on the in-sample slice at this corpus size, with one
+known precision item; and they generalize fully in one engine but
+partially in the other. A single all-1.000 figure would have hidden the
+one result a reviewer should most want to see.
 
-One holdout sample, S-108 (CCI-009 viral CC-BY-NC-SA license
-clause), was caught by the v0.2.3 detector unaided. The
-prediction was that T9 would miss the noncommercial-ShareAlike
-variant; the measurement showed the detector's CC-BY-* pattern
-generalised across the noncommercial sub-variant. We log this
-as FN-016 (informational; no closure required) and treat it as
-the strongest evidence we have that the detector generalises
-beyond the in-sample tuning pool. Three of four PR~9.3
-predictions correct and one detector-generalises-better-than-
-predicted is exactly the balance the holdout discipline was
-designed to surface.
+\subsection{Statistical confidence}
+\label{subsec:eval-ci}
 
-The combined evidence --- in-sample F\textsubscript{1} = 1.000,
-holdout F\textsubscript{1} = 1.000 after closures, the FN ledger
-recording every prediction-and-closure pair --- is the empirical
-basis for the claim that the in-sample numbers are not overfit
-to the in-sample phrasing pool.
+A point estimate on a small slice can mislead, so we report Wilson score
+95\% confidence intervals on the underlying proportions. These are
+computed in closed form from the committed
+\texttt{(tp, fp, tn, fn)} counts, so they are reproducible without
+re-running the engines. Table~\ref{tab:ci} gives the load-bearing
+quantities.
 
-\subsection{Limitations}
+\begin{table}[t]
+\centering
+\caption{Wilson 95\% confidence intervals on the pooled proportions
+behind the headline numbers. Pooled recall weights every sample equally
+and so differs from the unweighted macro recall (TypeScript macro recall
+0.832 vs.\ pooled 0.720). Small support widens every interval.}
+\label{tab:ci}
+\footnotesize
+\begin{tabular}{@{}l c c@{}}
+\toprule
+Quantity (pooled) & Point ($k/n$) & 95\% CI \\
+\midrule
+In-sample adversarial recall & $62/62$ & $[0.942, 1.000]$ \\
+In-sample benign FP rate     & $1/370$ & $[0.0005, 0.0151]$ \\
+CCI-005 precision            & $5/6$   & $[0.436, 0.970]$ \\
+Held-out recall, Python      & $25/25$ & $[0.867, 1.000]$ \\
+Held-out recall, TypeScript  & $18/25$ & $[0.524, 0.857]$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Two readings follow. First, the intervals are honest about size: the
+single CCI-005 false positive yields a precision point of 0.833 but a
+95\% interval from 0.436 to 0.970, so we cannot yet claim a tight bound
+on that detector's precision. Second, the cross-engine gap is suggestive
+but not air-tight: the Python held-out interval ($[0.867, 1.000]$) sits
+almost entirely above the TypeScript point estimate (0.720), yet the two
+intervals overlap, so the gap is best described as a measured drift to
+close, not a settled performance difference. Both readings argue the
+same way the limitations below do: the result needs a larger corpus
+before any interval narrows enough to support a general claim.
+
+\subsection{Performance}
+\label{subsec:eval-perf}
+
+Static validation is only useful in CI if it is cheap. We timed the full
+ten-detector Python pass over all 124 corpus primitives (mean size
+1{,}424\,B, median 458\,B), five iterations after warmup, single-threaded
+on a commodity host. Per-primitive latency for the complete pass is a
+median of 1.5\,ms, a 95th percentile of 4.7\,ms, and a 99th percentile of
+20.6\,ms; the tail is driven by the deliberately oversized
+context-bloat sample (101\,KB). Throughput is roughly 227 primitives per
+second per core. The cost is dominated by linear regex scans and a
+single markdown-context pass, so it scales with primitive size rather
+than repository size, and a per-file scan adds negligible overhead to a
+pull request. We report the Python engine here; an equivalent TypeScript
+measurement and a size-scaling curve are deferred to the next round.
+
+\subsection{Ablation and a naive baseline}
+\label{subsec:eval-ablation}
+
+To isolate what the context-awareness machinery contributes, we
+re-measured the in-sample slice with each analyzer neutralized, reusing
+the same scoring as the regression gate (the \texttt{full} row
+reproduces the committed baseline, which validates the harness).
+Table~\ref{tab:ablation} reports the result. The \texttt{naive} row, with
+both analyzers off, is the detectors' raw pattern pools with no context
+awareness: a naive keyword/regex baseline.
+
+\begin{table}[t]
+\centering
+\caption{Ablation on the in-sample slice. Recall is invariant because
+the analyzers only suppress matches, never add them; the effect is
+entirely on precision and false positives. Source:
+\texttt{bench/scripts/ablation.py}.}
+\label{tab:ablation}
+\footnotesize
+\begin{tabular}{@{}l c c c c@{}}
+\toprule
+Configuration & Precision & Recall & F\textsubscript{1} & FP \\
+\midrule
+Full pipeline          & 0.983 & 1.000 & 0.991 & 1 \\
+$-$ markdown-context   & 0.983 & 1.000 & 0.991 & 1 \\
+$-$ semantic-context   & 0.931 & 1.000 & 0.960 & 5 \\
+Naive (both off)       & 0.931 & 1.000 & 0.960 & 5 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Two findings, one expected and one not. The semantic-context analyzer is
+load-bearing: removing the negation, mention, declaration, and
+quoted-phrase predicates raises false positives from one to five and
+drops macro precision from 0.983 to 0.931. The mechanism is the S-013
+case (Section~\ref{sec:case-studies}): without negation detection, the
+benign ``what NOT to do'' primitive that names \texttt{curl|bash} is
+flagged. Against the naive pattern pool, then, the full pipeline cuts
+false positives fivefold on this corpus. The unexpected finding is that
+removing the markdown-context analyzer changes nothing measurable on the
+present in-sample slice. Historically it closed three precision-defense
+ledger entries, but the current in-sample benign set does not exercise
+the fenced-code and frontmatter paths it guards, so its measured
+contribution here is zero. We report that rather than assume the
+component helps; it also marks a concrete corpus gap, namely benign
+samples that stress code-block handling. These are internal ablations
+against an internal naive baseline; external baselines (Semgrep- or
+YARA-style rules, an LLM-as-judge classifier, and a human-review study)
+remain the larger comparative work, discussed below.
+
+\subsection{Limitations (RQ4)}
 \label{subsec:eval-limitations}
 
-% Source: docs/evaluation.md § Limitations (verbatim).
-The numbers in this paper are honest about what they do and do
-not prove. We enumerate eight specific limitations:
+We enumerate the limitations rather than imply there are none.
 
-\paragraph{1. Corpus size.} v0.2 ships 109 labeled samples with
-per-detector support 30 to 45. F\textsubscript{1} = 1.000 on
-that support is the best demonstration we can make at this
-corpus size; it is not the same claim as F\textsubscript{1} =
-1.000 at 30{,}000 samples. Corpus expansion to per-detector
-support past 100 samples is the immediate next-round work.
+\paragraph{Corpus size} v0.2 ships 124 samples with per-detector support
+of 30 to 45. F\textsubscript{1} on that support is the best
+demonstration available at this size; it is not the same claim as
+F\textsubscript{1} on tens of thousands of samples. Tenfold expansion is
+the next-round work.
 
-\paragraph{2. English-language bias.} Adversarial samples are
-authored primarily in English. Attacker phrasing in Russian,
-Chinese, Arabic, and Spanish is uncovered. Multilingual corpus
-expansion is deferred to v0.3.
+\paragraph{Cross-engine recall gap} The TypeScript engine misses seven
+held-out attacks the Python engine catches. Until that closes, the
+agent-side gate (which runs the TypeScript engine) carries weaker
+held-out recall than the server-side pipeline. This is the most
+material limitation, and we surface it in the headline rather than a
+footnote.
 
-\paragraph{3. Static detection only.} The corpus measures
-detectors operating on primitive content (markdown files). It
-does \emph{not} measure runtime-injection defense (the agent
-fetching a malicious resource after signing) or training-time
-attacks against the underlying LLM~\cite{Carlini:2024:webcrawl-poisoning}.
-Each maps to a different defense layer in the Trust Runtime
-stack; see \texttt{docs/owasp-llm-top10-crosswalk.md} for the
-scope boundary.
+\paragraph{Uneven held-out support} Held-out support ranges from one
+sample (CCI-002, CCI-008, CCI-009, CCI-010) to seven (CCI-005). A
+single held-out sample is a weak generalization probe. Matching the
+in-sample density is the v0.3 corpus target.
 
-\paragraph{4. Vendor list scope.} Generic Unicode confusables
-(T7 v0.3.1) defend the 43 single-word vendor names in
-\verb|_VENDORS|. The full UTS \#39 confusables.txt distribution
-($\sim$6{,}000 entries) plus UAX \#31 identifier-domain rules
-is the natural extension when the vendor list outgrows manual
-curation.
+\paragraph{Static detection only} The corpus measures detectors on
+primitive content. It does not measure runtime-injection defense or
+training-time poisoning~\cite{Carlini:2024:webcrawl-poisoning}; those map
+to other layers of the Trust Runtime.
 
-\paragraph{5. Synthesized provenance.} Most adversarial
-samples carry \verb|incident_reference: synthesized| --- composed
-to exercise a specific attack shape rather than drawn from
-observed in-the-wild incidents. Field-incident provenance grows
-as the \verb|/check| public route accumulates field reports;
-see Section~\ref{sec:related} for the operational mechanism.
+\paragraph{English-language bias} Adversarial samples are written
+primarily in English. Attacker phrasing in Russian, Chinese, Arabic, and
+Spanish is uncovered, and multilingual expansion is deferred to v0.3.
 
-\paragraph{6. Holdout coverage per detector.} After Round~9
-PR~9.3 + Round~10 closures, every detector has exactly 1
-holdout sample. Multiple holdouts per detector (matching the
-30--45 in-sample density) is desirable; v0.3 corpus work targets
-3 holdouts per detector.
+\paragraph{Vendor-list scope} The confusables detector defends the 35
+single-word vendors in its list. The full UTS~\#39 confusables
+distribution and UAX~\#31 identifier rules are the natural extension once
+the list outgrows manual curation.
 
-\paragraph{7. Replay versus gate.}
-\verb|bench/cli/replay.py| reports per-sample verdicts and is
-intended for paper-reviewer reproducibility;
-\verb|bench/scripts/gate.sh| runs the aggregate measurement +
-parity check that the CI gate enforces. Both consume the same
-corpus + detectors; the gate is what blocks merges, the replay
-is what answers ``show me this specific finding.''
+\paragraph{Synthesized provenance} Most adversarial samples (66 of 77)
+are synthesized. Field-incident provenance grows as the \texttt{/check}
+route accumulates real reports.
 
-\paragraph{8. No third-party verification.} These numbers are
-produced by the same team that wrote the detectors. The
-corpus and gate are open-source and reproducible by design;
-independent replication is invited via the
-responsible-disclosure surface documented in
-\verb|SECURITY.md|~\cite{primitivehub:2026:security}, and
-ledger closure entries credit external reporters.
+\paragraph{Single-team verification} The same team wrote the detectors
+and the labels. The corpus and gate are open and reproducible by design;
+independent replication is invited through the disclosure surface in
+\texttt{SECURITY.md}~\cite{primitivehub:2026:security}, and ledger
+closures credit external reporters. We do not yet report an inter-rater
+agreement statistic, because labeling has so far been single-team; a
+second independent labeling pass with a Cohen's $\kappa$ is the planned
+mitigation, not merely a disclosed gap.
+
+\paragraph{Only an internal baseline so far} Section~\ref{subsec:eval-ablation}
+reports an analyzer ablation and a naive pattern-pool baseline, which
+isolate the semantic-context analyzer's contribution. It does not yet
+report \emph{external} baselines: a generic-rule comparison (Semgrep- or
+YARA-style), an LLM-as-judge classifier (the obvious ``why not just use
+an LLM?'' question), or a human-review study (most relevant for the
+invisible-Unicode and encoded-payload cases). Those comparisons, against
+a larger corpus, are the central evaluation work of the next round.
+Accordingly, the present evaluation should be read as
+detector-versus-corpus and detector-versus-naive, not as a comparison
+with state-of-practice tools.
 
 \subsection{Threats to validity}
 
-\paragraph{Internal validity.} The same team authored both the
-detectors and the labels. The mitigation is the append-only FN
-ledger so the chain from prediction to closure is auditable; an
-external reviewer can re-run each closure's measurement and
-verify the F\textsubscript{1} delta from the entry. The corpus is
-open-source; \verb|SECURITY.md| documents the independent-
-replication path.
+\paragraph{Internal} One team authored detectors and labels. The
+mitigation is the append-only false-negative ledger: every
+prediction-to-closure chain is auditable, and a reviewer can re-run any
+closure's measurement to check its F\textsubscript{1} delta.
 
-\paragraph{External validity.} The corpus is synthesized for
-most adversarial samples; real-world primitive content will
-surface attack shapes not in the v0.2 set. The mitigation is
-the regression gate and FP/FN ledger discipline are designed
-to absorb new shapes as they appear without re-architecting; a
-field-reported FN becomes a corpus sample, becomes an FN
-ledger entry, becomes a detector ratchet via a corpus-
-measured closure round.
+\paragraph{External} The corpus is mostly synthesized; real content will
+surface shapes outside v0.2. The mitigation is structural: a
+field-reported miss becomes a corpus sample, then a ledger entry, then a
+lockstep ratchet, without re-architecting the pipeline.
 
-\paragraph{Construct validity.} F\textsubscript{1} measures
-verdict-versus-manifest agreement. The manifest encodes
-maintainers' beliefs about what should fire. The mitigation
-is the borderline label (sample where reasonable labelers
-disagree) plus the four-path FP/FN triage discipline that
-forces every diagnosed finding to classify itself into one
-of \{edit content, allow with ledger record, ratchet detector,
-escalate to security review\}. Disagreement at the corpus
-labeling layer is recoverable via Path B (sample relabel);
-disagreement at the detector layer is recoverable via Path C
-(detector ratchet); neither path is silent.
+\paragraph{Construct} F\textsubscript{1} measures agreement between a
+verdict and a manifest that encodes maintainers' beliefs about what
+should fire. The borderline label and the four-path triage make that
+disagreement recoverable rather than silent: relabel a sample (Path B)
+or ratchet a detector (Path C), but never quietly accept.

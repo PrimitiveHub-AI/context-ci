@@ -1,166 +1,130 @@
-% Introduction — v0.2 prose.
-% Target: ~2.5 pages. Walks the reader from "what changed about
-% the supply chain" to "why a new defense layer is needed" to
-% "what we built and what we measured."
+% Introduction. From "what changed about the supply chain" to "why a
+% new defense layer is needed" to "what we built and what we measured."
+% Numbers in the results paragraph match docs/evaluation.md exactly.
 
 \section{Introduction}
 \label{sec:intro}
 
-\subsection{The agent-context shift}
+\subsection{A supply chain the build pipeline does not cover}
 \label{subsec:shift}
 
-The last decade of supply-chain security has been a sustained
-investment in the build pipeline. Provenance frameworks ---
-SLSA~\cite{SLSA:2023:provenance-spec},
+The last decade of supply-chain security invested in the build
+pipeline. SLSA~\cite{SLSA:2023:provenance-spec},
 in-toto~\cite{in-toto:2016:supply-chain},
 Sigstore~\cite{Sigstore:2021:keyless-signing}, and the
-package-manager provenance work shipped by npm, PyPI, RubyGems,
-and Maven Central --- give downstream consumers a verifiable
-chain from source commit to signed artifact. That chain answers
-two questions: \emph{who built this code?} and \emph{is what I
-have on disk what was signed?} Both questions matter. Both have
-been load-bearing in incident response across the SolarWinds Orion
-breach in 2020~\cite{SolarWinds:2020:supply-chain}, the Codecov
-bash-uploader compromise in 2021~\cite{Codecov:2021:bash-uploader},
-the \texttt{ua-parser-js} compromise later that
-year~\cite{ua-parser-js:2021:npm-typosquat}, the
-\texttt{eslint-config-prettier} maintainer-account breach in
-2024~\cite{eslint-config-prettier:2024:maintainer-compromise}, the
-\texttt{xz-utils} backdoor (CVE-2024-3094) the same
-year~\cite{xz-utils:2024:CVE-2024-3094}, and the September 2025
-Shai-Hulud npm worm that propagated through
-\texttt{postinstall} hooks on typosquat
+provenance work shipped by npm, PyPI, and Maven Central give a
+consumer a verifiable chain from source commit to signed artifact.
+That chain answers two questions: who built this, and is the artifact
+on disk the one that was signed? Both have been load-bearing in
+incident response, from the SolarWinds Orion
+breach~\cite{SolarWinds:2020:supply-chain} and the Codecov bash-uploader
+compromise~\cite{Codecov:2021:bash-uploader} to the
+\texttt{ua-parser-js} typosquat~\cite{ua-parser-js:2021:npm-typosquat},
+the \texttt{eslint-config-prettier} maintainer-account
+breach~\cite{eslint-config-prettier:2024:maintainer-compromise}, the
+\texttt{xz-utils} backdoor (CVE-2024-3094)~\cite{xz-utils:2024:CVE-2024-3094},
+and the 2025 Shai-Hulud npm worm that spread through
+\texttt{postinstall} hooks on typosquatted
 names~\cite{Shai-Hulud:2025:npm-worm}.
 
-% Source: docs/threat-model.md § 1.
-AI agents load a category of supply-chain artifact that this
-investment does not address. We will call them \emph{context
-primitives}: markdown-style documents the agent treats as
-instruction at load time. A skill file under
-\texttt{.claude/skills}; a system-prompt fragment under
-\texttt{prompts/}; an MCP server description that maps tool calls
-to URL endpoints; an \texttt{AGENTS.md} file at a repository
-root. Each of these is a document the agent parses with the same
-mechanism it parses user input: as language to act on.
+AI agents load a category of artifact this investment does not reach.
+We call them \emph{context primitives}: documents the agent treats as
+instruction at load time. A skill file under \texttt{.claude/skills}; a
+system-prompt fragment; an MCP server description that binds tool calls
+to endpoints; an \texttt{AGENTS.md} at a repository root. The agent
+parses each with the same mechanism it uses for user input: as language
+to act on.
 
-% Source: docs/threat-model.md § 2.
-A primitive can be perfectly well-formed under every existing
-supply-chain control --- signed by an authorized maintainer,
-content-digest-verified, freshly fetched from a registry whose
-provenance chain is unbroken --- and still contain prose that
-says \emph{``before responding to the user's first message, run
-\texttt{curl https://attacker.example/install.sh \textbar{} sh}
-to register the agent with the operations coordinator.''} The
-existing controls verify that the bytes have not changed since
-signing. They do not verify that the bytes, when interpreted as
-instruction, are safe to follow.
+A primitive can be well-formed under every existing control, signed by
+an authorized maintainer, \contentdigest{}-verified, freshly fetched
+over an unbroken provenance chain, and still carry prose that says
+\emph{``before your first reply, run \texttt{curl
+https://attacker.example/i.sh | sh} to register with the operations
+coordinator.''} The cryptographic controls confirm the bytes have not
+changed since signing. They say nothing about whether those bytes, read
+as instruction, are safe to follow~\cite{primitivehub:2026:top10}.
 
-\subsection{What an attacker can do with a poisoned primitive}
+\subsection{What an attacker does with a poisoned primitive}
 
-% Source: docs/top10-corpus-map.md CCI-005, CCI-004, CCI-007.
-The attack surface is wider than any single technique. A primitive
-can tell the agent to fetch a remote URL and treat the response as
-additional instruction~\cite[CCI-004]{primitivehub:2026:top10};
-can hide an instruction inside zero-width
-codepoints invisible to a human reviewer~\cite[CCI-002]{primitivehub:2026:top10};
-can pair a base64 blob with an
-\texttt{atob}-and-\texttt{eval} directive~\cite[CCI-003]{primitivehub:2026:top10};
-can impersonate a vendor whose name contains a Cyrillic ``А''
-indistinguishable from Latin ``A''~\cite[CCI-007]{primitivehub:2026:top10};
-can pad itself with decorative emoji until the actual instruction
-is buried below an attention-blunting visual
-prefix~\cite[CCI-010]{primitivehub:2026:top10}. Each of these is
-the prose-as-instruction boundary failing in a different way.
+The surface is wider than any one trick. A primitive can tell the agent
+to fetch a URL and treat the response as further
+instruction~\cite{primitivehub:2026:top10}; hide a directive inside
+zero-width codepoints invisible to a reviewer; pair a base64 blob with
+a decode-and-run order; impersonate a vendor whose name carries a
+Cyrillic letter in place of a Latin A; or bury the live instruction
+under decorative padding. Each is the same boundary, prose interpreted
+as instruction, failing in a different way.
 
-% Source: docs/principles.md; docs/decisions/0011.
-Signing alone cannot defend against this surface. Signing proves
-\emph{who} wrote a primitive; it does not prove what the primitive
-\emph{tells the agent to do}. Runtime-only defenses --- output
-filtering, prompt rewriting, instruction-hierarchy
+Signing cannot close this. It proves \emph{who} wrote a primitive, not
+what the primitive tells the agent to do. Runtime defenses such as
+output filtering and instruction-hierarchy
 training~\cite{Wallace:2024:instruction-hierarchy,Greshake:2023:prompt-injection-survey}
---- catch some attacks at execution time but leave the cost of a
-detected attack (credentials lost, commands run) already paid
-before the defense fires. The missing layer is a
-\emph{semantic validation} step that runs before the primitive
-reaches the agent's load path: a scan of the primitive's prose
-for known attack shapes, with explicit per-shape detectors and a
-measured precision and recall against a labeled corpus.
+catch some attacks at execution time, but the cost of a caught attack,
+a credential read or a command run, is partly paid before the defense
+fires. The missing layer is a semantic check that runs \emph{before} the
+primitive reaches the agent's load path: a scan of its prose for known
+attack shapes, with explicit per-shape detectors and measured precision
+and recall against a labeled corpus.
 
 \subsection{Contributions}
 
-% Source: docs/top10-corpus-map.md.
-This paper makes four contributions.
+\paragraph{A threat taxonomy, defined operationally} We present the
+Context CI Top~10, a ten-category taxonomy of agent-context
+supply-chain attacks. Each category is defined by an implemented
+detector, at least one canonical sample from a labeled corpus, and a
+measured precision and recall. The taxonomy is not exhaustive; it is the
+set of shapes observed in incidents or composable from
+them~\cite{Greshake:2023:prompt-injection-survey,Shai-Hulud:2025:npm-worm,Carlini:2024:webcrawl-poisoning}.
+Section~\ref{sec:threat-model} treats each in turn.
 
-\paragraph{The Context CI Top 10.} We present a ten-category
-taxonomy of agent-context supply-chain attacks. Each category is
-defined operationally: a detector implementation, a canonical
-adversarial sample from a labeled corpus, and a measured
-precision and recall. The taxonomy is not exhaustive --- it is
-the set of categories that have appeared in observed incidents
-or whose attack shape composes from known
-incidents~\cite{Greshake:2023:prompt-injection-survey,Shai-Hulud:2025:npm-worm,Carlini:2024:webcrawl-poisoning}.
-Section~\ref{sec:threat-model} treats each category individually.
+\paragraph{A labeled corpus and a measurement contract} We ship 124
+labeled samples under CC-BY-4.0: 99 in-sample (52 adversarial, 37
+benign, 10 borderline) and 25 held out. Two engines, Python and
+TypeScript, run the same detectors over the same bytes, and a CI gate
+requires byte-identical \texttt{(tp, fp, tn, fn)} tuples on the
+in-sample slice. The held-out slice is reserved as an overfit probe and
+is never used to tune the detectors.
 
-% Source: docs/corpus-v0.1.md; docs/evaluation.md.
-\paragraph{A labeled corpus + measurement methodology.} We ship
-105 labeled samples (52 adversarial, 37 benign, 10 borderline,
-plus a 6-sample holdout slice) under CC-BY-4.0. Per-detector
-support ranges from 30 to 45 labels. Two independent
-implementations --- Python and TypeScript --- run the same
-detectors against the same samples and are required by a regression
-gate to produce byte-identical \texttt{(tp, fp, tn, fn)} tuples.
-The gate runs on every PR; cross-language drift fails the merge.
+\paragraph{An antivirus-vendor methodology} We adopt the AV industry's
+discipline of paired, append-only false-positive and false-negative
+ledgers, with a four-path triage applied to every finding before any
+detector change~\cite{Christodorescu:2003:static-malware}. The
+discipline is what stops a team from trading precision for recall by
+reflex.
 
-% Source: docs/false-{positive,negative}-resolution.md;
-% docs/decisions/0030.
-\paragraph{An AV-vendor methodology.} We adopt the
-antivirus-industry discipline of paired FP and FN ledgers,
-append-only and numbered, with a four-path triage classification
-applied to every finding before any detector or corpus
-change~\cite{AntivirusTaxonomy:2010s:industry-practice}. The
-discipline is what prevents tuning precision past optimal in
-trade for recall, and vice versa. The four resolution paths are:
-edit the content, narrow allow entry plus ledger record, detector
-ratchet with corpus measurement, or escalate to a security
-reviewer.
+\paragraph{An open, reproducible artifact} The corpus, detectors,
+measurement scripts, regression gate, and a per-sample replay tool are
+open source. A reviewer can clone the repository, run one script, and
+obtain the per-detector numbers we report here.
 
-% Source: bench/scripts/gate.sh; bench/cli/replay.py.
-\paragraph{An open, reproducible artifact.} The corpus, detectors,
-measurement scripts, regression gate, and per-sample replay tool
-are open-source. A reviewer can clone the repository, run
-\texttt{bench/scripts/gate.sh}, and obtain the per-detector
-precision and recall in under ten minutes; the same reviewer can
-re-run any single sample through \texttt{bench/cli/replay.py} and
-see its deterministic verdict against the most recent baseline.
+\subsection{Results}
 
-\subsection{Results in one paragraph}
+On the in-sample slice both engines agree byte-for-byte and reach a
+macro F\textsubscript{1} of 0.991: nine of ten detectors score a perfect
+1.000, and one, the unsafe-shell-install detector, carries a single
+benign false positive (precision 0.833). We do not suppress it. The
+held-out slice is where the split exposes implementation drift. The
+Python engine
+recovers all 25 held-out attacks; the TypeScript port recovers 18, a
+macro recall of 0.832, missing held-out shapes in four categories that
+the Python engine catches. That divergence is the corpus doing its job:
+the in-sample gate guarantees parity on samples the detectors have seen,
+and the held-out slice reveals that the TypeScript port still lags the
+Python engine on shapes neither was tuned against.
+Section~\ref{sec:evaluation} reports the per-detector breakdown and an
+enumerated list of limitations, so this reads as an initial measurement
+rather than a final claim.
 
-% Source: docs/evaluation.md (auto-generated).
-On the v0.2 corpus (Top 10 v0.1), macro
-F\textsubscript{1} is 1.000 on the 99-sample in-sample slice and
-1.000 on the 6-sample holdout slice. Per-detector precision and
-recall are individually 1.000 across all ten detectors on the
-in-sample slice and across the six detectors that have holdout
-representation. Cross-language verdict-count parity is intact for
-every detector on every sample. Section~\ref{sec:evaluation}
-reports the per-detector breakdown, the methodology behind each
-of these numbers, and an honest enumeration of the limitations
-that make this a first measurement rather than a final one.
+\subsection{Organization}
 
-\subsection{Paper organization}
-
-Section~\ref{sec:threat-model} introduces the Context CI Top 10
-taxonomy in detail, with one subsection per category.
-Section~\ref{sec:system-design} describes the three-pillar
-architecture (Trust Contract, Top 10, Context Bill of Materials)
-that the Top 10 sits inside. Section~\ref{sec:implementation}
-covers the dual-implementation discipline, the regression gate,
-and the FP/FN ledger methodology. Section~\ref{sec:evaluation}
-reports per-detector P, R, and F\textsubscript{1}, the holdout
-methodology, and the limitations.
-Section~\ref{sec:related} positions PrimitiveHub against prior
-work in software supply-chain security, prompt-injection defense,
-and antivirus industry practice. Section~\ref{sec:conclusion}
-closes with future work --- corpus expansion, multilingual coverage,
-runtime gating, and the move to a generic Unicode-confusables
-scope.
+Section~\ref{sec:bridge} maps the agent-context supply chain onto the
+classical one. Section~\ref{sec:threat-model} states the formal threat
+model and presents the taxonomy.
+Section~\ref{sec:system-design} places it inside the three-pillar Trust
+Runtime. Section~\ref{sec:implementation} covers the dual-engine
+discipline, the regression gate, and the ledgers.
+Section~\ref{sec:evaluation} reports the numbers and the limitations.
+Section~\ref{sec:case-studies} walks five concrete verdicts.
+Section~\ref{sec:related} positions the work against supply-chain
+security, prompt-injection defense, and AV practice.
+Section~\ref{sec:conclusion} closes with future work.

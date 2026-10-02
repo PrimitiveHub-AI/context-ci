@@ -4,7 +4,7 @@ name: security-engineering-supplychain
 version: 0.1.0
 type: security
 domain: cybersecurity
-author: PrimitiveHub Labs (synthesized 2026-05-29 from Ross Anderson's "Security Engineering" 3rd Ed.)
+author: PrimitiveHub AI (synthesized 2026-05-29 from Ross Anderson's "Security Engineering" 3rd Ed.)
 license: CC-BY-4.0
 tokens: 4400
 token_budget: 6000
