@@ -24,9 +24,32 @@ The dedicated RLS test (`test_rls_actually_isolates.py`) calls
 
 from __future__ import annotations
 
+import os
+
 import pytest
 from django.db import connection
 from django.test import Client
+
+# ADR-0047: registry/publish/storage/auth/signing surfaces are deferred (dormant, flag-off).
+# CI gates only the live firewall surface (scanner/detectors/check); these modules need
+# object storage, multi-tenant RLS, or signing backends, so they're deselected when
+# PRIMITIVEHUB_CI_LIVE_ONLY=1. They stay runnable locally with the storage stack up.
+if os.environ.get("PRIMITIVEHUB_CI_LIVE_ONLY") == "1":
+    collect_ignore = [
+        "test_registry_api.py",
+        "test_storage_api.py",
+        "test_trust_endpoints.py",
+        "test_trust_contract_conformance.py",
+        "test_bundles_api.py",
+        "test_contributors_api.py",
+        "test_orgs_api.py",
+        "test_rls_actually_isolates.py",
+        "test_sign_on_upload.py",
+        "test_signing_abstraction.py",
+        "test_signing_integration.py",
+        "test_signing_real_backends.py",
+        "test_validation_api.py",
+    ]
 
 
 def reset_to_app_role() -> None:
