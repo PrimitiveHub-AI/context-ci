@@ -39,3 +39,9 @@ Task: <this sprint's goal>.
 First action: restate current baseline (F1 0.991 / recall 0.832) + what's reproducible,
 then plan before editing. Update this ledger at close.
 ```
+
+## Next cycle (ADR-0047) — 🔴 spearhead
+
+- **Task:** Public, reproducible ADVERSARIAL BENCHMARK — grow labeled attack corpus, per-detector precision/recall, 'what we catch vs others' report.
+- **Gain:** Detection credibility — the proof incumbents can't fake; earns the 'firewall' claim.
+- Full plan + sequencing: `SPINE.md` → "Next cycle" table. Paste-prompt: `HOWTO.md`.

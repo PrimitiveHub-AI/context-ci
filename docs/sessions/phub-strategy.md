@@ -61,3 +61,9 @@ Task: <this sprint's goal>.
 First action: restate the parked reputation-layer decision + options, give a sharp recommendation,
 then the downstream unblock plan for phub-check-engine. Update this ledger at close.
 ```
+
+## Next cycle (ADR-0047) — 🟢 orchestrator
+
+- **Task:** Reframe brand to firewall; design the /check-telemetry flywheel + pricing (free gate → paid enterprise). OWNS the cross-cycle plan.
+- **Gain:** Direction — the business model behind the wedge.
+- Full plan + sequencing: `SPINE.md` → "Next cycle" table. Paste-prompt: `HOWTO.md`.

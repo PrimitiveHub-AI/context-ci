@@ -41,3 +41,9 @@ Task: <this sprint's goal>.
 First action: restate current state + known FPs, then plan + open-items priority before editing.
 Any public number must trace to bench/baseline. Update this ledger at close.
 ```
+
+## Next cycle (ADR-0047) — 🟠 active
+
+- **Task:** Close known FP/FN gaps; add attack classes; design anonymized /check-telemetry → threat-intel loop.
+- **Gain:** Detection quality + compounding moat — fewer FPs = trust; flywheel replaces lost community.
+- Full plan + sequencing: `SPINE.md` → "Next cycle" table. Paste-prompt: `HOWTO.md`.

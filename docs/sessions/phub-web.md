@@ -37,3 +37,9 @@ Task: <this sprint's goal>.
 First action: restate current state from the ledger, then give me the plan + open-items priority
 before touching code. Preview on a 2nd loopback port; show me before production. Update this ledger at close.
 ```
+
+## Next cycle (ADR-0047) — 🟡 funnel
+
+- **Task:** Reframe hero to 'Context Firewall'; polish public /check demo + /Forge live-as-you-type DX.
+- **Gain:** Conversion — a top-of-funnel that routes users to the gate.
+- Full plan + sequencing: `SPINE.md` → "Next cycle" table. Paste-prompt: `HOWTO.md`.

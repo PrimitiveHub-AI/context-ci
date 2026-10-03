@@ -40,3 +40,9 @@ Task: <this sprint's goal>.
 First action: restate current topology (:3000 = prod), then plan before changing infra.
 Update this ledger at close.
 ```
+
+## Next cycle (ADR-0047) — 🟢 steady
+
+- **Task:** Hold CI green + lean; keep registry/storage/auth/signing code flagged-dormant (not deleted); no MinIO/R2 on critical path.
+- **Gain:** Velocity — low maintenance, no dead-weight infra.
+- Full plan + sequencing: `SPINE.md` → "Next cycle" table. Paste-prompt: `HOWTO.md`.

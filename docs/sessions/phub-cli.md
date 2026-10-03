@@ -38,3 +38,9 @@ Task: <this sprint's goal>.
 First action: restate current state, then plan + open-items priority before editing.
 Every user-facing command ships with a copy-paste "Try it now" block. Update this ledger at close.
 ```
+
+## Next cycle (ADR-0047) — 🔴 spearhead
+
+- **Task:** One-line verify-before-load GATE — MCP middleware + CI action + CLI, inline blocking, crisp low-FP verdicts, trivial install.
+- **Gain:** Distribution + stickiness — the actual firewall, embedded where devs work.
+- Full plan + sequencing: `SPINE.md` → "Next cycle" table. Paste-prompt: `HOWTO.md`.
