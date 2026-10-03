@@ -81,6 +81,26 @@ jobs:
           DJANGO_SETTINGS_MODULE: primitivehub_api.settings_test
         run: uv run python manage.py check --fail-level WARNING
 
+      # CI parity with infra/postgres/init-multi-db.sh (mounted in dev via
+      # docker-entrypoint-initdb.d, not run by a plain service container):
+      # create the BYPASSRLS role conftest SET ROLEs to. primitivehub_app is
+      # the service superuser here, so it can create + grant.
+      - name: Bootstrap test_bypass_rls role
+        env:
+          PGPASSWORD: primitivehub_app
+        run: |
+          psql -h localhost -U primitivehub_app -d primitivehub_test -v ON_ERROR_STOP=1 <<'SQL'
+          DO $$ BEGIN
+            IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'test_bypass_rls') THEN
+              CREATE ROLE test_bypass_rls NOLOGIN BYPASSRLS;
+            END IF;
+          END $$;
+          GRANT test_bypass_rls TO primitivehub_app WITH ADMIN OPTION;
+          GRANT ALL PRIVILEGES ON SCHEMA public TO test_bypass_rls;
+          ALTER DEFAULT PRIVILEGES FOR ROLE primitivehub_app IN SCHEMA public GRANT ALL ON TABLES TO test_bypass_rls;
+          ALTER DEFAULT PRIVILEGES FOR ROLE primitivehub_app IN SCHEMA public GRANT ALL ON SEQUENCES TO test_bypass_rls;
+          SQL
+
       - name: pytest
         env:
           DJANGO_SETTINGS_MODULE: primitivehub_api.settings_test
