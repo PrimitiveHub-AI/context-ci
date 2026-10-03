@@ -44,8 +44,38 @@ export type VerifyBeforeLoadReasonCode =
   | "PATH_UNATTESTED"
   | "PATH_FLAGGED_BY_SCANNER"
 
+/**
+ * Severity tier for a reason — the low-FP distinction the firewall draws
+ * between "this is an attack / tamper signal" and "this artifact is simply
+ * unsealed". `safe` still goes false the instant ANY reason fires
+ * (refuse-by-default, ADR-0029); `tier` is purely additive metadata that
+ * lets a transport render a crisp verdict and offer an opt-in dev path
+ * (`--allow-unsealed`) without weakening the gate.
+ *
+ *   - "block"   — integrity / detection signal. Tamper, drift, a live
+ *                 scanner finding, or a caller-demanded attestation that is
+ *                 absent. Never a false positive you'd want to wave through.
+ *   - "posture" — the operator simply hasn't sealed this artifact yet
+ *                 (no lock, path not in lock, not a known class). Real on a
+ *                 hardened repo; noise on first run. Downgradable by policy.
+ */
+export type VerifyBeforeLoadReasonTier = "block" | "posture"
+
+/** code → tier. The single source of truth for the block/posture split. */
+const REASON_TIER: Record<VerifyBeforeLoadReasonCode, VerifyBeforeLoadReasonTier> = {
+  LOCK_MISSING: "posture",
+  PATH_UNCLASSIFIED: "posture",
+  PATH_NOT_IN_LOCK: "posture",
+  LOCK_SPEC_VERSION_MISMATCH: "block",
+  PATH_NOT_FOUND: "block",
+  PATH_DIGEST_MISMATCH: "block",
+  PATH_UNATTESTED: "block",
+  PATH_FLAGGED_BY_SCANNER: "block",
+}
+
 export interface VerifyBeforeLoadReason {
   code: VerifyBeforeLoadReasonCode
+  tier: VerifyBeforeLoadReasonTier
   message: string
 }
 
@@ -101,6 +131,20 @@ export interface VerifyBeforeLoadResult {
 }
 
 /**
+ * True iff the result carries at least one `block`-tier reason (tamper,
+ * drift, a live scanner finding, or a demanded-but-absent attestation).
+ *
+ * The low-FP predicate a transport uses to decide whether an unsafe result
+ * is a hard stop or merely an unsealed-posture warning it may wave through
+ * under an explicit opt-in (`phub verify-before-load --allow-unsealed`,
+ * `phub-scan mode:gate allow-unsealed:true`). `safe === false` with no
+ * block-tier reason means "clean content, just not sealed yet".
+ */
+export function hasBlockingReason(result: VerifyBeforeLoadResult): boolean {
+  return result.reasons.some((r) => r.tier === "block")
+}
+
+/**
  * Run the composite gate. Synchronous — every underlying primitive
  * (`runAudit`) is synchronous in v0.1. The MCP wrapper is async only
  * because it also runs `verifyBundle` (which uses Web Crypto and is
@@ -133,6 +177,9 @@ function decide(
   paths: { workspaceRoot: string; absolutePath: string; relativePath: string },
 ): VerifyBeforeLoadResult {
   const reasons: VerifyBeforeLoadReason[] = []
+  const push = (code: VerifyBeforeLoadReasonCode, message: string): void => {
+    reasons.push({ code, tier: REASON_TIER[code], message })
+  }
 
   const lockState = auditResult.lockState
   const lockEntry = lockState?.lock?.artifacts.find((a) => a.path === paths.relativePath) ?? null
@@ -140,28 +187,25 @@ function decide(
 
   // ── Lock checks ───────────────────────────────────────────────────
   if (lockState === null || lockState.missing) {
-    reasons.push({
-      code: "LOCK_MISSING",
-      message: `no .primitivehub/phub.lock under ${paths.workspaceRoot} — operator has not sealed any artifacts`,
-    })
+    push(
+      "LOCK_MISSING",
+      `no .primitivehub/phub.lock under ${paths.workspaceRoot} — operator has not sealed any artifacts`,
+    )
   } else if (lockState.specVersionMismatch) {
-    reasons.push({
-      code: "LOCK_SPEC_VERSION_MISMATCH",
-      message: `lock pinned to a different Top 10 spec version than this runtime expects`,
-    })
+    push(
+      "LOCK_SPEC_VERSION_MISMATCH",
+      `lock pinned to a different Top 10 spec version than this runtime expects`,
+    )
   }
 
   // ── Path-existence + classification ───────────────────────────────
   if (!existsSync(paths.absolutePath)) {
-    reasons.push({
-      code: "PATH_NOT_FOUND",
-      message: `'${paths.relativePath}' does not exist under ${paths.workspaceRoot}`,
-    })
+    push("PATH_NOT_FOUND", `'${paths.relativePath}' does not exist under ${paths.workspaceRoot}`)
   } else if (artifact === null) {
-    reasons.push({
-      code: "PATH_UNCLASSIFIED",
-      message: `'${paths.relativePath}' is not a known agent-context artifact class (see ADR-0025)`,
-    })
+    push(
+      "PATH_UNCLASSIFIED",
+      `'${paths.relativePath}' is not a known agent-context artifact class (see ADR-0025)`,
+    )
   }
 
   // ── Per-path lock entry ───────────────────────────────────────────
@@ -169,24 +213,24 @@ function decide(
   let pathAttestation: string | null = null
   if (artifact !== null && lockState !== null && !lockState.missing) {
     if (lockEntry === null) {
-      reasons.push({
-        code: "PATH_NOT_IN_LOCK",
-        message: `'${paths.relativePath}' is in the working tree but not in the lock — operator has not sealed this artifact`,
-      })
+      push(
+        "PATH_NOT_IN_LOCK",
+        `'${paths.relativePath}' is in the working tree but not in the lock — operator has not sealed this artifact`,
+      )
     } else {
       pathAttestation = lockEntry.attestation
       const expectedDigest = `sha256:${artifact.digest}`
       pathDigestMatch = lockEntry.digest === expectedDigest
       if (!pathDigestMatch) {
-        reasons.push({
-          code: "PATH_DIGEST_MISMATCH",
-          message: `'${paths.relativePath}' content (${expectedDigest}) does not match the lock (${lockEntry.digest})`,
-        })
+        push(
+          "PATH_DIGEST_MISMATCH",
+          `'${paths.relativePath}' content (${expectedDigest}) does not match the lock (${lockEntry.digest})`,
+        )
       } else if (opts.requireAttestation === true && lockEntry.attestation === "unattested") {
-        reasons.push({
-          code: "PATH_UNATTESTED",
-          message: `'${paths.relativePath}' has no cryptographic attestation in the lock (status: unattested) and requireAttestation was set`,
-        })
+        push(
+          "PATH_UNATTESTED",
+          `'${paths.relativePath}' has no cryptographic attestation in the lock (status: unattested) and requireAttestation was set`,
+        )
       }
     }
   }
@@ -206,10 +250,7 @@ function decide(
       const failingIds = artifact.adjustedVerdicts
         .filter((adj) => adj.verdict.severity === Severity.FAIL && !adj.verdict.passed)
         .map((adj) => adj.verdict.cciId)
-      reasons.push({
-        code: "PATH_FLAGGED_BY_SCANNER",
-        message: `'${paths.relativePath}' triggers ${failingIds.join(", ")} (post-policy)`,
-      })
+      push("PATH_FLAGGED_BY_SCANNER", `'${paths.relativePath}' triggers ${failingIds.join(", ")} (post-policy)`)
     }
   }
 

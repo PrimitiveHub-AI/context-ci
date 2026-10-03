@@ -18,7 +18,22 @@ this Action is the GitHub-native delivery surface for the same detector
 roster — all ten Context CI Top 10 categories (CCI-001…010) — that the
 `phub` CLI and the server-side Context CI pipeline run.
 
-## Usage
+## Two modes
+
+| `mode` | What runs | Blocks the PR on | Produces |
+|---|---|---|---|
+| `scan` (default) | Per-file Top 10 scan | Scanner findings (`fail-on-findings`) | SARIF → Code Scanning |
+| `gate` | `phub verify-before-load` — the inline Context Firewall | **Tamper, drift, scanner findings** (block-tier); optionally unsealed | Pass/fail verdict |
+
+`gate` mode runs the exact same composite gate as the `phub
+verify-before-load` CLI command and the MCP `verify_before_load` tool —
+one firewall, three transports. It refuses-by-default: an artifact that
+was tampered after sealing (digest drift), triggers a Top 10 detector,
+or (with `require-attestation`) lacks an attestation is **BLOCKED** and
+fails the job. Unsealed-only artifacts fail too unless you set
+`allow-unsealed: 'true'`.
+
+## Usage — scan mode (SARIF → Code Scanning)
 
 Add to `.github/workflows/scan.yml`:
 
@@ -49,14 +64,46 @@ PRs with findings appear in the **Security → Code scanning** tab and
 inline on the PR diff. Click any finding for the rule docs at
 `primitivehub.ai/top-10#CCI-NNN`.
 
+## Usage — gate mode (the inline Context Firewall)
+
+Block any PR that tampers with, drifts, or poisons your agent-context
+files. No `security-events` permission needed — the gate is a pass/fail
+check, not a SARIF upload:
+
+```yaml
+name: Context Firewall
+
+on: [pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: primitivehub/context-ci/actions/phub-scan@v0.1.0
+        with:
+          mode: 'gate'
+          files: 'AGENTS.md CLAUDE.md .cursorrules'
+          allow-unsealed: 'false'   # require sealed artifacts; flip to 'true' while adopting
+```
+
+The step fails (exit 1) the moment any listed artifact is BLOCKED, with
+the reason codes in the step log.
+
 ## Inputs
 
 | Input | Default | What it does |
 |---|---|---|
-| `files` | `AGENTS.md CLAUDE.md` | Space-separated paths to scan. Each is resolved relative to `$GITHUB_WORKSPACE` so SARIF URIs are repo-relative. |
-| `sarif-directory` | `phub-sarif` | Where per-file SARIF outputs land (one `.sarif` per scanned file). |
-| `upload-sarif` | `true` | Upload SARIF to GitHub Code Scanning via `github/codeql-action/upload-sarif`. |
-| `fail-on-findings` | `true` | Fail the workflow when any detector flags content. Set `false` to make Code Scanning the gate without blocking merge. |
+| `mode` | `scan` | `scan` (Top 10 → SARIF) or `gate` (`verify-before-load` pass/fail firewall). |
+| `files` | `AGENTS.md CLAUDE.md` | Space-separated paths to scan/gate. Each is resolved relative to `$GITHUB_WORKSPACE` so SARIF URIs are repo-relative. |
+| `allow-unsealed` | `false` | **Gate mode.** Pass unsealed (posture-only) artifacts with a warning instead of failing. Block-tier signals still fail. |
+| `require-attestation` | `false` | **Gate mode.** Treat an `unattested` lock entry as a block-tier failure (for registry primitives). |
+| `sarif-directory` | `phub-sarif` | **Scan mode.** Where per-file SARIF outputs land (one `.sarif` per scanned file). |
+| `upload-sarif` | `true` | **Scan mode.** Upload SARIF to GitHub Code Scanning via `github/codeql-action/upload-sarif`. |
+| `fail-on-findings` | `true` | **Scan mode.** Fail the workflow when any detector flags content. Set `false` to make Code Scanning the gate without blocking merge. |
 | `phub-source` | `npm` | Where to install phub from: `npm` (default) or `local` (monorepo-only). |
 | `phub-version` | `latest` | When `phub-source=npm`, the version to install. Pin in production. |
 
@@ -64,8 +111,9 @@ inline on the PR diff. Click any finding for the rule docs at
 
 | Output | What it is |
 |---|---|
-| `sarif-directory` | Path to the directory with per-file SARIF outputs (for downstream archival). |
-| `findings-count` | Total SARIF results across all scanned files; `0` = clean. |
+| `sarif-directory` | Scan mode: path to the directory with per-file SARIF outputs (for downstream archival). |
+| `findings-count` | Scan mode: total SARIF results across all scanned files; `0` = clean. |
+| `blocked` | Gate mode: `'true'` if any artifact was BLOCKED, else `'false'`. |
 
 ## Required workflow permissions
 

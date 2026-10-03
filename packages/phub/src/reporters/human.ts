@@ -1,3 +1,4 @@
+import { type VerifyBeforeLoadResult } from "../commands/verify-before-load.js"
 import { type Verdict, Severity } from "../scanners/types.js"
 
 const SEVERITY_BADGE: Record<Severity, string> = {
@@ -57,6 +58,68 @@ export function renderHumanVerifyReport(filename: string, result: VerifyReportSh
   for (const f of result.failures) {
     const at = f.path ? ` (at ${f.path})` : ""
     out.push(`  [${f.code}] ${f.message}${at}`)
+  }
+  return out.join("\n")
+}
+
+export interface VerifyBeforeLoadReport {
+  path: string
+  result: VerifyBeforeLoadResult
+}
+
+/**
+ * Render the composite runtime gate for one or more paths. Verdict is
+ * crisp by design — exactly one of SAFE / BLOCKED / UNSEALED per path —
+ * and the block/posture split keeps the low-FP signal (tamper, drift, a
+ * live scanner finding) visually separate from "you just haven't sealed
+ * this yet". Caller owns the exit code.
+ */
+export function renderHumanVerifyBeforeLoadReport(
+  reports: readonly VerifyBeforeLoadReport[],
+  opts: { allowUnsealed: boolean },
+): string {
+  const out: string[] = []
+  out.push(`phub verify-before-load (${reports.length} path${reports.length === 1 ? "" : "s"})`)
+  out.push("")
+
+  let blocked = 0
+  let unsealed = 0
+  for (const { path, result } of reports) {
+    const blocking = result.reasons.filter((r) => r.tier === "block")
+    const posture = result.reasons.filter((r) => r.tier === "posture")
+
+    if (result.safe) {
+      out.push(`[SAFE]    ${path} — verified, safe to load`)
+    } else if (blocking.length > 0) {
+      blocked++
+      out.push(`[BLOCKED] ${path} — refused`)
+    } else if (opts.allowUnsealed) {
+      unsealed++
+      out.push(`[WARN]    ${path} — unsealed (allowed by --allow-unsealed)`)
+    } else {
+      unsealed++
+      out.push(`[BLOCKED] ${path} — unsealed`)
+    }
+
+    for (const r of blocking) out.push(`  [BLOCK]   ${r.code}  ${r.message}`)
+    for (const r of posture) out.push(`  [POSTURE] ${r.code}  ${r.message}`)
+  }
+
+  out.push("")
+  const total = reports.length
+  if (blocked === 0 && unsealed === 0) {
+    out.push(`Result: ${total}/${total} safe to load.`)
+  } else {
+    const parts: string[] = []
+    if (blocked > 0) parts.push(`${blocked} blocked`)
+    if (unsealed > 0) parts.push(`${unsealed} unsealed${opts.allowUnsealed ? " (allowed)" : ""}`)
+    out.push(`Result: ${parts.join(", ")} of ${total}.`)
+    if (unsealed > 0) {
+      out.push(`  Seal unsealed artifacts: phub audit <dir> --update-lock`)
+      if (!opts.allowUnsealed) {
+        out.push(`  Or allow unsealed (dev / first run): phub verify-before-load … --allow-unsealed`)
+      }
+    }
   }
   return out.join("\n")
 }

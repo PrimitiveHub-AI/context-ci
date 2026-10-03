@@ -10,6 +10,8 @@ Complete reference for every `phub` subcommand and flag.
 phub <command> [options] [args]
 
 Commands:
+  verify-before-load <path...>
+                     The inline Context Firewall — composite runtime gate
   scan <file>        Scan one file for Context CI Top 10 patterns
   audit [dir]        Discover + classify + scan every artifact in a tree
   verify <bundle>    Verify a Trust Bundle
@@ -27,6 +29,7 @@ Exit codes:
 
 ## Table of contents
 
+- [`verify-before-load`](#verify-before-load)
 - [`scan`](#scan)
 - [`audit`](#audit)
 - [`verify`](#verify)
@@ -34,6 +37,48 @@ Exit codes:
 - [`help` / `version`](#help--version)
 - [Global flags](#global-flags)
 - [Exit codes — full table](#exit-codes--full-table)
+
+---
+
+## `verify-before-load`
+
+The inline **Context Firewall** — the composite runtime gate an agent (or
+CI) runs *before* loading an agent-context artifact. Refuses-by-default
+([ADR-0029](../decisions/0029-mcp-runtime-gate.md)): folds the lock/drift
+check and all ten Top 10 detectors into one crisp verdict per path. The
+same engine backs the MCP `verify_before_load` tool and the `phub-scan`
+action's `mode: gate` — one firewall, three transports.
+
+### Quick start
+
+```bash
+phub audit . --update-lock            # seal the workspace once
+phub verify-before-load AGENTS.md CLAUDE.md
+# → [SAFE] per path, exit 0; [BLOCKED]/[UNSEALED] → exit 1
+```
+
+### Verdicts
+
+| Verdict | Meaning | Exit |
+|---|---|---|
+| `SAFE` | sealed, digest matches the lock, scanners clean | 0 |
+| `BLOCKED` | a **block-tier** signal — tamper/drift (`PATH_DIGEST_MISMATCH`), a live scanner finding (`PATH_FLAGGED_BY_SCANNER`), spec mismatch, or a demanded-but-absent attestation | 1 |
+| `UNSEALED` | **posture-only** — not in the lock yet (`LOCK_MISSING` / `PATH_NOT_IN_LOCK`); blocks unless `--allow-unsealed` | 1 (0 with `--allow-unsealed`) |
+
+The block/posture split is the low-FP contract: a tamper or a live
+detector finding is **never** waved through, while an unsealed artifact
+on first run doesn't bury you in red. `--allow-unsealed` downgrades
+posture-only failures to warnings; it never rescues a block-tier signal.
+
+### Flags
+
+| Flag | What it does |
+|---|---|
+| `--allow-unsealed` | Pass unsealed (posture-only) artifacts with a warning instead of blocking. |
+| `--require-attestation` | Treat an `unattested` lock entry as a block-tier failure (registry primitives). |
+| `--policy=<path>` | Explicit `.primitivehub/policy.yaml` (else auto-discover). |
+| `--lock-path=<path>` | Explicit lock path (else `<root>/.primitivehub/phub.lock`). |
+| `--json` | Emit `{ gate, blocked, results[] }` instead of the human report. |
 
 ---
 

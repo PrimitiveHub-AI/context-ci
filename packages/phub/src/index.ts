@@ -68,10 +68,12 @@ export {
 } from "./cbom/verify.js"
 export {
   verifyBeforeLoad,
+  hasBlockingReason,
   type VerifyBeforeLoadOptions,
   type VerifyBeforeLoadResult,
   type VerifyBeforeLoadReason,
   type VerifyBeforeLoadReasonCode,
+  type VerifyBeforeLoadReasonTier,
   type VerifyBeforeLoadChecks,
 } from "./commands/verify-before-load.js"
 export {
