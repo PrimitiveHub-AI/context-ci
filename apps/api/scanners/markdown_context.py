@@ -23,6 +23,7 @@ Parity is enforced via the corpus measurement scripts (ADR-0032).
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 
 OffsetRange = tuple[int, int]
@@ -187,7 +188,7 @@ def _scan_line_for_inline_code(
             i += 1
 
 
-def _is_in_ranges(offset: int, ranges) -> bool:
+def _is_in_ranges(offset: int, ranges: Iterable[OffsetRange]) -> bool:
     return any(start <= offset < end for start, end in ranges)
 
 

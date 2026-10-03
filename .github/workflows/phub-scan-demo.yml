@@ -41,6 +41,7 @@ on:
 permissions:
   contents: read
   security-events: write  # required for SARIF upload to Code Scanning
+  actions: read  # codeql-action/upload-sarif reads the workflow run metadata
 
 jobs:
   demo:
