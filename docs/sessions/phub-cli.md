@@ -1,6 +1,6 @@
 ---
 id: phub-cli
-owns: [packages/phub, actions/phub-scan, .github/workflows/phub-*]
+owns: [packages/phub, packages/mcp-server, actions/phub-scan, .github/workflows/phub-*]
 depends_on: [phub-check-engine, phub-platform]
 touches: [phub-web]
 transcript: transcripts/phub-cli.jsonl
@@ -11,22 +11,37 @@ updated: 2026-10-02
 The `phub` developer CLI + the `phub-scan` GitHub Action — the primary hands-on product
 surface. Wraps the check engine; ships under npm scope `@primitivehub`.
 
-## Current state (2026-10-02)
-- CLI in `packages/phub`; GitHub Action in `actions/phub-scan` (README + action.yml dirty).
-- Lock format + drift detection per ADR-0026; install path per ADR-0028; `.primitivehub/phub.lock` present.
-- Publish + CI workflows exist: `.github/workflows/phub-publish.yml`, `phub-ci.yml`, `phub-scan-demo.yml`.
-- Docs: docs/usage/03-phub-cli.md, docs/usage/05-phub-lock.md.
+## Current state (2026-10-03)
+- **`verify-before-load` is now the inline Context Firewall across all three transports:**
+  - **MCP** — `verify_before_load` tool (was already wired; composes phub + verify).
+  - **CLI** — NEW `phub verify-before-load <path...>` subcommand (`src/commands/verify-before-load-cli.ts`),
+    crisp per-path verdict (SAFE / BLOCKED / UNSEALED), exit-code contract 0/1/2, `--json`,
+    `--allow-unsealed`, `--require-attestation`. Help + reporter + docs shipped.
+  - **CI** — NEW `mode: scan|gate` input on `actions/phub-scan`; `gate` runs the composite
+    `verify-before-load` and fails on block-tier (tamper/drift/scanner). `scan` unchanged (default).
+- **Low-FP contract:** each reason now carries a `tier` — `block` (tamper/drift/scanner/demanded-attestation)
+  vs `posture` (unsealed). `safe` stays refuse-by-default (ADR-0029 intact; additive field only).
+  `--allow-unsealed` downgrades posture-only failures; it NEVER rescues a block-tier signal (tested).
+  New helper `hasBlockingReason()` exported from `@primitivehub/phub`.
+- Verified E2E (CLI smoke + 11 new tests): phub 398/398, mcp-server 32/32, corpus gate GREEN (parity intact).
+- `.github/workflows/phub-scan-demo.yml` gained a `gate` job (self-contained fixture → SAFE + BLOCKED asserts).
+- Lock format + drift per ADR-0026; install per ADR-0028. Docs: docs/usage/03-phub-cli.md (updated).
+- ⚠️ Not committed yet — working tree changes staged for review; publish of phub/mcp still gated (ADR-0022).
 
 ## Open items
+- [ ] Commit the verify-before-load cycle (phub CLI + action mode + docs + tests) — awaiting go-ahead.
 - [ ] Verify `@primitivehub` publish readiness (dry-run the publish workflow).
-- [ ] `phub-scan` action polish per dirty README/action.yml changes.
-- [ ] CLI UX: "Try it now" copy-paste block for the site (coordinate with phub-web).
+- [ ] Wire the `phub verify-before-load` "Try it now" block onto the site hero `[from: phub-cli → phub-web]`.
+- [ ] Consider a scan→gate demo in `phub-scan-demo.yml` that also exercises the composite ACTION (not just CLI).
+- [ ] After `pnpm -C packages/phub build`, re-run `pnpm install` in `packages/mcp-server` AND `bench/scripts`
+      so their `file:` snapshots of phub pick up new dist files (bit me twice this cycle; fast to miss).
 
 ## Decisions / ADRs
 ADR-0026 (lock format/drift), ADR-0028 (install).
 
 ## HELD / staged
-(staged CLI commands / flags — list before close)
+- None introduced this cycle. (`--require-attestation` ships wired but inert until registry
+  primitives carry `rekor:*` / `registry:*` attestations — registry surface stays deferred per ADR-0047.)
 
 ## Resume prompt
 ```
