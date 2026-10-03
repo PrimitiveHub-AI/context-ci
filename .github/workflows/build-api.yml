@@ -28,6 +28,23 @@ jobs:
   preflight:
     name: lint + types + tests
     runs-on: ubuntu-latest
+    # pytest uses settings_test (Postgres backend + RLS). Provide a DB whose
+    # superuser matches the app role so the RLS migrations can CREATE the
+    # `test_bypass_rls` role (NOLOGIN, BYPASSRLS) that conftest SET ROLEs to.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: primitivehub_app
+          POSTGRES_PASSWORD: primitivehub_app
+          POSTGRES_DB: primitivehub_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     defaults:
       run:
         working-directory: apps/api
@@ -67,6 +84,8 @@ jobs:
       - name: pytest
         env:
           DJANGO_SETTINGS_MODULE: primitivehub_api.settings_test
+          # Services are reachable on localhost from a non-container job.
+          TEST_DATABASE_URL: postgres://primitivehub_app:primitivehub_app@localhost:5432/primitivehub_test
         run: uv run pytest
 
   build:
