@@ -23,8 +23,11 @@ Parity is enforced via the corpus measurement scripts (ADR-0032).
 from __future__ import annotations
 
 import re
-from collections.abc import Iterable
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 OffsetRange = tuple[int, int]
 
