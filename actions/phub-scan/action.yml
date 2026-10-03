@@ -162,8 +162,25 @@ runs:
         }' "${files[@]}" > "${{ inputs.sarif-directory }}/_merged.sarif"
         echo "merged $(jq '.runs[0].results | length' "${{ inputs.sarif-directory }}/_merged.sarif") finding(s) into one run"
 
-    - name: Upload SARIF to Code Scanning
+    # Code Scanning may be disabled on the consumer's repo (public repos aren't
+    # auto-enabled). Probe first; skip the upload with a clear warning instead of
+    # failing the scan — the findings are still in the step log + SARIF artifact.
+    - name: Probe Code Scanning availability
+      id: cs_probe
       if: ${{ inputs.upload-sarif == 'true' && always() }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        if gh api "repos/${GITHUB_REPOSITORY}/code-scanning/analyses" >/dev/null 2>&1; then
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "enabled=false" >> "$GITHUB_OUTPUT"
+          echo "::warning::Code Scanning not enabled on this repo — skipping SARIF upload. Enable it in Settings → Code security & analysis to surface findings in the Security tab."
+        fi
+
+    - name: Upload SARIF to Code Scanning
+      if: ${{ inputs.upload-sarif == 'true' && steps.cs_probe.outputs.enabled == 'true' && always() }}
       uses: github/codeql-action/upload-sarif@b7351df727350dca84cb9d725d57dcf5bc82ba26 # v3.37.1
       with:
         sarif_file: ${{ inputs.sarif-directory }}/_merged.sarif
