@@ -143,9 +143,28 @@ runs:
           exit 1
         fi
 
+    # CodeQL (since 2025-07-21) rejects multiple SARIF runs sharing a category.
+    # The per-file scans above produce one run each; merge them into a single
+    # run so the upload is one-run-per-category.
+    - name: Merge per-file SARIF into a single run
+      if: ${{ inputs.upload-sarif == 'true' && always() }}
+      shell: bash
+      run: |
+        shopt -s nullglob
+        files=( "${{ inputs.sarif-directory }}"/*.sarif )
+        if [ ${#files[@]} -eq 0 ]; then
+          echo "::warning::no per-file SARIF to merge"; exit 0
+        fi
+        jq -s '{
+          "$schema": .[0]["$schema"],
+          version: .[0].version,
+          runs: [{ tool: .[0].runs[0].tool, results: [ .[].runs[0].results[] ] }]
+        }' "${files[@]}" > "${{ inputs.sarif-directory }}/_merged.sarif"
+        echo "merged $(jq '.runs[0].results | length' "${{ inputs.sarif-directory }}/_merged.sarif") finding(s) into one run"
+
     - name: Upload SARIF to Code Scanning
       if: ${{ inputs.upload-sarif == 'true' && always() }}
       uses: github/codeql-action/upload-sarif@b7351df727350dca84cb9d725d57dcf5bc82ba26 # v3.37.1
       with:
-        sarif_file: ${{ inputs.sarif-directory }}
+        sarif_file: ${{ inputs.sarif-directory }}/_merged.sarif
         category: phub-context-ci
