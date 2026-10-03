@@ -22,6 +22,10 @@ from .settings import *  # noqa: F403
 
 DEBUG = True
 DEV_AUTH_BYPASS = True
+# settings.py enables SECURE_SSL_REDIRECT at import time (CI has DEBUG=False then),
+# which 301-redirects every test-client HTTP request to https:// before it reaches
+# the endpoint — breaking all API POST tests. The test client never uses SSL.
+SECURE_SSL_REDIRECT = False
 
 _env = environ.Env()
 
