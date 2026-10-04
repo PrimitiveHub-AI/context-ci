@@ -19,7 +19,7 @@
 PrimitiveHub = CyberOrca Labs' **Context Firewall for AI agents** (ADR-0047):
 **scan** (/check) · **author-safe** (/Forge) · **block-at-load** (the phub / MCP / CI
 runtime gate). NOT a registry/marketplace — that surface is deferred (dormant, flag-off,
-code HELD). Work is split into **6 bounded-context sessions**; one owns one context;
+code HELD). Work is split into **7 bounded-context sessions**; one owns one context;
 cross-scope changes are logged + flagged, never edited silently.
 
 ## Sessions
@@ -32,6 +32,7 @@ cross-scope changes are logged + flagged, never edited silently.
 | [phub-web](phub-web.md) | `apps/web` | **Funnel** — /check demo + /Forge IDE; firewall messaging |
 | [phub-platform](phub-platform.md) | `compose*.yaml`, `infra/`, CI, pnpm | **Infra** — keep CI green + lean; dormant surfaces stay flagged |
 | [phub-strategy](phub-strategy.md) | `docs/decisions/*`, positioning, vision | **Strategy** — no-code; owns ADR-0047 + the telemetry-flywheel plan |
+| [phub-security](phub-security.md) | `SECURITY.md`, `SECURITY-BOUNTY.md`, `docs/threat-model.md`, CI security config | **Product security** — our OWN attack surface (deps/CVEs, SAST, secrets, supply-chain, containers); review/triage + route fixes |
 
 ## Next cycle (ADR-0047 firewall wedge) — one tab per row
 
@@ -43,6 +44,7 @@ cross-scope changes are logged + flagged, never edited silently.
 | **phub-web** | 🟡 funnel | Hero → "firewall"; polish /check demo + /Forge live-DX | **Conversion** — top-of-funnel that feeds the gate |
 | **phub-platform** | 🟢 steady | Hold CI green/lean; dormant registry/storage code stays flagged | **Velocity** — low maintenance |
 | **phub-strategy** | 🟢 steady | Brand reframe; design the telemetry-flywheel + pricing | **Direction** |
+| **phub-security** | 🟠 active | AppSec baseline: rotate leaked PATs · enable CodeQL/SAST · dep-audit + container-scan + Dependabot in CI · dogfood phub-on-self | **Own-attack-surface watched** — the credibility floor for a security vendor; "we practice what we scan" |
 
 ## Dependency graph
 
