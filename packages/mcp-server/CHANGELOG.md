@@ -6,6 +6,21 @@ Version tracks Trust Contract spec version (for `verify_bundle`) and
 Context CI Top 10 version (for `scan_text` / `audit_workspace`);
 `0.1.x` of this package is conformant to both v0.1.
 
+## [0.1.1] — 2026-10-04
+
+Tracks `@primitivehub/phub@0.1.1`. No tool code changed — `verify_before_load`
+shipped in 0.1.0 and remains a pure transport (ADR-0031).
+
+### Changed
+- **`verify_before_load` now reports a `tier` on every reason** — `block`
+  (tamper / drift / live scanner finding / demanded-but-absent
+  attestation) vs `posture` (unsealed). Inherited automatically from
+  `verifyBeforeLoad` in `@primitivehub/phub`; agents can branch on the
+  low-FP signal, not just the `safe` boolean. Requires
+  `@primitivehub/phub@^0.1.1`.
+- **README** now documents the shipped `verify_before_load` tool (it was
+  still marked "planned") and fixes its ADR-0029 link.
+
 ## [0.1.0] — 2026-07-21
 
 The v0.1 launch release — a pure transport layer over `@primitivehub/verify`

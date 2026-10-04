@@ -6,6 +6,43 @@ Version tracks both Trust Contract spec version (for the verify
 wrapper) and Context CI Top 10 version (for the scanner detectors);
 `0.1.x` of this package is conformant to both v0.1.
 
+## [0.1.1] — 2026-10-04
+
+First post-launch release. Makes `verify-before-load` the one inline
+Context Firewall, runnable from the terminal and from CI with the same
+engine the MCP `verify_before_load` tool already uses (ADR-0047).
+
+### Added
+- **`phub verify-before-load <path...>`** — the composite runtime gate as
+  a CLI command. Refuses-by-default (ADR-0029): folds the lock/drift
+  check and all ten Top 10 detectors into one crisp verdict per path —
+  `SAFE` / `BLOCKED` / `UNSEALED`. Exit-code contract: `0` safe, `1`
+  blocked or unsealed, `2` usage. Flags: `--allow-unsealed`,
+  `--require-attestation`, `--policy`, `--lock-path`, `--json`.
+- **Reason tiers** — every `verifyBeforeLoad` reason now carries a
+  `tier`: `block` (tamper, drift, a live scanner finding, or a
+  demanded-but-absent attestation) vs `posture` (simply unsealed). The
+  low-FP contract: `--allow-unsealed` downgrades posture-only failures
+  to a warning and **never** rescues a block-tier signal. `safe` stays
+  refuse-by-default — the field is additive, so the MCP tool contract is
+  unchanged.
+- **`hasBlockingReason()`** exported from `@primitivehub/phub` — the
+  predicate the CLI and the `phub-scan` gate use to split block from
+  posture without re-deriving it.
+
+### Changed
+- `phub scan` help text now states all ten detectors (CCI-001…010) run
+  by default; the classifier doc-string references the full Top 10
+  roster instead of the historical T1/T2/T5 subset. (No behavior change
+  — the ten-detector roster already shipped in 0.1.0.)
+
+### Notes
+- The `@primitivehub/mcp-server` `verify_before_load` tool (shipped in
+  0.1.0) surfaces the new `tier` field automatically via its dependency
+  on this package — no code change there.
+- The `actions/phub-scan` GitHub Action gains a `mode: gate` that runs
+  this command in CI; see that action's README.
+
 ## [0.1.0] — 2026-07-21
 
 The v0.1 launch release — Context CI Top 10 complete at 10/10 (CCI-001…010,
