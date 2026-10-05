@@ -33,6 +33,11 @@ import type { VerificationResult } from "@primitivehub/verify"
  * starts returning `true` with no change to callers.
  */
 export function isBundleAuthenticated(result: VerificationResult): boolean {
+  // Authoritative since @primitivehub/verify@0.1.1 exposes `authenticated`
+  // (false until v0.2 wires real Sigstore crypto). The `level/deferred`
+  // fallback keeps this correct against an older verify that predates the
+  // field.
+  if (typeof result.authenticated === "boolean") return result.authenticated
   return result.level === "full" && result.valid === true && result.deferredSteps.length === 0
 }
 

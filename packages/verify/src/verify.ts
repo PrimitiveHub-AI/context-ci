@@ -52,7 +52,25 @@ export interface VerifyOptions {
 }
 
 export interface VerificationResult {
+  /**
+   * The requested inspection level's checks passed (schema + digest
+   * [+ policy]). SECURITY: `valid` does NOT mean the bundle is
+   * authentic — at `structural`/`policy` it authenticates nothing and is
+   * forgeable (see the 2026-09-30 report). NEVER make a trust decision
+   * on `valid`; gate on `authenticated`.
+   */
   valid: boolean
+  /**
+   * The bundle was cryptographically authenticated end-to-end — the
+   * in-toto statement, signature, certificate chain, and Rekor inclusion
+   * proof all actually verified. This is the ONLY field a trust decision
+   * (install / runtime load) may gate on.
+   *
+   * v0.1 stubs steps 3-6, so this is ALWAYS `false` today: the library
+   * fails closed. When v0.2 wires real Sigstore crypto, a genuinely
+   * signed bundle verified at `full` level will set this `true`.
+   */
+  authenticated: boolean
   /** All failures detected. Empty when valid. */
   failures: VerificationFailure[]
   /** Echo back what level was actually evaluated. */
@@ -86,7 +104,7 @@ export async function verifyBundle(
   const schemaResult = validateAgainstSchema(bundle, TRUST_BUNDLE_SCHEMA)
   failures.push(...schemaResult.failures)
   if (!schemaResult.valid) {
-    return { valid: false, failures, level, deferredSteps }
+    return { valid: false, authenticated: false, failures, level, deferredSteps }
   }
 
   // Past schema we can narrow the type.
@@ -104,7 +122,7 @@ export async function verifyBundle(
       path: "content.bytesB64",
       cause,
     })
-    return { valid: false, failures, level, deferredSteps }
+    return { valid: false, authenticated: false, failures, level, deferredSteps }
   }
 
   if (contentBytes.byteLength !== b.content.sizeBytes) {
@@ -114,7 +132,7 @@ export async function verifyBundle(
       message: `decoded content is ${contentBytes.byteLength} bytes; sizeBytes claims ${b.content.sizeBytes}`,
       path: "content.sizeBytes",
     })
-    return { valid: false, failures, level, deferredSteps }
+    return { valid: false, authenticated: false, failures, level, deferredSteps }
   }
 
   let expectedHex: string
@@ -128,7 +146,7 @@ export async function verifyBundle(
       path: "subject.contentDigest",
       cause,
     })
-    return { valid: false, failures, level, deferredSteps }
+    return { valid: false, authenticated: false, failures, level, deferredSteps }
   }
 
   const actualHex = await sha256Hex(contentBytes)
@@ -139,11 +157,12 @@ export async function verifyBundle(
       message: `content sha256 does not match subject.contentDigest (got ${actualHex}, expected ${expectedHex})`,
       path: "subject.contentDigest",
     })
-    return { valid: false, failures, level, deferredSteps }
+    return { valid: false, authenticated: false, failures, level, deferredSteps }
   }
 
   if (level === "structural") {
-    return { valid: failures.length === 0, failures, level, deferredSteps }
+    // structural/policy never attempt crypto → never authenticated.
+  return { valid: failures.length === 0, authenticated: false, failures, level, deferredSteps }
   }
 
   // ── Steps 3–6 (deferred in v0.1) ────────────────────────────────
@@ -173,8 +192,10 @@ export async function verifyBundle(
       message: "v0.1 does not yet verify Rekor Merkle inclusion proofs",
       path: "attestation.rekorInclusionProofJson",
     })
-    // Full-level: with stubs in place, we don't claim valid=true.
-    return { valid: false, failures, level, deferredSteps }
+    // Full-level: steps 3-6 are stubbed, so nothing was authenticated.
+    // Fail closed. v0.2 replaces the deferred pushes above with real
+    // Sigstore verification and sets authenticated = (failures.length === 0).
+    return { valid: false, authenticated: false, failures, level, deferredSteps }
   }
 
   // ── Step 7: Context CI policy ──────────────────────────────────
@@ -192,5 +213,6 @@ export async function verifyBundle(
     }
   }
 
-  return { valid: failures.length === 0, failures, level, deferredSteps }
+  // structural/policy never attempt crypto → never authenticated.
+  return { valid: failures.length === 0, authenticated: false, failures, level, deferredSteps }
 }

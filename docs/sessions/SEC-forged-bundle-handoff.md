@@ -34,9 +34,23 @@ Defense-in-depth that contains *our* tools even before the core is patched:
 - Regression tests = the reporter's exact PoC (phub 4, mcp 2); 12 old tests updated to the
   secure contract. phub 402 ✓, mcp 34 ✓, corpus gate PASS.
 
-## 3. Phase 1 — CORE FIX (owner of `packages/verify` — NOT phub-cli; proposal below)
-The library must fail closed for *every* caller (third parties included). Proposed change to
-`packages/verify/src/verify.ts` + `VerificationResult`:
+## 3. Phase 1 — CORE FIX — ✅ IMPLEMENTED (additive), ⚠️ one decision left for the owner
+**Done (cross-scope edit to `packages/verify`, owner-authorized "start", flagged for ratification):**
+- Added **`authenticated: boolean`** to `VerificationResult` — the authoritative trust signal,
+  `false` for every bundle in v0.1 (fails closed). `valid` kept its meaning (inspection passed)
+  so the normative conformance contract is NOT broken. `noop`/untrusted backends can never be
+  `authenticated` (subsumes the "reject noop" ask without touching valid fixture 05).
+- Conformance suite extended with a **fail-closed invariant**: no valid fixture is
+  `authenticated` at any level (verify 23 → 59 tests, all pass). Py↔TS gate still PASS.
+- `@primitivehub/phub`'s `isBundleAuthenticated()` now returns `result.authenticated`
+  (with a level/deferred fallback for older verify).
+
+**Still the verify-owner's decision (ADR-0021, the executable contract — I did NOT do this):**
+whether to additionally flip `valid` so `valid = inspected && authenticated` (i.e. `valid:false`
+for structural/policy). The reporter asked for this; it is a breaking change to the normative
+contract and cascades into every consumer, so it belongs to the owner + an ADR amendment. The
+additive `authenticated` field already lets all first-party tools fail closed; the flip would
+also protect third parties who (wrongly) gate on `valid`. Sketch of that further change:
 
 ```ts
 export interface VerificationResult {
