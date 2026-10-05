@@ -40,20 +40,25 @@ const INVALID_BUNDLE = join(REPO_ROOT, "docs/trust-contract/conformance/invalid/
 
 /* ─────────────────────────────────────────────────────────────────── */
 describe("verify_bundle tool", () => {
-  it("verifies a canonical valid bundle (passed in as JSON string)", async () => {
+  it("inspects a canonical bundle but reports NOT authenticated (JSON string)", async () => {
     const bundleStr = readFileSync(VALID_BUNDLE, "utf8")
     const res = await callVerifyBundle({ bundle: bundleStr })
-    expect(res.isError).toBe(false)
+    // SECURITY: inspection passes, but v0.1 authenticates nothing →
+    // fail closed (isError) + surface authenticated:false.
+    expect(res.isError).toBe(true)
     const payload = JSON.parse(res.content[0]!.text)
     expect(payload.valid).toBe(true)
+    expect(payload.authenticated).toBe(false)
+    expect(payload.trust).toBe("INSPECTED_NOT_AUTHENTICATED")
   })
 
-  it("verifies a canonical valid bundle (passed in as pre-parsed object)", async () => {
+  it("inspects a canonical bundle but reports NOT authenticated (pre-parsed object)", async () => {
     const bundle = JSON.parse(readFileSync(VALID_BUNDLE, "utf8"))
     const res = await callVerifyBundle({ bundle })
-    expect(res.isError).toBe(false)
+    expect(res.isError).toBe(true)
     const payload = JSON.parse(res.content[0]!.text)
     expect(payload.valid).toBe(true)
+    expect(payload.authenticated).toBe(false)
   })
 
   it("rejects a tampered bundle with DIGEST_MISMATCH", async () => {

@@ -383,6 +383,7 @@ const GLOBAL_SPECS: readonly FlagSpec[] = [
   { name: "verify", takesValue: true },
   { name: "allow-unsealed" },
   { name: "require-attestation" },
+  { name: "allow-unauthenticated" },
 ]
 
 function printHelp(command?: string): void {
@@ -737,6 +738,7 @@ export async function main(argv: readonly string[]): Promise<number> {
         json: asBool(parsed.flags["json"]),
         force: asBool(parsed.flags["force"]),
         noLock: asBool(parsed.flags["no-lock"]),
+        allowUnauthenticated: asBool(parsed.flags["allow-unauthenticated"]),
       } as Parameters<typeof installCommand>[0]
       const bundlePath = asString(parsed.flags["bundle"])
       const bundleUrl = asString(parsed.flags["url"])

@@ -41,6 +41,7 @@ export interface VerifyReportShape {
   valid: boolean
   failures: ReadonlyArray<{ code: string; message: string; path?: string }>
   deferredSteps?: readonly string[]
+  level?: string
 }
 
 export function renderHumanVerifyReport(filename: string, result: VerifyReportShape): string {
@@ -48,10 +49,22 @@ export function renderHumanVerifyReport(filename: string, result: VerifyReportSh
   out.push(`phub verify ${filename}`)
   out.push("")
   if (result.valid) {
-    out.push("Trust Bundle verified.")
-    if (result.deferredSteps && result.deferredSteps.length > 0) {
-      out.push(`  (verification steps deferred in v0.1: ${result.deferredSteps.join(", ")})`)
+    // SECURITY (forged-bundle report, 2026-09-30): "valid" at
+    // structural/policy authenticates nothing. Never report it as
+    // "verified" — that reads as a trust verdict. Only a full-level pass
+    // with zero deferred steps is real authentication.
+    const authenticated =
+      result.level === "full" && (result.deferredSteps?.length ?? 0) === 0
+    if (authenticated) {
+      out.push("Trust Bundle AUTHENTICATED (signature + cert chain + Rekor verified).")
+      return out.join("\n")
     }
+    out.push("Trust Bundle INSPECTED — NOT cryptographically authenticated.")
+    out.push("  ⚠ This is NOT a trust verdict. Schema + content-digest" +
+      (result.level === "policy" ? " + Context CI policy" : "") + " checks passed,")
+    out.push("    but signature / certificate-chain / Rekor verification did not run.")
+    out.push("    Do NOT trust this bundle's origin on this result alone. A forged bundle")
+    out.push("    passes these same checks. Real authentication lands in @primitivehub/verify v0.2.")
     return out.join("\n")
   }
   out.push(`Trust Bundle rejected (${result.failures.length} failure(s)):`)

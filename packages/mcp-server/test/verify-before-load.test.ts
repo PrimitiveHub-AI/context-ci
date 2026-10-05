@@ -132,7 +132,7 @@ describe("verify_before_load — composite gate (no bundle)", () => {
 
 /* ─────────────────────────────────────────────────────────────────── */
 describe("verify_before_load — bundle integration", () => {
-  it("safe=true when workspace gate passes AND bundle verifies (structural)", async () => {
+  it("BLOCKS when a supplied bundle inspects OK but is NOT authenticated (fail closed)", async () => {
     const bundle = JSON.parse(readFileSync(VALID_BUNDLE, "utf8"))
     const res = await callVerifyBeforeLoad({
       workspace_root: SEALED_WS,
@@ -140,9 +140,14 @@ describe("verify_before_load — bundle integration", () => {
       bundle,
       level: "structural",
     })
-    const { payload } = parseEnvelope(res)
-    expect(payload.safe).toBe(true)
-    expect((payload.checks as { bundle: { valid: boolean } }).bundle.valid).toBe(true)
+    const { payload, isError } = parseEnvelope(res)
+    // SECURITY: an unauthenticated bundle can never make a load safe.
+    expect(isError).toBe(true)
+    expect(payload.safe).toBe(false)
+    expect(payload.reasons.some((r) => r.code === "BUNDLE_UNAUTHENTICATED")).toBe(true)
+    const bundleCheck = (payload.checks as { bundle: { valid: boolean; authenticated: boolean } }).bundle
+    expect(bundleCheck.valid).toBe(true)
+    expect(bundleCheck.authenticated).toBe(false)
   })
 
   it("safe=false when bundle fails verification, even when workspace gate would pass", async () => {
@@ -171,7 +176,7 @@ describe("verify_before_load — bundle integration", () => {
     expect(payload.reasons.some((r) => r.code === "BUNDLE_PARSE_ERROR")).toBe(true)
   })
 
-  it("accepts bundle as a JSON string (auto-parses) AND as a parsed object", async () => {
+  it("auto-parses a bundle as a JSON string AND as a parsed object (both fail closed)", async () => {
     const bundleStr = readFileSync(VALID_BUNDLE, "utf8")
     const resStr = await callVerifyBeforeLoad({
       workspace_root: SEALED_WS,
@@ -179,7 +184,10 @@ describe("verify_before_load — bundle integration", () => {
       bundle: bundleStr,
       level: "structural",
     })
-    expect(parseEnvelope(resStr).payload.safe).toBe(true)
+    // Both input forms parse correctly AND are refused as unauthenticated.
+    const pStr = parseEnvelope(resStr).payload
+    expect(pStr.safe).toBe(false)
+    expect(pStr.reasons.some((r) => r.code === "BUNDLE_UNAUTHENTICATED")).toBe(true)
 
     const bundleObj = JSON.parse(bundleStr)
     const resObj = await callVerifyBeforeLoad({
@@ -188,7 +196,9 @@ describe("verify_before_load — bundle integration", () => {
       bundle: bundleObj,
       level: "structural",
     })
-    expect(parseEnvelope(resObj).payload.safe).toBe(true)
+    const pObj = parseEnvelope(resObj).payload
+    expect(pObj.safe).toBe(false)
+    expect(pObj.reasons.some((r) => r.code === "BUNDLE_UNAUTHENTICATED")).toBe(true)
   })
 })
 

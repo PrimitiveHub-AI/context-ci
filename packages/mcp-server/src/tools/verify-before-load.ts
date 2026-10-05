@@ -21,7 +21,13 @@
  */
 
 import { verifyBundle, type VerificationLevel } from "@primitivehub/verify"
-import { verifyBeforeLoad, type VerifyBeforeLoadResult } from "@primitivehub/phub"
+import {
+  verifyBeforeLoad,
+  isBundleAuthenticated,
+  unauthenticatedBundleMessage,
+  UNAUTHENTICATED_BUNDLE_CODE,
+  type VerifyBeforeLoadResult,
+} from "@primitivehub/phub"
 
 export const VERIFY_BEFORE_LOAD_TOOL = {
   name: "verify_before_load",
@@ -141,16 +147,28 @@ export async function callVerifyBeforeLoad(
 
     if (parsedBundle !== undefined) {
       const verifyResult = await verifyBundle(parsedBundle, { level: args.level ?? "policy" })
+      // SECURITY (forged-bundle report, 2026-09-30): a supplied bundle is
+      // part of the load-time trust decision. `valid` at structural/policy
+      // authenticates nothing and is forgeable, so gate on real
+      // authentication and fail closed — an unauthenticated bundle BLOCKS.
+      const authenticated = isBundleAuthenticated(verifyResult)
       bundleCheck = {
         provided: true,
         parsed: true,
         valid: verifyResult.valid,
+        authenticated,
         level: verifyResult.level,
         failureCodes: verifyResult.failures.map((f) => f.code),
         deferredSteps: verifyResult.deferredSteps,
       }
-      if (!verifyResult.valid) {
+      if (!authenticated) {
         safe = false
+        reasons.push({
+          code: UNAUTHENTICATED_BUNDLE_CODE,
+          message: unauthenticatedBundleMessage(verifyResult),
+        })
+      }
+      if (!verifyResult.valid) {
         for (const f of verifyResult.failures) {
           reasons.push({
             code: `BUNDLE_${f.code}`,

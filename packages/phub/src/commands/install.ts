@@ -27,6 +27,8 @@ import { dirname, isAbsolute, join, resolve } from "node:path"
 
 import { verifyBundle, type VerificationLevel, type VerificationResult } from "@primitivehub/verify"
 
+import { isBundleAuthenticated, unauthenticatedBundleMessage } from "../trust/authentication.js"
+
 import {
   writeLock,
   type PhubLock,
@@ -64,6 +66,11 @@ export interface InstallOptions {
   // Behavior.
   force?: boolean
   level?: VerificationLevel
+  /**
+   * Accept a bundle that could NOT be cryptographically authenticated.
+   * DEV/LOCAL ONLY — defeats the fail-closed trust gate. Default false.
+   */
+  allowUnauthenticated?: boolean
 }
 
 export interface InstallResult {
@@ -141,16 +148,36 @@ export async function runInstall(
     throw new InstallSourceError(`bundle is not valid JSON: ${msg}`, "BUNDLE_PARSE_ERROR")
   }
 
-  const level: VerificationLevel = opts.level ?? "policy"
+  // SECURITY (forged-bundle report, 2026-09-30): installing writes the
+  // bundle's content into the workspace — a trust decision. It MUST gate
+  // on real cryptographic authentication, never on `valid` from a
+  // structural/policy inspection (which authenticates nothing and is
+  // forgeable). Verify at `full` so the crypto steps are actually
+  // attempted, then require `isBundleAuthenticated`. Until verify v0.2
+  // ships Sigstore crypto this always refuses — fail closed — unless the
+  // operator explicitly accepts the risk with --allow-unauthenticated.
+  const level: VerificationLevel = "full"
   const verification = await verifyBundle(bundle as unknown as Parameters<typeof verifyBundle>[0], {
     level,
   })
-  if (!verification.valid) {
-    // Build a structured failure that includes the verify codes.
-    const codes = verification.failures.map((f) => f.code).join(", ")
-    throw new InstallSourceError(
-      `bundle verification failed at level=${level}: ${codes}`,
-      "BUNDLE_REJECTED",
+  const authenticated = isBundleAuthenticated(verification)
+  if (!authenticated) {
+    // Separate HARD structural failures (schema / digest / size / policy)
+    // from the deferred crypto stubs. A structurally broken bundle gets a
+    // precise BUNDLE_REJECTED; a structurally-fine-but-unauthenticated one
+    // gets BUNDLE_UNAUTHENTICATED (overridable only via --allow-unauthenticated).
+    const DEFERRED_STEPS = new Set(["statement", "signature", "cert", "rekor"])
+    const hardFailures = verification.failures.filter((f) => !DEFERRED_STEPS.has(f.step))
+    if (hardFailures.length > 0) {
+      const codes = hardFailures.map((f) => f.code).join(", ")
+      throw new InstallSourceError(`bundle verification failed at level=full: ${codes}`, "BUNDLE_REJECTED")
+    }
+    if (opts.allowUnauthenticated !== true) {
+      throw new InstallSourceError(unauthenticatedBundleMessage(verification), "BUNDLE_UNAUTHENTICATED")
+    }
+    process.stderr.write(
+      `phub install: WARNING — ${unauthenticatedBundleMessage(verification)}\n` +
+        `phub install: proceeding only because --allow-unauthenticated was set (DEV/LOCAL ONLY — do not use for untrusted sources).\n`,
     )
   }
 

@@ -11,6 +11,7 @@
  */
 
 import { verifyBundle, type VerificationLevel } from "@primitivehub/verify"
+import { isBundleAuthenticated, unauthenticatedBundleMessage } from "@primitivehub/phub"
 
 export const VERIFY_BUNDLE_TOOL = {
   name: "verify_bundle",
@@ -85,14 +86,29 @@ export async function callVerifyBundle(
     },
   })
 
+  // SECURITY (forged-bundle report, 2026-09-30): `valid` at the
+  // structural/policy levels authenticates NOTHING — an agent must not
+  // treat it as a trust verdict. Surface a separate `authenticated`
+  // flag and fail closed (isError) unless the bundle was actually
+  // cryptographically verified. See @primitivehub/phub isBundleAuthenticated.
+  const authenticated = isBundleAuthenticated(result)
+  const payload = {
+    ...result,
+    authenticated,
+    trust: authenticated
+      ? "AUTHENTICATED"
+      : "INSPECTED_NOT_AUTHENTICATED",
+    securityNote: authenticated ? undefined : unauthenticatedBundleMessage(result),
+  }
+
   return {
     content: [
       {
         type: "text",
-        text: JSON.stringify(result, null, 2),
+        text: JSON.stringify(payload, null, 2),
       },
     ],
-    isError: !result.valid,
+    isError: !authenticated,
   }
 }
 

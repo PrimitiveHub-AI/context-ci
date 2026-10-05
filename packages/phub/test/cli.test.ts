@@ -169,10 +169,11 @@ describe("phub verify", () => {
   beforeEach(() => { io = captureIo() })
   afterEach(() => { io.restore() })
 
-  it("exit 0 on the canonical valid bundle", async () => {
+  it("exit 0 on the canonical valid bundle, but reports NOT authenticated (v0.1 stubs crypto)", async () => {
     const code = await main(["verify", VALID_BUNDLE])
     expect(code).toBe(0)
-    expect(io.stdout).toMatch(/Trust Bundle verified/)
+    // SECURITY: a policy-level pass must NOT read as "verified"/trusted.
+    expect(io.stdout).toMatch(/INSPECTED — NOT cryptographically authenticated/)
   })
 
   it("exit 1 on the canonical digest-mismatch bundle with DIGEST_MISMATCH code", async () => {
