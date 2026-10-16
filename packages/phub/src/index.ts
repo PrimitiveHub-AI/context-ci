@@ -154,7 +154,12 @@ export {
 } from "./audit/lock.js"
 export { type AuditLockState } from "./audit/types.js"
 
-export { DETECTORS, detectorByName } from "./scanners/registry.js"
+export {
+  DETECTORS,
+  detectorByName,
+  detectorCoverage,
+  type DetectorCoverageEntry,
+} from "./scanners/registry.js"
 export {
   type Detector,
   type DetectorContext,

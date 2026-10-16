@@ -1,15 +1,24 @@
 /**
  * MCP tool: `verify_before_load`
  *
- * The composite runtime gate. Per ADR-0029, every agent runtime that
- * loads agent-context primitives MUST consult this tool before reading
- * the content. Refuses-by-default for:
+ * The composite runtime gate — an OPT-IN verification API. An agent (or a
+ * host integration) SHOULD call this BEFORE loading any agent-context
+ * primitive.
+ *
+ * IMPORTANT (PH-SEC-003 — honest scope): calling this is ADVISORY, not
+ * enforced. Registering the MCP server does NOT interpose on the agent's
+ * file reads — nothing prevents a loader from reading content without
+ * calling the gate. Real enforcement requires the HOST to mediate reads
+ * through this check; until then this is an opt-in check, not a
+ * compulsory read-interceptor.
+ *
+ * Refuses-by-default for:
  *   - missing lock (operator hasn't sealed anything)
  *   - lock spec-version mismatch (Top 10 ratcheted; re-seal required)
  *   - drift (working tree differs from lock)
  *   - unattested artifacts (with requireAttestation set)
- *   - scanner findings (T1/T2/T5 at v0.1)
- *   - invalid Trust Bundle (when one is provided)
+ *   - scanner findings (all ten Context CI Top 10 detectors, CCI-001…010)
+ *   - an unauthenticated or invalid Trust Bundle (when one is provided)
  *
  * Pure transport per ADR-0031 § 2 rule #1. Combines two existing
  * primitives:

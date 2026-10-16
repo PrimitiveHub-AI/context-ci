@@ -110,8 +110,8 @@ stubbed in v0.1 (see verify README).
 
 ### `scan_text`
 
-Run the v0.1 detector roster (T1/T2/T5) against text. Wraps phub's
-`runScan`.
+Run the full Context CI Top 10 detector roster (CCI-001…010) against
+text. Wraps phub's `runScan`.
 
 **Arguments:**
 
@@ -170,6 +170,14 @@ attestation) or `posture` (simply unsealed) — so an agent can branch on
 the low-FP signal, not just the boolean. Same engine as the `phub
 verify-before-load` CLI command and the `phub-scan` action's `mode:
 gate`.
+
+> **Scope — opt-in, not enforced (PH-SEC-003).** Registering this MCP
+> server exposes `verify_before_load` as a tool an agent *can* call; it
+> does **not** interpose on the agent's file reads. A host or loader can
+> still read content without invoking the gate. Treat this as an **opt-in
+> verification API**: real "no untrusted bytes reach the model"
+> enforcement requires the host to route reads through the gate. Our docs
+> describe the *capability*, not a guarantee the host enforces it.
 
 **Arguments:**
 
