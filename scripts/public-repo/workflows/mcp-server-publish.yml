@@ -25,8 +25,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Verify launch confirmation
+        # SECURITY (R07): route the dispatch input through env, never
+        # interpolate ${{ inputs.* }} into the script — a crafted value would
+        # otherwise break out of the [ ] test and run code in a job holding
+        # id-token:write + npm publish rights.
+        env:
+          CONFIRM_LAUNCH: ${{ inputs.confirm_launch }}
         run: |
-          if [ "${{ inputs.confirm_launch }}" != "LAUNCH-CONFIRMED" ]; then
+          if [ "$CONFIRM_LAUNCH" != "LAUNCH-CONFIRMED" ]; then
             echo "::error::Refusing to publish without explicit LAUNCH-CONFIRMED input (ADR-0045 §4)."
             exit 1
           fi
