@@ -10,6 +10,10 @@
  *   2  usage error, file not found, parse error
  */
 
+import { readFileSync } from "node:fs"
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
+
 import { parseArgs, UsageError, type FlagSpec } from "./argv.js"
 import { auditCommand } from "./commands/audit.js"
 import { cbomCommand } from "./commands/cbom.js"
@@ -20,7 +24,16 @@ import { verifyCommand } from "./commands/verify.js"
 import { verifyBeforeLoadCommand } from "./commands/verify-before-load-cli.js"
 import { watchCommand } from "./commands/watch.js"
 
-const VERSION = "0.1.0"
+/** Single source of truth: the package's own version, read at runtime. */
+const VERSION: string = (() => {
+  try {
+    const pkgPath = join(dirname(fileURLToPath(import.meta.url)), "..", "package.json")
+    const v = (JSON.parse(readFileSync(pkgPath, "utf8")) as { version?: string }).version
+    return typeof v === "string" ? v : "0.0.0"
+  } catch {
+    return "0.0.0"
+  }
+})()
 
 const HELP_TEXT = `phub ${VERSION} — PrimitiveHub CLI
 

@@ -262,16 +262,22 @@ describe("phub top-level", () => {
   afterEach(() => { io.restore() })
 
   it("prints help with no args (exit 0)", async () => {
+    const pkg = JSON.parse(readFileSync(join(REPO_ROOT, "packages/phub/package.json"), "utf8")) as {
+      version: string
+    }
     const code = await main([])
     expect(code).toBe(0)
-    expect(io.stdout).toMatch(/phub 0\.1\.0/)
+    expect(io.stdout).toContain(`phub ${pkg.version} — PrimitiveHub CLI`)
     expect(io.stdout).toMatch(/Commands:/)
   })
 
-  it("`version` subcommand prints version", async () => {
+  it("`version` subcommand prints the package.json version", async () => {
+    const pkg = JSON.parse(readFileSync(join(REPO_ROOT, "packages/phub/package.json"), "utf8")) as {
+      version: string
+    }
     const code = await main(["version"])
     expect(code).toBe(0)
-    expect(io.stdout.trim()).toBe("0.1.0")
+    expect(io.stdout.trim()).toBe(pkg.version)
   })
 
   it("--help prints help (exit 0)", async () => {
