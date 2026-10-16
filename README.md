@@ -90,14 +90,22 @@ npm i @primitivehub/verify
 ```ts
 import { verifyBundle } from "@primitivehub/verify";
 
-const result = await verifyBundle(bundleJson);
-if (!result.ok) throw new Error(`untrusted: ${result.reason}`);
+const result = await verifyBundle(JSON.parse(bundleJson), { level: "policy" });
+if (!result.valid) throw new Error(`untrusted: ${result.failures[0]?.code ?? "unverified"}`);
+// v0.1 note: `valid` requires BOTH inspection AND cryptographic
+// authentication; the crypto (signature / cert / Rekor) is stubbed until
+// v0.2, so `valid` is always false today — fail-closed by design. Do not
+// fall back to `result.inspected` to "make it pass"; see the
+// @primitivehub/verify README before gating consumption on this.
 ```
 
 ### `@primitivehub/mcp-server` — runtime gate for agents
 
 Give Claude Code, Cursor, Aider, or any MCP agent a `verify_before_load`
-tool that refuses unattested context by default.
+tool that vets an artifact (lock + Context CI Top 10) and returns a
+refuse/allow verdict before load. Advisory by design — the agent invokes it;
+it is not a host-enforced read gate, and attestation enforcement is opt-in
+via `require_attestation`.
 
 ```bash
 claude mcp add primitivehub -- npx -y @primitivehub/mcp-server
@@ -110,9 +118,9 @@ Security tab.
 
 ```yaml
 # .github/workflows/context-ci.yml
-- uses: PrimitiveHub-AI/context-ci/actions/phub-scan@v0.1.0
+- uses: PrimitiveHub-AI/context-ci/actions/phub-scan@v0.1.4
   with:
-    paths: "AGENTS.md CLAUDE.md **/SKILL.md .cursor/rules/** **/mcp.json"
+    files: "AGENTS.md CLAUDE.md **/SKILL.md .cursor/rules/** **/mcp.json"
 ```
 
 ---

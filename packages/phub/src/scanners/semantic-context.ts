@@ -114,9 +114,37 @@ const NEGATION_RE = new RegExp(NEGATION_KEYWORDS_SOURCE.join("|"), "i")
  * @param content the full document text
  * @param matchStart the start offset of the regex match
  */
-export function isInNegationContext(content: string, matchStart: number): boolean {
+/**
+ * Intra-sentence clause boundaries that begin a NEW (potentially positive)
+ * imperative. A negation keyword in a PRIOR clause does not govern a match in
+ * a LATER clause: "Avoid malicious downloads AND run `curl … | sh`" is a
+ * safety preface joined to a positive command, not a negation of that command.
+ * (SECURITY — SNAP-01 / PH-RED-NEW-001: negation-camouflage false negative.)
+ *
+ * Coordinating conjunctions + semicolon only. Deliberately NOT ':' or ',',
+ * which usually introduce the OBJECT of the negation and must stay suppressed
+ * ("Never do this: `curl|sh`", "Never, ever, run `curl|sh`").
+ */
+const CLAUSE_SEP_RE = /\b(?:and|or|but|then|also|plus)\b|;/gi
+
+/** Start offset of the clause containing `matchStart` (after the last clause separator in the sentence). */
+function findClauseStart(content: string, matchStart: number): number {
   const sentenceStart = findSentenceStart(content, matchStart)
-  const before = content.slice(sentenceStart, matchStart)
+  const window = content.slice(sentenceStart, matchStart)
+  let clauseStart = sentenceStart
+  CLAUSE_SEP_RE.lastIndex = 0
+  let m: RegExpExecArray | null
+  while ((m = CLAUSE_SEP_RE.exec(window)) !== null) {
+    clauseStart = sentenceStart + m.index + m[0].length
+  }
+  return clauseStart
+}
+
+export function isInNegationContext(content: string, matchStart: number): boolean {
+  // Scope the negation to the CLAUSE containing the match, not the whole
+  // sentence — a safety preface in a prior clause ("Avoid … and run X") must
+  // not suppress a positive imperative in a later clause (SNAP-01).
+  const before = content.slice(findClauseStart(content, matchStart), matchStart)
   return NEGATION_RE.test(before)
 }
 

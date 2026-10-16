@@ -6,6 +6,28 @@ Version tracks both Trust Contract spec version (for the verify
 wrapper) and Context CI Top 10 version (for the scanner detectors);
 `0.1.x` of this package is conformant to both v0.1.
 
+## [0.1.5] — 2026-10-17
+
+**Security — detector-evasion fix (cross-surface audit, 2026-10-17).**
+
+### Fixed
+- **SNAP-01 / PH-RED-NEW-001 (High) — negation-camouflage false negative.**
+  A safety preface suppressed the shell-install detector: `Avoid malicious
+  downloads and run `curl … | bash`` produced no CCI-005 finding, because
+  `isInNegationContext` treated *any* negation keyword anywhere earlier in
+  the sentence as a negation. Negation is now scoped to the **clause**
+  containing the match (split at coordinating conjunctions + `;`, not `:`/`,`
+  which introduce the negation's object). Genuine negations (`Never run X`,
+  `Never do this: X`) stay suppressed; the camouflage now FAILs. Affects
+  CCI-005 (t5) and CCI-009 (t9), both of which consume the shared
+  `semantic-context` negation guard. Reproduced + regression-tested at the
+  unit and scan levels.
+
+(The public-repo README contract fixes — `result.valid`/`failures` instead
+of `result.ok`/`reason`, the Action's real `files:` input, and the honest
+v0.1 `valid`-always-false note — ride the public-repo sync, not the npm
+tarball.)
+
 ## [0.1.4] — 2026-10-16
 
 **Security hardening (adversarial red-team, 2026-10-16).** Closes the
