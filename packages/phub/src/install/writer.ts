@@ -10,8 +10,8 @@
  *     `content.mediaType`. Unknown media types refuse to write.
  */
 
-import { mkdirSync, writeFileSync, existsSync } from "node:fs"
-import { dirname, isAbsolute, relative, resolve } from "node:path"
+import { mkdirSync, writeFileSync, existsSync, realpathSync } from "node:fs"
+import { basename, dirname, isAbsolute, relative, resolve } from "node:path"
 
 export class InstallWriteError extends Error {
   constructor(
@@ -83,6 +83,13 @@ export function planInstallTarget(opts: {
 
   ensureInsideRoot(installPath, installRoot, "install path escapes install root")
   ensureInsideRoot(installPath, workspaceRoot, "install path escapes workspace root")
+
+  // SECURITY (R06): the lexical checks above use path.relative, which does
+  // NOT resolve symlinks. A symlinked ancestor in the install tree (planted
+  // by a malicious repo or a prior install) makes a lexically-inside path
+  // write OUTSIDE the root once the OS follows the link. Re-check containment
+  // against symlink-resolved paths.
+  ensureRealpathInsideRoot(installPath, workspaceRoot, "install path escapes workspace root")
 
   return {
     installDir,
@@ -171,5 +178,44 @@ function ensureInsideRoot(absPath: string, root: string, message: string): void 
   const rel = relative(root, absPath)
   if (rel.startsWith("..") || isAbsolute(rel)) {
     throw new InstallWriteError(`${message}: ${absPath}`, "PATH_TRAVERSAL")
+  }
+}
+
+/**
+ * Realpath of the deepest EXISTING ancestor of `p`, rejoined with the
+ * not-yet-existing tail. Components that don't exist can't be symlinks, so
+ * only the existing prefix needs resolution. `realpathSync` is only ever
+ * called on a path confirmed to exist (worst case the filesystem root).
+ */
+function realpathOfExisting(p: string): string {
+  let cur = resolve(p)
+  const tail: string[] = []
+  while (!existsSync(cur)) {
+    tail.unshift(basename(cur))
+    const parent = dirname(cur)
+    if (parent === cur) break // reached filesystem root
+    cur = parent
+  }
+  const realExisting = realpathSync(cur)
+  return tail.length > 0 ? resolve(realExisting, ...tail) : realExisting
+}
+
+/**
+ * SECURITY (R06): symlink-aware containment. Resolves symlinks on the deepest
+ * existing prefix of both the target and the root, then re-checks that the
+ * target stays inside. Closes the pre-planted-symlink escape that the lexical
+ * `ensureInsideRoot` misses. (A TOCTOU swap between this check and the write
+ * is out of scope for v0.1; the realistic vector — a symlink already on disk
+ * when we plan — is closed here.)
+ */
+function ensureRealpathInsideRoot(absPath: string, root: string, message: string): void {
+  const realTarget = realpathOfExisting(absPath)
+  const realRoot = realpathOfExisting(root)
+  const rel = relative(realRoot, realTarget)
+  if (rel.startsWith("..") || isAbsolute(rel)) {
+    throw new InstallWriteError(
+      `${message} via symlink: ${absPath} resolves to ${realTarget}`,
+      "PATH_TRAVERSAL",
+    )
   }
 }

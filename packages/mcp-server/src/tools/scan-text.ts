@@ -10,7 +10,7 @@
  * to do with the result.
  */
 
-import { runScan, type ScanOptions } from "@primitivehub/phub"
+import { runScan, UnknownDetectorError, type ScanOptions } from "@primitivehub/phub"
 
 export const SCAN_TEXT_TOOL = {
   name: "scan_text",
@@ -90,7 +90,17 @@ export function callScanText(
     scanOpts.policyPath = args.policy_path
   }
 
-  const result = runScan(filename, args.content, scanOpts)
+  // SECURITY (R14): an unknown detector id must NOT yield an empty, clean-
+  // looking scan. Fail safe with isError instead of reporting zero verdicts.
+  let result
+  try {
+    result = runScan(filename, args.content, scanOpts)
+  } catch (err) {
+    if (err instanceof UnknownDetectorError) {
+      return errorResponse(`${err.message} — refusing to report a zero-detector scan as clean`)
+    }
+    throw err
+  }
 
   const summary = result.evaluation.summary
   const allowed = result.evaluation.adjusted.flatMap((a) =>

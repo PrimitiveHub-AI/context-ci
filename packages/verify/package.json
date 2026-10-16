@@ -29,7 +29,7 @@
   ],
   "publishConfig": {
     "access": "public",
-    "provenance": true
+    "provenance": false
   },
   "bugs": {
     "url": "https://github.com/PrimitiveHub-AI/context-ci/issues"

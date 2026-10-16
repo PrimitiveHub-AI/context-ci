@@ -75,6 +75,14 @@ export interface AuditResult {
   uncovered: UncoveredFile[]
   /** True iff the walker hit `maxFiles` before exhausting the tree. */
   truncated: boolean
+  /**
+   * True iff the walker examined the WHOLE tree — no `maxFiles` truncation
+   * and no subtree skipped for exceeding `maxDepth`. When false, un-scanned
+   * artifacts may exist, so the audit cannot certify the tree "clean"
+   * (ADR-0029 fail-closed; red-team R04). Deliberate skips (skip-list,
+   * hidden dirs, symlinks) do NOT lower coverage — they are by design.
+   */
+  coverageComplete: boolean
   summary: AuditSummary
   /** Lockfile state for this run; null when no --check-lock / --update-lock / --lock-only flag was set. */
   lockState: AuditLockState | null

@@ -6,6 +6,23 @@ Version tracks Trust Contract spec version (for `verify_bundle`) and
 Context CI Top 10 version (for `scan_text` / `audit_workspace`);
 `0.1.x` of this package is conformant to both v0.1.
 
+## [0.1.4] — 2026-10-16
+
+**Security hardening (adversarial red-team, 2026-10-16).** Requires
+`@primitivehub/phub@^0.1.4` + `@primitivehub/verify@^0.1.2`.
+
+### Fixed
+- **R14 — `scan_text` fail-safe on unknown detector.** An unknown
+  `detectors` id previously ran zero detectors and returned a clean,
+  non-error result. The tool now surfaces `UnknownDetectorError` as
+  `isError` instead of reporting a zero-detector scan as clean.
+
+### Changed
+- Inherits phub@0.1.4's red-team fixes end-to-end: `verify_before_load`
+  carries the new posture-tier `PATH_UNASSESSED` reason (R05) and the
+  hardened `--require-attestation` semantics (R01); `audit_workspace`
+  inherits the truncated-audit fail-closed behavior (R04).
+
 ## [0.1.3] — 2026-10-16
 
 **Security hardening (external assessment PH-SEC-003).** Requires
@@ -106,4 +123,4 @@ Zero custom trust logic; every tool delegates.
 - **Tool surface additions as verify matures** — `verify_bundle`
   inherits verify v0.2 (signature / cert / Rekor) when those steps land.
 
-[0.1.0]: https://github.com/DevXYZx/primitivehub/releases/tag/mcp-server-v0.1.0
+[0.1.0]: https://github.com/PrimitiveHub-AI/context-ci/releases/tag/mcp-server-v0.1.0

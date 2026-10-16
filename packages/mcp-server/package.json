@@ -1,6 +1,6 @@
 {
   "name": "@primitivehub/mcp-server",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "MCP server exposing PrimitiveHub verification + scanning to AI agents (Claude, Cursor, Aider, …). Pure transport over @primitivehub/verify + @primitivehub/phub — zero custom trust logic.",
   "license": "MIT",
   "author": "PrimitiveHub AI / CyberOrca Labs",
@@ -35,7 +35,7 @@
   ],
   "publishConfig": {
     "access": "public",
-    "provenance": true
+    "provenance": false
   },
   "scripts": {
     "build": "tsc",
@@ -49,8 +49,8 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "@primitivehub/verify": "workspace:^",
-    "@primitivehub/phub": "workspace:^"
+    "@primitivehub/verify": "^0.1.2",
+    "@primitivehub/phub": "^0.1.4"
   },
   "devDependencies": {
     "@types/node": "^22",

@@ -12,6 +12,9 @@ Gate G-D acceptance + [ADR-0031](../../docs/decisions/0031-mcp-server-as-transpo
 
 Lets an AI agent ask, mid-task:
 
+- **"Is this file safe to load right now?" → `verify_before_load`** —
+  the inline Context Firewall; the composite gate the agent calls before
+  reading any agent-context artifact
 - "Is this Trust Bundle valid?" → `verify_bundle`
 - "Does this text trip Context CI Top 10?" → `scan_text`
 - "What context primitives are in this workspace, and which are
@@ -86,7 +89,7 @@ mcp-servers:
     args: ["@primitivehub/mcp-server"]
 ```
 
-See [`examples/`](./examples/) for full end-to-end configurations.
+See [`examples/`](./examples/) for complete host configurations.
 
 ## Tools
 
@@ -107,8 +110,8 @@ stubbed in v0.1 (see verify README).
 
 ### `scan_text`
 
-Run the v0.1 detector roster (T1/T2/T5) against text. Wraps phub's
-`runScan`.
+Run the full Context CI Top 10 detector roster (CCI-001…010) against
+text. Wraps phub's `runScan`.
 
 **Arguments:**
 
@@ -154,6 +157,46 @@ and reports drift (added / modified / removed / reclassified).
 | `max_files` | number | no | `10000` |
 | `max_depth` | number | no | `16` |
 
+### `verify_before_load`
+
+**The inline Context Firewall.** Call this BEFORE loading any
+agent-context primitive — it refuses-by-default per
+[ADR-0029](../../docs/decisions/0029-mcp-runtime-gate.md). The composite
+of `check_lock` + `scan_text` + (optional) `verify_bundle`, folded into
+one verdict: `{ safe, reasons[], checks }`, with `isError: true`
+whenever `safe` is false. Each reason carries a `tier` — `block`
+(tamper / drift / live scanner finding / demanded-but-absent
+attestation) or `posture` (simply unsealed) — so an agent can branch on
+the low-FP signal, not just the boolean. Same engine as the `phub
+verify-before-load` CLI command and the `phub-scan` action's `mode:
+gate`.
+
+> **Scope — opt-in, not enforced (PH-SEC-003).** Registering this MCP
+> server exposes `verify_before_load` as a tool an agent *can* call; it
+> does **not** interpose on the agent's file reads. A host or loader can
+> still read content without invoking the gate. Treat this as an **opt-in
+> verification API**: real "no untrusted bytes reach the model"
+> enforcement requires the host to route reads through the gate. Our docs
+> describe the *capability*, not a guarantee the host enforces it.
+
+**Arguments:**
+
+| Field | Type | Required | Default |
+|---|---|---|---|
+| `path` | string | **yes** | — |
+| `workspace_root` | string | no | `process.cwd()` |
+| `policy_path` | string | no | auto-discover |
+| `lock_path` | string | no | auto-discover |
+| `require_attestation` | boolean | no | `false` |
+| `bundle` | string \| object | no | — |
+| `level` | `structural` \| `policy` \| `full` | no | `policy` |
+
+Reason codes are stable across patch releases — agents branch on
+`code`: `LOCK_MISSING`, `LOCK_SPEC_VERSION_MISMATCH`, `PATH_NOT_FOUND`,
+`PATH_UNCLASSIFIED`, `PATH_NOT_IN_LOCK`, `PATH_DIGEST_MISMATCH`,
+`PATH_UNATTESTED`, `PATH_FLAGGED_BY_SCANNER` (plus `BUNDLE_*` when a
+Trust Bundle is supplied).
+
 ## Design discipline
 
 Per [ADR-0031](../../docs/decisions/0031-mcp-server-as-transport.md)
@@ -170,10 +213,13 @@ this package is a transport layer with three load-bearing rules:
    does not cache, queue, or remember invocations. The agent's
    conversation is the only state that matters.
 
-The MCP runtime gate `verify_before_load` (planned [ADR-0029](../../docs/decisions/0026-phub-lock-format-and-drift-detection.md))
-is a composite of `check_lock` + `verify_bundle` applied at the
-agent's read time. v0.1 of this package exposes the primitives; the
-composite gate ships when ADR-0029 lands.
+The MCP runtime gate `verify_before_load`
+([ADR-0029](../../docs/decisions/0029-mcp-runtime-gate.md)) is a
+composite of `check_lock` + `scan_text` + (optional) `verify_bundle`
+applied at the agent's read time. It ships in this package (see the
+tool section above) and holds the same transport discipline: zero
+custom trust logic — the verdict is `verifyBeforeLoad` from
+`@primitivehub/phub` plus `verifyBundle` from `@primitivehub/verify`.
 
 ## Programmatic embedding
 

@@ -42,6 +42,7 @@ export type VerifyBeforeLoadReasonCode =
   | "PATH_NOT_IN_LOCK"
   | "PATH_DIGEST_MISMATCH"
   | "PATH_UNATTESTED"
+  | "PATH_UNASSESSED"
   | "PATH_FLAGGED_BY_SCANNER"
 
 /**
@@ -66,6 +67,7 @@ const REASON_TIER: Record<VerifyBeforeLoadReasonCode, VerifyBeforeLoadReasonTier
   LOCK_MISSING: "posture",
   PATH_UNCLASSIFIED: "posture",
   PATH_NOT_IN_LOCK: "posture",
+  PATH_UNASSESSED: "posture",
   LOCK_SPEC_VERSION_MISMATCH: "block",
   PATH_NOT_FOUND: "block",
   PATH_DIGEST_MISMATCH: "block",
@@ -226,10 +228,16 @@ function decide(
           "PATH_DIGEST_MISMATCH",
           `'${paths.relativePath}' content (${expectedDigest}) does not match the lock (${lockEntry.digest})`,
         )
-      } else if (opts.requireAttestation === true && lockEntry.attestation === "unattested") {
+      } else if (opts.requireAttestation === true) {
+        // SECURITY (R01): a lock attestation string is METADATA, not a verified
+        // proof. The old check only rejected the exact label "unattested", so an
+        // attacker who controls the lock could write "rekor:FAKE" and pass the
+        // strict gate. v0.1 has NO cryptographic attestation verification, so no
+        // label can be trusted — fail closed for every value until real
+        // verification lands (verify v0.2 / PH-006 identity pinning).
         push(
           "PATH_UNATTESTED",
-          `'${paths.relativePath}' has no cryptographic attestation in the lock (status: unattested) and requireAttestation was set`,
+          `'${paths.relativePath}' attestation '${lockEntry.attestation}' is a lock label, not a cryptographically verified proof — requireAttestation cannot be satisfied in this version (no attestation verification yet; lands in verify v0.2). Refusing.`,
         )
       }
     }
@@ -251,6 +259,18 @@ function decide(
         .filter((adj) => adj.verdict.severity === Severity.FAIL && !adj.verdict.passed)
         .map((adj) => adj.verdict.cciId)
       push("PATH_FLAGGED_BY_SCANNER", `'${paths.relativePath}' triggers ${failingIds.join(", ")} (post-policy)`)
+    } else if (!artifact.scanned) {
+      // SECURITY (R05): some classes (mcp-config, aider-config) are classified
+      // and digested for inventory/drift but have NO content detector in v0.1.
+      // "Not scanned" must never read as "safe" — surface it as a posture
+      // signal so a caller demanding safety knows the content was NOT
+      // inspected. Downgradable like any posture reason; the JSON/MCP detector
+      // family lands in a future release. (A text-scannable artifact that was
+      // scanned clean does NOT trip this — only unassessed classes do.)
+      push(
+        "PATH_UNASSESSED",
+        `'${paths.relativePath}' is class '${artifact.classification}', which has no content detector in v0.1 — it was inventoried and digested but its content was NOT scanned. Not inspected is not the same as safe.`,
+      )
     }
   }
 

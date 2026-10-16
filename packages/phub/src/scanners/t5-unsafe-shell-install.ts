@@ -79,24 +79,6 @@ const MULTILINGUAL_VERB_PHRASEBOOK =
   "выполните|выполнить|запустите|запустить|установите|установить|загрузите" +
   "|执行|运行|安装|启动|请执行|请运行|请安装"
 
-// v0.2.8 (closes FP on S-014 — the only committed CCI-005 FP). The
-// verb-anchored install patterns treat a leading imperative verb
-// (run/install/launch/…) as "prose directing the agent to execute this
-// command." But several of those verbs double as noun modifiers in
-// *reference* prose: "the install command (`npx shadcn…`)", "the launch
-// script", "the setup guide" — documentation, not an instruction to the
-// agent. This zero-width negative lookahead, placed immediately after the
-// verb group, suppresses the anchor ONLY when the verb is immediately
-// followed by a reference-material noun. Real directives put a
-// determiner/object after the verb ("Install the uploader: `curl…`",
-// FN-018) so they still match; "run the X command: `curl|bash`" attacks
-// anchor on the imperative "run", not the suppressed noun-compound.
-// The lookahead itself is inlined into each verb-anchored literal below
-// (a template string would have to escape the literal backtick in the
-// pattern): `(?!\s+(?:commands?|guides?|instructions?|docs?|documentation
-// |references?|examples?|pages?|sections?|flows?|notes?|snippets?)\b)`.
-// Lockstep with apps/api/scanners/t5_unsafe_shell_install.py § v0.2.8.
-
 const SHELL_PIPE_PATTERNS: Array<readonly [RegExp, string]> = [
   [
     /\b(?:curl|wget|fetch)\s+(?:-\w+\s+)*[^\s|]*https?:\/\/[^\s|]+\s*\|\s*(?:sudo\s+)?(?:sh|bash|zsh|fish|ksh|csh)\b/gim,
@@ -127,7 +109,7 @@ const SHELL_PIPE_PATTERNS: Array<readonly [RegExp, string]> = [
   // sentence. AV-strict position: prose that tells the agent to copy-
   // paste a curl|sh from inline code is the Shai-Hulud vector.
   [
-    /(?:^|\s)(?:first[,\s]+|then[,\s]+|now[,\s]+)?(?:run|execute|launch|install|bootstrap|set\s+up|provision)(?!\s+(?:commands?|guides?|instructions?|docs?|documentation|references?|examples?|pages?|sections?|flows?|notes?|snippets?)\b)[\w\s,:;()\-'’]{0,180}`\s*(?:sudo\s+)?(?:curl|wget|fetch)\s+(?:-\w+\s+)*[^\s|`]*https?:\/\/[^\s|`]+\s*\|\s*(?:sudo\s+)?(?:sh|bash|zsh|fish|ksh|csh)\b/gim,
+    /(?:^|\s)(?:first[,\s]+|then[,\s]+|now[,\s]+)?(?:run|execute|launch|install|bootstrap|set\s+up|provision)[\w\s,:;()\-'’]{0,180}`\s*(?:sudo\s+)?(?:curl|wget|fetch)\s+(?:-\w+\s+)*[^\s|`]*https?:\/\/[^\s|`]+\s*\|\s*(?:sudo\s+)?(?:sh|bash|zsh|fish|ksh|csh)\b/gim,
     "shell-pipe-from-network",
   ],
   [
@@ -160,7 +142,7 @@ const NPX_INSTALL_PATTERNS: Array<readonly [RegExp, string]> = [
   // protects benign vendor docs like "`npx shadcn@latest add Button`"
   // shown without a "run/execute/launch" verb before the backtick.
   [
-    /(?:^|\s)(?:first[,\s]+|then[,\s]+|now[,\s]+)?(?:run|execute|launch|install|bootstrap|set\s+up|provision)(?!\s+(?:commands?|guides?|instructions?|docs?|documentation|references?|examples?|pages?|sections?|flows?|notes?|snippets?)\b)[\w\s,:;()\-'’]{0,180}`\s*npx\s+(?:-y\s+|--yes\s+)?(?!--help|--version)[a-zA-Z0-9@/_.-][a-zA-Z0-9@/_.-]+/gim,
+    /(?:^|\s)(?:first[,\s]+|then[,\s]+|now[,\s]+)?(?:run|execute|launch|install|bootstrap|set\s+up|provision)[\w\s,:;()\-'’]{0,180}`\s*npx\s+(?:-y\s+|--yes\s+)?(?!--help|--version)[a-zA-Z0-9@/_.-][a-zA-Z0-9@/_.-]+/gim,
     "npx-arbitrary-install",
   ],
 ]
@@ -255,7 +237,7 @@ export class T5UnsafeShellInstallDetector {
   readonly name = "t5.unsafe_shell_install"
   readonly threatCategory = "T5"
   readonly cciId = "CCI-005"
-  readonly detectorVersion = "0.2.8"
+  readonly detectorVersion = "0.2.7"
 
   run(ctx: DetectorContext): Verdict {
     const hints: DiffHint[] = []

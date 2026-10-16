@@ -6,6 +6,40 @@ Version tracks both Trust Contract spec version (for the verify
 wrapper) and Context CI Top 10 version (for the scanner detectors);
 `0.1.x` of this package is conformant to both v0.1.
 
+## [0.1.4] — 2026-10-16
+
+**Security hardening (adversarial red-team, 2026-10-16).** Closes the
+source-level findings from an independent audit of the 0.1.2/0.1.3 line.
+Requires `@primitivehub/verify@^0.1.2`.
+
+### Fixed
+- **R01 (Critical) — forged attestation label.** `verify-before-load
+  --require-attestation` only rejected the literal label `unattested`; any
+  other string (`rekor:FAKE`, …) satisfied the gate. v0.1 has no
+  cryptographic attestation, so **no** lock label is trusted — the flag now
+  fails closed for every value until real verification lands (verify v0.2).
+- **R04 (High) — truncated audit certified clean.** A walk that hit
+  `--max-files` or skipped a subtree past `--max-depth` still exited `0`,
+  and `--update-lock` would persist a lock built from the partial tree. New
+  `coverageComplete`: incomplete coverage fails closed (exit `2`, no lock
+  written) — an audit that didn't see the whole tree cannot certify it.
+- **R05 (Med) — unscanned class read as safe.** `mcp.json` is classified +
+  digested but has no content detector in v0.1; `verify-before-load`
+  returned `safe` for it. New posture-tier `PATH_UNASSESSED` reason: "not
+  inspected" no longer reads as "safe" (downgradable via `--allow-unsealed`).
+- **R06 (Med/High) — installer symlink escape.** `phub install` containment
+  used a lexical path check that ignored symlinks; a planted symlink
+  ancestor could redirect a write outside the install root. Added
+  symlink-aware (realpath) containment.
+- **R14 (High) — unknown detector id → false clean.** `phub scan
+  --detector=<typo>` silently ran zero detectors and exited `0`. Now throws
+  `UnknownDetectorError` → exit `2`. A zero-detector scan is never "clean".
+
+### Changed
+- `phub-scan` composite Action: every caller input now flows through `env:`
+  and is referenced as a shell `$VAR` (R03/R11) — no `${{ inputs.* }}`
+  interpolation inside `run:` scripts (GitHub Actions script injection).
+
 ## [0.1.3] — 2026-10-16
 
 **Security hardening (external assessment PH-SEC-001/003/004).** Requires
@@ -458,7 +492,7 @@ build on this foundation under their own ADRs (0026–0029).
   error-exit 2). Lets CI use SARIF upload as the gate instead of
   process exit code.
 - `actions/phub-scan/` composite GitHub Action — ships in-repo and is
-  referenced as `primitivehub/context-ci/actions/phub-scan`.
+  referenced as `PrimitiveHub-AI/context-ci/actions/phub-scan`.
 - `.github/workflows/phub-scan-demo.yml` — end-to-end CI demo using
   the local action against the repo's own files; uploads SARIF to
   this repo's Code Scanning category `phub-context-ci`.
@@ -521,4 +555,4 @@ precision/recall hardening on the v0.2/v0.3 roadmap.
 - The `--offline` flag on `verify` is documentary only; verification
   is always offline in v0.1.
 
-[0.1.0]: https://github.com/DevXYZx/primitivehub/releases/tag/phub-v0.1.0
+[0.1.0]: https://github.com/PrimitiveHub-AI/context-ci/releases/tag/phub-v0.1.0

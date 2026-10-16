@@ -1,6 +1,6 @@
 {
   "name": "@primitivehub/phub",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "PrimitiveHub CLI — scan AGENTS.md for Context CI Top 10 patterns; verify Trust Bundles offline.",
   "license": "MIT",
   "author": "PrimitiveHub AI / CyberOrca Labs",
@@ -35,7 +35,7 @@
   ],
   "publishConfig": {
     "access": "public",
-    "provenance": true
+    "provenance": false
   },
   "scripts": {
     "build": "tsc",
@@ -48,7 +48,7 @@
     "node": ">=20"
   },
   "dependencies": {
-    "@primitivehub/verify": "workspace:^",
+    "@primitivehub/verify": "^0.1.2",
     "yaml": "^2.6.0"
   },
   "devDependencies": {

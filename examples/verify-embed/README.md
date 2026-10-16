@@ -4,16 +4,11 @@
 [`@primitivehub/verify`](../../packages/verify/). Sample app for the
 Gate G-B "Sample external embed demonstrated" acceptance item.
 
-## Pre-launch posture
+## Running against a local build
 
-Per [ADR-0022](../../docs/decisions/0022-publishing-deferred-to-launch.md),
-`@primitivehub/verify` is NOT yet on npm. This example uses a
-`file:../../packages/verify` dependency so it can run inside the
-monorepo today and demonstrate the integration shape an external
-embedder will use post-launch.
-
-On the launch-day playbook, the `dependencies` block here flips
-in one line:
+This example uses a `file:../../packages/verify` dependency so it runs
+against the in-tree build. To depend on the published package instead,
+flip the `dependencies` block in one line:
 
 ```diff
 -    "@primitivehub/verify": "file:../../packages/verify"

@@ -68,7 +68,7 @@ Global flags:
 Run 'phub help <command>' for per-command options.
 
 Docs:
-  https://github.com/DevXYZx/primitivehub/tree/main/packages/phub
+  https://github.com/PrimitiveHub-AI/context-ci/tree/main/packages/phub
 `
 
 const SCAN_HELP = `phub scan <file>
