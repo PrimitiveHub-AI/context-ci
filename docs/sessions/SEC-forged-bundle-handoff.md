@@ -88,3 +88,50 @@ expectation — correct for a security patch; bump the suite accordingly.
 ## 5. Residual risk until Phase 1 ships
 Third parties calling `@primitivehub/verify` directly remain exposed (our consumer fix does
 not protect them). This is why Phase 1 + the deprecations are not optional.
+**→ RESOLVED 2026-10-16:** Phase 1 shipped additively (`authenticated` field) in
+`verify@0.1.1`; third parties now have the authoritative signal. Deprecations live.
+
+## 6. Remediation SHIPPED — 2026-10-16 ✅
+| Package | Patched (latest) | Deprecated (vulnerable) |
+|---|---|---|
+| `@primitivehub/verify` | **0.1.1** | 0.1.0 |
+| `@primitivehub/phub` | **0.1.2** → `verify@^0.1.1` | 0.1.0, 0.1.1 |
+| `@primitivehub/mcp-server` | **0.1.2** → `verify@^0.1.1`, `phub@^0.1.2` | 0.1.0 |
+
+- Code on `launch`: `b3b4f3f` (consumer fail-closed), `1672127` (verify core), `ec892d0`
+  (cli --version fix). Released artifacts: branch `release/0.1.2`.
+- Advisory draft: `docs/security/2026-09-30-forged-trust-bundle.md` (ready to publish as GHSA).
+- **Governance note:** patched versions were published via **local `npm publish`** (owner's
+  authed 2FA session), bypassing the ADR-0022 `launch`-environment approval ceremony.
+  `prepublishOnly` still enforced the full test suite each time. Deviation recorded here, not silent.
+- **Open follow-ups:** `[→ verify owner]` optional ADR-0021 `valid = inspected && authenticated`
+  flip (the additive field already fails closed); `[→ phub-platform]` migrate CI publish to
+  **trusted publishing (OIDC)** before **Jan 2027** (bypass-2FA tokens sunset);
+  `[→ phub-security]` publish the GHSA + release the reporter acknowledgment (ON HOLD).
+
+## 7. Self-test guide (verify the fix from clean npm installs)
+```bash
+# 1. fixed versions resolve; old ones warn
+npm view @primitivehub/phub version            # 0.1.2
+npm view @primitivehub/phub@0.1.1 deprecated   # prints the Critical warning
+
+# 2. the forged bundle is now REFUSED (fail closed)
+mkdir /tmp/phub-sec && cd /tmp/phub-sec
+cat > forged.json <<'JSON'
+{"bundleVersion":"0.1","subject":{"slug":"forged","semver":"1.0.0",
+"contentDigest":"sha256:<sha256 of the bytes below>"},
+"content":{"bytesB64":"IyBBVFRBQ0tFUgo=","sizeBytes":10,"mediaType":"text/markdown"},
+"attestation":{"predicateType":"https://primitivehub.ai/context-ci/v0.1/Attestation",
+"predicate":{},"backendName":"public","certChainPem":"forged","signatureB64":"Zm9yZ2Vk",
+"statementB64":"Zm9yZ2Vk","rekorLogIndex":0,"rekorLogId":"0000000000000000000000000000000000000000000000000000000000000000",
+"rekorInclusionProofJson":"{}","verifyUrl":"https://example.invalid","signedAt":"2026-09-30T00:00:00Z"}}
+JSON
+npx @primitivehub/phub@0.1.2 install --bundle forged.json
+#   → refuses with BUNDLE_UNAUTHENTICATED (pre-0.1.2 would have written it as "verified")
+
+# 3. phub verify labels it honestly
+npx @primitivehub/phub@0.1.2 verify forged.json
+#   → "INSPECTED — NOT cryptographically authenticated", never "verified"
+```
+(Recompute `contentDigest` to match `content.bytesB64` if you change the payload — the digest
+self-check still runs; it's the *authentication* that now fails closed.)
