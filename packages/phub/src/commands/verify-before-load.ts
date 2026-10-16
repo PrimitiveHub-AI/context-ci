@@ -226,10 +226,16 @@ function decide(
           "PATH_DIGEST_MISMATCH",
           `'${paths.relativePath}' content (${expectedDigest}) does not match the lock (${lockEntry.digest})`,
         )
-      } else if (opts.requireAttestation === true && lockEntry.attestation === "unattested") {
+      } else if (opts.requireAttestation === true) {
+        // SECURITY (R01): a lock attestation string is METADATA, not a verified
+        // proof. The old check only rejected the exact label "unattested", so an
+        // attacker who controls the lock could write "rekor:FAKE" and pass the
+        // strict gate. v0.1 has NO cryptographic attestation verification, so no
+        // label can be trusted — fail closed for every value until real
+        // verification lands (verify v0.2 / PH-006 identity pinning).
         push(
           "PATH_UNATTESTED",
-          `'${paths.relativePath}' has no cryptographic attestation in the lock (status: unattested) and requireAttestation was set`,
+          `'${paths.relativePath}' attestation '${lockEntry.attestation}' is a lock label, not a cryptographically verified proof — requireAttestation cannot be satisfied in this version (no attestation verification yet; lands in verify v0.2). Refusing.`,
         )
       }
     }

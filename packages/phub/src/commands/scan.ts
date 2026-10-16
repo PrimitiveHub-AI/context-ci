@@ -6,7 +6,7 @@ import { type Policy, type PolicyAllowEntry, PolicyLoadError } from "../policy/t
 import { renderHumanScanReport } from "../reporters/human.js"
 import { renderSarif } from "../reporters/sarif.js"
 import { DETECTORS, detectorByName } from "../scanners/registry.js"
-import { Severity, type Verdict } from "../scanners/types.js"
+import { Severity, type Detector, type Verdict } from "../scanners/types.js"
 
 export interface ScanOptions {
   /** Output JSON instead of human-readable text */
@@ -47,12 +47,27 @@ function applyCliOverridesToPolicy(policy: Policy, opts: ScanOptions): Policy {
   return merged
 }
 
+/** Thrown when `--detector`/`detectors` names an identifier no detector matches. */
+export class UnknownDetectorError extends Error {
+  constructor(public readonly unknown: readonly string[]) {
+    super(`unknown detector identifier(s): ${unknown.join(", ")}`)
+    this.name = "UnknownDetectorError"
+  }
+}
+
 export function runScan(filename: string, content: string, opts: ScanOptions): ScanResult {
-  const selected = opts.detectors && opts.detectors.length > 0
-    ? opts.detectors
-        .map((id) => detectorByName(id))
-        .filter((d): d is NonNullable<typeof d> => d !== undefined)
-    : DETECTORS
+  // SECURITY (R14): a scan that selects ZERO detectors must NEVER be reported
+  // as clean. Previously unknown ids were silently dropped — a typo or stale
+  // id (`--detector=does-not-exist`) ran nothing and exited 0. Reject any
+  // unknown identifier up front; the CLI/MCP surface it as a usage error.
+  let selected: readonly Detector[]
+  if (opts.detectors && opts.detectors.length > 0) {
+    const unknown = opts.detectors.filter((id) => detectorByName(id) === undefined)
+    if (unknown.length > 0) throw new UnknownDetectorError(unknown)
+    selected = opts.detectors.map((id) => detectorByName(id) as Detector)
+  } else {
+    selected = DETECTORS
+  }
 
   const verdicts = selected.map((d) => d.run({ content, filename }))
 
@@ -84,6 +99,13 @@ export function scanCommand(filename: string, opts: ScanOptions): number {
   try {
     result = runScan(filename, content, opts)
   } catch (err) {
+    if (err instanceof UnknownDetectorError) {
+      process.stderr.write(
+        `phub scan: ${err.message}. A scan selecting zero detectors is NOT reported clean.\n` +
+          `phub scan: valid ids are CCI-001…CCI-010, the t1…t10 names, or threat categories.\n`,
+      )
+      return 2
+    }
     if (err instanceof PolicyLoadError) {
       process.stderr.write(`phub scan: policy error in ${err.source}: ${err.message}\n`)
       return 2

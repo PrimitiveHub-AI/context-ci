@@ -9,7 +9,13 @@
 
 export { main } from "./cli.js"
 
-export { runScan, scanCommand, type ScanOptions, type ScanResult } from "./commands/scan.js"
+export {
+  runScan,
+  scanCommand,
+  UnknownDetectorError,
+  type ScanOptions,
+  type ScanResult,
+} from "./commands/scan.js"
 export { verifyCommand, type VerifyOptions } from "./commands/verify.js"
 export { initCommand, type InitOptions } from "./commands/init.js"
 export {
