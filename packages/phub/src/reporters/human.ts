@@ -38,27 +38,32 @@ export function renderHumanScanReport(filename: string, verdicts: readonly Verdi
 }
 
 export interface VerifyReportShape {
+  /** TRUSTED: inspected && authenticated. Fails closed (false in v0.1). */
   valid: boolean
+  /** Non-crypto checks passed. NOT a trust signal. */
+  inspected?: boolean
+  /** Cryptographically authenticated. False in v0.1. */
+  authenticated?: boolean
   failures: ReadonlyArray<{ code: string; message: string; path?: string }>
   deferredSteps?: readonly string[]
   level?: string
 }
 
 export function renderHumanVerifyReport(filename: string, result: VerifyReportShape): string {
+  // SECURITY (PH-SEC-001 / forged-bundle report): three distinct verdicts,
+  // never collapsed. AUTHENTICATED (trusted) vs INSPECTED (well-formed but
+  // NOT trusted — a forgery passes inspection) vs REJECTED (malformed).
+  // Only `authenticated` is a trust verdict.
+  const authenticated = result.authenticated ?? false
+  const inspected = result.inspected ?? result.valid // tolerate an older verify
   const out: string[] = []
   out.push(`phub verify ${filename}`)
   out.push("")
-  if (result.valid) {
-    // SECURITY (forged-bundle report, 2026-09-30): "valid" at
-    // structural/policy authenticates nothing. Never report it as
-    // "verified" — that reads as a trust verdict. Only a full-level pass
-    // with zero deferred steps is real authentication.
-    const authenticated =
-      result.level === "full" && (result.deferredSteps?.length ?? 0) === 0
-    if (authenticated) {
-      out.push("Trust Bundle AUTHENTICATED (signature + cert chain + Rekor verified).")
-      return out.join("\n")
-    }
+  if (authenticated) {
+    out.push("Trust Bundle AUTHENTICATED (signature + cert chain + Rekor verified).")
+    return out.join("\n")
+  }
+  if (inspected) {
     out.push("Trust Bundle INSPECTED — NOT cryptographically authenticated.")
     out.push("  ⚠ This is NOT a trust verdict. Schema + content-digest" +
       (result.level === "policy" ? " + Context CI policy" : "") + " checks passed,")
@@ -67,7 +72,7 @@ export function renderHumanVerifyReport(filename: string, result: VerifyReportSh
     out.push("    passes these same checks. Real authentication lands in @primitivehub/verify v0.2.")
     return out.join("\n")
   }
-  out.push(`Trust Bundle rejected (${result.failures.length} failure(s)):`)
+  out.push(`Trust Bundle REJECTED (${result.failures.length} failure(s)):`)
   for (const f of result.failures) {
     const at = f.path ? ` (at ${f.path})` : ""
     out.push(`  [${f.code}] ${f.message}${at}`)

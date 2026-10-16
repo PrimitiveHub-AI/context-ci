@@ -6,7 +6,70 @@ Version tracks both Trust Contract spec version (for the verify
 wrapper) and Context CI Top 10 version (for the scanner detectors);
 `0.1.x` of this package is conformant to both v0.1.
 
-## [Unreleased]
+## [0.1.3] — 2026-10-16
+
+**Security hardening (external assessment PH-SEC-001/003/004).** Requires
+`@primitivehub/verify@^0.1.2`.
+
+### Changed
+- Follows verify's `valid`-flip: `phub verify` now **exits non-zero** on an
+  inspected-but-unauthenticated bundle and reports **AUTHENTICATED /
+  INSPECTED / REJECTED** distinctly (never "verified" for a forgery).
+- **Detector-coverage release gate (PH-SEC-004):** new `detectorCoverage()`
+  export + a CI test asserting all ten Context CI Top 10 (CCI-001…010) are
+  registered AND actually run on a scan — "10/10" is now a build gate.
+- Lock docs clarified: a lock is drift detection, not approval
+  (PH-SEC-005). `phub-scan` action: coverage + version/SHA pinning guidance
+  (PH-SEC-009).
+
+(0.1.2 shipped the consumer fail-closed `install`/`verify` and depended on
+the fixed verify; 0.1.3 completes the hardening.)
+
+## [0.1.1] — 2026-10-04
+
+First post-launch release. Makes `verify-before-load` the one inline
+Context Firewall, runnable from the terminal and from CI with the same
+engine the MCP `verify_before_load` tool already uses (ADR-0047).
+
+### Added
+- **`phub verify-before-load <path...>`** — the composite runtime gate as
+  a CLI command. Refuses-by-default (ADR-0029): folds the lock/drift
+  check and all ten Top 10 detectors into one crisp verdict per path —
+  `SAFE` / `BLOCKED` / `UNSEALED`. Exit-code contract: `0` safe, `1`
+  blocked or unsealed, `2` usage. Flags: `--allow-unsealed`,
+  `--require-attestation`, `--policy`, `--lock-path`, `--json`.
+- **Reason tiers** — every `verifyBeforeLoad` reason now carries a
+  `tier`: `block` (tamper, drift, a live scanner finding, or a
+  demanded-but-absent attestation) vs `posture` (simply unsealed). The
+  low-FP contract: `--allow-unsealed` downgrades posture-only failures
+  to a warning and **never** rescues a block-tier signal. `safe` stays
+  refuse-by-default — the field is additive, so the MCP tool contract is
+  unchanged.
+- **`hasBlockingReason()`** exported from `@primitivehub/phub` — the
+  predicate the CLI and the `phub-scan` gate use to split block from
+  posture without re-deriving it.
+
+### Changed
+- `phub scan` help text now states all ten detectors (CCI-001…010) run
+  by default; the classifier doc-string references the full Top 10
+  roster instead of the historical T1/T2/T5 subset. (No behavior change
+  — the ten-detector roster already shipped in 0.1.0.)
+
+### Notes
+- The `@primitivehub/mcp-server` `verify_before_load` tool (shipped in
+  0.1.0) surfaces the new `tier` field automatically via its dependency
+  on this package — no code change there.
+- The `actions/phub-scan` GitHub Action gains a `mode: gate` that runs
+  this command in CI; see that action's README.
+
+## [0.1.0] — 2026-07-21
+
+The v0.1 launch release — Context CI Top 10 complete at 10/10 (CCI-001…010,
+Python↔TS parity), SARIF 2.1.0, Context Policy Language, `phub.lock`,
+`phub watch`, `phub install`, and CBOM. Published to npm at launch under the
+ADR-0022 three-lock human gate ([ADR-0045](../../docs/decisions/0045-product-first-public-launch-and-distribution-repo.md),
+product-first). The `phub` CLI opened Gate G-C on 2026-05-31 with the
+CCI-001/002/005 trifecta; the sections below trace the path to 10/10.
 
 ### Added (PR 5.13 — CBOM v0.1 JSON Schema + phub cbom --verify)
 - **`docs/cbom/schema.json`** — canonical JSON Schema Draft 2020-12
@@ -394,20 +457,12 @@ build on this foundation under their own ADRs (0026–0029).
 - `phub scan --no-fail` — converts finding-exit 1 → 0 (preserves
   error-exit 2). Lets CI use SARIF upload as the gate instead of
   process exit code.
-- `actions/phub-scan/` composite GitHub Action (in-tree pre-launch,
-  to be republished as `primitivehub/phub-scan` at launch).
+- `actions/phub-scan/` composite GitHub Action — ships in-repo and is
+  referenced as `primitivehub/context-ci/actions/phub-scan`.
 - `.github/workflows/phub-scan-demo.yml` — end-to-end CI demo using
   the local action against the repo's own files; uploads SARIF to
   this repo's Code Scanning category `phub-context-ci`.
 - Programmatic export: `renderSarif(filename, verdicts) → string`.
-
-## [0.1.0] — 2026-05-31
-
-**Not yet published to npm.** Per
-[ADR-0022](../../docs/decisions/0022-publishing-deferred-to-launch.md)
-publishing is gated to the project launch event. The CLI is fully
-functional inside the monorepo today; `npx @primitivehub/phub
-<command>` is a launch-day capability.
 
 ### Package name
 
@@ -420,11 +475,12 @@ by `phub --help` works as expected. See
 [ADR-0023](../../docs/decisions/0023-phub-cli-and-detector-parity.md)
 "Update 2026-05-31" for the pivot rationale.
 
-### Added
+### Added — CLI foundation (Gate G-C opener, 2026-05-31)
 
-- `phub scan <file>` — runs T1 / T2 / T5 detectors against any text
-  file (markdown or plain). Stable IDs `CCI-001` / `CCI-002` /
-  `CCI-005` per Context CI Top 10 v0.1.
+- `phub scan <file>` — runs the Context CI Top 10 detector roster against
+  any text file (markdown or plain). Opened with the CCI-001 / CCI-002 /
+  CCI-005 trifecta; CCI-003 / CCI-004 / CCI-006–010 added in the PR 5.6.x
+  blocks above.
 - `phub verify <bundle.json>` — wraps
   [`@primitivehub/verify`](../verify/). Verification levels
   `structural` / `policy` / `full`. All-offline.
@@ -440,28 +496,29 @@ by `phub --help` works as expected. See
 
 ### Detector parity
 
-Detectors are TypeScript ports of `apps/api/scanners/{t1,t2,t5}_*.py`.
-Pattern sets are byte-for-byte identical to the Python source. Per
-[ADR-0023](../../docs/decisions/0023-phub-cli-and-detector-parity.md)
-a future PR adds a scanner-conformance suite to enforce the parity
-mechanically; today, fixture tests in this package + the Python
-pytest suite both run independently.
+All ten detectors are TypeScript ports of `apps/api/scanners/t*_*.py`,
+pattern sets byte-for-byte identical to the Python source and enforced
+mechanically by the cross-implementation scanner-conformance suite
+([ADR-0023](../../docs/decisions/0023-phub-cli-and-detector-parity.md),
+added in PR 5.6).
 
-### Scope of v0.1
+### Detector coverage
 
-Ships the launch-demo trifecta (T1 / T2 / T5) — the differentiating
-detector set the project paper rests on. The remaining Top 10 IDs
-(`CCI-003`, `CCI-004`, `CCI-006`..`CCI-010`) land in subsequent PRs
-in lockstep with the Python detectors.
+All ten Context CI Top 10 categories ship (CCI-001…010). The
+CCI-001 / CCI-002 / CCI-005 trifecta is measured against the adversarial
+corpus ([ADR-0032](../../docs/decisions/0032-adversarial-corpus-and-detector-precision-recall.md));
+the other seven are implemented and conformance-tested, with corpus
+precision/recall hardening on the v0.2/v0.3 roadmap.
 
 ### Known limitations
 
-- No SARIF output (Gate G-C follow-up).
+- Full Sigstore signature + cert-chain + Rekor inclusion-proof verification
+  in the JS verifier is stubbed (steps 3–6); v0.2. Structural + policy
+  verification is complete.
 - No `phub login` / `phub publish` (Phase 6+).
 - Detectors flag matches inside fenced code blocks (mirrors Python
   v0.1; markdown-AST awareness lands in v0.2 across both sides).
 - The `--offline` flag on `verify` is documentary only; verification
   is always offline in v0.1.
 
-[Unreleased]: https://github.com/PrimitiveHub-AI/context-ci/compare/phub-v0.1.0...HEAD
-[0.1.0]: https://github.com/PrimitiveHub-AI/context-ci/releases/tag/phub-v0.1.0
+[0.1.0]: https://github.com/DevXYZx/primitivehub/releases/tag/phub-v0.1.0

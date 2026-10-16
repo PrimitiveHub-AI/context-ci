@@ -83,11 +83,13 @@ describe("valid fixtures (structural — steps 1 + 2)", () => {
   const fixtures = jsonFiles(VALID_DIR)
   for (const fixture of fixtures) {
     const name = fixture.split("/").pop() ?? fixture
-    it(`accepts ${name}`, async () => {
+    it(`inspects ${name} (but is NOT valid — fail closed until authenticated)`, async () => {
       const bundle = loadBundle(fixture)
       const result = await verifyBundle(bundle, { level: "structural" })
-      expect(result.valid, JSON.stringify(result.failures, null, 2)).toBe(true)
+      expect(result.inspected, JSON.stringify(result.failures, null, 2)).toBe(true)
       expect(result.failures).toEqual([])
+      // SECURITY (PH-SEC-001): inspection passing NEVER means valid.
+      expect(result.valid).toBe(false)
     })
   }
 })
@@ -103,9 +105,10 @@ describe("fail-closed invariant: nothing is authenticated in v0.1", () => {
   for (const fixture of fixtures) {
     const name = fixture.split("/").pop() ?? fixture
     for (const level of ["structural", "policy", "full"] as const) {
-      it(`${name} is NOT authenticated at level=${level}`, async () => {
+      it(`${name} is NOT authenticated and NOT valid at level=${level}`, async () => {
         const result = await verifyBundle(loadBundle(fixture), { level })
         expect(result.authenticated).toBe(false)
+        expect(result.valid).toBe(false) // valid === inspected && authenticated
       })
     }
   }
@@ -116,37 +119,40 @@ describe("fail-closed invariant: nothing is authenticated in v0.1", () => {
 // predicate is rejected by default policy.
 // ─────────────────────────────────────────────────────────────────────
 describe("policy verification (step 7)", () => {
-  it("rejects predicate-with-fail under default policy", async () => {
+  it("rejects predicate-with-fail under default policy (not inspected, not valid)", async () => {
     const fixture = join(VALID_DIR, "04-predicate-with-fail.json")
     const result = await verifyBundle(loadBundle(fixture), { level: "policy" })
+    expect(result.inspected).toBe(false)
     expect(result.valid).toBe(false)
     expect(result.failures.some((f) => f.code === "POLICY_REJECTED")).toBe(true)
   })
 
-  it("accepts predicate-with-fail when the failing detector is allow-listed", async () => {
+  it("inspects predicate-with-fail when the failing detector is allow-listed (still not valid)", async () => {
     const fixture = join(VALID_DIR, "04-predicate-with-fail.json")
     const result = await verifyBundle(loadBundle(fixture), {
       level: "policy",
       policy: { allowFailFor: ["t5.unsafe_shell_install"] },
     })
-    expect(result.valid).toBe(true)
+    expect(result.inspected).toBe(true)
+    expect(result.valid).toBe(false) // inspection passed, but unauthenticated → not valid
   })
 
-  it("accepts populated-predicate-all-pass under default policy", async () => {
+  it("inspects populated-predicate-all-pass under default policy (not valid)", async () => {
     const fixture = join(VALID_DIR, "02-populated-predicate-all-pass.json")
     const result = await verifyBundle(loadBundle(fixture), { level: "policy" })
-    expect(result.valid).toBe(true)
+    expect(result.inspected).toBe(true)
+    expect(result.valid).toBe(false) // inspected, but unauthenticated → fail closed
   })
 
-  it("treats WARN as fail in strict mode", async () => {
+  it("treats WARN as fail in strict mode (via `inspected`)", async () => {
     const fixture = join(VALID_DIR, "03-predicate-with-warn.json")
     const lenient = await verifyBundle(loadBundle(fixture), { level: "policy" })
-    expect(lenient.valid).toBe(true)
+    expect(lenient.inspected).toBe(true)
     const strict = await verifyBundle(loadBundle(fixture), {
       level: "policy",
       policy: { strict: true },
     })
-    expect(strict.valid).toBe(false)
+    expect(strict.inspected).toBe(false)
   })
 })
 

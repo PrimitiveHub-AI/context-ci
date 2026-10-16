@@ -46,3 +46,23 @@ export const DETECTORS: readonly Detector[] = [
 export function detectorByName(name: string): Detector | undefined {
   return DETECTORS.find((d) => d.name === name || d.cciId === name || d.threatCategory === name)
 }
+
+/** One detector's identity in the coverage manifest. */
+export interface DetectorCoverageEntry {
+  cciId: string
+  name: string
+  threatCategory: string
+}
+
+/**
+ * Machine-readable detector coverage (PH-SEC-004) — the roster the
+ * installed package ACTUALLY runs, derived from the live `DETECTORS`
+ * registry, not a documentation claim. A release-level test
+ * (`test/detector-coverage.test.ts`) asserts this equals the advertised
+ * Context CI Top 10 (CCI-001…010); a dropped detector fails CI rather
+ * than silently shrinking runtime coverage behind an unchanged "10/10"
+ * claim.
+ */
+export function detectorCoverage(): DetectorCoverageEntry[] {
+  return DETECTORS.map((d) => ({ cciId: d.cciId, name: d.name, threatCategory: d.threatCategory }))
+}

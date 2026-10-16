@@ -169,11 +169,13 @@ describe("phub verify", () => {
   beforeEach(() => { io = captureIo() })
   afterEach(() => { io.restore() })
 
-  it("exit 0 on the canonical valid bundle, but reports NOT authenticated (v0.1 stubs crypto)", async () => {
+  it("exit 1 (fail closed) on an inspected-but-unauthenticated bundle, labelled NOT authenticated", async () => {
     const code = await main(["verify", VALID_BUNDLE])
-    expect(code).toBe(0)
-    // SECURITY: a policy-level pass must NOT read as "verified"/trusted.
+    // SECURITY (PH-SEC-001): inspection-only is NOT a pass. Non-zero exit,
+    // and the output must never read as "verified"/trusted.
+    expect(code).toBe(1)
     expect(io.stdout).toMatch(/INSPECTED — NOT cryptographically authenticated/)
+    expect(io.stdout).not.toMatch(/\bverified\b/i)
   })
 
   it("exit 1 on the canonical digest-mismatch bundle with DIGEST_MISMATCH code", async () => {
