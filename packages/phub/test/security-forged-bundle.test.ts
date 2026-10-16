@@ -48,10 +48,14 @@ function forgedBundle(): Record<string, unknown> {
 }
 
 describe("SECURITY: forged Trust Bundle must never be trusted", () => {
-  it("documents the library hole: verifyBundle('policy') accepts the forgery as valid", async () => {
+  it("verifyBundle FAILS CLOSED on the forgery even at default 'policy' (never valid without auth)", async () => {
     const r = await verifyBundle(forgedBundle(), { level: "policy" })
-    expect(r.valid).toBe(true) // ← the vulnerability: valid without authentication
-    expect(isBundleAuthenticated(r)).toBe(false) // ← our gate sees through it
+    // PH-SEC-001 fix: `valid` is the trust verdict and it fails closed —
+    // the forgery is well-formed (inspected) but NEVER `valid`, even to a
+    // third party that only checks `.valid`.
+    expect(r.valid).toBe(false)
+    expect(r.inspected).toBe(true) // the trap: forgeries pass inspection
+    expect(isBundleAuthenticated(r)).toBe(false)
   })
 
   it("isBundleAuthenticated is false at EVERY level for the forgery (fail closed)", async () => {

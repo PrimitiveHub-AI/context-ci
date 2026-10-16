@@ -47,7 +47,8 @@ describe("verify_bundle tool", () => {
     // fail closed (isError) + surface authenticated:false.
     expect(res.isError).toBe(true)
     const payload = JSON.parse(res.content[0]!.text)
-    expect(payload.valid).toBe(true)
+    expect(payload.valid).toBe(false) // fail closed: valid === inspected && authenticated
+    expect(payload.inspected).toBe(true) // the bytes are well-formed (the trap)
     expect(payload.authenticated).toBe(false)
     expect(payload.trust).toBe("INSPECTED_NOT_AUTHENTICATED")
   })
@@ -57,7 +58,7 @@ describe("verify_bundle tool", () => {
     const res = await callVerifyBundle({ bundle })
     expect(res.isError).toBe(true)
     const payload = JSON.parse(res.content[0]!.text)
-    expect(payload.valid).toBe(true)
+    expect(payload.valid).toBe(false)
     expect(payload.authenticated).toBe(false)
   })
 

@@ -146,7 +146,7 @@ describe("verify_before_load — bundle integration", () => {
     expect(payload.safe).toBe(false)
     expect(payload.reasons.some((r) => r.code === "BUNDLE_UNAUTHENTICATED")).toBe(true)
     const bundleCheck = (payload.checks as { bundle: { valid: boolean; authenticated: boolean } }).bundle
-    expect(bundleCheck.valid).toBe(true)
+    expect(bundleCheck.valid).toBe(false) // fail closed
     expect(bundleCheck.authenticated).toBe(false)
   })
 

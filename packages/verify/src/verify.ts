@@ -53,25 +53,37 @@ export interface VerifyOptions {
 
 export interface VerificationResult {
   /**
-   * The requested inspection level's checks passed (schema + digest
-   * [+ policy]). SECURITY: `valid` does NOT mean the bundle is
-   * authentic — at `structural`/`policy` it authenticates nothing and is
-   * forgeable (see the 2026-09-30 report). NEVER make a trust decision
-   * on `valid`; gate on `authenticated`.
+   * TRUSTED: the bundle is both inspected AND cryptographically
+   * authenticated — i.e. `valid === inspected && authenticated`.
+   *
+   * SECURITY (PH-SEC-001 / forged-bundle report): `valid` is the single
+   * trust verdict and it **fails closed**. Because v0.1 stubs the crypto
+   * (steps 3-6), `authenticated` is always false, so **`valid` is always
+   * false in v0.1** — a structural/policy pass alone is NEVER reported as
+   * valid. A forged, digest-consistent bundle therefore never comes back
+   * `valid:true`, even to a third party that only checks this field.
    */
   valid: boolean
   /**
+   * The requested level's NON-cryptographic checks passed (schema +
+   * content-digest [+ Context CI policy]). This is an inspection signal,
+   * NOT a trust signal: a forged bundle passes inspection. Use it for
+   * diagnostics ("the bytes are well-formed and self-consistent"), never
+   * as authorization.
+   */
+  inspected: boolean
+  /**
    * The bundle was cryptographically authenticated end-to-end — the
    * in-toto statement, signature, certificate chain, and Rekor inclusion
-   * proof all actually verified. This is the ONLY field a trust decision
-   * (install / runtime load) may gate on.
+   * proof all actually verified.
    *
    * v0.1 stubs steps 3-6, so this is ALWAYS `false` today: the library
    * fails closed. When v0.2 wires real Sigstore crypto, a genuinely
-   * signed bundle verified at `full` level will set this `true`.
+   * signed bundle verified at `full` level sets this (and thus `valid`)
+   * `true`.
    */
   authenticated: boolean
-  /** All failures detected. Empty when valid. */
+  /** All failures detected. Empty when inspected + authenticated. */
   failures: VerificationFailure[]
   /** Echo back what level was actually evaluated. */
   level: VerificationLevel
@@ -104,7 +116,7 @@ export async function verifyBundle(
   const schemaResult = validateAgainstSchema(bundle, TRUST_BUNDLE_SCHEMA)
   failures.push(...schemaResult.failures)
   if (!schemaResult.valid) {
-    return { valid: false, authenticated: false, failures, level, deferredSteps }
+    return { valid: false, inspected: false, authenticated: false, failures, level, deferredSteps }
   }
 
   // Past schema we can narrow the type.
@@ -122,7 +134,7 @@ export async function verifyBundle(
       path: "content.bytesB64",
       cause,
     })
-    return { valid: false, authenticated: false, failures, level, deferredSteps }
+    return { valid: false, inspected: false, authenticated: false, failures, level, deferredSteps }
   }
 
   if (contentBytes.byteLength !== b.content.sizeBytes) {
@@ -132,7 +144,7 @@ export async function verifyBundle(
       message: `decoded content is ${contentBytes.byteLength} bytes; sizeBytes claims ${b.content.sizeBytes}`,
       path: "content.sizeBytes",
     })
-    return { valid: false, authenticated: false, failures, level, deferredSteps }
+    return { valid: false, inspected: false, authenticated: false, failures, level, deferredSteps }
   }
 
   let expectedHex: string
@@ -146,7 +158,7 @@ export async function verifyBundle(
       path: "subject.contentDigest",
       cause,
     })
-    return { valid: false, authenticated: false, failures, level, deferredSteps }
+    return { valid: false, inspected: false, authenticated: false, failures, level, deferredSteps }
   }
 
   const actualHex = await sha256Hex(contentBytes)
@@ -157,12 +169,14 @@ export async function verifyBundle(
       message: `content sha256 does not match subject.contentDigest (got ${actualHex}, expected ${expectedHex})`,
       path: "subject.contentDigest",
     })
-    return { valid: false, authenticated: false, failures, level, deferredSteps }
+    return { valid: false, inspected: false, authenticated: false, failures, level, deferredSteps }
   }
 
   if (level === "structural") {
     // structural/policy never attempt crypto → never authenticated.
-  return { valid: failures.length === 0, authenticated: false, failures, level, deferredSteps }
+  // inspection passed/failed per `failures`; authenticated=false in v0.1,
+  // so valid = inspected && authenticated = false (fail closed).
+  return { valid: false, inspected: failures.length === 0, authenticated: false, failures, level, deferredSteps }
   }
 
   // ── Steps 3–6 (deferred in v0.1) ────────────────────────────────
@@ -192,10 +206,11 @@ export async function verifyBundle(
       message: "v0.1 does not yet verify Rekor Merkle inclusion proofs",
       path: "attestation.rekorInclusionProofJson",
     })
-    // Full-level: steps 3-6 are stubbed, so nothing was authenticated.
-    // Fail closed. v0.2 replaces the deferred pushes above with real
-    // Sigstore verification and sets authenticated = (failures.length === 0).
-    return { valid: false, authenticated: false, failures, level, deferredSteps }
+    // Full-level: schema+digest passed (inspected), but steps 3-6 are
+    // stubbed so nothing was authenticated. valid = inspected && auth =
+    // false → fail closed. v0.2 replaces the deferred pushes above with
+    // real Sigstore verification and sets authenticated accordingly.
+    return { valid: false, inspected: true, authenticated: false, failures, level, deferredSteps }
   }
 
   // ── Step 7: Context CI policy ──────────────────────────────────
@@ -214,5 +229,7 @@ export async function verifyBundle(
   }
 
   // structural/policy never attempt crypto → never authenticated.
-  return { valid: failures.length === 0, authenticated: false, failures, level, deferredSteps }
+  // inspection passed/failed per `failures`; authenticated=false in v0.1,
+  // so valid = inspected && authenticated = false (fail closed).
+  return { valid: false, inspected: failures.length === 0, authenticated: false, failures, level, deferredSteps }
 }
