@@ -266,15 +266,18 @@ describe("phub audit (CLI via main)", () => {
     expect(code).toBe(0)
   })
 
-  it("--max-files truncates and reports the truncation in human output", async () => {
+  it("--max-files truncation fails closed (exit 2, cannot certify clean)", async () => {
+    // R04: a truncated walk leaves artifacts un-scanned. Reporting exit 0
+    // would certify a tree we never fully examined. Fail closed instead.
     const files: Record<string, string> = {}
     for (let i = 0; i < 12; i++) {
       files[`primitives/p${i}.md`] = CLEAN_FIXTURE_TEXT
     }
     root = makeTree(files)
     const code = await main(["audit", root, "--max-files", "3"])
-    expect(code).toBe(0)
+    expect(code).toBe(2)
     expect(io.stdout).toMatch(/file-limit reached/)
+    expect(io.stderr).toMatch(/INCOMPLETE COVERAGE/)
   })
 
   it("rejects --max-files=<non-positive>", async () => {

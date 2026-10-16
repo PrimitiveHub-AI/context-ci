@@ -45,11 +45,25 @@ async function consumeIfTrusted(bundleJson: string, signedContent: () => void) {
     throw new Error(`Trust Bundle rejected: ${result.failures[0]?.code}`)
   }
 
-  // The bundle's content hash, schema, and Context CI policy all checked out.
-  // Safe to consume the primitive.
+  // Reached only when the bundle is inspected AND cryptographically
+  // authenticated. v0.1 stubs the crypto (steps 3-6), so `valid` is always
+  // false and this branch is unreachable until signatures land in v0.2 —
+  // fail-closed by design (see the note below).
   signedContent()
 }
 ```
+
+> **v0.1 semantics — read before you branch on a field.** `valid` is `true`
+> only when the bundle is both **inspected** (schema + content digest + Context
+> CI policy all OK) *and* **authenticated** (Sigstore signature + cert chain +
+> Rekor inclusion). v0.1 stubs the cryptographic steps, so `authenticated` —
+> and therefore `valid` — is **always `false`**. This is deliberate: a forged,
+> digest-consistent bundle must never read as `valid`. If you are building
+> against v0.1 and knowingly accept an *unauthenticated* bundle, branch on
+> `result.inspected` **explicitly** and understand you are trusting content
+> that has not been cryptographically authenticated. Never paper over a
+> `valid === false` by silently falling back to `inspected` — that is the
+> exact footgun this split exists to prevent.
 
 ## Verification levels
 

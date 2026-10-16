@@ -131,6 +131,11 @@ export function runAudit(rootPathArg: string, opts: AuditOptions): AuditResult {
   }
 
   const walked = walk(root, walkOpts)
+  // SECURITY (R04): coverage is complete only if the walker exhausted the
+  // tree. maxFiles truncation OR a subtree skipped past maxDepth means
+  // un-scanned artifacts may exist — fail closed downstream. Deliberate
+  // skips (skip-list / hidden dirs / symlinks) do NOT count against coverage.
+  const coverageComplete = !walked.truncated && !walked.skipped.some((s) => s.reason === "depth")
   const detectors = selectDetectors(opts.detectors)
   const lockMode: LockMode = opts.lockMode ?? "off"
   const skipScanning = lockMode === "lock-only"
@@ -239,8 +244,11 @@ export function runAudit(rootPathArg: string, opts: AuditOptions): AuditResult {
       // "update" always writes to disk.
       // "lock-only" writes to disk UNLESS paired with --json (in which
       // case the command layer streams the lock to stdout instead).
+      // SECURITY (R04): never persist a lock built from an incomplete walk —
+      // it would bake "clean / known" for artifacts we never examined, and a
+      // later --check-lock would pass against a lock that silently omits them.
       const writeToDisk = !(lockMode === "lock-only" && opts.json)
-      if (writeToDisk) writeLock(lockPath, currentLock)
+      if (writeToDisk && coverageComplete) writeLock(lockPath, currentLock)
       lockState = {
         mode: "update",
         lockPath,
@@ -268,11 +276,25 @@ export function runAudit(rootPathArg: string, opts: AuditOptions): AuditResult {
     skipped: walked.skipped,
     uncovered,
     truncated: walked.truncated,
+    coverageComplete,
     summary,
     lockState,
     scanClean,
     exitCode,
   }
+}
+
+/** Actionable fail-closed message for an audit whose walk didn't cover the tree. */
+function incompleteCoverageMessage(result: AuditResult, opts: AuditOptions): string {
+  const bits: string[] = []
+  if (result.truncated) bits.push(`file cap reached (--max-files=${opts.maxFiles})`)
+  const depthSkips = result.skipped.filter((s) => s.reason === "depth").length
+  if (depthSkips > 0) bits.push(`${depthSkips} subtree(s) skipped past --max-depth=${opts.maxDepth}`)
+  return (
+    `phub audit: INCOMPLETE COVERAGE — ${bits.join("; ")}. ` +
+    `Un-scanned artifacts may exist, so this audit cannot certify the tree clean and no lock was written. ` +
+    `Raise the caps (--max-files / --max-depth) or audit a narrower path, then re-run.\n`
+  )
 }
 
 function doCheckLock(lockPath: string, currentLock: PhubLock): AuditLockState {
@@ -335,8 +357,13 @@ export function auditCommand(rootArg: string | undefined, opts: AuditOptions): n
     return 2
   }
 
-  // --lock-only with --json redirects the lock JSON to stdout.
+  // SECURITY (R04): a --lock-only --json stream built from an incomplete
+  // walk would emit a partial lock as authoritative. Refuse before streaming.
   if (opts.lockMode === "lock-only" && opts.json && result.lockState?.lock) {
+    if (!result.coverageComplete) {
+      process.stderr.write(incompleteCoverageMessage(result, opts))
+      return 2
+    }
     process.stdout.write(serializeLock(result.lockState.lock))
     return result.exitCode
   }
@@ -360,6 +387,7 @@ export function auditCommand(rootArg: string | undefined, opts: AuditOptions): n
           skipped: result.skipped,
           uncovered: result.uncovered,
           truncated: result.truncated,
+          coverageComplete: result.coverageComplete,
           summary: result.summary,
           lock: result.lockState
             ? {
@@ -376,6 +404,14 @@ export function auditCommand(rootArg: string | undefined, opts: AuditOptions): n
     )
   } else {
     process.stdout.write(renderAuditHumanReport(result) + "\n")
+  }
+
+  // SECURITY (R04): fail closed — an incomplete walk cannot certify "clean".
+  // The report above still shows what WAS found; the exit code tells the
+  // truth about coverage so CI and `verify-before-load` don't trust a 0.
+  if (!result.coverageComplete) {
+    process.stderr.write(incompleteCoverageMessage(result, opts))
+    return 2
   }
 
   return result.exitCode
