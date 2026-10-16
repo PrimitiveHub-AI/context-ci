@@ -93,6 +93,25 @@ describe("valid fixtures (structural — steps 1 + 2)", () => {
 })
 
 // ─────────────────────────────────────────────────────────────────────
+// SECURITY (forged-bundle report, 2026-09-30): "valid" authenticates
+// nothing. No fixture — not even a well-formed, policy-passing one — may
+// ever report authenticated:true while steps 3-6 crypto are stubbed. The
+// library fails closed. This is part of the executable contract.
+// ─────────────────────────────────────────────────────────────────────
+describe("fail-closed invariant: nothing is authenticated in v0.1", () => {
+  const fixtures = jsonFiles(VALID_DIR)
+  for (const fixture of fixtures) {
+    const name = fixture.split("/").pop() ?? fixture
+    for (const level of ["structural", "policy", "full"] as const) {
+      it(`${name} is NOT authenticated at level=${level}`, async () => {
+        const result = await verifyBundle(loadBundle(fixture), { level })
+        expect(result.authenticated).toBe(false)
+      })
+    }
+  }
+})
+
+// ─────────────────────────────────────────────────────────────────────
 // Policy-level verification: a fixture with a FAIL verdict in its
 // predicate is rejected by default policy.
 // ─────────────────────────────────────────────────────────────────────

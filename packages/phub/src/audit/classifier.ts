@@ -38,7 +38,7 @@ export type ArtifactClass = (typeof ARTIFACT_CLASSES)[number]
 
 /**
  * Classes whose content is markdown/plain-text and therefore scannable
- * with the current T1/T2/T5 detector roster. The remaining classes
+ * with the Context CI Top 10 detector roster. The remaining classes
  * (e.g. `mcp-config`) are classified for inventory but get their own
  * detector family in a future PR.
  */

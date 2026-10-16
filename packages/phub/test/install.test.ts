@@ -115,11 +115,12 @@ describe("runInstall — --bundle source (local file)", () => {
       json: false,
       workspaceRoot: ws,
       bundlePath: VALID_BUNDLE,
+      allowUnauthenticated: true, // v0.1 stubs crypto; no bundle can authenticate
     })
     expect(result.exitCode).toBe(0)
     expect(result.source.kind).toBe("bundle-path")
     expect(result.attestation).toBe(`local:${VALID_BUNDLE}`)
-    expect(result.verification.valid).toBe(true)
+    expect(result.verification.level).toBe("full")
     expect(existsSync(result.installedPath)).toBe(true)
     expect(result.workspaceRelativePath).toBe(
       ".primitivehub/installed/primitives/minimal-primitive/0.1.0/primitive.md",
@@ -134,20 +135,21 @@ describe("runInstall — --bundle source (local file)", () => {
 
   it("refuses ALREADY_INSTALLED on re-install without --force", async () => {
     const ws = makeTmpWorkspace()
-    await runInstall({ json: false, workspaceRoot: ws, bundlePath: VALID_BUNDLE })
+    await runInstall({ json: false, workspaceRoot: ws, bundlePath: VALID_BUNDLE, allowUnauthenticated: true })
     await expect(
-      runInstall({ json: false, workspaceRoot: ws, bundlePath: VALID_BUNDLE }),
+      runInstall({ json: false, workspaceRoot: ws, bundlePath: VALID_BUNDLE, allowUnauthenticated: true }),
     ).rejects.toThrow(/already exists/)
   })
 
   it("accepts re-install with --force", async () => {
     const ws = makeTmpWorkspace()
-    await runInstall({ json: false, workspaceRoot: ws, bundlePath: VALID_BUNDLE })
+    await runInstall({ json: false, workspaceRoot: ws, bundlePath: VALID_BUNDLE, allowUnauthenticated: true })
     const result = await runInstall({
       json: false,
       workspaceRoot: ws,
       bundlePath: VALID_BUNDLE,
       force: true,
+      allowUnauthenticated: true,
     })
     expect(result.exitCode).toBe(0)
   })
@@ -171,6 +173,7 @@ describe("runInstall — --bundle source (local file)", () => {
       workspaceRoot: ws,
       bundlePath: VALID_BUNDLE,
       noLock: true,
+      allowUnauthenticated: true,
     })
     expect(result.lockPath).toBeNull()
     expect(existsSync(join(ws, ".primitivehub/phub.lock"))).toBe(false)
@@ -215,10 +218,11 @@ describe("runInstall — --url + slug@semver via local http fixture", () => {
       json: false,
       workspaceRoot: ws,
       bundleUrl: url,
+      allowUnauthenticated: true,
     })
     expect(result.source.kind).toBe("url")
     expect(result.attestation).toBe(`url:${url}`)
-    expect(result.verification.valid).toBe(true)
+    expect(result.verification.level).toBe("full")
     expect(existsSync(result.installedPath)).toBe(true)
   })
 
@@ -229,10 +233,11 @@ describe("runInstall — --url + slug@semver via local http fixture", () => {
       workspaceRoot: ws,
       slugSemver: "minimal-primitive@0.1.0",
       registry: baseUrl,
+      allowUnauthenticated: true,
     })
     expect(result.source.kind).toBe("registry")
     expect(result.attestation).toBe("registry:minimal-primitive@0.1.0")
-    expect(result.verification.valid).toBe(true)
+    expect(result.verification.level).toBe("full")
   })
 
   it("returns FETCH_HTTP_ERROR on 404", async () => {

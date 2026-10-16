@@ -169,10 +169,11 @@ describe("phub verify", () => {
   beforeEach(() => { io = captureIo() })
   afterEach(() => { io.restore() })
 
-  it("exit 0 on the canonical valid bundle", async () => {
+  it("exit 0 on the canonical valid bundle, but reports NOT authenticated (v0.1 stubs crypto)", async () => {
     const code = await main(["verify", VALID_BUNDLE])
     expect(code).toBe(0)
-    expect(io.stdout).toMatch(/Trust Bundle verified/)
+    // SECURITY: a policy-level pass must NOT read as "verified"/trusted.
+    expect(io.stdout).toMatch(/INSPECTED — NOT cryptographically authenticated/)
   })
 
   it("exit 1 on the canonical digest-mismatch bundle with DIGEST_MISMATCH code", async () => {
@@ -261,16 +262,22 @@ describe("phub top-level", () => {
   afterEach(() => { io.restore() })
 
   it("prints help with no args (exit 0)", async () => {
+    const pkg = JSON.parse(readFileSync(join(REPO_ROOT, "packages/phub/package.json"), "utf8")) as {
+      version: string
+    }
     const code = await main([])
     expect(code).toBe(0)
-    expect(io.stdout).toMatch(/phub 0\.1\.0/)
+    expect(io.stdout).toContain(`phub ${pkg.version} — PrimitiveHub CLI`)
     expect(io.stdout).toMatch(/Commands:/)
   })
 
-  it("`version` subcommand prints version", async () => {
+  it("`version` subcommand prints the package.json version", async () => {
+    const pkg = JSON.parse(readFileSync(join(REPO_ROOT, "packages/phub/package.json"), "utf8")) as {
+      version: string
+    }
     const code = await main(["version"])
     expect(code).toBe(0)
-    expect(io.stdout.trim()).toBe("0.1.0")
+    expect(io.stdout.trim()).toBe(pkg.version)
   })
 
   it("--help prints help (exit 0)", async () => {

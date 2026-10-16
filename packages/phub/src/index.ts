@@ -67,11 +67,18 @@ export {
   type VerifyCbomOptions,
 } from "./cbom/verify.js"
 export {
+  isBundleAuthenticated,
+  unauthenticatedBundleMessage,
+  UNAUTHENTICATED_BUNDLE_CODE,
+} from "./trust/authentication.js"
+export {
   verifyBeforeLoad,
+  hasBlockingReason,
   type VerifyBeforeLoadOptions,
   type VerifyBeforeLoadResult,
   type VerifyBeforeLoadReason,
   type VerifyBeforeLoadReasonCode,
+  type VerifyBeforeLoadReasonTier,
   type VerifyBeforeLoadChecks,
 } from "./commands/verify-before-load.js"
 export {

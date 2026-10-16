@@ -10,6 +10,10 @@
  *   2  usage error, file not found, parse error
  */
 
+import { readFileSync } from "node:fs"
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
+
 import { parseArgs, UsageError, type FlagSpec } from "./argv.js"
 import { auditCommand } from "./commands/audit.js"
 import { cbomCommand } from "./commands/cbom.js"
@@ -17,9 +21,19 @@ import { initCommand } from "./commands/init.js"
 import { installCommand } from "./commands/install.js"
 import { scanCommand } from "./commands/scan.js"
 import { verifyCommand } from "./commands/verify.js"
+import { verifyBeforeLoadCommand } from "./commands/verify-before-load-cli.js"
 import { watchCommand } from "./commands/watch.js"
 
-const VERSION = "0.1.0"
+/** Single source of truth: the package's own version, read at runtime. */
+const VERSION: string = (() => {
+  try {
+    const pkgPath = join(dirname(fileURLToPath(import.meta.url)), "..", "package.json")
+    const v = (JSON.parse(readFileSync(pkgPath, "utf8")) as { version?: string }).version
+    return typeof v === "string" ? v : "0.0.0"
+  } catch {
+    return "0.0.0"
+  }
+})()
 
 const HELP_TEXT = `phub ${VERSION} — PrimitiveHub CLI
 
@@ -36,8 +50,12 @@ Commands:
   cbom [path]          Emit a Context Bill of Materials (CBOM v0.1) for the
                        workspace. ADR-0033. JSON inventory of every
                        agent-context artifact.
-  scan <file>          Scan a markdown file for Context CI Top 10 patterns (T1/T2/T5 in v0.1)
+  scan <file>          Scan a markdown file for Context CI Top 10 patterns (all ten detectors)
   verify <bundle>      Verify a Trust Bundle JSON file (wraps @primitivehub/verify)
+  verify-before-load <path...>
+                       The inline Context Firewall — the composite runtime gate.
+                       Refuses-by-default: BLOCKS on tamper/drift/scanner findings,
+                       WARNS on unsealed. Same engine as the MCP tool + CI action.
   init                 Write a starter AGENTS.md in the current directory
   help [command]       Show help (general or per-command)
   version              Print version
@@ -50,14 +68,14 @@ Global flags:
 Run 'phub help <command>' for per-command options.
 
 Docs:
-  https://github.com/PrimitiveHub-AI/context-ci/tree/main/packages/phub
+  https://github.com/DevXYZx/primitivehub/tree/main/packages/phub
 `
 
 const SCAN_HELP = `phub scan <file>
 
 Scan a markdown file (typically AGENTS.md) for Context CI Top 10
-detector matches. Runs T1 prompt-injection, T2 Unicode-steganography,
-and T5 unsafe-shell-install detectors in v0.1.
+detector matches. Runs all ten detectors (CCI-001…010) by default;
+restrict with --detector.
 
 Flags:
   --json                Output JSON (includes policySource + policyAllowed)
@@ -109,6 +127,43 @@ Exit codes:
   0   bundle verified at the requested level
   1   bundle rejected
   2   usage error / file not readable / JSON parse error
+`
+
+const VERIFY_BEFORE_LOAD_HELP = `phub verify-before-load <path...>
+
+The inline Context Firewall. Run the composite runtime gate over one or
+more agent-context artifacts (AGENTS.md, CLAUDE.md, .cursorrules, …)
+BEFORE an agent loads them. Refuses-by-default (ADR-0029): combines the
+lock/drift check and the Context CI Top 10 scanners into one crisp
+verdict per path. The same engine backs the MCP 'verify_before_load'
+tool and the phub-scan action's gate mode — one gate, three transports.
+
+Each path resolves to exactly one verdict:
+  SAFE      sealed, digest matches the lock, scanners clean
+  BLOCKED   a block-tier signal: tamper / drift (PATH_DIGEST_MISMATCH),
+            a live scanner finding (PATH_FLAGGED_BY_SCANNER), a spec
+            mismatch, or a demanded-but-absent attestation
+  UNSEALED  posture-only: the artifact simply is not in the lock yet
+            (LOCK_MISSING / PATH_NOT_IN_LOCK). Blocks unless
+            --allow-unsealed is set.
+
+Flags:
+  --allow-unsealed       Pass unsealed (posture-only) artifacts with a
+                         warning instead of blocking. For dev / first run.
+                         Block-tier signals still fail regardless.
+  --require-attestation  Treat an 'unattested' lock entry as a block-tier
+                         failure. Use when consuming registry primitives.
+  --policy=<path>        Explicit .primitivehub/policy.yaml (else discover).
+  --lock-path=<path>     Explicit lock path (else <root>/.primitivehub/phub.lock).
+  --json                 Output JSON ({gate, blocked, results[]}).
+
+Exit codes:
+  0   every path safe (or unsealed-only under --allow-unsealed)
+  1   at least one path blocked, or unsealed without --allow-unsealed
+  2   usage error (no path given)
+
+Try it now:
+  npx @primitivehub/phub verify-before-load AGENTS.md CLAUDE.md
 `
 
 const AUDIT_HELP = `phub audit [<path>]
@@ -339,6 +394,9 @@ const GLOBAL_SPECS: readonly FlagSpec[] = [
   { name: "subject-name", takesValue: true },
   { name: "format", takesValue: true },
   { name: "verify", takesValue: true },
+  { name: "allow-unsealed" },
+  { name: "require-attestation" },
+  { name: "allow-unauthenticated" },
 ]
 
 function printHelp(command?: string): void {
@@ -360,6 +418,9 @@ function printHelp(command?: string): void {
       return
     case "verify":
       process.stdout.write(VERIFY_HELP)
+      return
+    case "verify-before-load":
+      process.stdout.write(VERIFY_BEFORE_LOAD_HELP)
       return
     case "init":
       process.stdout.write(INIT_HELP)
@@ -540,6 +601,31 @@ export async function main(argv: readonly string[]): Promise<number> {
       })
     }
 
+    case "verify-before-load": {
+      if (asBool(parsed.flags["help"])) {
+        printHelp("verify-before-load")
+        return 0
+      }
+      const paths = parsed.positionals
+      if (paths.length === 0) {
+        process.stderr.write(
+          "phub verify-before-load: missing <path...> argument.\nphub verify-before-load <path...>\n",
+        )
+        return 2
+      }
+      const vblOpts: Parameters<typeof verifyBeforeLoadCommand>[1] = {
+        workspaceRoot: process.cwd(),
+        json: asBool(parsed.flags["json"]),
+        requireAttestation: asBool(parsed.flags["require-attestation"]),
+        allowUnsealed: asBool(parsed.flags["allow-unsealed"]),
+      }
+      const vblPolicy = asString(parsed.flags["policy"])
+      if (vblPolicy !== undefined) vblOpts.policyPath = vblPolicy
+      const vblLock = asString(parsed.flags["lock-path"])
+      if (vblLock !== undefined) vblOpts.lockPath = vblLock
+      return verifyBeforeLoadCommand(paths, vblOpts)
+    }
+
     case "watch": {
       if (asBool(parsed.flags["help"])) {
         printHelp("watch")
@@ -665,6 +751,7 @@ export async function main(argv: readonly string[]): Promise<number> {
         json: asBool(parsed.flags["json"]),
         force: asBool(parsed.flags["force"]),
         noLock: asBool(parsed.flags["no-lock"]),
+        allowUnauthenticated: asBool(parsed.flags["allow-unauthenticated"]),
       } as Parameters<typeof installCommand>[0]
       const bundlePath = asString(parsed.flags["bundle"])
       const bundleUrl = asString(parsed.flags["url"])
