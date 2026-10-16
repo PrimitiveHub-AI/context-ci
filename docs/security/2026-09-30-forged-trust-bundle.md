@@ -26,11 +26,19 @@ to attacker-controlled agent-context content being trusted and loaded/installed.
 (Insufficient Verification of Data Authenticity).
 
 ## Affected packages (npm)
-| Package | Affected | Patched |
+| Package | Affected (vulnerable) | Patched |
 |---|---|---|
-| `@primitivehub/verify` | `< 0.1.1` (i.e. `0.1.0`) | **`0.1.1`** |
-| `@primitivehub/phub` | `< 0.1.2` (`0.1.0`, `0.1.1`) | **`0.1.2`** |
-| `@primitivehub/mcp-server` | `< 0.1.2` (`0.1.0`) | **`0.1.2`** |
+| `@primitivehub/verify` | `< 0.1.2` (`0.1.0`, `0.1.1`) | **`0.1.2`** |
+| `@primitivehub/phub` | `< 0.1.3` (`0.1.0`–`0.1.2`) | **`0.1.3`** |
+| `@primitivehub/mcp-server` | `< 0.1.3` (`0.1.0`, `0.1.2`) | **`0.1.3`** |
+
+> Remediation shipped in two steps. `verify@0.1.1` / `phub@0.1.2` /
+> `mcp@0.1.2` made the **tools** fail closed (install/verify/MCP refuse
+> unauthenticated bundles). `verify@0.1.2` / `phub@0.1.3` / `mcp@0.1.3`
+> complete the fix: `verifyBundle` itself fails closed (`valid` is false
+> unless authenticated), so even a third party reading `.valid` directly is
+> protected. Treat the **fully-patched** boundary as `verify@0.1.2` /
+> `phub@0.1.3` / `mcp@0.1.3`.
 
 Exploitable entry points (all defaulted to `policy`): `phub install`,
 `phub verify`, MCP `verify_bundle`, MCP `verify_before_load` (with a bundle).
