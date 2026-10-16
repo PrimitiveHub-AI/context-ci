@@ -267,6 +267,36 @@ can opt in to looser policies via `.primitivehub/policy.yaml`.
 
 ---
 
+## Security: a lock is drift detection, not approval (PH-SEC-005)
+
+The lock proves **"these bytes are the bytes the operator last sealed."**
+It does **not** prove those bytes are safe, reviewed, or approved by anyone
+other than whoever ran the seal. Two consequences for an admission/gate
+pipeline:
+
+- **`phub audit --update-lock` will seal even when detectors flag content**,
+  and **`--lock-only` skips scanning entirely.** They are developer
+  conveniences for *re-sealing after you've reviewed a change* — they are
+  **not** an approval step.
+- A malicious or mistaken author who can edit the policy, the lock, or the
+  workflow can therefore **re-stamp compromised content** and make the gate
+  pass.
+
+**Do this in a real gate:**
+
+- **Never run `--update-lock` / `--lock-only` in the admission pipeline.**
+  CI verifies against a *committed* lock (`--check-lock`); it does not write
+  one.
+- **Check the scanner AND the lock together** — a drift-clean lock over
+  scanner-flagged content must still fail the job (`phub-scan mode: gate`
+  blocks on block-tier scanner findings regardless of lock state).
+- **Protect the trust-bearing files with CODEOWNERS** — require independent
+  review for `.primitivehub/policy.yaml`, `.primitivehub/phub.lock`, and the
+  scanning workflow. A PR author must not be able to approve their own
+  policy relaxation or re-seal.
+- Pin the `phub` version / action SHA so the sealing + scanning logic itself
+  can't be swapped under you (see the `phub-scan` README § hardening).
+
 ## See also
 
 - [`docs/decisions/0026-phub-lock-format-and-drift-detection.md`](../decisions/0026-phub-lock-format-and-drift-detection.md) — authoritative ADR

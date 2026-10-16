@@ -145,6 +145,38 @@ instead — used by
 to exercise the full Action shape (install → scan → SARIF upload) in CI
 without depending on the registry.
 
+## Coverage & supply-chain hardening (PH-SEC-009)
+
+Two defaults trade safety for convenience — tighten them for production:
+
+**1. Enumerated `files` can miss context the agent will still load.**
+The default `files: 'AGENTS.md CLAUDE.md'` only scans what you list. A
+`.cursorrules`, `.github/copilot-instructions.md`, a `**/SKILL.md`, or a
+`**/primitives/**` file that an agent *does* read won't be scanned unless
+you name it. For real coverage, discover the whole workspace instead of
+enumerating:
+
+```yaml
+# scan EVERY classified agent-context artifact, fail on drift vs the lock:
+- run: npx @primitivehub/phub@0.1.3 audit . --check-lock
+```
+(`phub audit` is the active surface — it finds and classifies every
+agent-context file, not just two. See the CLI reference § `audit`.)
+
+**2. `phub-version: 'latest'` is mutable.** `latest` silently moves, so a
+compromised or yanked release changes what runs in your pipeline and breaks
+reproducibility. For production:
+- **Pin `phub-version`** to an exact version (e.g. `0.1.3`), not `latest`.
+- **Pin the action itself to a commit SHA**, not a moving tag:
+  `uses: primitivehub/context-ci/actions/phub-scan@<40-char-sha>`.
+- Prefer `npm ci` / an integrity-checked install over an unpinned global
+  install when you vendor the CLI yourself.
+
+**3. Sealing ≠ approval.** Never run `--update-lock` / `--lock-only` in the
+gate job (see the lock docs § Security) — the admission pipeline verifies a
+*committed* lock, it doesn't write one, and it must fail on scanner findings
+even when the lock is drift-clean.
+
 ## License
 
 MIT. See [LICENSE](../../LICENSE) (project-wide).
