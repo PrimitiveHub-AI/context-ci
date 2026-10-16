@@ -42,6 +42,7 @@ export type VerifyBeforeLoadReasonCode =
   | "PATH_NOT_IN_LOCK"
   | "PATH_DIGEST_MISMATCH"
   | "PATH_UNATTESTED"
+  | "PATH_UNASSESSED"
   | "PATH_FLAGGED_BY_SCANNER"
 
 /**
@@ -66,6 +67,7 @@ const REASON_TIER: Record<VerifyBeforeLoadReasonCode, VerifyBeforeLoadReasonTier
   LOCK_MISSING: "posture",
   PATH_UNCLASSIFIED: "posture",
   PATH_NOT_IN_LOCK: "posture",
+  PATH_UNASSESSED: "posture",
   LOCK_SPEC_VERSION_MISMATCH: "block",
   PATH_NOT_FOUND: "block",
   PATH_DIGEST_MISMATCH: "block",
@@ -257,6 +259,18 @@ function decide(
         .filter((adj) => adj.verdict.severity === Severity.FAIL && !adj.verdict.passed)
         .map((adj) => adj.verdict.cciId)
       push("PATH_FLAGGED_BY_SCANNER", `'${paths.relativePath}' triggers ${failingIds.join(", ")} (post-policy)`)
+    } else if (!artifact.scanned) {
+      // SECURITY (R05): some classes (mcp-config, aider-config) are classified
+      // and digested for inventory/drift but have NO content detector in v0.1.
+      // "Not scanned" must never read as "safe" — surface it as a posture
+      // signal so a caller demanding safety knows the content was NOT
+      // inspected. Downgradable like any posture reason; the JSON/MCP detector
+      // family lands in a future release. (A text-scannable artifact that was
+      // scanned clean does NOT trip this — only unassessed classes do.)
+      push(
+        "PATH_UNASSESSED",
+        `'${paths.relativePath}' is class '${artifact.classification}', which has no content detector in v0.1 — it was inventoried and digested but its content was NOT scanned. Not inspected is not the same as safe.`,
+      )
     }
   }
 
