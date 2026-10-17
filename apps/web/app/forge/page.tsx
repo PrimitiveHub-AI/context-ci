@@ -29,8 +29,6 @@ import { PlannedBadge } from "@/components/ui/planned-badge"
 import { TrustReadinessPanel } from "@/components/forge/trust-readiness-panel"
 import { ForgeSidePanel } from "@/components/forge/forge-side-panel"
 
-const TARGET_AGENTS = ["Claude Code", "Cursor", "Codex", "Copilot", "v0", "Windsurf"] as const
-
 const sampleMarkdown = `---
 spec_version: "0.1"
 name: my-new-primitive
@@ -129,6 +127,15 @@ export default function ForgePage() {
       fmRisk: fm.ok && typeof fm.data.risk_level === "string" ? fm.data.risk_level : "—",
       fmLicense: fm.ok && typeof fm.data.license === "string" ? fm.data.license : "—",
       fmBudget: fm.ok && typeof fm.data.token_budget === "number" ? fm.data.token_budget : 4000,
+      // Live from the editor — the Agents inspector tab reflects what the
+      // author actually declared, not a static roster. Non-string entries
+      // (malformed YAML) are dropped so the chips never render `[object].
+      fmAgents:
+        fm.ok && Array.isArray(fm.data.compatible_agents)
+          ? fm.data.compatible_agents.filter(
+              (a): a is string => typeof a === "string",
+            )
+          : [],
     }
   }, [content])
 
@@ -420,7 +427,7 @@ export default function ForgePage() {
             <ForgeSidePanel
               sections={allSections}
               findings={analysis.findings}
-              agents={[...TARGET_AGENTS]}
+              agents={analysis.fmAgents}
             />
           </div>
         </div>

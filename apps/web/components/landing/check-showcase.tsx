@@ -196,6 +196,12 @@ export function CheckShowcase() {
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                  e.preventDefault()
+                  handleSubmit()
+                }
+              }}
               rows={4}
               spellCheck={false}
               className="w-full resize-none rounded-lg bg-background/40 border border-border/40 focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30 px-3 py-2.5 font-mono text-[12px] leading-relaxed text-foreground/90"

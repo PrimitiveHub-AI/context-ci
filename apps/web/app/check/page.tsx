@@ -19,7 +19,11 @@ import { CheckForm } from "@/components/check/check-form"
 import { CheckVerdict } from "@/components/check/check-verdict"
 import type { CheckResponse } from "@/lib/check/types"
 
-const STARTER_INPUT = "https://github.com/owner/repo"
+// Start empty: the textarea carries a rich multi-line placeholder, and an
+// empty input keeps the verdict panel in its idle "paste something" state.
+// Seeding a literal `https://github.com/owner/repo` meant a first-time
+// visitor's first click scanned a nonexistent repo and got an error.
+const STARTER_INPUT = ""
 
 export default function CheckPage() {
   const [input, setInput] = useState<string>(STARTER_INPUT)

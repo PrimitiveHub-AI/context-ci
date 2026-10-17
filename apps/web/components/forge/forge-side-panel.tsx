@@ -251,7 +251,38 @@ function LintPanel({ findings }: { findings: ReadonlyArray<LintFinding> }) {
   )
 }
 
+// Display labels for recognized agent slugs. Chips always render the
+// literal frontmatter value; this map only prettifies known ones so an
+// unrecognized slug still shows verbatim (the source of truth wins).
+const AGENT_LABELS: Record<string, string> = {
+  "claude-code": "Claude Code",
+  cursor: "Cursor",
+  codex: "Codex",
+  copilot: "Copilot",
+  v0: "v0",
+  windsurf: "Windsurf",
+}
+
 function AgentsPanel({ agents }: { agents: ReadonlyArray<string> }) {
+  if (agents.length === 0) {
+    return (
+      <div className="rounded-lg border border-amber/20 bg-amber/[0.04] px-3 py-6 text-center">
+        <Info className="inline size-4 text-amber/80 mr-1.5 mb-0.5" />
+        <span className="text-[12px] text-foreground/85">
+          No{" "}
+          <code className="font-mono text-foreground/90">compatible_agents</code>{" "}
+          declared.
+        </span>
+        <p className="mt-2 text-[11px] text-muted-foreground leading-relaxed">
+          Add a{" "}
+          <code className="font-mono text-foreground/80">compatible_agents</code>{" "}
+          list to your frontmatter — e.g.{" "}
+          <code className="font-mono text-foreground/80">claude-code</code>,{" "}
+          <code className="font-mono text-foreground/80">cursor</code>.
+        </p>
+      </div>
+    )
+  }
   return (
     <div>
       <div className="flex flex-wrap gap-1.5">
@@ -261,15 +292,15 @@ function AgentsPanel({ agents }: { agents: ReadonlyArray<string> }) {
             variant="outline"
             className="text-[10px] font-mono border-border/40 text-foreground/80 bg-card/80"
           >
-            {agent}
+            {AGENT_LABELS[agent] ?? agent}
           </Badge>
         ))}
       </div>
       <p className="mt-3 text-[11px] text-muted-foreground leading-relaxed">
         Declared in{" "}
         <code className="font-mono text-foreground/80">compatible_agents</code>{" "}
-        frontmatter. These chips reflect the source of truth — they
-        are not filters and have no click behaviour.
+        frontmatter — live from your editor. These chips reflect the source
+        of truth; they are not filters and have no click behaviour.
       </p>
     </div>
   )
