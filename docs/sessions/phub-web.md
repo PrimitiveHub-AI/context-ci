@@ -90,6 +90,12 @@ default `false`; 5 MCP tools; 10 detectors (CCI-001…010).
 - `/validation` — LEFT: already DemoDataBadge + "Planned · live pipeline" + "when v1 ships".
 
 **Gate:** `pnpm -C apps/web typecheck` clean; 12 routes 200 on :3100, no error markers.
+**DEPLOYED to prod 2026-10-17** via `scripts/deploy.sh local --build` (owner-run): web image
+rebuilt (docs staged in), prod stack healthy, `smoke-prod.sh` PASS on the live edge, api/worker
+untouched. Content verified through Cloudflare (cf-cache-status DYNAMIC): hero "inspect…" live &
+"every byte" gone; `/docs/trust-contract` capability matrix live & "all four" gone;
+`/docs/verify-library` gates on `authenticated`. Commits `bd22b74` (polish) + `2f20f25` (truth).
+Not pushed to origin yet.
 
 **Cross-session flags raised:**
 - → **phub-cli:** their LIVE-01 corrected snippet (reportedly already in the package README) still
