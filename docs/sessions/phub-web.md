@@ -30,8 +30,10 @@ presents `/check` and the `phub` CLI as a new category, not a v0 SaaS toy.
 - [x] Wire live `/check` demo on landing (consume engine output, not mocked). — `CheckShowcase`
       is live against `/api/v1/check` POST+poll with DemoDataBadge warm-start.
 - [x] Credibility pass (no unlabeled numbers — DemoDataBadge / EvaluationLink). — in place.
-- [ ] **P3 deeper hero reframe** — 3-beat scan/author-safe/block triad replacing the 6-verb
-      credibility strip. Deferred to phub-strategy's brand pass; only the subhead clause landed.
+- [x] **P3 hero firewall triad** — SHIPPED 2026-10-17 (`d971b3b`, deployed, live-verified via
+      Cloudflare). 6-verb lifecycle strip → 3-beat Scan(/check)·Author-safe(/forge)·Block-at-load(/docs)
+      linked cards; copy truth-pass accurate (block = fail-closed CI/CLI, advisory MCP). Hero
+      "firewall" reframe complete.
 - [ ] **P4 detector-count** — `/check` page + OG image hardcode "10 detectors" while the hero
       derives it live from `loadLatestEvaluation()`. Left as-is: "Top 10" is definitional, and
       `/check` is a client component that can't reach the server-only loader cleanly. Revisit
