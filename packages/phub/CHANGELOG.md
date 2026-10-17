@@ -6,6 +6,40 @@ Version tracks both Trust Contract spec version (for the verify
 wrapper) and Context CI Top 10 version (for the scanner detectors);
 `0.1.x` of this package is conformant to both v0.1.
 
+## [0.1.6] — 2026-10-17
+
+**Security — fail-closed orchestration (cross-surface source audit, 2026-10-17).**
+Several earlier fixes were layer-local; this release enforces them at the
+shared contract so a successful verdict means the protections actually ran.
+
+### Fixed
+- **PH-20261017-03 (High) — `phub audit` detector selection is now strict.**
+  `--detector=CCI-005 --detector=bogus` silently dropped the unknown id and
+  exited 0. A single strict `resolveDetectors` is now shared by
+  scan/audit/watch/MCP; any unknown id → `UnknownDetectorError` → exit 2.
+- **PH-20261017-02 (High) — installer write-time TOCTOU.** The realpath
+  containment check ran only at plan time; `writeBundleContent` now
+  re-validates immediately before the write and uses `O_EXCL`, so a symlink
+  swapped into the install tree after planning can't redirect the write
+  outside the workspace.
+- **PH-20261017-07 (Med) — in-scope symlink no longer reads as "covered".**
+  A symlink named like an agent-context artifact (e.g. `AGENTS.md` → outside)
+  is skipped by the walker but now lowers `coverageComplete` (unresolved, not
+  absent) — the audit can't certify a tree it couldn't fully assess.
+- **PH-20261017-05 (Med) — installer HTTP timeout covers the body.** The abort
+  timer previously cleared after headers; a stalled body hung the install. The
+  timer now spans the full response and body bytes are capped (16 MB) while
+  streaming.
+
+### Added
+- **`auditCoverage(result)`** — exported shared coverage contract. Every
+  consumer (CLI, MCP, CI) fails closed on `!complete`; underpins the MCP
+  `audit_workspace` fix (PH-20261017-01) in `@primitivehub/mcp-server@0.1.5`.
+
+### Changed
+- `actions/phub-scan`: real glob expansion (globstar/nullglob/dotglob) + a
+  fail-closed zero-coverage invariant (PH-20261017-04) in scan and gate modes.
+
 ## [0.1.5] — 2026-10-17
 
 **Security — detector-evasion fix (cross-surface audit, 2026-10-17).**

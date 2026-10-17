@@ -51,8 +51,8 @@ import {
 } from "../policy/types.js"
 import { renderAuditHumanReport } from "../reporters/audit-human.js"
 import { renderSarifForArtifacts } from "../reporters/sarif.js"
-import { DETECTORS, detectorByName } from "../scanners/registry.js"
-import { Severity, type Detector, type Verdict } from "../scanners/types.js"
+import { resolveDetectors, UnknownDetectorError } from "../scanners/registry.js"
+import { Severity, type Verdict } from "../scanners/types.js"
 
 export type { AuditResult, AuditedArtifact, AuditSummary } from "../audit/types.js"
 
@@ -112,14 +112,6 @@ function applyCliOverridesToPolicy(policy: Policy, opts: AuditOptions): Policy {
   return merged
 }
 
-function selectDetectors(ids: readonly string[] | undefined): readonly Detector[] {
-  if (!ids || ids.length === 0) return DETECTORS
-  const picked = ids
-    .map((id) => detectorByName(id))
-    .filter((d): d is Detector => d !== undefined)
-  return picked.length > 0 ? picked : DETECTORS
-}
-
 /**
  * Core audit logic, decoupled from the CLI for in-process embedders.
  */
@@ -131,12 +123,21 @@ export function runAudit(rootPathArg: string, opts: AuditOptions): AuditResult {
   }
 
   const walked = walk(root, walkOpts)
-  // SECURITY (R04): coverage is complete only if the walker exhausted the
-  // tree. maxFiles truncation OR a subtree skipped past maxDepth means
-  // un-scanned artifacts may exist — fail closed downstream. Deliberate
-  // skips (skip-list / hidden dirs / symlinks) do NOT count against coverage.
-  const coverageComplete = !walked.truncated && !walked.skipped.some((s) => s.reason === "depth")
-  const detectors = selectDetectors(opts.detectors)
+  // SECURITY (R04 + PH-20261017-07): coverage is complete only if the walker
+  // examined the whole in-scope tree. Incomplete when:
+  //   - maxFiles truncation, or a subtree skipped past maxDepth; OR
+  //   - a symlink NAMED like an in-scope agent-context artifact (e.g.
+  //     AGENTS.md → outside) was skipped. We never follow symlinks (good), but
+  //     an in-scope-looking symlink is an UNRESOLVED artifact, not an absence —
+  //     treating it as "covered" lets an attacker hide a malicious file behind
+  //     a symlink while the audit still reports clean+complete.
+  // Benign skips (skip-list dirs, hidden dirs, non-artifact symlinks) do not
+  // lower coverage.
+  const coverageComplete =
+    !walked.truncated &&
+    !walked.skipped.some((s) => s.reason === "depth") &&
+    !walked.skipped.some((s) => s.reason === "symlink" && classify(s.path) !== null)
+  const detectors = resolveDetectors(opts.detectors)
   const lockMode: LockMode = opts.lockMode ?? "off"
   const skipScanning = lockMode === "lock-only"
 
@@ -284,12 +285,57 @@ export function runAudit(rootPathArg: string, opts: AuditOptions): AuditResult {
   }
 }
 
+/**
+ * Shared coverage verdict for an audit result — the fail-closed contract that
+ * EVERY consumer (CLI, MCP, CI) must honor, not just the CLI (SECURITY —
+ * PH-20261017-01). `complete === false` means the walk did not examine the
+ * whole tree (maxFiles truncation or a subtree past maxDepth), so the audit
+ * CANNOT certify "clean" and no consumer may report success (ADR-0029).
+ */
+export interface AuditCoverage {
+  /** True iff the walk examined the whole in-scope tree. */
+  complete: boolean
+  /** maxFiles cap was hit. */
+  truncated: boolean
+  /** Number of subtrees skipped for exceeding maxDepth. */
+  depthSkipped: number
+  /** Human-readable gap description; null when complete. */
+  reason: string | null
+}
+
+/** Compute the shared coverage verdict. Consumers MUST fail closed on `!complete`. */
+export function auditCoverage(result: AuditResult): AuditCoverage {
+  const depthSkipped = result.skipped.filter((s) => s.reason === "depth").length
+  if (result.coverageComplete) {
+    return { complete: true, truncated: result.truncated, depthSkipped, reason: null }
+  }
+  const inScopeSymlinks = result.skipped.filter(
+    (s) => s.reason === "symlink" && classify(s.path) !== null,
+  ).length
+  const bits: string[] = []
+  if (result.truncated) bits.push("file cap (--max-files) reached before the tree was exhausted")
+  if (depthSkipped > 0) bits.push(`${depthSkipped} subtree(s) skipped past --max-depth`)
+  if (inScopeSymlinks > 0) {
+    bits.push(`${inScopeSymlinks} in-scope artifact(s) are symlinks (not followed — unresolved)`)
+  }
+  return {
+    complete: false,
+    truncated: result.truncated,
+    depthSkipped,
+    reason:
+      `incomplete coverage — ${bits.join("; ")}; un-scanned artifacts may exist, ` +
+      `so this audit cannot certify the tree clean`,
+  }
+}
+
 /** Actionable fail-closed message for an audit whose walk didn't cover the tree. */
 function incompleteCoverageMessage(result: AuditResult, opts: AuditOptions): string {
   const bits: string[] = []
   if (result.truncated) bits.push(`file cap reached (--max-files=${opts.maxFiles})`)
   const depthSkips = result.skipped.filter((s) => s.reason === "depth").length
   if (depthSkips > 0) bits.push(`${depthSkips} subtree(s) skipped past --max-depth=${opts.maxDepth}`)
+  const symlinkSkips = result.skipped.filter((s) => s.reason === "symlink" && classify(s.path) !== null).length
+  if (symlinkSkips > 0) bits.push(`${symlinkSkips} in-scope artifact(s) are symlinks (not followed — unresolved)`)
   return (
     `phub audit: INCOMPLETE COVERAGE — ${bits.join("; ")}. ` +
     `Un-scanned artifacts may exist, so this audit cannot certify the tree clean and no lock was written. ` +
@@ -330,6 +376,16 @@ export function auditCommand(rootArg: string | undefined, opts: AuditOptions): n
   try {
     result = runAudit(target, opts)
   } catch (err) {
+    if (err instanceof UnknownDetectorError) {
+      // SECURITY (PH-20261017-03): an unknown --detector id is a usage error
+      // (exit 2), NEVER a silent drop that lets the audit exit 0 on a reduced
+      // roster — identical contract to `phub scan`.
+      process.stderr.write(
+        `phub audit: ${err.message}. A detector selection with an unknown id is refused — ` +
+          `it will not silently run a reduced roster. Valid ids: CCI-001…CCI-010, t1…t10, or threat categories.\n`,
+      )
+      return 2
+    }
     if (err instanceof PolicyLoadError) {
       process.stderr.write(`phub audit: invalid policy at ${err.source}: ${err.message}\n`)
       return 2

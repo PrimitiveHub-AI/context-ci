@@ -13,6 +13,7 @@
 
 import {
   runAudit,
+  auditCoverage,
   type AuditOptions,
   type AuditResult,
   type AuditedArtifact,
@@ -74,10 +75,15 @@ export interface AuditWorkspaceResultText {
 }
 
 function summarize(result: AuditResult): object {
+  const coverage = auditCoverage(result)
   return {
     root: result.root,
     policySource: result.policySource,
     truncated: result.truncated,
+    // SECURITY (PH-20261017-01): surface the coverage verdict so a client can
+    // never read `scanClean` without also seeing that the walk was incomplete.
+    coverageComplete: coverage.complete,
+    coverage,
     scanClean: result.scanClean,
     exitCode: result.exitCode,
     summary: result.summary,
@@ -134,8 +140,13 @@ export function callAuditWorkspace(
     }
   }
 
+  // SECURITY (PH-20261017-01): fail closed on an incomplete walk. The CLI
+  // auditCommand already returns exit 2 for this; the MCP transport must NOT
+  // report success just because `exitCode` (findings/drift only) is 0 — an
+  // audit that didn't examine the whole tree cannot certify it clean.
+  const coverage = auditCoverage(result)
   return {
     content: [{ type: "text", text: JSON.stringify(summarize(result), null, 2) }],
-    isError: result.exitCode !== 0,
+    isError: result.exitCode !== 0 || !coverage.complete,
   }
 }

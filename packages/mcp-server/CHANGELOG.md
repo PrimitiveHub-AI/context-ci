@@ -6,6 +6,20 @@ Version tracks Trust Contract spec version (for `verify_bundle`) and
 Context CI Top 10 version (for `scan_text` / `audit_workspace`);
 `0.1.x` of this package is conformant to both v0.1.
 
+## [0.1.5] — 2026-10-17
+
+**Security (P0) — `audit_workspace` fails closed on an incomplete walk.**
+Requires `@primitivehub/phub@^0.1.6`.
+
+### Fixed
+- **PH-20261017-01 (P0) — incomplete-audit bypass.** `audit_workspace` returned
+  `isError:false` / `scanClean:true` on a truncated walk (e.g. `max_files:1`
+  with a malicious file past the cap) because it trusted `runAudit`'s exitCode
+  (findings/drift only). It now consumes phub's shared `auditCoverage()`
+  contract: `isError` is set and the payload surfaces `coverageComplete` +
+  `coverage` whenever the walk didn't examine the whole tree. An agent can no
+  longer read a clean verdict from an audit that didn't look at everything.
+
 ## [0.1.4] — 2026-10-16
 
 **Security hardening (adversarial red-team, 2026-10-16).** Requires
