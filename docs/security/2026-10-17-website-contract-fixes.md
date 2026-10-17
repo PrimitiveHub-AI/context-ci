@@ -64,6 +64,16 @@ Swap the "all four verify" prose + Sigstore screenshot for the capability matrix
 above. State the version it reflects. Keep the CLI/Action forms consistent with
 `/docs/github-action` (`files:`, not `paths:`) and the real `phub verify` surface.
 
+### Homepage — PH-20261017-11 (high: "every byte" + Sigstore-success vignette)
+The homepage says it **verifies every context byte before agents read it** and
+shows a **successful Sigstore/Rekor** verification in an install vignette. Both
+overclaim the installable release: the MCP gate is advisory (not an on-access
+"every byte" interposition), and Sigstore/Rekor are stubbed (v0.2). Replace with
+the capability matrix language and, for the "every byte" line, say what is true:
+*"inspects every discovered agent-context artifact (lock + Top 10) — advisory;
+host-enforced on-access gating and cryptographic authentication land in v0.2."*
+Do not render a passing Sigstore/Rekor result as a current capability.
+
 ### `/docs/mcp-server` — LIVE-02 (high: advisory presented as mandatory)
 Align with the (now corrected) README: `verify_before_load` is **advisory** — the
 agent invokes it; it is **not** a host-enforced read gate, and `require_attestation`
@@ -95,3 +105,12 @@ the operational-status source. Either ship the status backend or soften the
 - npm provenance / SLSA attestation + per-package tarball SHA pinning: publish-infra.
 - Real Sigstore verification + signer-identity pinning (the audit's "authenticated
   provenance" bar): the **v0.2 verify** work (also covers red-team R09/R10).
+- **PH-20261017-06 (release-eng) — internal deps resolve published versions.**
+  The monorepo is per-package (file: deps, local linking) so same-package dev
+  tests *do* use local code, but the release/distribution manifests use
+  `^x.y.z`, so testing from a release tree resolves the *published* dependency
+  (mcp@0.1.5 was validated against local phub@0.1.6 on `launch`, then publish
+  order is phub→mcp). Proper fix: convert to a single pnpm workspace with
+  `workspace:^` internal deps (pnpm rewrites to `^version` at publish), add a
+  `pnpm -r build/test` gate, and record a GitHub-SHA ↔ npm-tarball-SHA512
+  provenance manifest. Larger change — owner/release-eng track, not a patch.
