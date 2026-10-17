@@ -170,34 +170,64 @@ export async function fetchBundleText(
   }
 }
 
+/** Hard cap on a fetched bundle body — matches the writer's 16 MB content cap. */
+const MAX_FETCH_BYTES = 16 * 1024 * 1024
+
 async function fetchWithTimeout(url: string, timeoutMs: number): Promise<string> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
-  let response: Response
+  // SECURITY (PH-20261017-05): keep the abort timer live through the ENTIRE
+  // response — headers AND body. Previously clearTimeout fired right after
+  // headers, so a server that sent 200 then stalled the body hung the install
+  // indefinitely. The timer is cleared only in the finally after the body is
+  // fully read (or aborted). Body bytes are capped while streaming so an
+  // endless/huge body can't exhaust memory even within the timeout window.
   try {
-    response = await fetch(url, {
+    const response = await fetch(url, {
       signal: controller.signal,
       headers: { Accept: "application/vnd.primitivehub.bundle+json, application/json" },
     })
+    if (!response.ok) {
+      throw new InstallSourceError(
+        `fetch ${url} returned HTTP ${response.status} ${response.statusText}`,
+        "FETCH_HTTP_ERROR",
+      )
+    }
+    return await readBodyCapped(response, controller)
   } catch (err) {
+    if (err instanceof InstallSourceError) throw err
     const msg = err instanceof Error ? err.message : String(err)
-    if (msg.includes("aborted")) {
-      throw new InstallSourceError(`fetch ${url} timed out after ${timeoutMs}ms`, "FETCH_TIMEOUT")
+    if (controller.signal.aborted || msg.includes("aborted") || msg.includes("abort")) {
+      throw new InstallSourceError(
+        `fetch ${url} timed out after ${timeoutMs}ms (headers or body)`,
+        "FETCH_TIMEOUT",
+      )
     }
     throw new InstallSourceError(`fetch ${url} failed: ${msg}`, "FETCH_FAILED")
   } finally {
     clearTimeout(timer)
   }
-  if (!response.ok) {
-    throw new InstallSourceError(
-      `fetch ${url} returned HTTP ${response.status} ${response.statusText}`,
-      "FETCH_HTTP_ERROR",
-    )
+}
+
+/** Read the response body under the caller's abort signal, capping total bytes. */
+async function readBodyCapped(response: Response, controller: AbortController): Promise<string> {
+  const reader = response.body?.getReader()
+  if (!reader) return await response.text() // no stream available — fall back
+  const chunks: Uint8Array[] = []
+  let total = 0
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    if (!value) continue
+    total += value.byteLength
+    if (total > MAX_FETCH_BYTES) {
+      controller.abort()
+      throw new InstallSourceError(
+        `bundle body exceeds the ${MAX_FETCH_BYTES}-byte cap (possible resource-exhaustion source)`,
+        "FETCH_BODY_TOO_LARGE",
+      )
+    }
+    chunks.push(value)
   }
-  try {
-    return await response.text()
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err)
-    throw new InstallSourceError(`reading response body failed: ${msg}`, "FETCH_BODY_FAILED")
-  }
+  return Buffer.concat(chunks).toString("utf8")
 }

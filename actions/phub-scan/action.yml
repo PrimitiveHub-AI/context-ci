@@ -164,12 +164,19 @@ runs:
         PHUB_FAIL_ON_FINDINGS: ${{ inputs.fail-on-findings }}
       run: |
         set -u
+        # SECURITY (PH-20261017-04): expand globs for real (globstar = `**`
+        # recursion; dotglob = match hidden dirs like .claude; nullglob = a
+        # pattern that matches nothing VANISHES rather than being passed as a
+        # literal). This makes `**/SKILL.md` actually match, and makes a
+        # no-match detectable as zero coverage below.
+        shopt -s globstar nullglob dotglob
         mkdir -p "$PHUB_SARIF_DIR"
         total_findings=0
         any_failed=0
+        scanned=0
         # Unquoted on purpose: word-split the space-separated list. Because
         # PHUB_FILES is an env value (not `${{ }}` text), shell metacharacters
-        # in it are literal filenames, not commands.
+        # in it are literal filenames/globs, not commands.
         for f in $PHUB_FILES; do
           if [ ! -f "$f" ]; then
             echo "::warning file=$f::phub-scan: file does not exist, skipping"
@@ -189,12 +196,20 @@ runs:
           fi
           file_findings=$(jq '.runs[0].results | length' "$sarif_path")
           total_findings=$((total_findings + file_findings))
+          scanned=$((scanned + 1))
           echo "  → $file_findings finding(s)"
           echo "::endgroup::"
         done
         echo "findings-count=${total_findings}" >> "$GITHUB_OUTPUT"
         echo ""
-        echo "phub-scan summary: ${total_findings} finding(s) across all files"
+        echo "phub-scan summary: ${scanned} file(s) scanned, ${total_findings} finding(s)"
+        # SECURITY (PH-20261017-04): never green on zero coverage. If the `files`
+        # selection resolved to NO scanned file (all missing, or a glob matched
+        # nothing), fail loudly — a clean pass must mean the scan actually ran.
+        if [ "$scanned" -eq 0 ]; then
+          echo "::error::phub-scan: 0 files scanned for files='${PHUB_FILES}'. Refusing to report success on zero coverage — fix the paths/globs or use \`phub audit\` to scan the whole tree."
+          exit 1
+        fi
         if [ "$any_failed" = "1" ]; then
           echo "::error::One or more scans errored (exit 2). Failing the job."
           exit 2
@@ -219,12 +234,16 @@ runs:
         PHUB_REQUIRE_ATTESTATION: ${{ inputs.require-attestation }}
       run: |
         set -u
+        # SECURITY (PH-20261017-04): real glob expansion incl. hidden dirs; a
+        # pattern matching nothing vanishes (nullglob) and feeds the zero-file
+        # fail-closed check below.
+        shopt -s globstar nullglob dotglob
         args=()
         [ "$PHUB_ALLOW_UNSEALED" = "true" ] && args+=(--allow-unsealed)
         [ "$PHUB_REQUIRE_ATTESTATION" = "true" ] && args+=(--require-attestation)
         # Pass only files that exist; warn+skip the rest (parity with scan).
         # Unquoted $PHUB_FILES = intentional word-split; env value, so
-        # metacharacters are literal filenames (see R03/R11 note above).
+        # metacharacters are literal filenames/globs (see R03/R11 note above).
         present=()
         for f in $PHUB_FILES; do
           if [ -f "$f" ]; then
@@ -234,9 +253,11 @@ runs:
           fi
         done
         if [ ${#present[@]} -eq 0 ]; then
-          echo "::warning::phub verify-before-load: no files to gate"
-          echo "blocked=false" >> "$GITHUB_OUTPUT"
-          exit 0
+          # SECURITY (PH-20261017-04): a gate that examined ZERO files must NOT
+          # pass — that is the "configured but checking nothing" failure. Block.
+          echo "::error::phub verify-before-load: 0 files to gate for files='${PHUB_FILES}'. Refusing to pass on zero coverage — fix the paths/globs."
+          echo "blocked=true" >> "$GITHUB_OUTPUT"
+          exit 1
         fi
         echo "::group::phub verify-before-load ${present[*]}"
         rc=0

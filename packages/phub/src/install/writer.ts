@@ -38,6 +38,8 @@ export interface InstallTarget {
   installPath: string
   /** Path RELATIVE to the workspace root (used in the lock entry). */
   workspaceRelativePath: string
+  /** Absolute workspace root — re-validated against at write time (PH-02 TOCTOU). */
+  workspaceRoot: string
 }
 
 /** Media types we know how to extension-route in v0.1. */
@@ -95,6 +97,7 @@ export function planInstallTarget(opts: {
     installDir,
     installPath,
     workspaceRelativePath: relative(workspaceRoot, installPath).replace(/\\/g, "/"),
+    workspaceRoot,
   }
 }
 
@@ -132,8 +135,28 @@ export function writeBundleContent(
     )
   }
 
+  // SECURITY (PH-20261017-02): re-validate symlink-aware containment
+  // IMMEDIATELY before the write. planInstallTarget's check runs at plan time;
+  // a symlink swapped into the install tree between plan and write would
+  // otherwise redirect the write outside the workspace (TOCTOU). This shrinks
+  // the window to the mkdir+write itself.
+  ensureRealpathInsideRoot(target.installPath, target.workspaceRoot, "install path escapes workspace root")
   mkdirSync(dirname(target.installPath), { recursive: true })
-  writeFileSync(target.installPath, decoded)
+  // O_EXCL ("wx") refuses to write THROUGH a symlink at the final component and
+  // fails if the target already exists — closing a last-component swap between
+  // the existence check above and the write. The overwrite path (--force)
+  // cannot use O_EXCL, so it relies on the realpath re-check.
+  try {
+    writeFileSync(target.installPath, decoded, opts.overwrite ? undefined : { flag: "wx" })
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === "EEXIST") {
+      throw new InstallWriteError(
+        `install path appeared between check and write (refusing — possible TOCTOU): ${target.installPath}`,
+        "ALREADY_INSTALLED",
+      )
+    }
+    throw err
+  }
   return { bytesWritten: decoded.length }
 }
 

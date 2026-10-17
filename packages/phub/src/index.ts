@@ -21,7 +21,9 @@ export { initCommand, type InitOptions } from "./commands/init.js"
 export {
   runAudit,
   auditCommand,
+  auditCoverage,
   type AuditOptions,
+  type AuditCoverage,
 } from "./commands/audit.js"
 export { watchCommand, type WatchOptions } from "./commands/watch.js"
 export {
@@ -164,6 +166,7 @@ export {
   DETECTORS,
   detectorByName,
   detectorCoverage,
+  resolveDetectors,
   type DetectorCoverageEntry,
 } from "./scanners/registry.js"
 export {

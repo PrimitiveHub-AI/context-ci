@@ -47,6 +47,29 @@ export function detectorByName(name: string): Detector | undefined {
   return DETECTORS.find((d) => d.name === name || d.cciId === name || d.threatCategory === name)
 }
 
+/** Thrown when a detector selector names an identifier no detector matches. */
+export class UnknownDetectorError extends Error {
+  constructor(public readonly unknown: readonly string[]) {
+    super(`unknown detector identifier(s): ${unknown.join(", ")}`)
+    this.name = "UnknownDetectorError"
+  }
+}
+
+/**
+ * Resolve a detector selection to the concrete roster. The SINGLE strict
+ * resolver shared by scan / audit / watch / MCP (SECURITY — PH-20261017-03):
+ * an unknown id is a HARD error, never a silent drop and never a fallback to
+ * "all" — a typo'd or maliciously-edited selector must not quietly shrink
+ * coverage while the run still exits 0. Empty/undefined selection = the full
+ * Top 10 roster.
+ */
+export function resolveDetectors(ids: readonly string[] | undefined): readonly Detector[] {
+  if (!ids || ids.length === 0) return DETECTORS
+  const unknown = ids.filter((id) => detectorByName(id) === undefined)
+  if (unknown.length > 0) throw new UnknownDetectorError(unknown)
+  return ids.map((id) => detectorByName(id) as Detector)
+}
+
 /** One detector's identity in the coverage manifest. */
 export interface DetectorCoverageEntry {
   cciId: string
