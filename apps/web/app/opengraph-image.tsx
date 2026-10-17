@@ -136,9 +136,9 @@ export default async function OGImage() {
               maxWidth: 980,
             }}
           >
-            Every byte of agent context — AGENTS.md, SKILL.md, .cursor/rules,
-            mcp.json — verified against the Context CI Top 10 before the
-            agent reads it.
+            Inspect the agent-context artifacts you discover — AGENTS.md,
+            SKILL.md, .cursor/rules, mcp.json — against the Context CI Top 10
+            before you ship them to an agent.
           </div>
         </div>
 

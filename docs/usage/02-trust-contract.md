@@ -25,10 +25,33 @@ primitive. It binds four things together:
 | **Provenance Chain** | Who validated, reviewed, and released this version.    |
 
 A consumer (an agent runtime, the `phub` CLI, the GitHub Action,
-the MCP server, `/check`) **refuses to load a primitive whose
-Trust Bundle does not verify against all four**. The contract is
-the same on every surface. There is exactly one wire format and
-exactly one verifier.
+the MCP server, `/check`) treats a Trust Bundle that does not verify
+as untrusted. The contract is the same on every surface: one wire
+format, one verifier.
+
+> **v0.1 capability — what the installable release actually enforces.**
+> The contract defines all four elements, but v0.1 ships only the
+> **inspection** half. **Authentication** — the Sigstore signature,
+> Fulcio cert chain, and Rekor inclusion proof — is **stubbed and lands
+> in v0.2**. Until then the verifier's `authenticated` result is `false`
+> for every bundle and the trust gate **fails closed**: it never reports
+> a bundle as cryptographically authenticated.
+>
+> | Check | v0.1 status | Where |
+> |---|---|---|
+> | Schema / structure | ✅ implemented · enforced | CLI · CI · MCP |
+> | Content digest (T9 tamper) | ✅ implemented · enforced | CLI · CI · MCP |
+> | Context CI Top 10 policy | ✅ implemented · enforced (10 detectors) | CLI · CI · MCP |
+> | Lock drift / seal | ✅ implemented · enforced | CLI · CI · MCP |
+> | Sigstore signature | ⏳ planned (v0.2) — stubbed | — |
+> | Fulcio cert chain / signer identity | ⏳ planned (v0.2) — stubbed | — |
+> | Rekor inclusion proof | ⏳ planned (v0.2) — stubbed | — |
+> | Host-enforced read gate | ⏳ planned — the MCP tool is advisory today | — |
+>
+> A `policy`-level pass proves **inspection**, not an **authenticated
+> signer**. Gate trust on authentication, never on `result.valid` — see
+> [verify-library](/docs/verify-library). This matrix reflects the tested
+> v0.1 release; regenerate it from the release, do not hand-edit.
 
 ## The four primitives, in plain language
 
@@ -160,12 +183,11 @@ phub verify <slug>@<semver>
 # or
 phub verify --bundle path/to/bundle.json
 
-# Output (truncated):
+# Output (truncated) — v0.1:
 #   digest match                           sha256:b7e4f1a9c…  OK
-#   Sigstore (Fulcio cert + Rekor entry)   inclusion proof   OK
 #   Context CI attestation predicate       cci-v0.1 · pass   OK
-#   provenance chain                       4/4 steps signed  OK
-# verified · 0.31s
+#   Sigstore (Fulcio cert + Rekor entry)   deferred — v0.2   —
+# inspected · NOT cryptographically authenticated (fail-closed) · 0.31s
 ```
 
 ```yaml
@@ -173,12 +195,12 @@ phub verify --bundle path/to/bundle.json
 # .github/workflows/context-ci.yml
 - uses: primitivehub/phub-scan@v0.1
   with:
-    paths: |
+    files: |
       AGENTS.md
       CLAUDE.md
       .cursor/rules/**
       .claude/skills/**
-    fail-on: fail   # refuse the PR if any verdict is FAIL
+    fail-on: fail   # fail the PR if any verdict is FAIL
 ```
 
 ```jsonc
@@ -191,7 +213,8 @@ phub verify --bundle path/to/bundle.json
     "mode": "lock+scan"
   }
 }
-// agent receives no bytes unless the gate returns ok = true.
+// advisory: the caller should refuse to load unless ok = true.
+// The MCP tool is agent-invoked, not a host-enforced read gate (see /docs/mcp-server).
 ```
 
 All three paths run **the same verifier kernel** —

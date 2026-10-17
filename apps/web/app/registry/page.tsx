@@ -113,8 +113,9 @@ function RegistryBrowser() {
           <p className="mt-4 text-[15px] text-muted-foreground max-w-2xl leading-relaxed">
             Browse expert-authored AI Context Primitives. Each entry passes
             Context CI, semver-versioned, content-addressed by SHA-256
-            digest, scored across four quality dimensions, and signed
-            with Sigstore keyless OIDC (Fulcio cert + Rekor entry).
+            digest, and scored across four quality dimensions. Sigstore
+            keyless OIDC signing (Fulcio cert + Rekor entry) is planned for
+            v0.2; the registry surface itself is not yet live.
           </p>
           <div className="mt-5 flex flex-wrap items-center gap-2 text-[11px] font-mono">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-success/25 bg-success/[0.06] px-3 py-1 text-success/90">
@@ -123,14 +124,14 @@ function RegistryBrowser() {
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/[0.06] px-3 py-1 text-primary/90">
               <span className="size-1 rounded-full bg-primary/80" />
-              attested
+              Context CI attested
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-amber/25 bg-amber/[0.06] px-3 py-1 text-amber/90">
               <span className="size-1 rounded-full bg-amber/80" />
               policy-gated
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-border/40 bg-card/60 px-3 py-1 text-muted-foreground">
-              Sigstore keyless OIDC
+              Sigstore keyless OIDC · v0.2
             </span>
           </div>
         </div>

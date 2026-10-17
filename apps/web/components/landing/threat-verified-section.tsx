@@ -73,23 +73,23 @@ const THREATS: ReadonlyArray<ThreatRow> = [
 const CONTROLS: ReadonlyArray<ControlRow> = [
   {
     icon: FileCheck2,
-    name: "Validated",
-    detail: "Every byte scanned against the Context CI Top 10 — injection, steganography, shell, exfil.",
+    name: "Inspected",
+    detail: "Scanned against the Context CI Top 10 — injection, steganography, shell, exfil. Live today.",
   },
   {
     icon: Fingerprint,
     name: "Attested",
-    detail: "SHA-256 content digest + in-toto Statement, signed via Sigstore keyless OIDC.",
+    detail: "SHA-256 content digest is enforced today; in-toto Statement signing via Sigstore keyless OIDC lands in v0.2.",
   },
   {
     icon: Users,
     name: "Reviewed",
-    detail: "Domain experts with bound OIDC identities. Public uploads enter review, never auto-trusted.",
+    detail: "Domain-expert review with bound identities — the registry trust model (planned; the registry surface is deferred).",
   },
   {
     icon: Lock,
     name: "Gated",
-    detail: "Policy-gated install. Refused at the gate — and logged to Rekor — if it doesn't verify.",
+    detail: "Policy-gated: CI and the CLI refuse on a failing verdict. Rekor transparency logging lands in v0.2.",
   },
 ]
 

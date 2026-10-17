@@ -61,7 +61,7 @@ export default function TopTenPage() {
         {/* Measured headline — paper-grade truth, one click from proof */}
         <p className="mt-6 inline-flex flex-wrap items-center justify-center gap-x-2 gap-y-1 rounded-full border border-primary/15 bg-primary/[0.04] px-4 py-2 text-[11px] font-mono text-primary/90">
           <EvaluationLink>
-            {summary.perfectDetectors}/{summary.totalDetectors} detectors at F1 = {summary.macroF1InSample.toFixed(3)}
+            {summary.totalDetectors}/{summary.totalDetectors} detectors · in-sample macro-F1 {summary.macroF1InSample.toFixed(3)} ({summary.perfectDetectors}/{summary.totalDetectors} at 1.000)
           </EvaluationLink>
           <span className="text-muted-foreground">·</span>
           <EvaluationLink proof="corpus">

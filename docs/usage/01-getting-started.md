@@ -93,7 +93,7 @@ alias primitivehub-mcp="node /path/to/context-ci/packages/mcp-server/bin/primiti
 # Smoke test:
 phub --help | head -10
 primitivehub-mcp <<< '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | jq '.result.tools | length'
-# → 4
+# → 5
 ```
 
 The aliases only live for the current shell. Persist them by adding
@@ -158,7 +158,7 @@ phub --help | head -5
 
 # 2. phub scans a clean string:
 phub scan <(echo "# clean primitive") 2>&1 | tail -3
-# Expected last line: "Result: 3/3 detectors passed."
+# Expected last line: "Result: 10/10 detectors passed."
 
 # 3. verify library exists (only if you'll use it programmatically):
 node -e "import('@primitivehub/verify').then(m => console.log(typeof m.verifyBundle))"
@@ -168,7 +168,7 @@ node -e "import('@primitivehub/verify').then(m => console.log(typeof m.verifyBun
 # 4. MCP server lists tools:
 primitivehub-mcp <<< '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' \
   | jq '.result.tools[] | .name'
-# Expected: 4 lines — audit_workspace, check_lock, scan_text, verify_bundle
+# Expected: 5 lines — audit_workspace, check_lock, scan_text, verify_bundle, verify_before_load
 ```
 
 If any of these fail, see [Troubleshooting § "Install issues"](./09-troubleshooting.md#install-issues).

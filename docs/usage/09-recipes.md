@@ -156,7 +156,7 @@ Post-launch: swap to `"command": "npx"`, `"args": ["@primitivehub/mcp-server"]`.
 
 ```bash
 claude mcp list
-# Expected: primitivehub  ← 4 tools (audit_workspace, check_lock, scan_text, verify_bundle)
+# Expected: primitivehub  ← 5 tools (audit_workspace, check_lock, scan_text, verify_bundle, verify_before_load)
 ```
 
 ### 4. Use in-session

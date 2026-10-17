@@ -339,7 +339,7 @@ export default function SecurityPage() {
               href="/status"
               className="text-muted-foreground hover:text-foreground"
             >
-              /status — operational status of every shipped surface and the Sigstore dependency
+              /status — planned live-status page for each shipped surface (the monitoring backend is not live yet)
             </Link>
           </li>
         </ul>

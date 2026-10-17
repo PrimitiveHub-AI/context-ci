@@ -297,11 +297,17 @@ jq -n --arg root "/path/to/context-ci" '{
 
 ## `verify_before_load`
 
-The composite runtime gate ([ADR-0029](../decisions/0029-mcp-runtime-gate.md)).
+The composite runtime check ([ADR-0029](../decisions/0029-mcp-runtime-gate.md)).
 Combines `check_lock` + scanner verdict + optional `verify_bundle`
-into one call. Use this BEFORE loading any agent-context primitive —
-refuses-by-default for drift, unattested artifacts, scanner findings,
-or invalid bundles.
+into one call. Call this BEFORE loading any agent-context primitive —
+it returns a refuse verdict for drift, unattested artifacts, scanner
+findings, or invalid bundles.
+
+> **Advisory, not host-enforced (v0.1).** This tool is invoked by the
+> agent; it does **not** interpose on the host's file reads. It returns
+> a verdict — the caller must honor a `safe: false` by refusing to load.
+> `require_attestation` defaults **`false`**. A host-enforced on-access
+> read gate is planned, not shipped today.
 
 This is the strategic surface — the one-line MCP call that lets an
 AI agent answer "is this primitive safe to load?"
@@ -452,10 +458,10 @@ Then:
 
 ```bash
 claude mcp list
-# → primitivehub  ← 4 tools
+# → primitivehub  ← 5 tools
 ```
 
-In a Claude Code session, the four tools become callable. Sample
+In a Claude Code session, the five tools become callable. Sample
 agent invocations:
 
 > "Use audit_workspace to inspect this project."
@@ -530,4 +536,4 @@ in).
 - [`packages/mcp-server/examples/`](../../packages/mcp-server/examples/) — host configs
 - [ADR-0031 — mcp-server as transport](../decisions/0031-mcp-server-as-transport.md)
 - [`@modelcontextprotocol/sdk`](https://github.com/modelcontextprotocol/typescript-sdk) — official SDK
-- [Recipes § "A runtime-checking agent"](./08-recipes.md#a-runtime-checking-agent) — composing the four tools at agent read-time
+- [Recipes § "A runtime-checking agent"](./08-recipes.md#a-runtime-checking-agent) — composing the five tools at agent read-time

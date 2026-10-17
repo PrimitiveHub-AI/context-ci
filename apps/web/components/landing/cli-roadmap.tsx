@@ -55,8 +55,8 @@ const DIFFERENTIATORS = [
   },
   {
     icon: Shield,
-    title: "Refuses by default",
-    one: "Eight stable refusal codes. No warn-and-proceed. The agent never sees tampered bytes.",
+    title: "Fail-closed by default",
+    one: "Eight stable refusal codes. No warn-and-proceed: CI and the CLI exit non-zero on a failing verdict.",
   },
   {
     icon: Github,
@@ -82,7 +82,7 @@ const SECONDARY_SURFACES = [
   },
   {
     icon: Eye,
-    title: "On-access guard",
+    title: "File-change watch",
     cmd: "phub watch",
     adr: "ADR-0027",
     adrHref: docRoute("docs/decisions/0027-phub-watch.md"),
@@ -103,14 +103,14 @@ const SECONDARY_SURFACES = [
     lines: [
       { text: "▸ verifying bundle", intent: "muted" as const },
       { text: "  digest match           OK", intent: "pass" as const },
-      { text: "  Sigstore (Fulcio+Rekor) OK", intent: "pass" as const },
       { text: "  Context CI predicate   pass", intent: "pass" as const },
-      { text: "installed · 0.61s", intent: "accent" as const },
+      { text: "  authentication         deferred — Sigstore v0.2", intent: "warn" as const },
+      { text: "refused · unauthenticated (fail-closed)", intent: "fail" as const },
     ],
   },
   {
     icon: Box,
-    title: "Runtime gate (MCP)",
+    title: "MCP runtime check (advisory)",
     cmd: "claude mcp add primitivehub",
     adr: "ADR-0029",
     adrHref: docRoute("docs/decisions/0029-mcp-runtime-gate.md"),
@@ -119,7 +119,7 @@ const SECONDARY_SURFACES = [
       { text: "request  { subject: skill:foo@0.3 }", intent: "default" as const },
       { text: "verdict  { ok: false,", intent: "default" as const },
       { text: "           code: LOCK_DRIFT }", intent: "fail" as const },
-      { text: "refused · agent receives no bytes", intent: "accent" as const },
+      { text: "advisory · caller refuses to load", intent: "accent" as const },
     ],
   },
 ] as const

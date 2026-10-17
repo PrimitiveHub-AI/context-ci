@@ -265,8 +265,8 @@ You didn't build the MCP server. Run `pnpm build` inside
 ### A tool call returns `isError: true` with `error: "unknown tool"`
 
 You called a tool name that the server doesn't recognize. v0.1
-exposes only four tools: `verify_bundle`, `scan_text`,
-`audit_workspace`, `check_lock`.
+exposes five tools: `verify_bundle`, `scan_text`,
+`audit_workspace`, `check_lock`, `verify_before_load`.
 
 **Fix:** check the spelling. Tool names are case-sensitive.
 

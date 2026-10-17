@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     template: "%s — PrimitiveHub",
   },
   description:
-    "We verify every byte of context an AI agent consumes — AGENTS.md, SKILL.md, .cursor/rules, mcp.json — against the Context CI Top 10, before the agent reads it. Open-source verifier kernel, CLI, GitHub Action, and MCP runtime gate. A CyberOrca Labs initiative.",
+    "We inspect the agent-context artifacts we discover — AGENTS.md, SKILL.md, .cursor/rules, mcp.json — against the Context CI Top 10 before you ship them to an agent. Open-source verifier kernel, CLI, GitHub Action, and MCP server (advisory). A CyberOrca Labs initiative.",
   applicationName: "PrimitiveHub",
   authors: [{ name: "CyberOrca Labs" }],
   // Identity assets live in `public/brand/` (drop-zone — see its README).
@@ -59,14 +59,14 @@ export const metadata: Metadata = {
     type: "website",
     title: "PrimitiveHub — the Context Firewall for AI agents",
     description:
-      "Every byte of agent context — AGENTS.md, SKILL.md, .cursor/rules, mcp.json — verified against the Context CI Top 10 before the agent reads it.",
+      "Inspect the agent-context artifacts you discover — AGENTS.md, SKILL.md, .cursor/rules, mcp.json — against the Context CI Top 10 before you ship them to an agent.",
     siteName: "PrimitiveHub",
   },
   twitter: {
     card: "summary_large_image",
     title: "PrimitiveHub — the Context Firewall for AI agents",
     description:
-      "Every byte of agent context verified against the Context CI Top 10 before the agent reads it. Open-source verifier kernel, CLI, GitHub Action, MCP runtime gate.",
+      "Inspect agent-context artifacts against the Context CI Top 10 before you ship them to an agent. Open-source verifier kernel, CLI, GitHub Action, MCP server (advisory).",
   },
 }
 

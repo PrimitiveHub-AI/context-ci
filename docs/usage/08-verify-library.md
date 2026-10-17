@@ -54,21 +54,45 @@ shows this pattern).
 ```ts
 import { verifyBundle } from "@primitivehub/verify"
 
+// Consume ONLY a cryptographically authenticated bundle.
+//
+// `result.valid` is NOT a trust decision. At the `structural` / `policy`
+// levels it can be `true` while authenticating NOTHING: it only confirms the
+// bundle is self-consistent (its content matches the digest the *same bundle*
+// supplies) and that the bundle's *own* self-reported policy verdicts pass.
+// An attacker who controls bundle delivery can forge all of that. The trust
+// gate is `result.authenticated`.
 async function consumeIfTrusted(bundleJson: string, signedContent: () => void) {
   const bundle = JSON.parse(bundleJson)
 
-  const result = await verifyBundle(bundle, { level: "policy" })
+  const result = await verifyBundle(bundle, { level: "full" })
 
-  if (!result.valid) {
-    for (const f of result.failures) {
-      console.error(`[${f.code}] ${f.message} (at ${f.path ?? "<top>"})`)
-    }
-    throw new Error(`Trust Bundle rejected: ${result.failures[0]?.code}`)
+  if (!result.authenticated) {
+    // v0.1: the Sigstore signature, Fulcio cert chain, and Rekor inclusion
+    // proof are STUBBED (they land in verify v0.2), so `authenticated` is
+    // `false` for every bundle today — this ALWAYS throws, by design. Fail
+    // closed. Do NOT fall back to `result.valid` or `result.inspected` to
+    // "make it pass": that consumes content that was never authenticated.
+    const deferred = result.deferredSteps?.length
+      ? ` (deferred: ${result.deferredSteps.join(", ")})`
+      : ""
+    throw new Error(`untrusted: not cryptographically authenticated${deferred}`)
   }
 
-  // Schema, content digest, and Context CI policy all checked out.
-  // Safe to consume the primitive.
+  // Authenticated end-to-end. Safe to consume the primitive.
   signedContent()
+}
+```
+
+If you only want structural + policy **inspection** and you explicitly accept
+that the content is **not** cryptographically authenticated, name it so — and
+never use this path to gate loading untrusted content:
+
+```ts
+// Inspection only. `result.valid` here means "self-consistent + self-reported
+// policy passed", NOT "authenticated". Returns the full result for display.
+async function inspectUntrustedBundle(bundleJson: string) {
+  return verifyBundle(JSON.parse(bundleJson), { level: "policy" })
 }
 ```
 

@@ -72,7 +72,7 @@ export function Hero() {
               <span className="size-1.5 rounded-full bg-primary animate-pulse" />
               <span className="text-[11px] font-mono text-primary/85 tracking-wide">
                 <EvaluationLink>
-                  {summary.totalDetectors}/{summary.totalDetectors} Top 10 detectors · macro F1 = {summary.macroF1InSample.toFixed(3)} · Py ↔ TS parity gated
+                  {summary.totalDetectors}/{summary.totalDetectors} detectors implemented · in-sample macro-F1 {summary.macroF1InSample.toFixed(3)} · Py ↔ TS parity gated
                 </EvaluationLink>
               </span>
             </div>
@@ -86,14 +86,18 @@ export function Hero() {
 
             {/* Subhead — names the artifacts + temporal frame + shipping surfaces */}
             <p className="mt-5 max-w-xl text-[15px] text-muted-foreground leading-relaxed text-pretty">
-              We verify every byte of context an AI agent consumes —{" "}
+              We inspect the agent-context artifacts we discover —{" "}
               <code className="font-mono text-foreground/85">AGENTS.md</code>,{" "}
               <code className="font-mono text-foreground/85">SKILL.md</code>,{" "}
               <code className="font-mono text-foreground/85">.cursor/rules</code>,{" "}
               <code className="font-mono text-foreground/85">mcp.json</code> —
               against the Context CI Top 10,{" "}
-              <span className="text-foreground/90">before the agent reads it</span>.
-              Open-source kernel, CLI, GitHub Action, MCP runtime gate.
+              <span className="text-foreground/90">before you ship them to an agent</span>.{" "}
+              Three motions, one firewall:{" "}
+              <span className="text-foreground/90">scan</span> at /check,{" "}
+              <span className="text-foreground/90">author-safe</span> in /Forge,{" "}
+              <span className="text-foreground/90">block-at-load</span> in CI and the CLI
+              (advisory in MCP today) — open-source, end to end.
             </p>
 
             {/* Dual commands — phub audit (active) + phub scan (passive) */}
