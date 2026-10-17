@@ -47,6 +47,15 @@ The one move that forecloses no option (do this regardless of a/b/c):
 - [ ] On ratify → hand the digest re-key task to phub-check-engine (its ledger open-item #3).
 - [ ] Reconcile stale repo-name references (lowercase → PrimitiveHub-AI).
 - [ ] Priority stack when primitives clash: security > truth > tenant > spec > stack > data > a11y > taste > velocity.
+- [ ] **OWNER DECISION — defer auth entirely (ADR-0047 scope) `[from: phub-platform]`.** Verified
+      2026-10-03: Authentik (server+worker) is LIVE in dev *and* prod (containers up 4 months,
+      healthy), not a dormant surface — `DEV_AUTH_BYPASS` was retired (Step 7), every read endpoint
+      is behind `requires_auth` (apps/api/primitivehub_api/auth.py). Proposal on the table: make
+      `/check` + `/Forge` **anonymous-public** and retire the login path, so auth becomes truly
+      deferred per a strict ADR-0047 reading. This is a product+liability call (anonymous abuse /
+      rate-limit / cost exposure) spanning phub-web + phub-check-engine, NOT a platform flip. On
+      ratify, platform will profile-gate authentik (keep HELD, never delete) + drop OIDC from the
+      critical path. Until ratified, authentik stays always-on.
 
 ## Decisions / ADRs
 ADR-0045 (launch posture). Related: docs/positioning.md, docs/vision.md, docs/roadmap.md.
