@@ -42,12 +42,16 @@ presents `/check` and the `phub` CLI as a new category, not a v0 SaaS toy.
       render anonymous site-wide. No copy change needed. RESIDUAL: `/auth/{login,callback,logout}`
       routes + `components/user-menu.tsx` remain in-tree (flag-gated dead) — leave as HELD; a
       retirement pass (route removal) is a separate task, not done here.
-- [ ] **Stale eval artifact `[→ phub-corpus-eval]`** — `apps/web/lib/evaluation.data.json` is
-      `measured_at:2026-06-07` (manifest 0.2) while `bench/baseline/2026-10-03-*.json` exists.
-      Refresh the embedded artifact and pin the canonical adversarial-vs-conformance denominator
-      (adversarial corpus = CCI-001/002/005 trifecta, 15 samples per bench/README + ADR-0032; the
-      embedded 99-sample in-sample set scores all 10). Web now says "in-sample macro-F1" honestly;
-      corpus-eval owns the refresh.
+- [ ] **Eval artifact refresh `[→ phub-corpus-eval]` — BLOCKED on a ratified baseline, NOT stale.**
+      Checked 2026-10-17: `apps/web/lib/evaluation.data.json` (0.991, 2026-06-07) **matches the latest
+      COMMITTED baseline** `bench/baseline/2026-06-07-ts.json` exactly — the site publishes the
+      canonical gate-ratified number. The newer `bench/baseline/2026-10-03-*.json` show F1 1.000 on
+      both slices (cf. committed scanner `58bbe86`) BUT are **untracked/in-flight** and
+      **self-inconsistent** (say `samples:99` while committed `6f2c5e8` already moved the corpus to
+      124). Deliberately did NOT refresh — publishing 1.000 now = an unratified, churning number.
+      **Unblock = corpus-eval commits a canonical dated baseline (99↔124 reconciled).** Then: run
+      `apps/web/scripts/sync-evaluation.mjs`, verify, drop the "in-sample" hedge if holdout is also
+      perfect. No prebuild auto-sync, so nothing leaks in the meantime.
 
 ## Decisions / ADRs
 ADR-0040 (surface/anti-bloat), ADR-0045 (product-first launch), ADR-0047 (Context-Firewall scope).
