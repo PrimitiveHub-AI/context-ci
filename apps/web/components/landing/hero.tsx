@@ -6,10 +6,7 @@ import {
   BookOpen,
   ShieldCheck,
   FileSearch,
-  Fingerprint,
   Lock,
-  Eye,
-  Repeat,
   Layers,
   Terminal,
 } from "lucide-react"
@@ -43,13 +40,28 @@ import { loadLatestEvaluation, summarize } from "@/lib/evaluation"
  * — credibility-sweep discipline preserved.
  */
 
-const credibilityPillars = [
-  { icon: FileSearch, label: "Discovered" },
-  { icon: ShieldCheck, label: "Verified" },
-  { icon: Fingerprint, label: "Attested" },
-  { icon: Lock, label: "Gated" },
-  { icon: Eye, label: "Logged" },
-  { icon: Repeat, label: "Reproducible" },
+// The three firewall motions (ADR-0047), each linked to its surface.
+// Replaces the former 6-verb lifecycle strip. Copy is truth-pass accurate:
+// block-at-load is fail-closed in CI/CLI and advisory in MCP (v0.1).
+const firewallMotions = [
+  {
+    icon: FileSearch,
+    beat: "Scan",
+    href: "/check",
+    one: "Paste anything → a Context CI Top 10 verdict.",
+  },
+  {
+    icon: ShieldCheck,
+    beat: "Author-safe",
+    href: "/forge",
+    one: "Lint against the spec as you write, in Forge.",
+  },
+  {
+    icon: Lock,
+    beat: "Block-at-load",
+    href: "/docs",
+    one: "Fail-closed in CI & the CLI; advisory in MCP.",
+  },
 ]
 
 export function Hero() {
@@ -149,17 +161,30 @@ export function Hero() {
               </Button>
             </div>
 
-            {/* Credibility strip — AV-family lifecycle verbs */}
-            <div className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-2.5">
-              {credibilityPillars.map((pillar) => {
-                const Icon = pillar.icon
+            {/* Firewall motions — scan · author-safe · block-at-load
+                (ADR-0047), each a link to its surface. */}
+            <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-xl">
+              {firewallMotions.map((motion, i) => {
+                const Icon = motion.icon
                 return (
-                  <div key={pillar.label} className="flex items-center gap-1.5">
-                    <Icon className="size-3 text-primary/60" />
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
-                      {pillar.label}
-                    </span>
-                  </div>
+                  <Link
+                    key={motion.beat}
+                    href={motion.href}
+                    className="group rounded-lg border border-border/50 bg-foreground/[0.02] px-3 py-2.5 transition-colors hover:border-primary/40 hover:bg-primary/[0.03]"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] font-mono text-primary/50 tabular-nums">
+                        0{i + 1}
+                      </span>
+                      <Icon className="size-3.5 text-primary/70" />
+                      <span className="text-[11px] font-mono uppercase tracking-wider text-foreground/90">
+                        {motion.beat}
+                      </span>
+                    </div>
+                    <p className="mt-1.5 text-[11px] leading-snug text-muted-foreground">
+                      {motion.one}
+                    </p>
+                  </Link>
                 )
               })}
             </div>
