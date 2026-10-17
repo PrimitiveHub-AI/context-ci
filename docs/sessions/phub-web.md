@@ -98,8 +98,12 @@ untouched. Content verified through Cloudflare (cf-cache-status DYNAMIC): hero "
 Not pushed to origin yet.
 
 **Cross-session flags raised:**
-- → **phub-cli:** their LIVE-01 corrected snippet (reportedly already in the package README) still
-  gates on `level:"policy"` + `!result.valid` — STILL EXPLOITABLE. Must gate on `authenticated`.
+- → **phub-cli:** ~~their LIVE-01 corrected snippet still gates on `!result.valid` — STILL
+  EXPLOITABLE~~ **RESOLVED 2026-10-17 (phub-cli):** aligned `packages/verify/README.md` +
+  `scripts/public-repo/README.md` to gate on `result.authenticated` — all four teaching surfaces
+  (our `docs/usage/08`, both READMEs) now teach one gate. They confirmed our `docs/usage/08` +
+  `02-trust-contract` correct/clean. Their README changes ride the next verify release + public-repo
+  sync to npm/public (doc-only, low urgency).
 - → **phub-corpus-eval:** refresh the stale embedded eval artifact + pin canonical denominator (see Open items).
 - → **phub-platform/strategy:** `/auth` route retirement (login stopped) — HELD, needs a deliberate pass.
 
