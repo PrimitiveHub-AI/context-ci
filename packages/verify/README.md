@@ -30,40 +30,41 @@ browsers without polyfill.
 ```ts
 import { verifyBundle } from "@primitivehub/verify"
 
-// You got a Trust Bundle from somewhere — your registry, a CDN, an MCP
-// server, an agent. Parse it and verify before consuming the primitive.
+// Consume ONLY a cryptographically authenticated bundle. `result.valid` is
+// NOT the trust gate: at the `structural` / `policy` levels it can be `true`
+// while authenticating NOTHING — it only confirms the bundle is self-consistent
+// (its content matches the digest the *same bundle* supplies) and that the
+// bundle's *own* self-reported policy verdicts pass. An attacker who controls
+// delivery can forge all of that. The trust gate is `result.authenticated`.
 async function consumeIfTrusted(bundleJson: string, signedContent: () => void) {
-  const bundle = JSON.parse(bundleJson)
+  const result = await verifyBundle(JSON.parse(bundleJson), { level: "full" })
 
-  const result = await verifyBundle(bundle, { level: "policy" })
-
-  if (!result.valid) {
-    // result.failures is structured — branch on `code`, NOT on `message`.
-    for (const f of result.failures) {
-      console.error(`[${f.code}] ${f.message} (at ${f.path ?? "<top>"})`)
-    }
-    throw new Error(`Trust Bundle rejected: ${result.failures[0]?.code}`)
+  if (!result.authenticated) {
+    // v0.1 STUBS the Sigstore signature, Fulcio cert chain, and Rekor
+    // inclusion proof (they land in verify v0.2), so `authenticated` is `false`
+    // for every bundle today — this ALWAYS throws, by design (fail closed). Do
+    // NOT fall back to `result.valid` / `result.inspected` to "make it pass":
+    // that consumes content that was never authenticated.
+    const deferred = result.deferredSteps?.length
+      ? ` (deferred: ${result.deferredSteps.join(", ")})`
+      : ""
+    throw new Error(`untrusted: not cryptographically authenticated${deferred}`)
   }
 
-  // Reached only when the bundle is inspected AND cryptographically
-  // authenticated. v0.1 stubs the crypto (steps 3-6), so `valid` is always
-  // false and this branch is unreachable until signatures land in v0.2 —
-  // fail-closed by design (see the note below).
+  // Authenticated end-to-end. Safe to consume the primitive.
   signedContent()
 }
 ```
 
-> **v0.1 semantics — read before you branch on a field.** `valid` is `true`
-> only when the bundle is both **inspected** (schema + content digest + Context
-> CI policy all OK) *and* **authenticated** (Sigstore signature + cert chain +
-> Rekor inclusion). v0.1 stubs the cryptographic steps, so `authenticated` —
-> and therefore `valid` — is **always `false`**. This is deliberate: a forged,
-> digest-consistent bundle must never read as `valid`. If you are building
-> against v0.1 and knowingly accept an *unauthenticated* bundle, branch on
-> `result.inspected` **explicitly** and understand you are trusting content
-> that has not been cryptographically authenticated. Never paper over a
-> `valid === false` by silently falling back to `inspected` — that is the
-> exact footgun this split exists to prevent.
+> **Which field is the trust gate? `authenticated` — and only `authenticated`.**
+> `valid = inspected && authenticated`, where `inspected` means "self-consistent
+> + self-reported policy passed" — an attacker controlling bundle delivery can
+> forge that, so it is NOT a trust decision. v0.1 stubs the crypto, so
+> `authenticated` (and therefore `valid`) is **always `false`** today and the
+> gate above always throws, by design. For inspection-only use that explicitly
+> accepts unauthenticated content, call a clearly-named `inspectUntrustedBundle()`
+> that returns the result for display — never use it to gate loading. Never
+> paper over `authenticated === false` by falling back to `valid`/`inspected`.
 
 ## Verification levels
 
