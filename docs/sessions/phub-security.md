@@ -56,7 +56,16 @@ NOT owned: feature code in `apps/*`, `packages/*` — findings are routed to the
 - [ ] **P1** Container scan (trivy) on build-web + build-api images; gate fixable HIGH/CRIT → route to phub-platform.
 - [ ] **P2** CI job: `phub verify-before-load` on the repo's own AGENTS/CLAUDE context (dogfood the firewall).
 - [ ] **P2** Threat-model refresh for our own stack; wire SECURITY.md disclosure SLA ↔ the bounty.
-- [ ] Routing log (finding → owning session): _none yet._
+- [ ] **P1 `[from: phub-web]` 2026-10-17 — retire the bug-bounty programme from the canonical
+      security docs.** Owner directive: "no bug bounty program here, this is a research initiative
+      not an enterprise." The WEBSITE is already reconciled + live (phub-web removed the `/security`
+      programme section, USD severity bands, cash CTAs, footer label; commit `2829aa1`). Your owned
+      docs still advertise it: `SECURITY-BOUNTY.md` (whole file) + `SECURITY.md:14,23` (bounty column
+      + "bounty … SECURITY-BOUNTY.md" line). Reconcile to coordinated-disclosure / public-ledger
+      credit (no cash), matching the site. ALSO: this reverses **launch Gate G-G** ("Bug bounty
+      announced…", `bf60972`) and `docs/launch/checklist.md:120` — needs a strategy call on whether
+      G-G is dropped/reframed. phub-web did NOT edit these (your lane + launch-gate coupling).
+- [ ] Routing log (finding → owning session): phub-web → phub-security (bounty-doc retirement, above).
 
 ## Decisions / ADRs
 ADR-0022 (three-lock publish), ADR-0047 (scope — dormant surfaces still carry attack surface), SECURITY.md.
