@@ -19,8 +19,15 @@ CI, and the pnpm workspace. Keep the "127.0.0.1:3000 IS production" reality safe
   the web container was flipped to prod on 2026-07-22. Deploy via `scripts/deploy.sh` +
   `scripts/smoke-prod.sh`; preview on a 2nd loopback port from a worktree. See
   memory/project_deploy_topology.md (source of truth) + docs/deploy.md.
-- api/api-worker still run `primitivehub-api:dev` (runserver) — prod api image broken
-  (`No module named uvicorn`); fix before GHCR cutover.
+- api/api-worker still run `primitivehub-api:dev` (runserver) via the stopgap overlay.
+  **Prod image FIXED 2026-10-23** (`c72ec4d`): root cause was `uvicorn` never declared
+  as a dependency (runner CMD runs `python -m uvicorn`, deps stage installs `--no-dev`
+  → `No module named uvicorn`). Added `uvicorn[standard]` to prod deps + regen uv.lock;
+  `docker build --target runner` now boots uvicorn + serves healthz 200 with DEBUG=False
+  (verified against live DB/cache). **Cross-scope flag:** edited `apps/api/pyproject.toml`
+  + `apps/api/uv.lock` (phub-check-engine's path) — platform-required runtime dep; logged
+  here per the cross-session rule. **Live GHCR cutover still PENDING + human-gated** (flips
+  live api/worker off the dev image + drops the source bind-mount — a topology change).
 - Branch of record: launch/noindex-lift-go-live. Analytics self-hosted (Umami, ADR-0046).
 - **Leanness audit (2026-10-03):** MinIO `profiles:[minio]` opt-in ✅, Umami `profiles:[analytics]`
   opt-in ✅, R2/S3 external (not a container) ✅ — none on the critical path. registry/storage/
