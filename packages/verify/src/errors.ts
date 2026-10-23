@@ -17,8 +17,11 @@ export type VerificationErrorCode =
   | "CONTENT_DECODE_FAILED"
   | "SIZE_MISMATCH"
   | "DIGEST_MISMATCH"
-  // Step 3: in-toto Statement (v0.1: stubbed — see README "Known limitations")
+  // Step 3: in-toto Statement binding (v0.2 Phase 1 — R09/R10)
   | "STATEMENT_DECODE_FAILED"
+  | "STATEMENT_INVALID"
+  | "STATEMENT_SUBJECT_MISMATCH"
+  | "STATEMENT_PREDICATE_TYPE_MISMATCH"
   // Step 4–6: cryptographic verification (v0.1: stubbed)
   | "SIGNATURE_VERIFICATION_DEFERRED"
   | "CERT_CHAIN_VERIFICATION_DEFERRED"

@@ -25,6 +25,7 @@ import type { VerificationFailure } from "./errors.js"
 import schemaJson from "../schema/v0.1.json" with { type: "json" }
 import { evaluatePolicy, extractValidation, type PolicyOpts } from "./policy.js"
 import { validateAgainstSchema } from "./schema.js"
+import { verifyStatementBinding } from "./statement.js"
 import type { TrustBundle } from "./types.js"
 
 const TRUST_BUNDLE_SCHEMA = schemaJson as Record<string, unknown>
@@ -181,35 +182,37 @@ export async function verifyBundle(
 
   // ── Steps 3–6 (deferred in v0.1) ────────────────────────────────
   if (level === "full") {
-    deferredSteps.push("statement", "signature", "cert", "rekor")
-    failures.push({
-      step: "statement",
-      code: "STATEMENT_DECODE_FAILED",
-      message: "v0.1 of @primitivehub/verify does not yet decode in-toto Statement protobuf bytes; treat full-verification result as advisory",
-      path: "attestation.statementB64",
-    })
+    // Step 3 (v0.2 Phase 1 — R09/R10): REAL in-toto Statement / predicate
+    // binding. The signature (deferred below) is over this Statement, so
+    // binding its subject digest to the verified content digest ensures a later
+    // signature check authenticates THIS content under an allowed predicate —
+    // not a signature made over some other artifact (R10) or predicate (R09).
+    failures.push(...verifyStatementBinding(b.attestation.statementB64, actualHex, b.attestation.predicateType))
+
+    // Steps 4-6 still deferred (land in v0.2 Phases 2-4 via sigstore-js), so
+    // `authenticated` stays false and `valid` stays false — fail closed.
+    deferredSteps.push("signature", "cert", "rekor")
     failures.push({
       step: "signature",
       code: "SIGNATURE_VERIFICATION_DEFERRED",
-      message: "v0.1 does not yet perform cryptographic signature verification; structural verification has passed",
+      message: "signature verification lands in verify v0.2 Phase 2 (sigstore-js)",
       path: "attestation.signatureB64",
     })
     failures.push({
       step: "cert",
       code: "CERT_CHAIN_VERIFICATION_DEFERRED",
-      message: "v0.1 does not yet walk the cert chain to Sigstore trust roots",
+      message: "Fulcio cert-chain + signer-identity verification lands in v0.2 Phase 2",
       path: "attestation.certChainPem",
     })
     failures.push({
       step: "rekor",
       code: "REKOR_INCLUSION_PROOF_DEFERRED",
-      message: "v0.1 does not yet verify Rekor Merkle inclusion proofs",
+      message: "Rekor inclusion-proof verification lands in v0.2 Phase 3",
       path: "attestation.rekorInclusionProofJson",
     })
-    // Full-level: schema+digest passed (inspected), but steps 3-6 are
-    // stubbed so nothing was authenticated. valid = inspected && auth =
-    // false → fail closed. v0.2 replaces the deferred pushes above with
-    // real Sigstore verification and sets authenticated accordingly.
+    // Statement binding is now real; signature/cert/rekor still deferred, so
+    // nothing is authenticated yet. inspected reflects schema+digest; valid =
+    // inspected && authenticated = false → fail closed.
     return { valid: false, inspected: true, authenticated: false, failures, level, deferredSteps }
   }
 
