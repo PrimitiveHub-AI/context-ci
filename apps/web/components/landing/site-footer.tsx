@@ -56,7 +56,7 @@ function buildColumns(measuredAt: string): readonly Column[] {
       heading: "Project",
       links: [
         { label: "Paper (arXiv preprint v0.1)", href: "/paper" },
-        { label: "Security & bug bounty", href: "/security" },
+        { label: "Security & disclosure", href: "/security" },
         { label: "Contributors", href: "/contributors", soon: true },
         { label: "Source on GitHub", href: GH_REPO, external: true },
       ],

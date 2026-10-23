@@ -5,71 +5,29 @@ import {
   Mail,
   ArrowUpRight,
   AlertOctagon,
-  Coins,
   Scale,
 } from "lucide-react"
 
-import { PlannedBadge } from "@/components/ui/planned-badge"
 import { docRoute } from "@/lib/site"
 
 /**
  * /security — top-level security landing.
  *
- * Mirrors the three lanes from SECURITY.md (vulnerability /
- * false-negative / false-positive) and the bounty scope from
- * SECURITY-BOUNTY.md. Canonical text lives in the markdown files at
- * the repo root; this page is the discoverable web surface that
- * routes a reader to the right lane in one click.
+ * Mirrors the three report lanes from SECURITY.md (vulnerability /
+ * false-negative / false-positive). Canonical text lives in the
+ * markdown files at the repo root; this page is the discoverable web
+ * surface that routes a reader to the right lane in one click.
  *
- * Pre-launch posture inherited: noindex from layout. Bounty payouts
- * are gated to launch (Gate G-G); the section says so on the
- * surface with the existing <PlannedBadge> primitive. The
- * scope/process/severity bands themselves are live and committed
- * pre-launch.
+ * PrimitiveHub is a research initiative, NOT a commercial program:
+ * there is no paid bug-bounty. Reports are coordinated and reporters
+ * are credited in the public closure ledger — recognition, not cash.
  */
 
 export const metadata: Metadata = {
   title: "Security — PrimitiveHub",
   description:
-    "Three lanes for reporting: vulnerabilities go to security@primitivehub.ai, false negatives to the FN ledger, false positives to the FP ledger. Bug bounty scope and severity bands documented.",
+    "Three lanes for reporting: vulnerabilities go to security@primitivehub.ai, false negatives to the FN ledger, false positives to the FP ledger. Coordinated disclosure; reporters credited in the public ledger (research initiative — no paid bounty).",
 }
-
-const SEVERITY_BANDS: ReadonlyArray<{
-  label: string
-  band: string
-  example: string
-}> = [
-  {
-    label: "Critical",
-    band: "$3,000 – $10,000",
-    example:
-      "Verifier kernel accepts a forged Sigstore signature; cross-tenant RLS bypass; RCE on any operated service; verify_before_load returns ok=true for a tampered bundle.",
-  },
-  {
-    label: "High",
-    band: "$1,000 – $3,000",
-    example:
-      "Authenticated cross-organisation IDOR; full Rekor inclusion check bypass; phub install writes outside the target; CI secret exfil via the Action.",
-  },
-  {
-    label: "Medium",
-    band: "$300 – $1,000",
-    example:
-      "Authenticated cross-org information disclosure; stored XSS in primitive content rendering; CSRF on a state-changing endpoint.",
-  },
-  {
-    label: "Low",
-    band: "$100 – $300",
-    example:
-      "Unauthenticated information disclosure (low-sensitivity); reflected XSS without authenticated impact; narrow paired exploits of missing headers.",
-  },
-  {
-    label: "Documentation / hardening",
-    band: "$0 – $100",
-    example:
-      "Substantive doc errors that mislead operators about security guarantees; subtle hardening improvements preventing a documented class.",
-  },
-]
 
 const RESPONSE_STAGES: ReadonlyArray<{
   stage: string
@@ -94,7 +52,7 @@ const RESPONSE_STAGES: ReadonlyArray<{
   {
     stage: "Fix shipped",
     target: "When ready",
-    what: "Reporter notified; reward paid within 30 days of shipment (post-launch).",
+    what: "Reporter notified and credited in the public ledger when the fix ships.",
   },
   {
     stage: "Public post-mortem",
@@ -135,7 +93,7 @@ export default function SecurityPage() {
         </p>
         <div className="mt-5 flex flex-wrap items-center gap-2 text-[11px] font-mono">
           <a
-            href="mailto:security@primitivehub.ai?subject=%5Bbounty%5D%20"
+            href="mailto:security@primitivehub.ai?subject=%5Bsecurity%5D%20"
             className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/[0.06] px-3 py-1.5 text-primary/95 hover:text-primary hover:bg-primary/[0.10] transition-colors"
           >
             <Mail className="size-3" />
@@ -155,8 +113,8 @@ export default function SecurityPage() {
           title="Infrastructure compromise"
           desc="A bug in PrimitiveHub itself — signing, RLS, API, worker, CLI, MCP, verify kernel, GitHub Action."
           cta="security@primitivehub.ai"
-          ctaHref="mailto:security@primitivehub.ai?subject=%5Bbounty%5D%20"
-          note="In scope for cash bounty. See § 4 below for severity bands."
+          ctaHref="mailto:security@primitivehub.ai?subject=%5Bsecurity%5D%20"
+          note="Coordinated disclosure; credited in the public closure ledger."
         />
         <Lane
           icon={<Shield className="size-5 text-amber/80" />}
@@ -166,7 +124,7 @@ export default function SecurityPage() {
           cta="FN-NNN ledger"
           ctaHref={docRoute("docs/false-negative-resolution.md")}
           external
-          note="Credit in the closure ledger. No cash bounty (research credit currency)."
+          note="Credit in the public closure ledger (research-credit currency)."
         />
         <Lane
           icon={<Shield className="size-5 text-success/80" />}
@@ -176,68 +134,33 @@ export default function SecurityPage() {
           cta="FP-NNN ledger"
           ctaHref={docRoute("docs/false-positive-resolution.md")}
           external
-          note="Credit in the closure ledger. No cash bounty (research credit currency)."
+          note="Credit in the public closure ledger (research-credit currency)."
         />
       </section>
 
-      {/* Bug bounty — programme summary */}
-      <section id="bounty" className="scroll-mt-24 mb-16">
+      {/* Recognition — research-credit, not cash. PrimitiveHub is a
+          research initiative; there is no paid bug-bounty programme. */}
+      <section id="recognition" className="scroll-mt-24 mb-16">
         <div className="flex items-center gap-3 mb-2">
-          <Coins className="size-4 text-primary/80" />
+          <Shield className="size-4 text-primary/80" />
           <h2 className="text-sm font-mono uppercase tracking-wider text-primary/85">
-            Bug bounty programme
+            Recognition
           </h2>
-          <PlannedBadge label="payouts at launch" />
         </div>
         <h3 className="text-2xl font-bold text-foreground sm:text-3xl text-balance">
-          The scope is final. The payout switch flips at launch.
+          Credit, not cash.
         </h3>
         <p className="mt-3 text-sm text-muted-foreground leading-relaxed max-w-2xl">
-          Severity bands, scope, response timelines, and safe harbour
-          are all live and version-controlled. Pre-launch reports are
-          gratefully accepted; we credit reporters in the public
-          ledger at the time the fix ships and issue the reward at
-          launch alongside the public programme. Pre-launch reporters
-          are eligible for retroactive payout under the same bands.
-        </p>
-
-        {/* Severity bands */}
-        <div className="mt-8 rounded-xl border border-border/40 overflow-hidden">
-          <div className="grid grid-cols-12 gap-px bg-border/40 text-[10px] font-mono uppercase tracking-widest">
-            <div className="bg-card/60 px-4 py-2.5 col-span-3 text-muted-foreground/80">
-              Severity
-            </div>
-            <div className="bg-card/60 px-4 py-2.5 col-span-3 text-primary/85">
-              Band (USD)
-            </div>
-            <div className="bg-card/60 px-4 py-2.5 col-span-6 text-muted-foreground/80">
-              Example
-            </div>
-          </div>
-          <div className="grid grid-cols-12 gap-px bg-border/40">
-            {SEVERITY_BANDS.map((s) => (
-              <SeverityRow key={s.label} {...s} />
-            ))}
-          </div>
-        </div>
-
-        <p className="mt-4 text-xs text-muted-foreground leading-relaxed">
-          A single report describing multiple distinct vulnerabilities
-          is rewarded as the sum of per-vulnerability bands (within
-          reason; we will not pay 200 × $100 for the same gap
-          discovered in 200 endpoints).
+          PrimitiveHub is a research initiative, not a commercial
+          product — there is <span className="text-foreground/90">no paid
+          bug-bounty programme</span>. We coordinate disclosure, fix the
+          issue, and credit reporters by name (or their preferred handle)
+          in the public closure ledger and the post-mortem at the time the
+          fix ships. Reports are gratefully accepted and taken seriously;
+          the currency is research credit.
         </p>
 
         <div className="mt-6 flex flex-wrap gap-3">
-          <a
-            href={docRoute("SECURITY-BOUNTY.md")}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-md border border-primary/20 bg-primary/[0.04] px-3 py-1.5 text-xs font-mono text-primary/90 hover:text-primary"
-          >
-            Read the full programme (SECURITY-BOUNTY.md)
-            <ArrowUpRight className="size-3" />
-          </a>
           <a
             href={docRoute("SECURITY.md")}
             target="_blank"
@@ -381,30 +304,6 @@ function Lane({ icon, tag, title, desc, cta, ctaHref, external, note }: LaneProp
       </a>
       <p className="mt-2 text-[11px] text-muted-foreground leading-relaxed">{note}</p>
     </div>
-  )
-}
-
-function SeverityRow({
-  label,
-  band,
-  example,
-}: {
-  label: string
-  band: string
-  example: string
-}) {
-  return (
-    <>
-      <div className="bg-card px-4 py-3 col-span-3">
-        <p className="text-sm font-semibold text-foreground">{label}</p>
-      </div>
-      <div className="bg-card px-4 py-3 col-span-3">
-        <p className="text-sm font-mono text-foreground/90 tabular-nums">{band}</p>
-      </div>
-      <div className="bg-card px-4 py-3 col-span-6">
-        <p className="text-[11px] text-muted-foreground leading-relaxed">{example}</p>
-      </div>
-    </>
   )
 }
 
