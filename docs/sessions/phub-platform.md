@@ -34,6 +34,13 @@ CI, and the pnpm workspace. Keep the "127.0.0.1:3000 IS production" reality safe
   `gh` is unauthenticated on this host; no live run query performed this session.
 
 ## Open items
+- [ ] **SSRF handoff, network half `[from: phub-check-engine]` (security — top of stack).** I closed the
+      application-layer SSRF in `apps/api/checks/url_fetcher.py` (the `/check` `mode=url` fetcher now pins the
+      actual connected peer IP + refuses non-https/redirect-bypass; was DNS-rebinding + redirect-auto-follow
+      exploitable to reach the cloud metadata endpoint). **Your half:** block outbound egress from the api
+      container to **169.254.169.254 / fd00:ec2::254 (IMDS)** and **RFC1918 + loopback** at the
+      network/firewall layer, so a future fetch-guard regression still can't reach internal services. Fits the
+      127.0.0.1-only bind posture. Originated by phub-cli; infra portion routed here.
 - [ ] Harden preview-port workflow so dev edits never hit :3000 unintentionally.
 - [ ] CI health across phub-* workflows (cannot query live: `gh` unauthenticated here).
 - [ ] Irreversible launch flips (repo/npm/DNS/noindex) stay HUMAN-ONLY — document the gate.
@@ -48,6 +55,50 @@ CI, and the pnpm workspace. Keep the "127.0.0.1:3000 IS production" reality safe
       `bench/comparison/`, `bench/scripts/compare.py`, `docs/comparison.md`. Owned by
       phub-check-engine + phub-corpus-eval. Not mine to commit. SPINE "working tree clean @
       2026-10-02" is stale.
+
+## SSRF #1 — defence-in-depth (2026-10-23, security > all)
+
+Handoff: docs/security/2026-10-23-ssrf-01-handoff.md (reporter abhibughunt3r,
+high/unauth). Primary app-layer fix = phub-check-engine. Platform half:
+
+- **DELIVERED in-repo** (safe, reviewable):
+  - `infra/egress/ssrf-egress-guard.sh` + README — DOCKER-USER egress deny-list,
+    subnet-aware (carves out the bridge so intra-stack survives), dry-run/apply/
+    remove, idempotent. Dry-run verified (subnet 172.18.0.0/16).
+  - `compose.deploy-local.yaml` — `DEBUG=True→False`, `ALLOWED_HOSTS=*`→pinned.
+  - `scripts/check-prod-hardening.sh` — fails on DEBUG=True / wildcard hosts in
+    resolved config OR live container.
+- ✅ **LIVE FINDING FIXED 2026-10-23:** `primitivehub-api-1` was running
+  `DEBUG=True` + `ALLOWED_HOSTS=*` (dev-image stopgap). Recreated with
+  `DEBUG=False` + pinned ALLOWED_HOSTS + `SECURE_SSL_REDIRECT=False`. Verified
+  healthy, all routes 200, smoke-prod PASS, no debug-page leak.
+  - **Scar:** `DEBUG=False` auto-enables `SECURE_SSL_REDIRECT` (settings.py:281,
+    default True) → 301s every non-`X-Forwarded-Proto:https` request, which killed
+    the healthcheck on the first recreate (→ unhealthy). TLS is terminated at the
+    edge, so the app must not self-redirect — pin `SECURE_SSL_REDIRECT=False`.
+    First recreate was correctly BLOCKED from rolling back to DEBUG=True by the
+    safety classifier; fixed forward instead.
+- ✅ **EGRESS GUARD APPLIED + VERIFIED 2026-10-23** (human-run w/ sudo).
+  From the api container: metadata 169.254.169.254 + RFC-1918 10.0.0.1 BLOCKED
+  (timeout), public example.com 200, api/postgres/valkey/authentik all healthy
+  (intra-stack intact). PHUB_EGRESS chain live in DOCKER-USER.
+- **Persistence addressed (artifacts shipped 2026-10-23):**
+  `infra/egress/phub-egress-guard.service` (systemd oneshot, re-applies on boot
+  after docker) + `scripts/deploy.sh` hook (fail-closed `check-prod-hardening.sh`
+  gate, then egress `--apply` after `up -d`). ⚠️ **One human step left:** install
+  + enable the systemd unit on the host (`systemctl enable --now`) — until then
+  the rules still vanish on reboot. Install cmds in infra/egress/README.md.
+- **Latent landmine found:** `deploy.sh` regenerates a STRIPPED
+  `compose.deploy-local.yaml` (web-only, no api hardening + no dev-image stopgap)
+  if the file is ever missing — would ship DEBUG default + the broken prod api
+  image. The new fail-closed hardening gate in deploy.sh now catches the DEBUG
+  half; the dev-image-stopgap half is subsumed by the GHCR-cutover open item.
+- **Open follow-ups:** wire `check-prod-hardening.sh` + egress `--apply` into
+  `scripts/deploy.sh`; persist iptables across reboot (netfilter-persistent/
+  systemd); re-run egress guard after any docker-network recreate.
+- **Flagged to phub-check-engine** (in handoff doc, not their ledger — it had
+  another session's uncommitted edits): TOCTOU IP-pin still open; url_fetcher
+  echoes upstream errors (blind-SSRF exfil). Fail-closed per handoff.
 
 ## Decisions / ADRs
 ADR-0045 (product-first launch + distribution repo), ADR-0046 (analytics).

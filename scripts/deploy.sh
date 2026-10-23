@@ -88,6 +88,28 @@ for _ in $(seq 1 30); do
 done
 docker ps --format '{{.Names}}\t{{.Status}}' | grep -E 'web|api'
 
+# Prod hardening gate (SSRF #1) — fail the deploy if DEBUG=True / wildcard
+# ALLOWED_HOSTS slipped back in (e.g. a regenerated stripped overlay). Fail
+# closed: a hardening regression must stop the deploy, not ship.
+echo "==> prod hardening gate"
+if ! scripts/check-prod-hardening.sh; then
+  echo "!! prod hardening check FAILED — aborting deploy (DEBUG/ALLOWED_HOSTS unsafe)" >&2
+  exit 1
+fi
+
+# Re-apply the SSRF egress deny-list — `up -d` may have recreated the docker
+# network on a new subnet, which drops the old rules. Needs root; best-effort
+# with a loud warning if we can't elevate.
+echo "==> re-applying SSRF egress guard"
+if [[ "$(id -u)" -eq 0 ]]; then
+  infra/egress/ssrf-egress-guard.sh --apply
+elif sudo -n true 2>/dev/null; then
+  sudo infra/egress/ssrf-egress-guard.sh --apply
+else
+  echo "!! not root and no passwordless sudo — egress guard NOT re-applied." >&2
+  echo "   run: sudo infra/egress/ssrf-egress-guard.sh --apply" >&2
+fi
+
 if [[ "$SMOKE" == 1 ]]; then
   echo "==> post-deploy smoke (live edge)"
   scripts/smoke-prod.sh

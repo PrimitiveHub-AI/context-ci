@@ -1,0 +1,34 @@
+# SSRF egress guard — reboot persistence (phub-platform).
+#
+# The ssrf-egress-guard.sh rules live in iptables and are RUNTIME-ONLY: a host
+# reboot (or a docker-network recreate) drops them and the SSRF egress backstop
+# silently disappears. This oneshot unit re-applies them on every boot, after
+# Docker has created the compose network.
+#
+# Install (on the prod host, as root):
+#   sudo cp infra/egress/phub-egress-guard.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now phub-egress-guard.service
+#   systemctl status phub-egress-guard.service        # verify active (exited)
+#
+# It is idempotent — safe to start repeatedly; the script flushes + rebuilds the
+# PHUB_EGRESS chain and keeps exactly one DOCKER-USER jump.
+
+[Unit]
+Description=PrimitiveHub SSRF egress guard (iptables DOCKER-USER deny-list)
+Documentation=file:/srv/primitivehub/app/infra/egress/README.md
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# Wait (up to ~60s) for the compose network to exist before applying, so a
+# cold boot that races Docker's network creation still lands the rules.
+ExecStartPre=/bin/sh -c 'n=0; until docker network inspect primitivehub_primitivehub_net >/dev/null 2>&1; do n=$((n+1)); [ "$n" -ge 30 ] && exit 1; sleep 2; done'
+ExecStart=/srv/primitivehub/app/infra/egress/ssrf-egress-guard.sh --apply
+ExecStop=/srv/primitivehub/app/infra/egress/ssrf-egress-guard.sh --remove
+
+[Install]
+WantedBy=multi-user.target
