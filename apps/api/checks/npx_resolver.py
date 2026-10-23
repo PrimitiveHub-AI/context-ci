@@ -29,7 +29,16 @@ import tarfile
 import time
 from dataclasses import dataclass
 from urllib.parse import quote, urlparse
-from urllib.request import Request, urlopen
+from urllib.request import Request
+
+# SSRF-safe transport (shared, `docs/security/2026-10-23-ssrf-01-handoff.md`).
+# `guarded_urlopen` is signature-compatible with `urllib.request.urlopen`, so
+# call sites are unchanged and the `npx_resolver.urlopen` mock seam in the tests
+# still works. registry.npmjs.org is host-locked below (primary control, which
+# also constrains the registry-supplied `dist.tarball` URL); this adds the
+# peer-IP pin as defense in depth.
+from ._safe_http import SafeHttpError
+from ._safe_http import guarded_urlopen as urlopen
 
 # Hard caps — ADR-0034 § 2. These are the npm-path defaults; the GitHub
 # path (github_resolver.py) overrides the compressed + uncompressed caps
@@ -229,6 +238,8 @@ def _http_get_bytes(url: str, *, timeout: float, accept: str) -> bytes:
     )
     try:
         response = urlopen(req, timeout=timeout)  # noqa: S310
+    except SafeHttpError as exc:  # SSRF policy refusal (blocked peer / redirect)
+        raise NpxResolveError("npx:internal-address", exc.message) from exc
     except Exception as exc:
         raise NpxResolveError(
             "npx:fetch-failed",

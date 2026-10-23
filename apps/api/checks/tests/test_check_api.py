@@ -436,15 +436,26 @@ def _fake_url_response(
     mock.status = status
     mock.headers = headers or {}
     mock.read = MagicMock(return_value=body)
+    mock.geturl = MagicMock(return_value="https://raw.githubusercontent.com/x/y/main/skill.md")
     return mock
+
+
+def _fake_opener(response: MagicMock) -> MagicMock:
+    """Stand-in for the guarded opener `url_fetcher._build_opener()` returns;
+    `.open(req, timeout=...)` yields the duck-typed response above."""
+    opener = MagicMock()
+    opener.open = MagicMock(return_value=response)
+    return opener
 
 
 @pytest.mark.django_db
 def test_check_endpoint_url_scans_fetched_body(client: Client, run_inline: None) -> None:
-    """`mode=url` fetches the URL via urlopen and scans the body."""
+    """`mode=url` fetches the URL through the guarded opener and scans the body."""
     cache.clear()
     body_bytes = b"# Safe content from the URL.\n"
-    with patch.object(url_fetcher, "urlopen", return_value=_fake_url_response(body_bytes)):
+    with patch.object(
+        url_fetcher, "_build_opener", return_value=_fake_opener(_fake_url_response(body_bytes))
+    ):
         record = _post_and_poll(
             client,
             {"mode": "url", "input": "https://raw.githubusercontent.com/x/y/main/skill.md"},

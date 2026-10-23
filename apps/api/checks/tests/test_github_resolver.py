@@ -309,7 +309,10 @@ def test_auto_mode_dispatches_to_url(client: Any, run_inline: None) -> None:
     fake.status = 200
     fake.headers = {}
     fake.read = MagicMock(return_value=body_bytes)
-    with patch.object(url_fetcher, "urlopen", return_value=fake):
+    fake.geturl = MagicMock(return_value="https://raw.githubusercontent.com/x/y/main/SKILL.md")
+    fake_opener = MagicMock()
+    fake_opener.open = MagicMock(return_value=fake)
+    with patch.object(url_fetcher, "_build_opener", return_value=fake_opener):
         record = _post_and_poll(
             client,
             {"mode": "auto", "input": "https://raw.githubusercontent.com/x/y/main/SKILL.md"},

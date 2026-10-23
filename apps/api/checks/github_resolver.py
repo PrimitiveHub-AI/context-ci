@@ -24,7 +24,15 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from urllib.parse import urlparse
-from urllib.request import Request, urlopen
+from urllib.request import Request
+
+# SSRF-safe transport (shared, `docs/security/2026-10-23-ssrf-01-handoff.md`).
+# `guarded_urlopen` is signature-compatible with `urllib.request.urlopen`, so
+# call sites below are unchanged and the `github_resolver.urlopen` mock seam in
+# the tests still works. codeload.github.com is host-locked below (primary
+# control); this adds the peer-IP pin as defense in depth.
+from ._safe_http import SafeHttpError
+from ._safe_http import guarded_urlopen as urlopen
 
 from .npx_resolver import (
     ExtractionResult,
@@ -183,6 +191,8 @@ def _http_get_bytes(url: str) -> tuple[bytes, int]:
     )
     try:
         response = urlopen(req, timeout=TARBALL_TIMEOUT_SECONDS)  # noqa: S310
+    except SafeHttpError as exc:  # SSRF policy refusal (blocked peer / redirect)
+        raise GithubResolveError("github:internal-address", exc.message) from exc
     except Exception as exc:  # urllib raises HTTPError on 4xx/5xx
         status = getattr(exc, "code", None)
         if isinstance(status, int):
