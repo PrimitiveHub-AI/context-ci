@@ -90,13 +90,13 @@ npm i @primitivehub/verify
 ```ts
 import { verifyBundle } from "@primitivehub/verify";
 
-const result = await verifyBundle(JSON.parse(bundleJson), { level: "policy" });
-if (!result.valid) throw new Error(`untrusted: ${result.failures[0]?.code ?? "unverified"}`);
-// v0.1 note: `valid` requires BOTH inspection AND cryptographic
-// authentication; the crypto (signature / cert / Rekor) is stubbed until
-// v0.2, so `valid` is always false today — fail-closed by design. Do not
-// fall back to `result.inspected` to "make it pass"; see the
-// @primitivehub/verify README before gating consumption on this.
+const result = await verifyBundle(JSON.parse(bundleJson), { level: "full" });
+// The trust gate is `authenticated`, NOT `valid`. `valid` can be true at
+// policy level while authenticating nothing (self-consistent bundle an
+// attacker can forge). v0.1 stubs the crypto, so `authenticated` is always
+// false today — this always throws, fail-closed. Never fall back to
+// `valid`/`inspected` to "make it pass".
+if (!result.authenticated) throw new Error("untrusted: not cryptographically authenticated");
 ```
 
 ### `@primitivehub/mcp-server` — runtime gate for agents
@@ -177,6 +177,15 @@ cd packages/verify && pnpm install && pnpm build && pnpm test
 
 Found a missed attack, a false positive on a real primitive, or a
 vulnerability? See [SECURITY.md](SECURITY.md).
+
+**Acknowledgements.** With thanks to the researchers who responsibly
+disclosed issues to us:
+
+- [**momo-mnsjtxy**](https://github.com/momo-mnsjtxy) — reported a Trust
+  Bundle verification-bypass (fixed in `@primitivehub/verify` 0.1.2 /
+  `@primitivehub/phub` 0.1.3), and followed with an extensive adversarial
+  audit of the Context CI runtime that drove the 0.1.4–0.1.6 fail-closed
+  hardening.
 
 ## License
 
