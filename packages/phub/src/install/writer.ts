@@ -10,8 +10,10 @@
  *     `content.mediaType`. Unknown media types refuse to write.
  */
 
-import { mkdirSync, writeFileSync, existsSync, realpathSync } from "node:fs"
+import { existsSync, realpathSync } from "node:fs"
 import { basename, dirname, isAbsolute, relative, resolve } from "node:path"
+
+import { writeFileNoFollow, UnsafeWriteError } from "../fs/safe-write.js"
 
 export class InstallWriteError extends Error {
   constructor(
@@ -135,25 +137,22 @@ export function writeBundleContent(
     )
   }
 
-  // SECURITY (PH-20261017-02): re-validate symlink-aware containment
-  // IMMEDIATELY before the write. planInstallTarget's check runs at plan time;
-  // a symlink swapped into the install tree between plan and write would
-  // otherwise redirect the write outside the workspace (TOCTOU). This shrinks
-  // the window to the mkdir+write itself.
-  ensureRealpathInsideRoot(target.installPath, target.workspaceRoot, "install path escapes workspace root")
-  mkdirSync(dirname(target.installPath), { recursive: true })
-  // O_EXCL ("wx") refuses to write THROUGH a symlink at the final component and
-  // fails if the target already exists — closing a last-component swap between
-  // the existence check above and the write. The overwrite path (--force)
-  // cannot use O_EXCL, so it relies on the realpath re-check.
+  // SECURITY (SYM / CWE-59/61, follow-up to PH-20261017-02): symlink-safe
+  // write for BOTH default and --force. The previous version left the --force
+  // overwrite path on a plain follow-y write, and the plan-time realpath check
+  // used `existsSync`, which misses a DANGLING final-component symlink. The
+  // shared writer is lstat-based (catches dangling symlinks), re-validates
+  // containment, and writes via O_EXCL (unlinking a confirmed-regular file
+  // first on overwrite) — closing the `--force` + dangling-symlink escape.
   try {
-    writeFileSync(target.installPath, decoded, opts.overwrite ? undefined : { flag: "wx" })
+    writeFileNoFollow(target.installPath, decoded, {
+      overwrite: opts.overwrite,
+      root: target.workspaceRoot,
+    })
   } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === "EEXIST") {
-      throw new InstallWriteError(
-        `install path appeared between check and write (refusing — possible TOCTOU): ${target.installPath}`,
-        "ALREADY_INSTALLED",
-      )
+    if (err instanceof UnsafeWriteError) {
+      const code = err.code === "WRITE_EXISTS" ? "ALREADY_INSTALLED" : "PATH_TRAVERSAL"
+      throw new InstallWriteError(err.message, code)
     }
     throw err
   }

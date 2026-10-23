@@ -171,6 +171,14 @@ runs:
         # no-match detectable as zero coverage below.
         shopt -s globstar nullglob dotglob
         mkdir -p "$PHUB_SARIF_DIR"
+        # SECURITY (SYM / CWE-59/61): a pull_request checkout is PR-author-
+        # controlled; a PR can commit a symlink at the SARIF dir or an output
+        # file, and the `>` redirect follows it to write outside $GITHUB_WORKSPACE.
+        # Refuse a symlinked output dir (per-file paths are checked in the loop).
+        if [ -L "$PHUB_SARIF_DIR" ]; then
+          echo "::error::phub-scan: SARIF directory '$PHUB_SARIF_DIR' is a symlink — refusing (SARIF write-escape)."
+          exit 1
+        fi
         total_findings=0
         any_failed=0
         scanned=0
@@ -186,6 +194,12 @@ runs:
           slug=$(echo "$f" | sed 's:[/]:_:g')
           sarif_path="${PHUB_SARIF_DIR}/${slug}.sarif"
           echo "::group::Scanning $f → $sarif_path"
+          # Refuse to write through a symlinked SARIF path committed by a PR.
+          if [ -L "$sarif_path" ]; then
+            echo "::error file=$sarif_path::phub-scan: SARIF output path is a symlink — refusing to write through it."
+            any_failed=1
+            continue
+          fi
           # phub exits 1 on findings, 2 on errors. --no-fail flips
           # finding-exit to 0 so the loop continues; we track
           # findings via SARIF result count.
@@ -286,7 +300,22 @@ runs:
         PHUB_SARIF_DIR: ${{ inputs.sarif-directory }}
       run: |
         shopt -s nullglob
-        files=( "$PHUB_SARIF_DIR"/*.sarif )
+        # SECURITY (SYM / CWE-59/61): refuse a symlinked output dir or _merged
+        # target (the `>` would escape $GITHUB_WORKSPACE), and drop any symlinked
+        # per-file SARIF (a PR could commit one to read an arbitrary file into
+        # the merge).
+        if [ -L "$PHUB_SARIF_DIR" ] || [ -L "$PHUB_SARIF_DIR/_merged.sarif" ]; then
+          echo "::error::phub-scan: SARIF directory or _merged.sarif is a symlink — refusing."
+          exit 1
+        fi
+        files=()
+        for s in "$PHUB_SARIF_DIR"/*.sarif; do
+          if [ -L "$s" ]; then
+            echo "::warning file=$s::phub-scan: skipping symlinked SARIF input"
+            continue
+          fi
+          files+=("$s")
+        done
         if [ ${#files[@]} -eq 0 ]; then
           echo "::warning::no per-file SARIF to merge"; exit 0
         fi

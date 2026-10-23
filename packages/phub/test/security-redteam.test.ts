@@ -10,6 +10,8 @@ import { join } from "node:path"
 import { describe, expect, it } from "vitest"
 
 import { runAudit, auditCoverage } from "../src/commands/audit.js"
+import { writeLock } from "../src/audit/lock.js"
+import { initCommand } from "../src/commands/init.js"
 import { runScan, scanCommand, UnknownDetectorError } from "../src/commands/scan.js"
 import { verifyBeforeLoad, hasBlockingReason } from "../src/commands/verify-before-load.js"
 import { planInstallTarget, writeBundleContent, InstallWriteError, type BundleHeader } from "../src/install/writer.js"
@@ -322,5 +324,65 @@ describe("PH-20261017-02 — installer re-validates at write time (TOCTOU)", () 
     const { bytesWritten } = writeBundleContent(b, target)
     expect(bytesWritten).toBeGreaterThan(0)
     expect(existsSync(target.installPath)).toBe(true)
+  })
+})
+
+/* ════ Symlink-following writers (2026-10-23, abhibughunt3r) — CWE-59/61 ════ */
+
+/* ── SYM-02: writeLock must not follow a symlinked .primitivehub/phub.lock ── */
+describe("SYM-02 — writeLock refuses a symlinked lock path", () => {
+  const lock = { version: "0.1", generator: "phub@test", artifacts: [], root: ".", top10_version: "0.1" } as never
+
+  it("a repo-committed lock symlink does not clobber the target outside", () => {
+    const ws = mkdtempSync(join(tmpdir(), "sym2-"))
+    const outside = mkdtempSync(join(tmpdir(), "sym2out-"))
+    writeFileSync(join(outside, "victim.txt"), "ORIGINAL", "utf8")
+    mkdirSync(join(ws, ".primitivehub"), { recursive: true })
+    symlinkSync(join(outside, "victim.txt"), join(ws, ".primitivehub", "phub.lock"))
+
+    expect(() => writeLock(join(ws, ".primitivehub", "phub.lock"), lock, ws)).toThrow(/symlink/i)
+    expect(readFileSync(join(outside, "victim.txt"), "utf8")).toBe("ORIGINAL")
+  })
+
+  it("an honest lock write still works", () => {
+    const ws = mkdtempSync(join(tmpdir(), "sym2ok-"))
+    writeLock(join(ws, ".primitivehub", "phub.lock"), lock, ws)
+    expect(existsSync(join(ws, ".primitivehub", "phub.lock"))).toBe(true)
+  })
+})
+
+/* ── SYM-03: install --force + init must not follow a DANGLING final symlink ── */
+describe("SYM-03 — install --force and init refuse dangling symlinks", () => {
+  const bundle = (slug: string): BundleHeader => ({
+    bundleVersion: "0.1",
+    subject: { slug, semver: "1.0.0", contentDigest: "sha256:x" },
+    content: { bytesB64: Buffer.from("payload").toString("base64"), mediaType: "text/markdown" },
+  })
+
+  it("install --force through a dangling install-path symlink cannot escape", () => {
+    const ws = mkdtempSync(join(tmpdir(), "sym3-"))
+    const outside = mkdtempSync(join(tmpdir(), "sym3out-"))
+    const b = bundle("acme")
+    const target = planInstallTarget({ workspaceRoot: ws, installRootRel: ".primitivehub/installed", bundle: b })
+    mkdirSync(target.installDir, { recursive: true })
+    symlinkSync(join(outside, "authorized_keys"), target.installPath) // dangling
+
+    let caught: unknown
+    try {
+      writeBundleContent(b, target, { overwrite: true })
+    } catch (e) {
+      caught = e
+    }
+    expect(caught).toBeInstanceOf(InstallWriteError)
+    expect(existsSync(join(outside, "authorized_keys"))).toBe(false)
+  })
+
+  it("init through a dangling AGENTS.md symlink refuses (exit 2), target not written", () => {
+    const ws = mkdtempSync(join(tmpdir(), "sym3init-"))
+    const outside = mkdtempSync(join(tmpdir(), "sym3initout-"))
+    symlinkSync(join(outside, "bashrc_victim"), join(ws, "AGENTS.md")) // dangling
+    const code = initCommand({ cwd: ws, force: true })
+    expect(code).toBe(2)
+    expect(existsSync(join(outside, "bashrc_victim"))).toBe(false)
   })
 })
