@@ -1,0 +1,229 @@
+{
+  "version": "0.1",
+  "language": "ts",
+  "measured_at": "2026-10-23",
+  "manifest_version": "0.2",
+  "top10_version": "0.1",
+  "samples_total": 99,
+  "per_detector": {
+    "CCI-001": {
+      "tp": 4,
+      "fp": 0,
+      "tn": 37,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "support": 41
+    },
+    "CCI-002": {
+      "tp": 3,
+      "fp": 0,
+      "tn": 37,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "support": 40
+    },
+    "CCI-003": {
+      "tp": 7,
+      "fp": 0,
+      "tn": 37,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "support": 44
+    },
+    "CCI-004": {
+      "tp": 7,
+      "fp": 0,
+      "tn": 37,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "support": 44
+    },
+    "CCI-005": {
+      "tp": 5,
+      "fp": 0,
+      "tn": 37,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "support": 42
+    },
+    "CCI-006": {
+      "tp": 7,
+      "fp": 0,
+      "tn": 37,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "support": 44
+    },
+    "CCI-007": {
+      "tp": 8,
+      "fp": 0,
+      "tn": 37,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "support": 45
+    },
+    "CCI-008": {
+      "tp": 7,
+      "fp": 0,
+      "tn": 37,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "support": 44
+    },
+    "CCI-009": {
+      "tp": 8,
+      "fp": 0,
+      "tn": 37,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "support": 45
+    },
+    "CCI-010": {
+      "tp": 6,
+      "fp": 0,
+      "tn": 37,
+      "fn": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1,
+      "support": 43
+    }
+  },
+  "overall": {
+    "precision_macro": 1,
+    "recall_macro": 1,
+    "f1_macro": 1
+  },
+  "parity": {
+    "agreed_sample_ids": [],
+    "drift_sample_ids": []
+  },
+  "holdout": {
+    "samples_total": 25,
+    "per_detector": {
+      "CCI-001": {
+        "tp": 3,
+        "fp": 0,
+        "tn": 0,
+        "fn": 0,
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "support": 3
+      },
+      "CCI-002": {
+        "tp": 1,
+        "fp": 0,
+        "tn": 0,
+        "fn": 0,
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "support": 1
+      },
+      "CCI-003": {
+        "tp": 2,
+        "fp": 0,
+        "tn": 0,
+        "fn": 0,
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "support": 2
+      },
+      "CCI-004": {
+        "tp": 2,
+        "fp": 0,
+        "tn": 0,
+        "fn": 0,
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "support": 2
+      },
+      "CCI-005": {
+        "tp": 7,
+        "fp": 0,
+        "tn": 0,
+        "fn": 0,
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "support": 7
+      },
+      "CCI-006": {
+        "tp": 3,
+        "fp": 0,
+        "tn": 0,
+        "fn": 0,
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "support": 3
+      },
+      "CCI-007": {
+        "tp": 4,
+        "fp": 0,
+        "tn": 0,
+        "fn": 0,
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "support": 4
+      },
+      "CCI-008": {
+        "tp": 1,
+        "fp": 0,
+        "tn": 0,
+        "fn": 0,
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "support": 1
+      },
+      "CCI-009": {
+        "tp": 1,
+        "fp": 0,
+        "tn": 0,
+        "fn": 0,
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "support": 1
+      },
+      "CCI-010": {
+        "tp": 1,
+        "fp": 0,
+        "tn": 0,
+        "fn": 0,
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "support": 1
+      }
+    },
+    "overall": {
+      "precision_macro": 1,
+      "recall_macro": 1,
+      "f1_macro": 1
+    }
+  }
+}

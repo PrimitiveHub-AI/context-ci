@@ -7,19 +7,26 @@ metadata:
   originSessionId: d2617ce7-b44b-46bd-b49c-dbdbaa870fb9
 ---
 
-The `paper/` draft and earlier commit messages (e.g. "Round 13 PR 13.3 —
-ALL 10 AT F1=1.000 ON BOTH SLICES") claimed perfect scores, but the
-committed `bench/baseline/2026-06-07-{py,ts}.json` they produced do NOT
-support that. Measured truth as of 2026-06-07:
+**UPDATED 2026-10-23 — measured truth has moved; always re-read the LATEST
+committed baseline before quoting any number.** Current committed truth is
+`bench/baseline/2026-10-23-{py,ts}.json` (+ regenerated `docs/evaluation.md`):
 
-- In-sample (99 samples, both engines byte-identical): macro **F1 = 0.991**
-  — CCI-005 (unsafe-shell-install) carries one benign false positive
-  (P=0.833, F1=0.909); the other nine detectors are 1.000.
-- Held-out (25 adversarial samples): **Python recovers all 25** (recall
-  1.000); **TypeScript recovers 18** (macro recall 0.832), missing 7 —
-  CCI-001×1, CCI-005×3, CCI-006×2, CCI-007×1. Cross-engine parity is
-  enforced ONLY on the in-sample slice; the holdout is an honest overfit
-  probe and exposes this gap.
+- In-sample (99 samples, both engines byte-identical): macro **F1 = 1.000**.
+  The CCI-005 benign FP (corpus S-014) was eliminated in t5 **v0.2.8**
+  (noun-modifier lookahead; Py+TS lockstep) — a real FP-class fix, not a
+  relabel, no recall loss.
+- Held-out (25 adversarial samples): **both engines recall 1.000.** The
+  earlier TS holdout gap (recall 0.832, 7 misses) was already closed in code
+  by Round 13 but never re-baselined; re-measured and committed 2026-10-23.
+
+History (do not quote as current): the 2026-06-07 baselines showed in-sample
+**F1 = 0.991** (CCI-005 P=0.833/F1=0.909) and **TS holdout recall 0.832**.
+Those are superseded. **The all-1.000 claim is now TRUE and measured — but on
+a 124-sample corpus it still reads as overfit/theater at a real venue unless
+the paper contextualizes corpus size + that in-sample is the tuned slice and
+the 25-sample holdout is thin (1 sample for several families).** Honesty bar
+unchanged: the risk shifted from "stale over-claim" to "under-contextualized
+perfect score."
 
 `docs/evaluation.md`'s auto-generated tables are the truth; its hand-written
 "Limitations" prose was stale (said 6 holdout / 35 vendors / all-1.000).
@@ -47,7 +54,9 @@ this gap between claimed and measured numbers. An F1=1.000-everywhere paper
 on a 124-sample corpus reads as overfit/theater at a real venue.
 
 **How to apply:** when writing the paper, the homepage, or any public
-metric, echo the committed `bench/baseline/*.json` via `docs/evaluation.md`
-— including the CCI-005 FP and the TS holdout recall gap. Never restate the
-all-1.000 claim. Re-run `bench/scripts/gate.sh` and refresh before quoting.
-Relates to [[feedback-no-fake-numbers]].
+metric, echo the LATEST committed `bench/baseline/*.json` via
+`docs/evaluation.md` — now all-F1=1.000 both slices both languages. Do not
+quote the historical 0.991 / CCI-005-FP / TS-0.832 figures as current. When
+reporting 1.000, pair it with corpus size + holdout thinness so it doesn't
+read as theater. Re-run `bench/scripts/gate.sh` and `render-evaluation.py`
+and refresh before quoting. Relates to [[feedback-no-fake-numbers]].

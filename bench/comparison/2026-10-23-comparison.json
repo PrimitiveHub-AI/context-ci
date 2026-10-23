@@ -1,0 +1,918 @@
+{
+  "version": "0.1",
+  "generated_at": "2026-10-23",
+  "corpus_version": "0.2",
+  "top10_version": "0.1",
+  "samples": {
+    "in_sample": 99,
+    "holdout": 25,
+    "adversarial_in_sample": 52,
+    "adversarial_holdout": 25,
+    "benign_in_sample": 37
+  },
+  "reproducibility": {
+    "committed_baseline": "2026-10-23-py.json",
+    "match": true,
+    "max_f1_delta": 0.0,
+    "worst_detector": null
+  },
+  "scanners": {
+    "primitivehub": {
+      "kind": "engine",
+      "description": "PrimitiveHub Context CI Top-10 detectors (the firewall).",
+      "attack_detection": {
+        "per_cci": {
+          "CCI-001": {
+            "adv_in": 3,
+            "caught_in": 3,
+            "adv_ho": 3,
+            "caught_ho": 3
+          },
+          "CCI-002": {
+            "adv_in": 2,
+            "caught_in": 2,
+            "adv_ho": 1,
+            "caught_ho": 1
+          },
+          "CCI-003": {
+            "adv_in": 6,
+            "caught_in": 6,
+            "adv_ho": 2,
+            "caught_ho": 2
+          },
+          "CCI-004": {
+            "adv_in": 6,
+            "caught_in": 6,
+            "adv_ho": 2,
+            "caught_ho": 2
+          },
+          "CCI-005": {
+            "adv_in": 4,
+            "caught_in": 4,
+            "adv_ho": 7,
+            "caught_ho": 7
+          },
+          "CCI-006": {
+            "adv_in": 6,
+            "caught_in": 6,
+            "adv_ho": 3,
+            "caught_ho": 3
+          },
+          "CCI-007": {
+            "adv_in": 7,
+            "caught_in": 7,
+            "adv_ho": 4,
+            "caught_ho": 4
+          },
+          "CCI-008": {
+            "adv_in": 6,
+            "caught_in": 6,
+            "adv_ho": 1,
+            "caught_ho": 1
+          },
+          "CCI-009": {
+            "adv_in": 7,
+            "caught_in": 7,
+            "adv_ho": 1,
+            "caught_ho": 1
+          },
+          "CCI-010": {
+            "adv_in": 5,
+            "caught_in": 5,
+            "adv_ho": 1,
+            "caught_ho": 1
+          }
+        },
+        "adv_in_total": 52,
+        "adv_in_caught": 52,
+        "adv_in_recall": 1.0,
+        "adv_ho_total": 25,
+        "adv_ho_caught": 25,
+        "adv_ho_recall": 1.0,
+        "benign_total": 37,
+        "benign_flagged": 0,
+        "benign_fp_firings": 0
+      },
+      "regression": {
+        "in_sample": {
+          "samples_total": 99,
+          "per_detector": {
+            "CCI-001": {
+              "tp": 4,
+              "fp": 0,
+              "tn": 37,
+              "fn": 0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 41
+            },
+            "CCI-002": {
+              "tp": 3,
+              "fp": 0,
+              "tn": 37,
+              "fn": 0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 40
+            },
+            "CCI-003": {
+              "tp": 7,
+              "fp": 0,
+              "tn": 37,
+              "fn": 0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 44
+            },
+            "CCI-004": {
+              "tp": 7,
+              "fp": 0,
+              "tn": 37,
+              "fn": 0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 44
+            },
+            "CCI-005": {
+              "tp": 5,
+              "fp": 0,
+              "tn": 37,
+              "fn": 0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 42
+            },
+            "CCI-006": {
+              "tp": 7,
+              "fp": 0,
+              "tn": 37,
+              "fn": 0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 44
+            },
+            "CCI-007": {
+              "tp": 8,
+              "fp": 0,
+              "tn": 37,
+              "fn": 0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 45
+            },
+            "CCI-008": {
+              "tp": 7,
+              "fp": 0,
+              "tn": 37,
+              "fn": 0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 44
+            },
+            "CCI-009": {
+              "tp": 8,
+              "fp": 0,
+              "tn": 37,
+              "fn": 0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 45
+            },
+            "CCI-010": {
+              "tp": 6,
+              "fp": 0,
+              "tn": 37,
+              "fn": 0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 43
+            }
+          },
+          "overall": {
+            "precision_macro": 1.0,
+            "recall_macro": 1.0,
+            "f1_macro": 1.0
+          }
+        },
+        "holdout": {
+          "samples_total": 25,
+          "per_detector": {
+            "CCI-001": {
+              "tp": 3,
+              "fp": 0,
+              "tn": 0,
+              "fn": 0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 3
+            },
+            "CCI-002": {
+              "tp": 1,
+              "fp": 0,
+              "tn": 0,
+              "fn": 0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 1
+            },
+            "CCI-003": {
+              "tp": 2,
+              "fp": 0,
+              "tn": 0,
+              "fn": 0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 2
+            },
+            "CCI-004": {
+              "tp": 2,
+              "fp": 0,
+              "tn": 0,
+              "fn": 0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 2
+            },
+            "CCI-005": {
+              "tp": 7,
+              "fp": 0,
+              "tn": 0,
+              "fn": 0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 7
+            },
+            "CCI-006": {
+              "tp": 3,
+              "fp": 0,
+              "tn": 0,
+              "fn": 0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 3
+            },
+            "CCI-007": {
+              "tp": 4,
+              "fp": 0,
+              "tn": 0,
+              "fn": 0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 4
+            },
+            "CCI-008": {
+              "tp": 1,
+              "fp": 0,
+              "tn": 0,
+              "fn": 0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 1
+            },
+            "CCI-009": {
+              "tp": 1,
+              "fp": 0,
+              "tn": 0,
+              "fn": 0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 1
+            },
+            "CCI-010": {
+              "tp": 1,
+              "fp": 0,
+              "tn": 0,
+              "fn": 0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 1
+            }
+          },
+          "overall": {
+            "precision_macro": 1.0,
+            "recall_macro": 1.0,
+            "f1_macro": 1.0
+          }
+        }
+      }
+    },
+    "no-scanner": {
+      "kind": "baseline",
+      "description": "Status quo: nothing inspects the primitive before load. The floor.",
+      "attack_detection": {
+        "per_cci": {
+          "CCI-001": {
+            "adv_in": 3,
+            "caught_in": 0,
+            "adv_ho": 3,
+            "caught_ho": 0
+          },
+          "CCI-002": {
+            "adv_in": 2,
+            "caught_in": 0,
+            "adv_ho": 1,
+            "caught_ho": 0
+          },
+          "CCI-003": {
+            "adv_in": 6,
+            "caught_in": 0,
+            "adv_ho": 2,
+            "caught_ho": 0
+          },
+          "CCI-004": {
+            "adv_in": 6,
+            "caught_in": 0,
+            "adv_ho": 2,
+            "caught_ho": 0
+          },
+          "CCI-005": {
+            "adv_in": 4,
+            "caught_in": 0,
+            "adv_ho": 7,
+            "caught_ho": 0
+          },
+          "CCI-006": {
+            "adv_in": 6,
+            "caught_in": 0,
+            "adv_ho": 3,
+            "caught_ho": 0
+          },
+          "CCI-007": {
+            "adv_in": 7,
+            "caught_in": 0,
+            "adv_ho": 4,
+            "caught_ho": 0
+          },
+          "CCI-008": {
+            "adv_in": 6,
+            "caught_in": 0,
+            "adv_ho": 1,
+            "caught_ho": 0
+          },
+          "CCI-009": {
+            "adv_in": 7,
+            "caught_in": 0,
+            "adv_ho": 1,
+            "caught_ho": 0
+          },
+          "CCI-010": {
+            "adv_in": 5,
+            "caught_in": 0,
+            "adv_ho": 1,
+            "caught_ho": 0
+          }
+        },
+        "adv_in_total": 52,
+        "adv_in_caught": 0,
+        "adv_in_recall": 0.0,
+        "adv_ho_total": 25,
+        "adv_ho_caught": 0,
+        "adv_ho_recall": 0.0,
+        "benign_total": 37,
+        "benign_flagged": 0,
+        "benign_fp_firings": 0
+      },
+      "regression": {
+        "in_sample": {
+          "samples_total": 99,
+          "per_detector": {
+            "CCI-001": {
+              "tp": 1,
+              "fp": 0,
+              "tn": 37,
+              "fn": 3,
+              "precision": 1.0,
+              "recall": 0.25,
+              "f1": 0.4,
+              "support": 41
+            },
+            "CCI-002": {
+              "tp": 1,
+              "fp": 0,
+              "tn": 37,
+              "fn": 2,
+              "precision": 1.0,
+              "recall": 0.3333333333333333,
+              "f1": 0.5,
+              "support": 40
+            },
+            "CCI-003": {
+              "tp": 1,
+              "fp": 0,
+              "tn": 37,
+              "fn": 6,
+              "precision": 1.0,
+              "recall": 0.14285714285714285,
+              "f1": 0.25,
+              "support": 44
+            },
+            "CCI-004": {
+              "tp": 1,
+              "fp": 0,
+              "tn": 37,
+              "fn": 6,
+              "precision": 1.0,
+              "recall": 0.14285714285714285,
+              "f1": 0.25,
+              "support": 44
+            },
+            "CCI-005": {
+              "tp": 1,
+              "fp": 0,
+              "tn": 37,
+              "fn": 4,
+              "precision": 1.0,
+              "recall": 0.2,
+              "f1": 0.33333333333333337,
+              "support": 42
+            },
+            "CCI-006": {
+              "tp": 0,
+              "fp": 0,
+              "tn": 37,
+              "fn": 7,
+              "precision": null,
+              "recall": 0.0,
+              "f1": null,
+              "support": 44
+            },
+            "CCI-007": {
+              "tp": 0,
+              "fp": 0,
+              "tn": 37,
+              "fn": 8,
+              "precision": null,
+              "recall": 0.0,
+              "f1": null,
+              "support": 45
+            },
+            "CCI-008": {
+              "tp": 0,
+              "fp": 0,
+              "tn": 37,
+              "fn": 7,
+              "precision": null,
+              "recall": 0.0,
+              "f1": null,
+              "support": 44
+            },
+            "CCI-009": {
+              "tp": 0,
+              "fp": 0,
+              "tn": 37,
+              "fn": 8,
+              "precision": null,
+              "recall": 0.0,
+              "f1": null,
+              "support": 45
+            },
+            "CCI-010": {
+              "tp": 1,
+              "fp": 0,
+              "tn": 37,
+              "fn": 5,
+              "precision": 1.0,
+              "recall": 0.16666666666666666,
+              "f1": 0.2857142857142857,
+              "support": 43
+            }
+          },
+          "overall": {
+            "precision_macro": 1.0,
+            "recall_macro": 0.12357142857142858,
+            "f1_macro": 0.3365079365079365
+          }
+        },
+        "holdout": {
+          "samples_total": 25,
+          "per_detector": {
+            "CCI-001": {
+              "tp": 0,
+              "fp": 0,
+              "tn": 0,
+              "fn": 3,
+              "precision": null,
+              "recall": 0.0,
+              "f1": null,
+              "support": 3
+            },
+            "CCI-002": {
+              "tp": 0,
+              "fp": 0,
+              "tn": 0,
+              "fn": 1,
+              "precision": null,
+              "recall": 0.0,
+              "f1": null,
+              "support": 1
+            },
+            "CCI-003": {
+              "tp": 0,
+              "fp": 0,
+              "tn": 0,
+              "fn": 2,
+              "precision": null,
+              "recall": 0.0,
+              "f1": null,
+              "support": 2
+            },
+            "CCI-004": {
+              "tp": 0,
+              "fp": 0,
+              "tn": 0,
+              "fn": 2,
+              "precision": null,
+              "recall": 0.0,
+              "f1": null,
+              "support": 2
+            },
+            "CCI-005": {
+              "tp": 0,
+              "fp": 0,
+              "tn": 0,
+              "fn": 7,
+              "precision": null,
+              "recall": 0.0,
+              "f1": null,
+              "support": 7
+            },
+            "CCI-006": {
+              "tp": 0,
+              "fp": 0,
+              "tn": 0,
+              "fn": 3,
+              "precision": null,
+              "recall": 0.0,
+              "f1": null,
+              "support": 3
+            },
+            "CCI-007": {
+              "tp": 0,
+              "fp": 0,
+              "tn": 0,
+              "fn": 4,
+              "precision": null,
+              "recall": 0.0,
+              "f1": null,
+              "support": 4
+            },
+            "CCI-008": {
+              "tp": 0,
+              "fp": 0,
+              "tn": 0,
+              "fn": 1,
+              "precision": null,
+              "recall": 0.0,
+              "f1": null,
+              "support": 1
+            },
+            "CCI-009": {
+              "tp": 0,
+              "fp": 0,
+              "tn": 0,
+              "fn": 1,
+              "precision": null,
+              "recall": 0.0,
+              "f1": null,
+              "support": 1
+            },
+            "CCI-010": {
+              "tp": 0,
+              "fp": 0,
+              "tn": 0,
+              "fn": 1,
+              "precision": null,
+              "recall": 0.0,
+              "f1": null,
+              "support": 1
+            }
+          },
+          "overall": {
+            "precision_macro": null,
+            "recall_macro": 0.0,
+            "f1_macro": null
+          }
+        }
+      }
+    },
+    "keyword-grep": {
+      "kind": "baseline",
+      "description": "Naive per-category signature grep + unicode/size checks. No context model.",
+      "attack_detection": {
+        "per_cci": {
+          "CCI-001": {
+            "adv_in": 3,
+            "caught_in": 2,
+            "adv_ho": 3,
+            "caught_ho": 2
+          },
+          "CCI-002": {
+            "adv_in": 2,
+            "caught_in": 2,
+            "adv_ho": 1,
+            "caught_ho": 1
+          },
+          "CCI-003": {
+            "adv_in": 6,
+            "caught_in": 4,
+            "adv_ho": 2,
+            "caught_ho": 2
+          },
+          "CCI-004": {
+            "adv_in": 6,
+            "caught_in": 6,
+            "adv_ho": 2,
+            "caught_ho": 2
+          },
+          "CCI-005": {
+            "adv_in": 4,
+            "caught_in": 4,
+            "adv_ho": 7,
+            "caught_ho": 6
+          },
+          "CCI-006": {
+            "adv_in": 6,
+            "caught_in": 5,
+            "adv_ho": 3,
+            "caught_ho": 3
+          },
+          "CCI-007": {
+            "adv_in": 7,
+            "caught_in": 7,
+            "adv_ho": 4,
+            "caught_ho": 4
+          },
+          "CCI-008": {
+            "adv_in": 6,
+            "caught_in": 5,
+            "adv_ho": 1,
+            "caught_ho": 0
+          },
+          "CCI-009": {
+            "adv_in": 7,
+            "caught_in": 6,
+            "adv_ho": 1,
+            "caught_ho": 1
+          },
+          "CCI-010": {
+            "adv_in": 5,
+            "caught_in": 1,
+            "adv_ho": 1,
+            "caught_ho": 0
+          }
+        },
+        "adv_in_total": 52,
+        "adv_in_caught": 42,
+        "adv_in_recall": 0.8076923076923077,
+        "adv_ho_total": 25,
+        "adv_ho_caught": 21,
+        "adv_ho_recall": 0.84,
+        "benign_total": 37,
+        "benign_flagged": 28,
+        "benign_fp_firings": 33
+      },
+      "regression": {
+        "in_sample": {
+          "samples_total": 99,
+          "per_detector": {
+            "CCI-001": {
+              "tp": 3,
+              "fp": 2,
+              "tn": 35,
+              "fn": 1,
+              "precision": 0.6,
+              "recall": 0.75,
+              "f1": 0.6666666666666665,
+              "support": 41
+            },
+            "CCI-002": {
+              "tp": 3,
+              "fp": 0,
+              "tn": 37,
+              "fn": 0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 40
+            },
+            "CCI-003": {
+              "tp": 5,
+              "fp": 3,
+              "tn": 34,
+              "fn": 2,
+              "precision": 0.625,
+              "recall": 0.7142857142857143,
+              "f1": 0.6666666666666666,
+              "support": 44
+            },
+            "CCI-004": {
+              "tp": 7,
+              "fp": 5,
+              "tn": 32,
+              "fn": 0,
+              "precision": 0.5833333333333334,
+              "recall": 1.0,
+              "f1": 0.7368421052631579,
+              "support": 44
+            },
+            "CCI-005": {
+              "tp": 5,
+              "fp": 3,
+              "tn": 34,
+              "fn": 0,
+              "precision": 0.625,
+              "recall": 1.0,
+              "f1": 0.7692307692307693,
+              "support": 42
+            },
+            "CCI-006": {
+              "tp": 6,
+              "fp": 7,
+              "tn": 30,
+              "fn": 1,
+              "precision": 0.46153846153846156,
+              "recall": 0.8571428571428571,
+              "f1": 0.6,
+              "support": 44
+            },
+            "CCI-007": {
+              "tp": 8,
+              "fp": 4,
+              "tn": 33,
+              "fn": 0,
+              "precision": 0.6666666666666666,
+              "recall": 1.0,
+              "f1": 0.8,
+              "support": 45
+            },
+            "CCI-008": {
+              "tp": 6,
+              "fp": 4,
+              "tn": 33,
+              "fn": 1,
+              "precision": 0.6,
+              "recall": 0.8571428571428571,
+              "f1": 0.7058823529411764,
+              "support": 44
+            },
+            "CCI-009": {
+              "tp": 6,
+              "fp": 5,
+              "tn": 32,
+              "fn": 2,
+              "precision": 0.5454545454545454,
+              "recall": 0.75,
+              "f1": 0.631578947368421,
+              "support": 45
+            },
+            "CCI-010": {
+              "tp": 2,
+              "fp": 0,
+              "tn": 37,
+              "fn": 4,
+              "precision": 1.0,
+              "recall": 0.3333333333333333,
+              "f1": 0.5,
+              "support": 43
+            }
+          },
+          "overall": {
+            "precision_macro": 0.6706993006993007,
+            "recall_macro": 0.8261904761904761,
+            "f1_macro": 0.7076867508136858
+          }
+        },
+        "holdout": {
+          "samples_total": 25,
+          "per_detector": {
+            "CCI-001": {
+              "tp": 2,
+              "fp": 0,
+              "tn": 0,
+              "fn": 1,
+              "precision": 1.0,
+              "recall": 0.6666666666666666,
+              "f1": 0.8,
+              "support": 3
+            },
+            "CCI-002": {
+              "tp": 1,
+              "fp": 0,
+              "tn": 0,
+              "fn": 0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 1
+            },
+            "CCI-003": {
+              "tp": 2,
+              "fp": 0,
+              "tn": 0,
+              "fn": 0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 2
+            },
+            "CCI-004": {
+              "tp": 2,
+              "fp": 0,
+              "tn": 0,
+              "fn": 0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 2
+            },
+            "CCI-005": {
+              "tp": 6,
+              "fp": 0,
+              "tn": 0,
+              "fn": 1,
+              "precision": 1.0,
+              "recall": 0.8571428571428571,
+              "f1": 0.923076923076923,
+              "support": 7
+            },
+            "CCI-006": {
+              "tp": 3,
+              "fp": 0,
+              "tn": 0,
+              "fn": 0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 3
+            },
+            "CCI-007": {
+              "tp": 4,
+              "fp": 0,
+              "tn": 0,
+              "fn": 0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 4
+            },
+            "CCI-008": {
+              "tp": 0,
+              "fp": 0,
+              "tn": 0,
+              "fn": 1,
+              "precision": null,
+              "recall": 0.0,
+              "f1": null,
+              "support": 1
+            },
+            "CCI-009": {
+              "tp": 1,
+              "fp": 0,
+              "tn": 0,
+              "fn": 0,
+              "precision": 1.0,
+              "recall": 1.0,
+              "f1": 1.0,
+              "support": 1
+            },
+            "CCI-010": {
+              "tp": 0,
+              "fp": 0,
+              "tn": 0,
+              "fn": 1,
+              "precision": null,
+              "recall": 0.0,
+              "f1": null,
+              "support": 1
+            }
+          },
+          "overall": {
+            "precision_macro": 1.0,
+            "recall_macro": 0.7523809523809524,
+            "f1_macro": 0.9653846153846154
+          }
+        }
+      }
+    }
+  }
+}
