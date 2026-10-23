@@ -238,15 +238,52 @@ const ALL_PATTERNS = [
   ...POLICY_BYPASS_PATTERNS,
 ]
 
+// v0.2.9 (RC1 truth fix — phub-detection-quality-audit RC1). A signature
+// match proves a PATTERN is present, not that a specific malware campaign
+// is. The old copy hardcoded "this is the Shai-Hulud vector — remote code
+// fetched and executed without verification" for EVERY family, which is
+// (a) a named-campaign attribution the signature can't support and (b)
+// mechanically false for 5 of the 6 families (brew/pip run install-time
+// scripts, npx downloads a package, policy-bypass installs nothing). Each
+// family now describes its own mechanism; the Shai-Hulud NAME is reserved
+// for the one family that performs it (shell-pipe-from-network). Lockstep
+// with apps/api/scanners/t5_unsafe_shell_install.py § v0.2.9.
+const FAMILY_MECHANISM: Record<string, string> = {
+  "shell-pipe-from-network":
+    "pipes network-fetched content straight into a shell — remote code is " +
+    "fetched and executed without verification (the classic curl|sh shape " +
+    "used by supply-chain worms such as Shai-Hulud)",
+  "npx-arbitrary-install":
+    "invokes npx, which downloads and runs an npm package; this shape also " +
+    "covers routine installs like `npx eslint@latest`, so confirm the package " +
+    "name and source are untrusted before treating it as an attack",
+  "pip-arbitrary-install":
+    "installs a Python package from a URL / VCS / pre-release source, which " +
+    "runs that package's setup code at install time; confirm the source is trusted",
+  "brew-install":
+    "installs a Homebrew formula/cask whose install-time scripts are not " +
+    "signature-validated; confirm the tap/cask is the intended one",
+  "install-instruction-to-agent":
+    "is prose directing the agent to run an install command; confirm it is a " +
+    "live directive, not a documented example",
+  "policy-bypass":
+    "disables a platform signing / policy / sandbox protection " +
+    "(Gatekeeper/SIP/SELinux/AppArmor/ExecutionPolicy/Defender); it installs " +
+    "nothing by itself but removes a guardrail a later install would rely on",
+}
+
+const GENERIC_MECHANISM = "matches a known unsafe-install shape; review it in context"
+
 function hintForMatch(
   content: string,
   match: RegExpExecArray,
   tag: string,
 ): DiffHint {
+  const mechanism = FAMILY_MECHANISM[tag] ?? GENERIC_MECHANISM
   return {
     line: lineForPosition(content, match.index),
     snippet: truncateSnippet(match[0]),
-    suggestion: `Remove or rephrase (${tag}); this is the Shai-Hulud vector — remote code fetched and executed without verification.`,
+    suggestion: `Remove or rephrase (${tag}); this ${mechanism}.`,
     detailTag: tag,
   }
 }
@@ -255,7 +292,7 @@ export class T5UnsafeShellInstallDetector {
   readonly name = "t5.unsafe_shell_install"
   readonly threatCategory = "T5"
   readonly cciId = "CCI-005"
-  readonly detectorVersion = "0.2.8"
+  readonly detectorVersion = "0.2.9"
 
   run(ctx: DetectorContext): Verdict {
     const hints: DiffHint[] = []
@@ -314,13 +351,23 @@ export class T5UnsafeShellInstallDetector {
     }
 
     const plural = hints.length === 1 ? "" : "s"
+    const tagsPresent = [...new Set(hints.map((h) => h.detailTag))].sort()
+    let summary =
+      `Matched ${hints.length} unsafe-install pattern${plural} across: ` +
+      `${tagsPresent.join(", ")}. These are known-risky install shapes that ` +
+      "need human confirmation — a signature match is not proof of malice."
+    if (tagsPresent.includes("shell-pipe-from-network")) {
+      summary +=
+        " Includes a curl|sh-style remote-fetch-and-execute pattern " +
+        "(the Shai-Hulud supply-chain shape)."
+    }
     return {
       detectorName: this.name,
       threatCategory: this.threatCategory,
       cciId: this.cciId,
       severity: Severity.FAIL,
       passed: false,
-      summary: `Matched ${hints.length} unsafe-shell-install pattern${plural}; this is the Shai-Hulud supply-chain vector.`,
+      summary,
       detectorVersion: this.detectorVersion,
       diffHints: hints,
     }

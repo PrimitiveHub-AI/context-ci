@@ -175,11 +175,29 @@ const ALL_PATTERNS = [
   ...SCAN_AND_SEND_PATTERNS,
 ]
 
+// v0.2.3 (RC1 truth fix — phub-detection-quality-audit RC1). Per-family
+// mechanism copy; the old text asserted "transmit credentials" for every
+// family (and "transmit secrets" in the summary) even for hide-in-output,
+// which has no transmit step. Lockstep with
+// apps/api/scanners/t6_credential_exfiltration.py § v0.2.3.
+const TAG_MECHANISM: Record<string, string> = {
+  "send-secrets-to-destination":
+    "directs the agent to transmit secrets to an external destination",
+  "exfiltrate-via-network": "embeds a network call that would transmit secrets off-host",
+  "scan-and-send": "directs the agent to read credential material and transmit it",
+  "hide-in-output":
+    "directs the agent to place a credential value into its own response " +
+    "(output-channel disclosure, not an active network transmit)",
+}
+
+const GENERIC_MECHANISM = "matches a credential-exfiltration shape"
+
 function hintForMatch(content: string, match: RegExpExecArray, tag: string): DiffHint {
+  const mechanism = TAG_MECHANISM[tag] ?? GENERIC_MECHANISM
   return {
     line: lineForPosition(content, match.index),
     snippet: truncateSnippet(match[0]),
-    suggestion: `Credential-exfiltration instruction (${tag}). The primitive directs the agent to access and transmit credentials, tokens, or secrets — the agent has legitimate access, so OS-level controls miss this. Remove the instruction or rephrase as a non-actionable description.`,
+    suggestion: `Credential-exfiltration instruction (${tag}): ${mechanism}. The agent has legitimate access to this material, so OS-level controls miss it. Whether this is malicious or a secrets-management teaching example is for a human to confirm — remove the instruction or rephrase it as a non-actionable description.`,
     detailTag: tag,
   }
 }
@@ -188,7 +206,7 @@ export class T6CredentialExfiltrationDetector {
   readonly name = "t6.credential_exfiltration"
   readonly threatCategory = "T6"
   readonly cciId = "CCI-006"
-  readonly detectorVersion = "0.2.2"
+  readonly detectorVersion = "0.2.3"
 
   run(ctx: DetectorContext): Verdict {
     const hints: DiffHint[] = []
@@ -216,13 +234,18 @@ export class T6CredentialExfiltrationDetector {
     }
 
     const plural = hints.length === 1 ? "" : "s"
+    const tagsPresent = [...new Set(hints.map((h) => h.detailTag))].sort()
+    const summary =
+      `Matched ${hints.length} credential-exfiltration pattern${plural} across: ` +
+      `${tagsPresent.join(", ")}. These are credential-access/disclosure shapes ` +
+      "that need human confirmation; not every match is an active network transmit."
     return {
       detectorName: this.name,
       threatCategory: this.threatCategory,
       cciId: this.cciId,
       severity: Severity.FAIL,
       passed: false,
-      summary: `Matched ${hints.length} credential-exfiltration pattern${plural}; instruction directs agent to transmit secrets.`,
+      summary,
       detectorVersion: this.detectorVersion,
       diffHints: hints,
     }

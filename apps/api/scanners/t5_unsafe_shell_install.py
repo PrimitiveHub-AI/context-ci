@@ -367,17 +367,61 @@ _MAX_HINTS_PER_VERDICT = 10
 _SNIPPET_MAX_CHARS = 120
 
 
+# v0.2.9 (RC1 truth fix — phub-detection-quality-audit RC1). A signature
+# match proves a PATTERN is present, not that a specific malware campaign
+# is. The old copy hardcoded "this is the Shai-Hulud vector — remote code
+# fetched and executed without verification" for EVERY family, which is
+# (a) a named-campaign attribution the signature can't support and (b)
+# mechanically false for 5 of the 6 families (brew/pip run install-time
+# scripts, npx downloads a package, policy-bypass installs nothing). Each
+# family now describes its own mechanism; the Shai-Hulud NAME is reserved
+# for the one family that performs that mechanism (shell-pipe-from-network).
+# The engine already treats these as RISKY ("signatures alone are not
+# proof of malice", checks/verdict.py) — this aligns the detector copy
+# with that stance. Lockstep with
+# packages/phub/src/scanners/t5-unsafe-shell-install.ts § v0.2.9.
+_FAMILY_MECHANISM: dict[str, str] = {
+    "shell-pipe-from-network": (
+        "pipes network-fetched content straight into a shell — remote code is "
+        "fetched and executed without verification (the classic curl|sh shape "
+        "used by supply-chain worms such as Shai-Hulud)"
+    ),
+    "npx-arbitrary-install": (
+        "invokes npx, which downloads and runs an npm package; this shape also "
+        "covers routine installs like `npx eslint@latest`, so confirm the package "
+        "name and source are untrusted before treating it as an attack"
+    ),
+    "pip-arbitrary-install": (
+        "installs a Python package from a URL / VCS / pre-release source, which "
+        "runs that package's setup code at install time; confirm the source is trusted"
+    ),
+    "brew-install": (
+        "installs a Homebrew formula/cask whose install-time scripts are not "
+        "signature-validated; confirm the tap/cask is the intended one"
+    ),
+    "install-instruction-to-agent": (
+        "is prose directing the agent to run an install command; confirm it is a "
+        "live directive, not a documented example"
+    ),
+    "policy-bypass": (
+        "disables a platform signing / policy / sandbox protection "
+        "(Gatekeeper/SIP/SELinux/AppArmor/ExecutionPolicy/Defender); it installs "
+        "nothing by itself but removes a guardrail a later install would rely on"
+    ),
+}
+
+_GENERIC_MECHANISM = "matches a known unsafe-install shape; review it in context"
+
+
 def _hint_for_match(content: str, match: re.Match[str], tag: str) -> DiffHint:
     line_no = content.count("\n", 0, match.start()) + 1
     raw = match.group(0)
     snippet = raw[:_SNIPPET_MAX_CHARS] + ("…" if len(raw) > _SNIPPET_MAX_CHARS else "")
+    mechanism = _FAMILY_MECHANISM.get(tag, _GENERIC_MECHANISM)
     return DiffHint(
         line=line_no,
         snippet=snippet,
-        suggestion=(
-            f"Remove or rephrase ({tag}); this is the Shai-Hulud vector — "
-            "remote code fetched and executed without verification."
-        ),
+        suggestion=f"Remove or rephrase ({tag}); this {mechanism}.",
         detail_tag=tag,
     )
 
@@ -390,7 +434,7 @@ class T5UnsafeShellInstallDetector:
     name = "t5.unsafe_shell_install"
     threat_category = "T5"  # legacy; back-compat
     cci_id = "CCI-005"  # Context CI Top 10 v0.1 canonical ID (ADR-0016)
-    detector_version = "0.2.8"
+    detector_version = "0.2.9"
 
     def run(self, ctx: DetectorContext) -> Verdict:
         hints: list[DiffHint] = []
@@ -439,17 +483,25 @@ class T5UnsafeShellInstallDetector:
                 detector_version=self.detector_version,
             )
 
+        tags_present = sorted({h.detail_tag for h in hints})
+        summary = (
+            f"Matched {len(hints)} unsafe-install pattern"
+            f"{'s' if len(hints) != 1 else ''} across: {', '.join(tags_present)}. "
+            "These are known-risky install shapes that need human confirmation — "
+            "a signature match is not proof of malice."
+        )
+        if "shell-pipe-from-network" in tags_present:
+            summary += (
+                " Includes a curl|sh-style remote-fetch-and-execute pattern "
+                "(the Shai-Hulud supply-chain shape)."
+            )
         return Verdict(
             detector_name=self.name,
             threat_category=self.threat_category,
             cci_id=self.cci_id,
             severity=Severity.FAIL,
             passed=False,
-            summary=(
-                f"Matched {len(hints)} unsafe-shell-install pattern"
-                f"{'s' if len(hints) != 1 else ''}; "
-                "this is the Shai-Hulud supply-chain vector."
-            ),
+            summary=summary,
             diff_hints=tuple(hints),
             detector_version=self.detector_version,
         )

@@ -214,18 +214,47 @@ _MAX_HINTS_PER_VERDICT = 10
 _SNIPPET_MAX_CHARS = 120
 
 
+# v0.2.3 (RC1 truth fix — phub-detection-quality-audit RC1). The old copy
+# asserted "directs the agent to access and transmit credentials" for every
+# family, and the summary said "transmit secrets" unconditionally. That
+# over-asserts both mechanism and intent for the hide-in-output family,
+# where the secret is placed into the agent's own response with no transmit
+# step. Each family now states its own mechanism, and whether it is
+# malicious or a secrets-management teaching example is routed to a human.
+# Lockstep with packages/phub/src/scanners/t6-credential-exfiltration.ts § v0.2.3.
+_TAG_MECHANISM: dict[str, str] = {
+    "send-secrets-to-destination": (
+        "directs the agent to transmit secrets to an external destination"
+    ),
+    "exfiltrate-via-network": (
+        "embeds a network call that would transmit secrets off-host"
+    ),
+    "scan-and-send": (
+        "directs the agent to read credential material and transmit it"
+    ),
+    "hide-in-output": (
+        "directs the agent to place a credential value into its own response "
+        "(output-channel disclosure, not an active network transmit)"
+    ),
+}
+
+_GENERIC_MECHANISM = "matches a credential-exfiltration shape"
+
+
 def _hint_for_match(content: str, match: re.Match[str], tag: str) -> DiffHint:
     line_no = content.count("\n", 0, match.start()) + 1
     raw = match.group(0)
     snippet = raw[:_SNIPPET_MAX_CHARS] + ("…" if len(raw) > _SNIPPET_MAX_CHARS else "")
+    mechanism = _TAG_MECHANISM.get(tag, _GENERIC_MECHANISM)
     return DiffHint(
         line=line_no,
         snippet=snippet,
         suggestion=(
-            f"Credential-exfiltration instruction ({tag}). The primitive directs the "
-            "agent to access and transmit credentials, tokens, or secrets — the agent "
-            "has legitimate access, so OS-level controls miss this. Remove the "
-            "instruction or rephrase as a non-actionable description."
+            f"Credential-exfiltration instruction ({tag}): {mechanism}. The agent has "
+            "legitimate access to this material, so OS-level controls miss it. Whether "
+            "this is malicious or a secrets-management teaching example is for a human "
+            "to confirm — remove the instruction or rephrase it as a non-actionable "
+            "description."
         ),
         detail_tag=tag,
     )
@@ -243,7 +272,7 @@ class T6CredentialExfiltrationDetector:
     name = "t6.credential_exfiltration"
     threat_category = "T6"
     cci_id = "CCI-006"
-    detector_version = "0.2.2"
+    detector_version = "0.2.3"
 
     def run(self, ctx: DetectorContext) -> Verdict:
         hints: list[DiffHint] = []
@@ -267,6 +296,7 @@ class T6CredentialExfiltrationDetector:
             )
 
         plural = "s" if len(hints) != 1 else ""
+        tags_present = sorted({h.detail_tag for h in hints})
         return Verdict(
             detector_name=self.name,
             threat_category=self.threat_category,
@@ -274,8 +304,10 @@ class T6CredentialExfiltrationDetector:
             severity=Severity.FAIL,
             passed=False,
             summary=(
-                f"Matched {len(hints)} credential-exfiltration pattern{plural}; "
-                "instruction directs agent to transmit secrets."
+                f"Matched {len(hints)} credential-exfiltration pattern{plural} across: "
+                f"{', '.join(tags_present)}. These are credential-access/disclosure "
+                "shapes that need human confirmation; not every match is an active "
+                "network transmit."
             ),
             diff_hints=tuple(hints),
             detector_version=self.detector_version,

@@ -94,7 +94,7 @@ function scanInvalidCves(content: string): DiffHint[] {
       hints.push({
         line: lineForPosition(content, m.index),
         snippet: truncateSnippet(m[0]),
-        suggestion: `CVE year ${year} is implausible (current year is ${cur}; CVE program began 1999). This is a fake citation.`,
+        suggestion: `CVE year ${year} is implausible (current year is ${cur}; CVE program began 1999), so this identifier cannot resolve as written — likely a typo or a fabricated reference. Verify at the CVE registry before trusting it.`,
         detailTag: "invalid-cve",
       })
       if (hints.length >= MAX_HINTS_PER_VERDICT) break
@@ -114,7 +114,7 @@ function scanInvalidRfcs(content: string): DiffHint[] {
       hints.push({
         line: lineForPosition(content, m.index),
         snippet: truncateSnippet(m[0]),
-        suggestion: `RFC ${rfcNum} does not exist (RFCs are numbered 1..9999 as of 2026). This is a fake citation.`,
+        suggestion: `RFC ${rfcNum} is outside the assigned range (RFCs are numbered 1..9999 as of 2026), so it cannot resolve — likely a typo or a fabricated reference. Verify at rfc-editor.org.`,
         detailTag: "invalid-rfc",
       })
       if (hints.length >= MAX_HINTS_PER_VERDICT) break
@@ -164,7 +164,7 @@ function scanInvalidPatents(content: string): DiffHint[] {
       hints.push({
         line: lineForPosition(content, m.index),
         snippet: truncateSnippet(m[0]),
-        suggestion: `Fake US Patent citation — ${reason}. Real patents are at patents.uspto.gov; verify the number before signing.`,
+        suggestion: `Implausible US Patent citation — ${reason}, so it is unlikely to resolve (a typo or a fabricated reference). Real patents are at patents.uspto.gov; verify the number before signing.`,
         detailTag: "invalid-patent",
       })
       if (hints.length >= MAX_HINTS_PER_VERDICT) break
@@ -239,7 +239,10 @@ export class T8FakeCitationDetector {
   readonly name = "t8.fake_citation"
   readonly threatCategory = "T8"
   readonly cciId = "CCI-008"
-  readonly detectorVersion = "0.2.3"
+  // v0.2.4 (RC1 truth fix): CVE/RFC/patent hints now state the observable
+  // (implausible / cannot resolve), not fabrication intent. Lockstep with
+  // apps/api/scanners/t8_fake_citation.py § v0.2.4.
+  readonly detectorVersion = "0.2.4"
 
   run(ctx: DetectorContext): Verdict {
     const hints: DiffHint[] = []

@@ -230,7 +230,9 @@ def _scan_invalid_cves(content: str) -> list[DiffHint]:
                     snippet=_truncate(match.group(0)),
                     suggestion=(
                         f"CVE year {year} is implausible (current year is {current_year}; "
-                        f"CVE program began 1999). This is a fake citation."
+                        "CVE program began 1999), so this identifier cannot resolve as "
+                        "written — likely a typo or a fabricated reference. Verify at the "
+                        "CVE registry before trusting it."
                     ),
                     detail_tag="invalid-cve",
                 )
@@ -250,8 +252,9 @@ def _scan_invalid_rfcs(content: str) -> list[DiffHint]:
                     line=_line_for(content, match.start()),
                     snippet=_truncate(match.group(0)),
                     suggestion=(
-                        f"RFC {rfc_num} does not exist (RFCs are numbered 1..9999 "
-                        "as of 2026). This is a fake citation."
+                        f"RFC {rfc_num} is outside the assigned range (RFCs are numbered "
+                        "1..9999 as of 2026), so it cannot resolve — likely a typo or a "
+                        "fabricated reference. Verify at rfc-editor.org."
                     ),
                     detail_tag="invalid-rfc",
                 )
@@ -319,7 +322,8 @@ def _scan_invalid_patents(content: str) -> list[DiffHint]:
                 line=_line_for(content, match.start()),
                 snippet=_truncate(match.group(0)),
                 suggestion=(
-                    f"Fake US Patent citation — {reason}. Real patents are at "
+                    f"Implausible US Patent citation — {reason}, so it is unlikely to "
+                    "resolve (a typo or a fabricated reference). Real patents are at "
                     "patents.uspto.gov; verify the number before signing."
                 ),
                 detail_tag="invalid-patent",
@@ -401,7 +405,12 @@ class T8FakeCitationDetector:
     name = "t8.fake_citation"
     threat_category = "T8"
     cci_id = "CCI-008"
-    detector_version = "0.2.3"
+    # v0.2.4 (RC1 truth fix — phub-detection-quality-audit RC1): the CVE/RFC/
+    # patent hints asserted *intent* ("This is a fake citation." / "Fake US
+    # Patent citation —") when the only evidence is an out-of-range year/number,
+    # equally consistent with a typo. Reworded to state the observable
+    # (implausible / cannot resolve) and route the judgment to the reviewer.
+    detector_version = "0.2.4"
 
     def run(self, ctx: DetectorContext) -> Verdict:
         hints: list[DiffHint] = []
