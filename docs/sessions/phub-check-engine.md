@@ -4,22 +4,34 @@ owns: [apps/api/checks, rules/CCI-*, trust-score, verdict-cache]
 depends_on: [phub-platform]
 touches: [phub-web, phub-corpus-eval, phub-cli]
 transcript: transcripts/phub-check-engine.jsonl
-updated: 2026-10-03
+updated: 2026-10-23
 ---
 
 ## Charter
 Own the `/check` verdict engine: rules (`CCI-*`), trust-score computation, and the
 by-digest verdict cache. Correctness-critical; moves slowly and deliberately.
 
-## Current state (2026-10-03)
+## Current state (2026-10-23)
 - Engine lives in `apps/api/checks`; async scan pipeline per ADR-0044.
 - Verdict + scoring semantics per ADR-0041; multi-session isolation per ADR-0042.
 - **All 10 detectors at F1=1.000 on BOTH in-sample (99) and holdout (25), BOTH languages.**
-  Fresh measured-truth baselines `bench/baseline/2026-10-03-{py,ts}.json`; gate GREEN; Py↔TS parity intact.
+  Fresh measured-truth baselines `bench/baseline/2026-10-23-{py,ts}.json`; gate GREEN; Py↔TS parity intact.
 - Trust score renders e.g. "12/100 fail" on high-risk corpora — findings are deterministic per digest.
+- **SSRF #1 CLOSED (app layer) — 2026-10-23.** Handoff: `docs/security/2026-10-23-ssrf-01-handoff.md`
+  (reporter abhibughunt3r, high/unauth; phub-cli routed it, platform took the network half). All 5
+  app-layer handoff items done, **fail-closed**:
+  1. shared SSRF-safe transport `checks/_safe_http.py` — `GuardedHTTPSConnection` validates the IP the
+     socket *actually* connected to (`getpeername`), closing the DNS-rebinding TOCTOU; aborts before any
+     request is sent. (2/4) redirects follow-capped + https-only, re-validated per hop. (3) scheme=https
+     **+ port 443 allow-list**. (5) **generic client errors — upstream status/exception logged server-side,
+     never echoed** (was a blind-SSRF exfil channel). Block-list adds IPv4-mapped-IPv6 / NAT64 / IMDS-v6.
+  - **All three fetchers now route through `_safe_http`** (extract-reusable done): `url_fetcher` directly;
+    `github_resolver` + `npx_resolver` via `guarded_urlopen` (host-allowlist stays the primary control,
+    peer-IP pin is defense-in-depth). 31 SSRF tests (`tests/test_url_fetcher_ssrf.py`); 155 non-DB
+    `checks/` tests green.
 
 ## Open items
-- [x] **CCI-005 false-positive — RESOLVED 2026-10-03.** Was the only committed FP: corpus **S-014**
+- [x] **CCI-005 false-positive — RESOLVED 2026-10-23.** Was the only committed FP: corpus **S-014**
       (`benign-002-package-manager-discussion.md:16`), where the verb-anchored npx pattern anchored on
       *"install command (`npx shadcn…`)"* — `install` used as a **noun modifier**, not an imperative
       (v0.2.6 added `install` to the verb set for FN-018 and it over-matched compound nouns). Fix: a
@@ -29,9 +41,9 @@ by-digest verdict cache. Correctness-critical; moves slowly and deliberately.
       (FLOOR.md: FP-class elimination, floor ratchets up, no RECALL-TRADE needed). Regression test:
       `apps/api/checks/tests/test_fp_regressions.py` (4 FP-must-not-fire + 3 directive-must-still-fire).
 - [x] **Py↔TS holdout "divergence" — STALE / already closed.** The ledger text + the 2026-06-07 baselines
-      predated Round 13 (`58bbe86`, T5 v0.2.7 + T1 v0.2.2 multilingual). Re-measured at HEAD on 2026-10-03:
+      predated Round 13 (`58bbe86`, T5 v0.2.7 + T1 v0.2.2 multilingual). Re-measured at HEAD on 2026-10-23:
       **TS holdout recall is 1.000**, not 0.832 — the gap was fixed in code but never re-baselined. Now
-      captured in the fresh 2026-10-03 baselines + `docs/evaluation.md`. The gate still only enforces
+      captured in the fresh 2026-10-23 baselines + `docs/evaluation.md`. The gate still only enforces
       *in-sample* parity, so the holdout-blind-spot structural note below remains open.
 - [ ] **Gate blind spot (structural):** `gate.sh` enforces Py↔TS parity on in-sample only; holdout drift
       can recur silently. Consider extending `parity_check.py` to also diff the holdout block (and note
@@ -40,6 +52,9 @@ by-digest verdict cache. Correctness-critical; moves slowly and deliberately.
 - [ ] Trust-score calibration review vs holdout — holdout recall is now 1.000, so the old "recall 0.832"
       premise is void; re-scope as a score-band calibration pass (does the 4-band mapping land real
       corpora where a human would expect) rather than a recall-recovery task.
+- [x] **SSRF defense-in-depth for the resolvers — DONE 2026-10-23.** Extracted the guard into shared
+      `checks/_safe_http.py`; `github_resolver` + `npx_resolver` now fetch via `guarded_urlopen` (peer-IP
+      pin on every hop) on top of their host allowlist. One guard, three fetchers.
 - [ ] Reputation-layer / verdict-cache scope — BLOCKED on phub-strategy owner-ratify (see that ledger).
       Option-neutral task ready on ratify: **re-key verdict cache from `raw_input` → resolved content
       digest** (results.py:107), use `phub.lock` manifest hash for repo/skill tree identity, wire to
@@ -50,9 +65,15 @@ by-digest verdict cache. Correctness-critical; moves slowly and deliberately.
   (phub-cli scope) to keep Py↔TS parity green — identical v0.2.8 noun-modifier lookahead on the two
   verb-anchored patterns + `detectorVersion` 0.2.7→0.2.8. Byte-parity mirror of the Python rule change;
   owner authorized the dual edit. Rebuilt `packages/phub`; all 398 TS tests pass.
-- `[from: phub-check-engine → phub-corpus-eval]` Re-cut `bench/baseline/2026-10-03-{py,ts}.json` and
+- `[from: phub-check-engine → phub-corpus-eval]` Re-cut `bench/baseline/2026-10-23-{py,ts}.json` and
   regenerated `docs/evaluation.md` (bench/ + scoreboard are corpus-eval scope) — mechanical measured-truth
   output of the v0.2.8 fix. Floor advances monotonically (all F1=1.000); no corpus samples changed.
+- `[from: phub-check-engine → phub-platform]` **SSRF handoff, network half.** I closed the application-layer
+  SSRF in `apps/api/checks/url_fetcher.py` (peer-IP pin + https-only redirects). The defense-in-depth half
+  is yours: **block outbound egress from the api container to the cloud metadata endpoint
+  (169.254.169.254 / fd00:ec2::254) and RFC1918/loopback** at the network/firewall layer, so a future
+  fetch bug can't reach internal services even if the app guard regresses. Ties to the 127.0.0.1-only
+  bind posture. (phub-cli originated the handoff; this is the infra portion it routed to you.)
 
 ## Decisions / ADRs
 ADR-0041 (verdict+scoring), ADR-0042 (session isolation), ADR-0044 (async pipeline).
@@ -81,7 +102,7 @@ Any public number must trace to bench/baseline. Update this ledger at close.
 
 ### Sprint pipeline (3 phases, sequenced — do NOT parallelize across scopes)
 
-**Phase 1 — Close FP/FN gaps + refresh measured truth. ✅ DONE 2026-10-03.**
+**Phase 1 — Close FP/FN gaps + refresh measured truth. ✅ DONE 2026-10-23.**
 CCI-005 S-014 FP eliminated (t5 v0.2.8, Py+TS lockstep); TS-holdout item proven stale; all 10 detectors
 F1=1.000 both slices both languages; baselines + `docs/evaluation.md` re-cut; gate GREEN. See Open items.
 

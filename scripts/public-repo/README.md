@@ -178,6 +178,15 @@ cd packages/verify && pnpm install && pnpm build && pnpm test
 Found a missed attack, a false positive on a real primitive, or a
 vulnerability? See [SECURITY.md](SECURITY.md).
 
+**Acknowledgements.** With thanks to the researchers who responsibly
+disclosed issues to us:
+
+- [**momo-mnsjtxy**](https://github.com/momo-mnsjtxy) — reported a Trust
+  Bundle verification-bypass (fixed in `@primitivehub/verify` 0.1.2 /
+  `@primitivehub/phub` 0.1.3), and followed with an extensive adversarial
+  audit of the Context CI runtime that drove the 0.1.4–0.1.6 fail-closed
+  hardening.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).

@@ -4,7 +4,7 @@ owns: [SECURITY.md, SECURITY-BOUNTY.md, docs/threat-model.md, security ADRs, CI 
 depends_on: []
 touches: [all sessions — routes fixes to the owning context, never edits their code]
 transcript: transcripts/phub-security.jsonl
-updated: 2026-10-03
+updated: 2026-10-23
 ---
 
 ## Charter
@@ -41,10 +41,19 @@ NOT owned: feature code in `apps/*`, `packages/*` — findings are routed to the
   in cleartext; the archived copy on branch `session-archive` is redacted. Scrub/quarantine.
 - 🔴 **Code Scanning / SAST not enabled** (confirmed via API: "Code scanning is not enabled").
   No CodeQL over our own TS/Python. Enabling it also unblocks the phub-scan SARIF upload.
-- ⚠ **No dependency-audit in CI** — no `pnpm audit` / `uv`/`pip-audit` step seen in build-web /
-  build-api / package CIs. Add + gate on high/critical.
-- ⚠ **Dependabot** not verified (`.github/dependabot.yml`?). Confirm/enable (npm·pnpm, pip/uv, actions).
-- ⚠ **No container image scanning** (trivy/grype) on web/api images.
+- ✗ **No dependency-audit in CI — CONFIRMED ABSENT (2026-10-23).** Grepped all 13
+  workflows in `.github/workflows/`; zero `pnpm audit`/`npm audit`/`pip-audit`/`uv audit`/
+  `osv-scanner` steps. Add + gate on high/critical.
+- ✗ **Dependabot — CONFIRMED ABSENT (2026-10-23).** No `.github/dependabot.yml`|`.yaml`
+  on disk. Enable (npm·pnpm, pip/uv, github-actions).
+- ✗ **No container image scanning — CONFIRMED ABSENT (2026-10-23).** No trivy/grype/snyk/
+  docker-scout in any workflow (the lone "trivy" grep hit was a prose comment in
+  `scanner-bench.yml` about the Context CI *detection* scanners, not image scanning).
+- ✗ **No CI secret-scanning gate — CONFIRMED ABSENT (2026-10-23) [new this cycle].** No
+  gitleaks/trufflehog/secret-scan step in any workflow. Directly relevant to the live
+  leaked-PAT P0: nothing in CI would catch the *next* secret before it lands. (The only
+  `codeql` reference is a permissions comment in `phub-scan-demo.yml` for uploading phub's
+  OWN scan SARIF — NOT CodeQL SAST on our code; consistent with SAST-not-enabled above.)
 - ⚠ Threat-model leans to the *detection* domain; confirm coverage of our *own* stack (authentik
   [LIVE per phub-platform], tenant RLS, R2 creds, the dormant registry/storage attack surface).
 
@@ -54,6 +63,7 @@ NOT owned: feature code in `apps/*`, `packages/*` — findings are routed to the
 - [ ] **P1** Add dep-audit to CI: `pnpm audit --prod` (web + each package), `uv`/pip-audit (apps/api); gate high/crit → route fixes to the owning session.
 - [ ] **P1** Verify/enable Dependabot across npm, pip/uv, github-actions; triage its PRs.
 - [ ] **P1** Container scan (trivy) on build-web + build-api images; gate fixable HIGH/CRIT → route to phub-platform.
+- [ ] **P1** Add a CI secret-scanning gate (gitleaks/trufflehog) — own scope; prevents recurrence of the leaked-PAT P0. [confirmed absent 2026-10-23]
 - [ ] **P2** CI job: `phub verify-before-load` on the repo's own AGENTS/CLAUDE context (dogfood the firewall).
 - [ ] **P2** Threat-model refresh for our own stack; wire SECURITY.md disclosure SLA ↔ the bounty.
 - [ ] **P1 `[from: phub-web]` 2026-10-17 — retire the bug-bounty programme from the canonical
@@ -89,7 +99,30 @@ prioritized P0→P2 plan before changing anything. Update this ledger at close.
 
 ## Next cycle (ADR-0047) — 🟠 active (credibility floor for a security vendor)
 - **Task:** Stand up the AppSec baseline — rotate leaked PATs, enable CodeQL/SAST, add dep-audit +
-  container scan + Dependabot to CI, dogfood phub-on-self, refresh the own-stack threat model.
+  container scan + Dependabot + secret-scanning to CI, dogfood phub-on-self, refresh the own-stack
+  threat model.
 - **Gain:** Our own attack surface is continuously watched — the credibility floor for selling a
   security tool; "we practice what we scan."
 - Full plan + sequencing: `SPINE.md` → "Next cycle" table. Paste-prompt: `HOWTO.md`.
+
+### How this session runs (verify-until-done loop)
+This is a STANDING rib, not a one-shot. Each pass is a bounded loop:
+**act → observe → correct → repeat, with a named exit condition.**
+- **Cycle exit condition:** every advisory / posture gap touching our stack is triaged to a
+  TERMINAL state — `confirmed-present` / `confirmed-absent` / `patched` / `not-applicable (reason)`
+  / `accepted-risk (owner + expiry)`. Zero items left `unknown`. Stop the pass only then.
+- **Per-cycle Definition of Done (gate top-down):** security (no detector/fix paywalled, no new
+  secret/egress) → truth (every claim verified against current repo/CI, not memory) → spec/tenant
+  → verified behavior (checks actually run, evidence pasted) → stated plainly (what passed/absent/
+  deferred). The loop stops when this gate passes, not before.
+- **Bound:** if a fix won't converge, surface it as a blocker with an owner — no silent
+  accepted-risk, no infinite retry. Irreversible flips (rotate creds, enable features) are
+  human-only: recommend + route, don't execute.
+
+### Cycle log
+- **2026-10-23 — read-only verify pass (general session, routed here).** Closed all four ⚠
+  to-verify items → all CONFIRMED ABSENT with evidence (grepped 13 CI workflows + `.github/`):
+  dep-audit, Dependabot, container scan, CodeQL/SAST. NEW finding: no CI secret-scanning gate
+  (gitleaks/trufflehog) — added as P1, own-scope, mitigates the leaked-PAT P0 recurrence. No creds
+  touched, no features flipped, no code edited (triage-only mandate held). P0s unchanged and still
+  owner-gated. Exit condition met: zero items `unknown`.

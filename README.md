@@ -6,6 +6,7 @@ The trusted registry for AI Context Primitives. A CyberOrca Labs initiative.
 
 [![scanner-bench](https://github.com/DevXYZx/primitivehub/actions/workflows/scanner-bench.yml/badge.svg)](https://github.com/DevXYZx/primitivehub/actions/workflows/scanner-bench.yml)
 &nbsp;
+[Docs](https://primitivehub.ai/docs) ·
 [Evaluation scoreboard](docs/evaluation.md) ·
 [Adversarial corpus](docs/corpus-v0.1.md) ·
 [Security policy](SECURITY.md)
@@ -163,12 +164,16 @@ docker compose -f compose.yaml -f compose.prod.yaml up -d
 
 `compose.prod.yaml` adds resource limits, log rotation, and `pull_policy: always`.
 
-## Pre-launch posture
+## Launch posture
 
-The project is **not yet launched**. The domain `primitivehub.ai` is owned but
-unannounced; we ship alongside an arXiv paper. No public deploys, no social
-posts, no domain references anywhere indexable. `robots.txt`, `<meta noindex>`,
-and `X-Robots-Tag: noindex` are in place as belt-and-suspenders.
+**Launched.** `primitivehub.ai` is live and indexable: the pre-launch
+`Disallow: /` wall, `<meta noindex>`, and `X-Robots-Tag: noindex` were all
+lifted on launch day (see `robots.txt`). Search engines and AI citation bots are
+welcome; only AI *bulk-training* crawlers are blocked by policy (the primitive
+corpus is the product, not training data).
+
+The GitHub repository [`PrimitiveHub-AI/context-ci`](https://github.com/PrimitiveHub-AI/context-ci)
+is public, with a description, topics, and a `primitivehub.ai` homepage link.
 
 See [`CLAUDE.md`](./CLAUDE.md) for the full set of conventions.
 
