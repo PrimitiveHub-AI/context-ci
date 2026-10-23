@@ -80,6 +80,31 @@ _DIRECTIVE_RE = re.compile(
 _DIRECTIVE_LOOKBACK_LINES = 3
 
 
+# v0.2.8 (closes FP on S-014 — the only committed CCI-005 FP). The
+# verb-anchored install patterns treat a leading imperative verb
+# (`run`/`install`/`launch`/…) as "the prose is directing the agent to
+# execute this command." But several of those verbs double as noun
+# modifiers in *reference* prose: "the install command (`npx shadcn…`)",
+# "the launch script", "the setup guide". Those describe documentation,
+# not an instruction aimed at the agent — flagging them is a false
+# positive (S-014 says so in as many words: "that's reference material,
+# not an instruction directed at the agent").
+#
+# Fix: a zero-width negative lookahead placed immediately after the verb
+# group. It suppresses the anchor ONLY when the verb is *immediately*
+# followed by a reference-material noun (verb-as-noun-modifier). Real
+# directives ("Install the project's uploader: `curl…`", FN-018; "run the
+# helper installer…: `npx…`", FN-020) put a determiner/object after the
+# verb, not one of these nouns, so they still match. Attacks phrased
+# "run the X command: `curl|bash`" anchor on the *other* imperative verb
+# ("run"), not on the suppressed noun-compound.
+# Lockstep with packages/phub/src/scanners/t5-unsafe-shell-install.ts § v0.2.8.
+_VERB_NOT_NOUN_MODIFIER = (
+    r"(?!\s+(?:commands?|guides?|instructions?|docs?|documentation|"
+    r"references?|examples?|pages?|sections?|flows?|notes?|snippets?)\b)"
+)
+
+
 def _is_directive_referenced_fence(content: str, fence: tuple[int, int]) -> bool:
     """Is ``fence`` immediately preceded (within ±3 lines) by an
     imperative-directive sentence?"""
@@ -182,7 +207,9 @@ _SHELL_PIPE_PATTERNS: tuple[tuple[str, str], ...] = (
     #     whitespace / punctuation" so "run the helper installer so
     #     the agent has the latest cache: `npx -y ...`" matches.
     (
-        r"(?:^|\s)(?:first[,\s]+|then[,\s]+|now[,\s]+)?(?:run|execute|launch|install|bootstrap|set\s+up|provision)[\w\s,:;()\-'’]{0,180}`\s*(?:sudo\s+)?(?:curl|wget|fetch)\s+(?:-\w+\s+)*[^\s|`]*https?://[^\s|`]+\s*\|\s*(?:sudo\s+)?(?:sh|bash|zsh|fish|ksh|csh)\b",
+        r"(?:^|\s)(?:first[,\s]+|then[,\s]+|now[,\s]+)?(?:run|execute|launch|install|bootstrap|set\s+up|provision)"
+        + _VERB_NOT_NOUN_MODIFIER
+        + r"[\w\s,:;()\-'’]{0,180}`\s*(?:sudo\s+)?(?:curl|wget|fetch)\s+(?:-\w+\s+)*[^\s|`]*https?://[^\s|`]+\s*\|\s*(?:sudo\s+)?(?:sh|bash|zsh|fish|ksh|csh)\b",
         "shell-pipe-from-network",
     ),
     # python -c "$(curl ...)" and friends
@@ -223,7 +250,9 @@ _NPX_INSTALL_PATTERNS: tuple[tuple[str, str], ...] = (
     #   - FN-018: extend verb set (install / bootstrap / set up / provision)
     #   - FN-020: widen gap between verb and backtick (up to 200 chars)
     (
-        r"(?:^|\s)(?:first[,\s]+|then[,\s]+|now[,\s]+)?(?:run|execute|launch|install|bootstrap|set\s+up|provision)[\w\s,:;()\-'’]{0,180}`\s*npx\s+(?:-y\s+|--yes\s+)?(?!--help|--version)[a-zA-Z0-9@/_.-][a-zA-Z0-9@/_.-]+",
+        r"(?:^|\s)(?:first[,\s]+|then[,\s]+|now[,\s]+)?(?:run|execute|launch|install|bootstrap|set\s+up|provision)"
+        + _VERB_NOT_NOUN_MODIFIER
+        + r"[\w\s,:;()\-'’]{0,180}`\s*npx\s+(?:-y\s+|--yes\s+)?(?!--help|--version)[a-zA-Z0-9@/_.-][a-zA-Z0-9@/_.-]+",
         "npx-arbitrary-install",
     ),
 )
@@ -361,7 +390,7 @@ class T5UnsafeShellInstallDetector:
     name = "t5.unsafe_shell_install"
     threat_category = "T5"  # legacy; back-compat
     cci_id = "CCI-005"  # Context CI Top 10 v0.1 canonical ID (ADR-0016)
-    detector_version = "0.2.7"
+    detector_version = "0.2.8"
 
     def run(self, ctx: DetectorContext) -> Verdict:
         hints: list[DiffHint] = []
