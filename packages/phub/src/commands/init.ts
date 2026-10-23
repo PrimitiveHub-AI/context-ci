@@ -1,5 +1,7 @@
-import { existsSync, writeFileSync } from "node:fs"
+import { existsSync } from "node:fs"
 import { join } from "node:path"
+
+import { writeFileNoFollow, UnsafeWriteError } from "../fs/safe-write.js"
 
 const STARTER_AGENTS_MD = `# AGENTS.md
 
@@ -34,7 +36,18 @@ export function initCommand(opts: InitOptions): number {
     )
     return 2
   }
-  writeFileSync(target, STARTER_AGENTS_MD, "utf8")
+  // SECURITY (SYM / CWE-59/61): a repo-committed `AGENTS.md` symlink (dangling
+  // or live) must not redirect this write outside cwd. writeFileNoFollow
+  // refuses a symlinked target and writes via O_EXCL.
+  try {
+    writeFileNoFollow(target, STARTER_AGENTS_MD, { overwrite: opts.force, root: opts.cwd })
+  } catch (err) {
+    if (err instanceof UnsafeWriteError) {
+      process.stderr.write(`phub init: ${err.message}\n`)
+      return 2
+    }
+    throw err
+  }
   process.stdout.write(`Wrote ${target}\n`)
   process.stdout.write(
     `Next: edit it, then run \`npx phub scan AGENTS.md\` to check it against Context CI Top 10.\n`,

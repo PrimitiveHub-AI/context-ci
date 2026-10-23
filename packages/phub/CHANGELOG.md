@@ -6,6 +6,36 @@ Version tracks both Trust Contract spec version (for the verify
 wrapper) and Context CI Top 10 version (for the scanner detectors);
 `0.1.x` of this package is conformant to both v0.1.
 
+## [0.1.7] — 2026-10-23
+
+**Security — symlink-following writers (CWE-59/61).** Independent reports
+(2026-10-23) confirmed against 0.1.6. The R06/PH-02 symlink defense was
+under-applied; this release makes every file writer symlink-safe.
+
+### Fixed
+- **SYM-02 (High) — `writeLock`.** `phub audit --update-lock` / `phub install`
+  wrote the lock with a bare `writeFileSync`, so a repo-committed
+  `.primitivehub/phub.lock` symlink redirected the write to any user-writable
+  path (e.g. `~/.ssh/authorized_keys`). Now symlink-safe.
+- **SYM-03 (High) — installer `--force` + `init`.** The `--force` overwrite
+  path used a plain follow-y write, and the plan-time containment used
+  `existsSync` (blind to DANGLING symlinks); `phub init` had no guard. Both now
+  refuse a symlinked target.
+- **SYM-05 (Med) — `cbom --output`.** Followed a symlinked output path too
+  (found by a full write-sink sweep, not the report). Now symlink-safe.
+
+### Added
+- **`src/fs/safe-write.ts` → `writeFileNoFollow`** — the single symlink-safe
+  writer every phub file writer routes through: `lstat`-refuses a symlinked
+  final component (dangling or live), optional realpath containment under a
+  root, and `O_EXCL` (unlink-confirmed-regular-first on overwrite). No raw
+  `writeFileSync` remains outside this module.
+
+### Changed
+- `actions/phub-scan` (SYM-04, Med): SARIF `>` redirects refuse a symlinked
+  output dir/file and drop symlinked merge inputs (ships via the public repo,
+  not npm).
+
 ## [0.1.6] — 2026-10-17
 
 **Security — fail-closed orchestration (cross-surface source audit, 2026-10-17).**

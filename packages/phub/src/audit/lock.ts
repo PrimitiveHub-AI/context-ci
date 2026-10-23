@@ -13,9 +13,9 @@
  * sort. See ADR-0026 § "Reproducibility — byte-identical re-stamps".
  */
 
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs"
-import { dirname } from "node:path"
+import { readFileSync } from "node:fs"
 
+import { writeFileNoFollow } from "../fs/safe-write.js"
 import { type ArtifactClass } from "./classifier.js"
 import { type AuditedArtifact } from "./types.js"
 
@@ -266,10 +266,20 @@ export function readLock(path: string): PhubLock {
   return parseLock(content, path)
 }
 
-/** Write a lock atomically (mkdirSync recursive + writeFileSync). */
-export function writeLock(path: string, lock: PhubLock): void {
-  mkdirSync(dirname(path), { recursive: true })
-  writeFileSync(path, serializeLock(lock), { encoding: "utf8" })
+/**
+ * Write a lock file symlink-safely.
+ *
+ * SECURITY (CWE-59/61): a repo-committed `.primitivehub/phub.lock` symlink must
+ * NOT redirect the write outside the workspace. `writeFileNoFollow` refuses a
+ * symlinked final component (dangling or live) and writes via O_EXCL. Re-sealing
+ * overwrites the existing regular lock (unlink + O_EXCL). `root`, when supplied
+ * by the caller, adds symlinked-ancestor containment.
+ */
+export function writeLock(path: string, lock: PhubLock, root?: string): void {
+  writeFileNoFollow(path, serializeLock(lock), {
+    overwrite: true,
+    ...(root !== undefined ? { root } : {}),
+  })
 }
 
 /**

@@ -22,8 +22,8 @@
  * ALREADY_INSTALLED) so CI tools can branch on the code.
  */
 
-import { existsSync, readFileSync, mkdirSync } from "node:fs"
-import { dirname, isAbsolute, join, resolve } from "node:path"
+import { existsSync, readFileSync } from "node:fs"
+import { isAbsolute, join, resolve } from "node:path"
 
 import { verifyBundle, type VerificationLevel, type VerificationResult } from "@primitivehub/verify"
 
@@ -266,8 +266,9 @@ function updateLock(args: {
     lock.artifacts.push(newEntry)
   }
 
-  mkdirSync(dirname(lockPath), { recursive: true })
-  writeLock(lockPath, lock)
+  // writeLock (writeFileNoFollow) creates the dir AFTER its symlink-containment
+  // check, so no pre-mkdir here (which could follow a symlinked ancestor).
+  writeLock(lockPath, lock, args.workspaceRoot)
   return lockPath
 }
 

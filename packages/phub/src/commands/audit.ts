@@ -249,7 +249,7 @@ export function runAudit(rootPathArg: string, opts: AuditOptions): AuditResult {
       // it would bake "clean / known" for artifacts we never examined, and a
       // later --check-lock would pass against a lock that silently omits them.
       const writeToDisk = !(lockMode === "lock-only" && opts.json)
-      if (writeToDisk && coverageComplete) writeLock(lockPath, currentLock)
+      if (writeToDisk && coverageComplete) writeLock(lockPath, currentLock, rootDir)
       lockState = {
         mode: "update",
         lockPath,
