@@ -14,8 +14,10 @@
  * workspace produces a byte-identical document. See § 5 of the spec.
  */
 
-import { readFileSync, lstatSync, existsSync, writeFileSync, mkdirSync } from "node:fs"
-import { resolve, relative, sep, join, isAbsolute, dirname } from "node:path"
+import { readFileSync, lstatSync, existsSync } from "node:fs"
+import { resolve, relative, sep, join, isAbsolute } from "node:path"
+
+import { writeFileNoFollow } from "../fs/safe-write.js"
 
 import { buildCycloneDxBom, serializeCycloneDxBom } from "../cbom/cyclonedx.js"
 import { buildSpdxDocument, serializeSpdx } from "../cbom/spdx.js"
@@ -404,8 +406,12 @@ export function cbomCommand(rootArg: string | undefined, opts: CbomCommandOption
   const serialized = renderCbom(cbom, opts.format ?? "cbom")
   if (opts.output !== undefined) {
     try {
-      mkdirSync(dirname(resolve(opts.output)), { recursive: true })
-      writeFileSync(opts.output, serialized, { encoding: "utf8" })
+      // SECURITY (SYM / CWE-59/61): --output is a (often cwd-relative) path that
+      // may be a repo-committed symlink; refuse to follow it (same class as the
+      // lock / install / init writers). No containment root — the user chose the
+      // path, so writing outside a workspace is intentional; the symlink refusal
+      // is what matters.
+      writeFileNoFollow(opts.output, serialized, { overwrite: true })
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       process.stderr.write(`phub cbom: cannot write CBOM: ${msg}\n`)

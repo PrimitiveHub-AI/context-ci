@@ -11,6 +11,7 @@ import { describe, expect, it } from "vitest"
 
 import { runAudit, auditCoverage } from "../src/commands/audit.js"
 import { writeLock } from "../src/audit/lock.js"
+import { cbomCommand } from "../src/commands/cbom.js"
 import { initCommand } from "../src/commands/init.js"
 import { runScan, scanCommand, UnknownDetectorError } from "../src/commands/scan.js"
 import { verifyBeforeLoad, hasBlockingReason } from "../src/commands/verify-before-load.js"
@@ -384,5 +385,21 @@ describe("SYM-03 — install --force and init refuse dangling symlinks", () => {
     const code = initCommand({ cwd: ws, force: true })
     expect(code).toBe(2)
     expect(existsSync(join(outside, "bashrc_victim"))).toBe(false)
+  })
+})
+
+/* ── SYM-05: cbom --output must not follow a symlinked output (found by the ──
+ * ── verify-until-done sweep, NOT the reporter — every write sink audited) ── */
+describe("SYM-05 — cbom --output refuses a symlinked output path", () => {
+  it("writing the CBOM through a symlink refuses (exit 2), target not clobbered", () => {
+    const ws = mkdtempSync(join(tmpdir(), "sym5-"))
+    const outside = mkdtempSync(join(tmpdir(), "sym5out-"))
+    writeFileSync(join(ws, "AGENTS.md"), "# clean\n", "utf8")
+    writeFileSync(join(outside, "victim.json"), "ORIGINAL", "utf8")
+    symlinkSync(join(outside, "victim.json"), join(ws, "report.json"))
+
+    const code = cbomCommand(ws, { output: join(ws, "report.json") })
+    expect(code).toBe(2)
+    expect(readFileSync(join(outside, "victim.json"), "utf8")).toBe("ORIGINAL")
   })
 })
