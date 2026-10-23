@@ -11,7 +11,7 @@ documents how we'd like to hear from you, and how we respond.
 |---|---|---|
 | A missed attack the corpus should catch (false negative) | Open a PR adding a sample + manifest entry | [`docs/false-negative-resolution.md`](./docs/false-negative-resolution.md) |
 | A real primitive being flagged that shouldn't be (false positive) | Open a PR with a reproducer | [`docs/false-positive-resolution.md`](./docs/false-positive-resolution.md) |
-| A vulnerability in PrimitiveHub itself (infra, signing, RLS, etc.) | Email `security@primitivehub.ai` (PGP below) | Private until fixed; bounty per [`SECURITY-BOUNTY.md`](./SECURITY-BOUNTY.md) |
+| A vulnerability in PrimitiveHub itself (infra, signing, RLS, etc.) | Email `security@primitivehub.ai` (PGP below) | Private until fixed; disclosure scope per [`SECURITY-BOUNTY.md`](./SECURITY-BOUNTY.md); credited in the post-mortem |
 | You're not sure | Email `security@primitivehub.ai` and we'll triage | — |
 
 If you can't tell whether your finding is a false-negative report, a
@@ -19,10 +19,12 @@ false-positive report, or a vulnerability — send it to
 `security@primitivehub.ai` and we'll route it. We will not penalize a
 mis-categorized report.
 
-**Bug bounty programme:** scope, severity bands, response timelines, and
-safe harbour are documented in [`SECURITY-BOUNTY.md`](./SECURITY-BOUNTY.md).
-Pre-launch reports are gratefully accepted; payouts queue and turn on at
-launch (Gate G-G).
+**Recognition, not cash.** PrimitiveHub is a research initiative, not a
+commercial enterprise — there is **no paid bug-bounty**. We coordinate
+disclosure, fix the issue, and credit reporters (by name or preferred
+handle) in the public ledger and the post-mortem when the fix ships. The
+disclosure scope, severity classification, response timelines, and safe
+harbour are documented in [`SECURITY-BOUNTY.md`](./SECURITY-BOUNTY.md).
 
 ## Why this file exists
 

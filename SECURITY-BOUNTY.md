@@ -1,44 +1,44 @@
-# PrimitiveHub Security Bug Bounty
+# PrimitiveHub Security Disclosure — scope & process
 
-> **Status:** Pre-launch staging. The scope, severity bands, and
-> response process below are final and will not change between now
-> and launch. **Reward payouts and the public intake address turn
-> on at launch (Gate G-G).** Pre-launch reports are gratefully
-> accepted via the same address; we credit reporters in the public
-> ledger at the time we ship the fix.
+> **No paid bug-bounty.** PrimitiveHub is a research initiative, not a
+> commercial enterprise — there is **no cash bounty**. We coordinate
+> disclosure, fix the issue, and **credit reporters** (by name or
+> preferred handle) in the public closure ledger and the post-mortem
+> when the fix ships. Recognition is the currency, not cash.
+>
+> This file was previously a cash-bounty programme; the programme was
+> retired on the owner's direction (research initiative, not an
+> enterprise). It is kept as the canonical **vulnerability-disclosure
+> scope** reference. The TL;DR triage lives in
+> [`SECURITY.md`](./SECURITY.md).
 
-PrimitiveHub ships a security product. The bounty exists for one
-reason: to make finding and reporting a real vulnerability in our
-infrastructure cheaper for you than exploiting it. We pay for
-findings that protect the verifier kernel, the registry, the trust
-chain, and the operational surfaces every consumer rides.
-
-This document is the canonical scope. The TL;DR-style triage in
-[`SECURITY.md`](./SECURITY.md) routes you to the right lane;
+PrimitiveHub ships a security product, so a real vulnerability in our
+infrastructure matters more than almost anything: a bug in the verifier
+kernel, the registry, the trust chain, or the operational surfaces every
+consumer rides. This document is the canonical **scope** for the
+vulnerability-disclosure lane — the equivalent of an AV vendor's
+"compromise the scanning engine itself" report. The detector-dispute
+lanes live in
 [`docs/false-positive-resolution.md`](./docs/false-positive-resolution.md)
-and [`docs/false-negative-resolution.md`](./docs/false-negative-resolution.md)
-cover the AV-vendor-style detector dispute lanes. This file is
-specifically the **vulnerability lane** — the equivalent of an AV
-vendor's "compromise the scanning engine itself" report.
+and [`docs/false-negative-resolution.md`](./docs/false-negative-resolution.md).
 
 ## 1. Where to report
 
-| You found | Lane | Reward |
+| You found | Lane | Recognition |
 |---|---|---|
-| A vulnerability in PrimitiveHub infrastructure (signing, RLS, API, worker, registry, CLI, MCP server, GitHub Action, verify kernel) | **Bounty (this document)** — email `security@primitivehub.ai` (PGP below) | Yes, per § 4 |
-| A missed attack the corpus should catch (false negative) | [`docs/false-negative-resolution.md`](./docs/false-negative-resolution.md) — open a PR with a sample + manifest entry | Credit in the FN ledger; no cash bounty |
-| A legitimate primitive being flagged (false positive) | [`docs/false-positive-resolution.md`](./docs/false-positive-resolution.md) — open a PR with a reproducer | Credit in the FP ledger; no cash bounty |
+| A vulnerability in PrimitiveHub infrastructure (signing, RLS, API, worker, registry, CLI, MCP server, GitHub Action, verify kernel) | **Disclosure (this document)** — email `security@primitivehub.ai` (PGP below) | Credit in the public ledger + post-mortem |
+| A missed attack the corpus should catch (false negative) | [`docs/false-negative-resolution.md`](./docs/false-negative-resolution.md) — open a PR with a sample + manifest entry | Credit in the FN ledger |
+| A legitimate primitive being flagged (false positive) | [`docs/false-positive-resolution.md`](./docs/false-positive-resolution.md) — open a PR with a reproducer | Credit in the FP ledger |
 | You can't tell which lane | Email `security@primitivehub.ai`; we route. **We will not penalize a mis-categorized report.** | Routed appropriately |
 
-The cash bounty is exclusively for the vulnerability lane. The
-detector dispute lanes have their own credit currency (numbered
-ledger entries, public co-authorship on the closure post-mortem)
-because finding a missed attack class is a research contribution,
-not an infrastructure compromise.
+Every lane recognises contributors; none pay cash. Finding a vulnerability
+or a missed attack class is a research contribution — recognised as a
+numbered ledger entry and public co-authorship on the closure post-mortem.
 
 ## 2. In scope
 
-The following surfaces are in scope for this bounty:
+The following surfaces are in scope for disclosure to
+`security@primitivehub.ai`:
 
 ### Cryptographic and trust chain
 
@@ -90,9 +90,9 @@ The following surfaces are in scope for this bounty:
 
 ## 3. Out of scope
 
-Reports in the following categories do not qualify for cash
-bounty. Several of them are still welcome via the appropriate
-lane below.
+Reports in the following categories are out of the
+vulnerability-disclosure scope. Several of them are still welcome via the
+appropriate lane below.
 
 - **Corpus dispute** — disagreement with the labelling of a
   specific sample. Route: open a PR against
@@ -107,10 +107,10 @@ lane below.
   the Trust Contract field semantics, or any other versioned spec.
   Route: open a `doctrine-rfc` issue per
   [ADR-0019](./docs/decisions/0019-doctrine-versioning-policy.md).
-- **Third-party vulnerabilities you discovered through us** — we
-  do not pay for issues whose root cause is in Sigstore, GitHub,
-  npm, Authentik, Postgres, Procrastinate, or Valkey. We do credit
-  reporters who discover them via PrimitiveHub use.
+- **Third-party vulnerabilities you discovered through us** — the
+  root cause is in Sigstore, GitHub, npm, Authentik, Postgres,
+  Procrastinate, or Valkey. We credit reporters who discover them
+  via PrimitiveHub use and help route them upstream.
 - **Findings that require physical access, social engineering, or
   compromise of a PrimitiveHub maintainer's personal account.**
 - **Best-practice recommendations** without a demonstrable
@@ -136,36 +136,25 @@ lane below.
 If a report sits between in-scope and out-of-scope, email us
 anyway. The triage decision is on us, not on you.
 
-## 4. Severity and rewards
+## 4. Severity classification
 
-We use the following bands. Payout windows are intentional —
-they leave room for exceptional impact within a band. Exact
-amount is calibrated to demonstrable impact, exploitability, and
-quality of report.
+We classify confirmed findings by severity to prioritise the fix and
+size the disclosure window. There is **no payout** — recognition is
+public-ledger credit and post-mortem co-authorship. The bands below are
+for triage and response sizing, not a price list.
 
-> **Pre-launch:** payouts queue. We credit pre-launch reporters
-> in the public closure ledger at the time the fix ships, and
-> issue the reward at launch alongside the public bounty
-> programme. Pre-launch reporters are eligible for retroactive
-> payout under the same bands.
-
-| Severity | Band (USD) | Example |
-|---|---|---|
-| **Critical** | $3,000 – $10,000 | Verifier kernel accepts a forged Sigstore signature; cross-tenant RLS bypass on a published primitive; remote code execution on any PrimitiveHub-operated service; bypass of `verify_before_load` returning `ok=true` for any tampered bundle. |
-| **High** | $1,000 – $3,000 | Authenticated cross-organisation IDOR; full Rekor inclusion check bypass; `phub install` writes a file outside the install target; CI secret exfiltration via the GitHub Action. |
-| **Medium** | $300 – $1,000 | Authenticated information disclosure across organisations; stored XSS in primitive content rendering; CSRF on a state-changing endpoint with limited scope; bypassing rate limits on `/check`. |
-| **Low** | $100 – $300 | Unauthenticated information disclosure (low-sensitivity); reflected XSS without authenticated impact; missing security header paired with a demonstrable narrow exploit. |
-| **Documentation / hardening** | $0 – $100 | Substantive doc errors that mislead operators about security guarantees; subtle hardening improvements that prevent a documented future class of bug. |
-
-A single report describing **multiple distinct vulnerabilities**
-is rewarded as the sum of per-vulnerability bands (within reason —
-we will not pay 200 × $100 for the same input-validation gap
-discovered in 200 endpoints).
+| Severity | Example |
+|---|---|
+| **Critical** | Verifier kernel accepts a forged Sigstore signature; cross-tenant RLS bypass on a published primitive; remote code execution on any PrimitiveHub-operated service; bypass of `verify_before_load` returning `ok=true` for any tampered bundle. |
+| **High** | Authenticated cross-organisation IDOR; full Rekor inclusion check bypass; `phub install` writes a file outside the install target; CI secret exfiltration via the GitHub Action. |
+| **Medium** | Authenticated information disclosure across organisations; stored XSS in primitive content rendering; CSRF on a state-changing endpoint with limited scope; bypassing rate limits on `/check`. |
+| **Low** | Unauthenticated information disclosure (low-sensitivity); reflected XSS without authenticated impact; missing security header paired with a demonstrable narrow exploit. |
+| **Documentation / hardening** | Substantive doc errors that mislead operators about security guarantees; subtle hardening improvements that prevent a documented future class of bug. |
 
 ## 5. How to report
 
-Send a single email to `security@primitivehub.ai`. Subject prefix
-your subject line with `[bounty]` so the routing is automatic.
+Send a single email to `security@primitivehub.ai`. Prefix your subject
+line with `[security]` so the routing is automatic.
 
 Include:
 
@@ -185,18 +174,17 @@ Include:
    your explicit consent.
 
 PGP key fingerprint and email are documented in
-[`SECURITY.md`](./SECURITY.md) § "Encrypted reporting." Use it if
-the report includes a working exploit chain or sensitive
-artefacts.
+[`SECURITY.md`](./SECURITY.md) § "Reporting a vulnerability." Use it if
+the report includes a working exploit chain or sensitive artefacts.
 
 ## 6. Response process and timelines
 
 | Stage | Target | What happens |
 |---|---|---|
 | **Acknowledge receipt** | ≤ 24 hours | A human (not an autoresponder) replies with a tracking ID. |
-| **Triage decision** | ≤ 72 hours | We confirm scope and severity band, or explain why a report falls out of scope. If we need more reproduction information, the clock pauses. |
+| **Triage decision** | ≤ 72 hours | We confirm scope and severity, or explain why a report falls out of scope. If we need more reproduction information, the clock pauses. |
 | **Public-disclosure window** | 90 days from triage | We work to fix and roll out. We coordinate disclosure timing with the reporter. The window can extend by mutual agreement (e.g. for cryptographic findings that need a coordinated Sigstore release). |
-| **Fix shipped** | When ready | We notify the reporter at shipment. The reward (if any) is paid within 30 days of shipment, post-launch. |
+| **Fix shipped** | When ready | We notify the reporter at shipment and credit them in the public ledger. |
 | **Public post-mortem** | ≤ 30 days after fix | Written up in [`docs/bugs.md`](./docs/bugs.md) with the reporter's preferred credit. The post-mortem includes: root cause, scope of impact, fix, regression test added, and the discipline change that prevents the class. |
 
 ## 7. Safe harbour
@@ -237,34 +225,31 @@ The PrimitiveHub Hall of Fame lives at
 material security improvement to PrimitiveHub. Inclusion requires
 the reporter's explicit consent and a closed-and-shipped fix.
 
-Pre-launch reporters: thank you. Your finding rides into the
-public hall of fame at launch alongside the post-mortem and the
-retroactive payout.
+Thank you for helping make agent-context safer to consume — the
+currency here is research credit, and we take it seriously.
 
-## 9. Programme governance
+## 9. Governance
 
-This document is the public, version-controlled bounty programme.
-Changes to scope, severity bands, or payout windows are PRs
-against this file and reviewed against
-[ADR-0019](./docs/decisions/0019-doctrine-versioning-policy.md)
-(doctrine versioning). Breaking changes — narrowing scope,
-lowering bands, weakening safe harbour — require a 60-day notice
-period in which the previous version remains in effect for any
-report filed during that window.
+This document is the public, version-controlled disclosure scope.
+Changes to scope or safe harbour are PRs against this file and reviewed
+against [ADR-0019](./docs/decisions/0019-doctrine-versioning-policy.md)
+(doctrine versioning). Breaking changes — narrowing scope or weakening
+safe harbour — require a 60-day notice period in which the previous
+version remains in effect for any report filed during that window.
 
-The owner of this programme is the PrimitiveHub security lead.
-Pre-launch that role sits with `mhm@cyberorca.sa`. Post-launch the
-owner is whoever signs the public-disclosure post-mortems.
+The owner of this policy is the PrimitiveHub security lead
+(`mhm@cyberorca.sa`).
 
 ## 10. Frequently asked
 
 **"Can I report a vulnerability anonymously?"**
-Yes. Tor / Mullvad email accounts are fine. You will not receive
-the reward unless you can later prove ownership of the report.
+Yes. Tor / Mullvad email accounts are fine. Credit is offered but never
+required; an anonymous report is triaged exactly like any other.
 
-**"Do you pay in cryptocurrency?"**
-On request, yes — within the same USD band. We default to bank
-transfer.
+**"Is there a cash reward?"**
+No. PrimitiveHub is a research initiative, not a commercial enterprise.
+Recognition is a numbered ledger entry and co-authorship on the public
+post-mortem.
 
 **"Can I publish a write-up?"**
 Yes, once the coordinated-disclosure window has closed and the
@@ -281,6 +266,5 @@ report.
 
 ---
 
-**Programme version:** v0.1
-**Last reviewed:** 2026-06-10
-**Effective:** Pre-launch staging; payouts turn on at Gate G-G (launch).
+**Policy version:** v0.2 (bounty programme retired — disclosure scope only)
+**Last reviewed:** 2026-10-23
