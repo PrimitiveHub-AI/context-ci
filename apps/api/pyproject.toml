@@ -13,6 +13,11 @@ dependencies = [
     "django>=5.1,<6.0",
     "django-ninja>=1.3.0",
     "pydantic>=2.9",
+    # ASGI server (prod runtime) — the runner image CMD runs
+    # `python -m uvicorn primitivehub_api.asgi:application`. MUST be a
+    # production dep (deps stage installs with --no-dev); its absence is why
+    # the prod api image crash-looped with "No module named uvicorn".
+    "uvicorn[standard]>=0.30",
     # Database
     "psycopg[binary,pool]>=3.2",
     "dj-database-url>=2.3",
