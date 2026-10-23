@@ -26,6 +26,16 @@ export type VerificationErrorCode =
   | "SIGNATURE_VERIFICATION_DEFERRED"
   | "CERT_CHAIN_VERIFICATION_DEFERRED"
   | "REKOR_INCLUSION_PROOF_DEFERRED"
+  // Signer-identity policy (v0.2 Phase 2 — enforced during the cert step).
+  // The matching logic is dep-free + live now; the crypto that EXTRACTS the
+  // signer identity from certChainPem lands with sigstore-js in Phase 2.
+  | "SIGNER_POLICY_INVALID"
+  | "NO_APPROVED_SIGNERS"
+  | "SIGNER_NOT_ALLOWED"
+  | "TRUST_ROOT_INVALID"
+  // Anti-replay freshness (v0.2 Phase 3 — enforced during the rekor step).
+  | "BUNDLE_STALE"
+  | "BUNDLE_TIMESTAMP_INVALID"
   // Step 7: Context CI policy
   | "POLICY_REJECTED"
 
