@@ -33,7 +33,54 @@ export interface CheckVerdictEntry {
   diffHints: CheckDiffHint[]
 }
 
+export interface CheckClassCounts {
+  malicious: number
+  risky: number
+  policy: number
+  clean: number
+}
+
+/** One density-damped group contributing to the signature-risk score.
+ *  Keys are camelCase on the wire (authored camelCase in verdict.py's
+ *  `top_groups`). */
+export interface CheckScoreGroup {
+  cciId: string
+  detailTag: string
+  occurrences: number
+  weight: number
+  samplePaths: string[]
+}
+
+/** The score `derivation` block (verdict.py `score_findings`). This is a
+ *  free-form passthrough dict on the wire — the Camel renderer only aliases
+ *  pydantic schemas, so these OUTER keys keep their Python snake_case, while
+ *  the `top_groups` entries are authored camelCase. Access defensively; the
+ *  exact key set is pinned by a contract test in test_check_api.py. */
+export interface CheckScoreDerivation {
+  rule: string
+  engine?: string
+  rubric?: string
+  // "risky-bounded" branch
+  n_risky_findings?: number
+  n_risky_groups?: number
+  risky_fail_weight?: number
+  risky_warn_weight?: number
+  raw_penalty?: number
+  risky_cap?: number
+  capped_penalty?: number
+  top_groups?: CheckScoreGroup[]
+  // "malicious-dominates" branch
+  n_malicious?: number
+  base_penalty?: number
+  incremental_penalty?: number
+}
+
 export interface CheckSummary {
+  /** Canonical headline: the signature-risk score (0–100; 100 = no
+   *  signature risk). This is NOT a trust/provenance rating — a signature
+   *  match is evidence of a pattern, not proof of malice. */
+  signatureRiskScore: number
+  /** @deprecated back-compat alias of `signatureRiskScore`; will be removed. */
   trustScore: number
   verdictBand: CheckVerdictBand
   passed: boolean
@@ -41,8 +88,14 @@ export interface CheckSummary {
   detectorsTriggered: number
   failCount: number
   warnCount: number
+  /** INFO detector-evaluations (detectors × files that found nothing) —
+   *  NOT a count of clean files. See `cleanFiles`. */
   infoCount: number
+  /** Count of scanned files whose every verdict was INFO (nothing fired). */
+  cleanFiles?: number
   highestSeverity: CheckSeverity
+  classCounts?: CheckClassCounts
+  derivation?: CheckScoreDerivation
   // Present on `mode=npx`:
   filesScanned?: number
   filesSkippedBinary?: number

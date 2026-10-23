@@ -144,8 +144,44 @@ def test_build_summary_aggregates_counts() -> None:
     assert summary["infoCount"] == 1
     assert summary["detectorsTriggered"] == 3
     assert summary["trustScore"] == 59
+    # RC5: signatureRiskScore is the canonical headline; trustScore is a
+    # back-compat alias of the same value.
+    assert summary["signatureRiskScore"] == 59
+    assert summary["signatureRiskScore"] == summary["trustScore"]
     assert summary["verdictBand"] == "suspicious"
     assert summary["passed"] is False
+
+
+def test_build_summary_derivation_wire_contract() -> None:
+    """RC5: the score `derivation` block ships on the wire with the exact
+    key set the web UI's CheckScoreDerivation type reads. The Camel renderer
+    does NOT recursively camelize this free-form dict, so the OUTER keys stay
+    snake_case while `top_groups` entries are camelCase — pin both here so a
+    future rename can't silently break the (runtime-unverified) UI panel."""
+    verdicts = (_v(Severity.FAIL, snippet="f1"), _v(Severity.INFO))
+    d = build_summary(verdicts)["derivation"]
+    assert isinstance(d, dict)
+    assert d["rule"] == "risky-bounded"
+    for k in ("n_risky_groups", "raw_penalty", "capped_penalty", "risky_cap", "top_groups"):
+        assert k in d, f"derivation missing snake_case key {k!r}"
+    groups = d["top_groups"]
+    assert isinstance(groups, list) and groups, "expected at least one top group"
+    for k in ("cciId", "detailTag", "occurrences", "weight", "samplePaths"):
+        assert k in groups[0], f"top_groups entry missing camelCase key {k!r}"
+
+
+def test_build_summary_clean_files_counts_files_not_evaluations() -> None:
+    """RC5: `cleanFiles` counts scanned files with no finding — distinct from
+    `infoCount` (INFO detector-evaluations = detectors × files)."""
+    from checks.scan import FileScan, build_summary_from_files
+
+    clean = FileScan(path="a.md", bytes_count=1, verdicts=(_v(Severity.INFO),))
+    dirty = FileScan(
+        path="b.md", bytes_count=1, verdicts=(_v(Severity.FAIL, snippet="x"), _v(Severity.INFO))
+    )
+    summary = build_summary_from_files([clean, dirty])
+    assert summary["cleanFiles"] == 1  # only a.md is all-INFO
+    assert summary["infoCount"] == 2  # one INFO verdict in each file
 
 
 def test_scan_blob_runs_all_detectors() -> None:

@@ -33,6 +33,7 @@ import type {
   CheckFile,
   CheckResponse,
   CheckSeverity,
+  CheckSummary,
   CheckVerdictBand,
   CheckVerdictEntry,
 } from "@/lib/check/types"
@@ -185,11 +186,14 @@ export function CheckVerdict({ result, error, isLoading, pastedInput }: CheckVer
                 <h2 className={`text-xl font-bold tracking-tight ${band.tone}`}>
                   {band.label}
                 </h2>
-                <span className="text-[10px] font-mono uppercase tracking-[0.18em] text-muted-foreground">
-                  trust score
+                <span
+                  className="text-[10px] font-mono uppercase tracking-[0.18em] text-muted-foreground cursor-help"
+                  title="100 = no signature risk. This measures signature/pattern risk, not trust or provenance (provenance is unwired) — a signature match is evidence of a pattern, not proof of malice."
+                >
+                  signature-risk score
                 </span>
                 <span className="font-mono tabular-nums text-base text-foreground">
-                  {result.summary.trustScore}
+                  {result.summary.signatureRiskScore ?? result.summary.trustScore}
                   <span className="text-muted-foreground">/100</span>
                 </span>
               </div>
@@ -216,13 +220,28 @@ export function CheckVerdict({ result, error, isLoading, pastedInput }: CheckVer
             </span>{" "}
             warn
           </span>
-          <span className="inline-flex items-center gap-1.5">
+          <span
+            className="inline-flex items-center gap-1.5 cursor-help"
+            title="Detector checks that found nothing (detectors × files). This is NOT a count of clean files — see 'files clean'."
+          >
             <CheckCircle2 className="size-2.5 text-success" />
             <span className="text-foreground tabular-nums">
               {result.summary.infoCount}
             </span>{" "}
-            clean
+            clean checks
           </span>
+          {(result.mode === "npx" || result.mode === "github") &&
+            typeof result.summary.cleanFiles === "number" && (
+              <span
+                className="inline-flex items-center gap-1.5 cursor-help"
+                title="Scanned files where no detector fired."
+              >
+                <span className="text-foreground tabular-nums">
+                  {result.summary.cleanFiles}
+                </span>{" "}
+                files clean
+              </span>
+            )}
           <span className="inline-flex items-center gap-1.5 ml-auto">
             <span className="text-foreground tabular-nums">
               {result.summary.detectorsRun}
@@ -231,6 +250,10 @@ export function CheckVerdict({ result, error, isLoading, pastedInput }: CheckVer
           </span>
         </div>
       </Card>
+
+      {/* Why this score — surface the engine's own derivation so the
+          headline number is explainable, not opaque (RC5). */}
+      <ScoreRationale summary={result.summary} />
 
       {/* Target metadata — when present (npx / github / url) */}
       {(result.target.kind === "npm-package" ||
@@ -327,25 +350,119 @@ function Meta({
   )
 }
 
+/** "Why this score" — renders the engine's own score derivation so the
+ *  headline number is auditable instead of opaque. Reads the free-form
+ *  `derivation` block off the wire; every field is accessed defensively
+ *  (the exact key set is pinned by a test_check_api.py contract test). */
+function ScoreRationale({ summary }: { summary: CheckSummary }) {
+  const d = summary.derivation
+  if (!d) return null
+  const score = summary.signatureRiskScore ?? summary.trustScore
+  const groups = d.top_groups ?? []
+  const capped = typeof d.capped_penalty === "number" ? Math.round(d.capped_penalty) : null
+  const wasCapped =
+    typeof d.raw_penalty === "number" &&
+    typeof d.risky_cap === "number" &&
+    d.raw_penalty > d.risky_cap
+  return (
+    <Card className="border-border/40 bg-card p-4">
+      <h3 className="text-[11px] font-semibold text-foreground uppercase tracking-wider mb-2">
+        Why this score
+      </h3>
+      <p className="text-[11px] text-muted-foreground leading-relaxed">
+        <span className="font-mono tabular-nums text-foreground">{score}</span>/100
+        {capped !== null && (
+          <>
+            {" "}= 100 −{" "}
+            <span className="font-mono tabular-nums text-foreground">{capped}</span> penalty
+          </>
+        )}
+        {typeof d.n_risky_groups === "number" && (
+          <>
+            {" "}from{" "}
+            <span className="font-mono tabular-nums text-foreground">{d.n_risky_groups}</span>{" "}
+            distinct risk group{d.n_risky_groups === 1 ? "" : "s"}
+          </>
+        )}
+        {wasCapped && (
+          <>
+            {" "}(raw {Math.round(d.raw_penalty as number)}, capped at {d.risky_cap})
+          </>
+        )}
+        . A signature match is evidence of a pattern, not proof of malice.
+      </p>
+      {groups.length > 0 && (
+        <ul className="mt-2 space-y-1">
+          {groups.map((g, i) => (
+            <li
+              key={`${g.cciId}:${g.detailTag}:${i}`}
+              className="flex items-center gap-2 text-[10px] font-mono text-muted-foreground"
+            >
+              <span className="text-foreground">{g.cciId}</span>
+              <span className="text-border">·</span>
+              <span>{g.detailTag || "—"}</span>
+              <span className="text-border">·</span>
+              <span className="tabular-nums" title="occurrences (collapsed to one group)">
+                ×{g.occurrences}
+              </span>
+              <span className="text-border">·</span>
+              <span className="tabular-nums" title="penalty weight">
+                −{g.weight}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {summary.classCounts && (
+        <p className="mt-2 text-[10px] font-mono text-muted-foreground/80">
+          classes: {summary.classCounts.malicious} malicious · {summary.classCounts.risky} risky
+          · {summary.classCounts.policy} policy · {summary.classCounts.clean} clean
+        </p>
+      )}
+    </Card>
+  )
+}
+
 function DetectorList({ verdicts }: { verdicts: CheckVerdictEntry[] }) {
   // Sort: failures first, then warnings, then clean.
   const order = (s: CheckSeverity) => (s === "fail" ? 0 : s === "warn" ? 1 : 2)
-  const sorted = [...verdicts].sort((a, b) => order(a.severity) - order(b.severity))
+  // Dedup identical verdicts. The npx/github multi-file path flattens one
+  // Verdict per detector per file into `result.verdicts`, so the same
+  // finding across N files produced N identical rows (and a React key
+  // collision on the repeated detectorName). The scoring engine already
+  // density-damps these to one group; the list now matches it and shows an
+  // occurrence count. Single-blob scans (one file) are unaffected. RC5.
+  const groups = new Map<string, { verdict: CheckVerdictEntry; count: number }>()
+  for (const v of verdicts) {
+    const key = `${v.detectorName}|${v.cciId}|${v.severity}|${v.summary}`
+    const existing = groups.get(key)
+    if (existing) existing.count += 1
+    else groups.set(key, { verdict: v, count: 1 })
+  }
+  const sorted = [...groups.entries()].sort(
+    ([, a], [, b]) => order(a.verdict.severity) - order(b.verdict.severity),
+  )
   return (
     <Card className="border-border/40 bg-card p-4">
       <h3 className="text-[11px] font-semibold text-foreground uppercase tracking-wider mb-3">
         Detectors
       </h3>
       <ul className="space-y-2">
-        {sorted.map((v) => (
-          <DetectorRow key={v.detectorName} verdict={v} />
+        {sorted.map(([key, g]) => (
+          <DetectorRow key={key} verdict={g.verdict} occurrences={g.count} />
         ))}
       </ul>
     </Card>
   )
 }
 
-function DetectorRow({ verdict }: { verdict: CheckVerdictEntry }) {
+function DetectorRow({
+  verdict,
+  occurrences = 1,
+}: {
+  verdict: CheckVerdictEntry
+  occurrences?: number
+}) {
   const [expanded, setExpanded] = useState(verdict.severity !== "info")
   const hasHints = verdict.diffHints.length > 0
   return (
@@ -381,6 +498,14 @@ function DetectorRow({ verdict }: { verdict: CheckVerdictEntry }) {
         <span className="text-[11px] text-foreground/90 truncate">
           {verdict.summary}
         </span>
+        {occurrences > 1 && (
+          <span
+            className="ml-auto shrink-0 font-mono text-[9px] text-muted-foreground tabular-nums"
+            title={`Same finding across ${occurrences} files — scored once`}
+          >
+            ×{occurrences}
+          </span>
+        )}
       </button>
       {hasHints && expanded && (
         <ul className="px-3 pb-3 pt-1 space-y-2">

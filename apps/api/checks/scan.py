@@ -206,9 +206,23 @@ def build_summary_from_files(files: list[FileScan]) -> dict[str, object]:
     info_count = sum(1 for v in all_verdicts if v.severity is Severity.INFO)
     triggered = fail_count + warn_count
 
+    # RC5 truth fix: a "clean file" is a scanned file whose *every* verdict
+    # was INFO (no detector fired). This is distinct from `infoCount`, which
+    # counts INFO detector-evaluations (detectors × files) — the UI used to
+    # label that bare "clean", which reads as "clean files" and overstates.
+    clean_files = sum(
+        1 for fs in files if fs.verdicts and all(v.severity is Severity.INFO for v in fs.verdicts)
+    )
+
     return {
-        # — back-compat keys, consumers already read these —
-        "trustScore": score_result.score,
+        # — headline score. `signatureRiskScore` is the canonical name: the
+        #   number measures signature/pattern risk, NOT trust or provenance
+        #   (provenance/role/registry inputs are unwired per verdict.py).
+        #   `trustScore` is kept as a DEPRECATED back-compat alias so existing
+        #   consumers (and the attestation round-trip tests) keep working;
+        #   new consumers should read `signatureRiskScore`.
+        "signatureRiskScore": score_result.score,
+        "trustScore": score_result.score,  # deprecated alias of signatureRiskScore
         "verdictBand": score_result.band,
         "passed": all(v.passed for v in all_verdicts),
         "detectorsRun": len(get_all_detectors()),
@@ -216,6 +230,7 @@ def build_summary_from_files(files: list[FileScan]) -> dict[str, object]:
         "failCount": fail_count,
         "warnCount": warn_count,
         "infoCount": info_count,
+        "cleanFiles": clean_files,
         "highestSeverity": highest_severity(tuple(all_verdicts)).value,
         # — new ADR-0041 keys —
         "engineVersion": str(score_result.derivation.get("engine", "")),

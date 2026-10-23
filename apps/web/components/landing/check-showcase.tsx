@@ -319,7 +319,7 @@ function DemoVerdict() {
             High risk
           </p>
           <p className="text-[10px] text-muted-foreground/80">
-            3 findings · 2 fail · 1 warn · trust score 12 / 100
+            3 findings · 2 fail · 1 warn · signature-risk 12 / 100
           </p>
         </div>
         <div className="text-right">
@@ -371,13 +371,13 @@ function LiveVerdict({ result }: { result: CheckResponse }) {
           <p className="text-[10px] text-muted-foreground/80">
             {result.summary.detectorsTriggered} finding
             {result.summary.detectorsTriggered === 1 ? "" : "s"} ·{" "}
-            {result.summary.failCount} fail · {result.summary.warnCount} warn · trust score{" "}
-            {result.summary.trustScore} / 100
+            {result.summary.failCount} fail · {result.summary.warnCount} warn · signature-risk{" "}
+            {result.summary.signatureRiskScore ?? result.summary.trustScore} / 100
           </p>
         </div>
         <div className="text-right">
           <p className={`text-2xl font-mono font-bold ${bandStyle.text} tabular-nums leading-none`}>
-            {result.summary.trustScore}
+            {result.summary.signatureRiskScore ?? result.summary.trustScore}
           </p>
           <p className="text-[9px] font-mono text-muted-foreground/70 uppercase tracking-wider">
             /100

@@ -80,7 +80,7 @@ function buildReportBody(opts: {
   const triggeredVerdicts = result.verdicts.filter((v) => !v.passed)
   const passedVerdicts = result.verdicts.filter((v) => v.passed)
   const verdictBand = result.summary.verdictBand
-  const trustScore = result.summary.trustScore
+  const signatureRiskScore = result.summary.signatureRiskScore ?? result.summary.trustScore
 
   const triggeredList = triggeredVerdicts.length
     ? triggeredVerdicts
@@ -135,9 +135,9 @@ function buildReportBody(opts: {
     `- **Request ID:** \`${result.requestId}\``,
     `- **Mode:** \`${result.mode}\``,
     `- **Target:** \`${result.target.displayName}\``,
-    `- **Trust score:** ${trustScore} / 100  (band: **${verdictBand}**)`,
+    `- **Signature-risk score:** ${signatureRiskScore} / 100  (band: **${verdictBand}**)`,
     `- **Detectors:** ${result.summary.detectorsTriggered} / ${result.summary.detectorsRun} triggered`,
-    `- **Counts:** ${result.summary.failCount} fail, ${result.summary.warnCount} warn, ${result.summary.infoCount} clean`,
+    `- **Counts:** ${result.summary.failCount} fail, ${result.summary.warnCount} warn, ${result.summary.infoCount} clean checks`,
     "",
     `### Detectors that ${kind === "fp" ? "fired (the dispute)" : "passed (the candidates for ratchet)"}`,
     "",
