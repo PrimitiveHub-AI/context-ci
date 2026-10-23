@@ -35,11 +35,15 @@ presents `/check` and the `phub` CLI as a new category, not a v0 SaaS toy.
       `/security` to coordinated disclosure with public-ledger credit (not cash): dropped the
       programme section, USD severity bands, retroactive-payout language, SECURITY-BOUNTY.md link;
       footer "Security & bug bounty"→"Security & disclosure"; `[bounty]` mail subjects→`[security]`.
-      Kept the 3 report lanes + response timeline + safe harbour. **Routed `[→ phub-security]`:**
-      `SECURITY.md` + `SECURITY-BOUNTY.md` are phub-security's owned files (SPINE row) and tied to
-      launch **Gate G-G** (`bf60972`), so phub-web did NOT edit them — filed a `[from: phub-web]`
-      row in `phub-security.md` Open items to retire the bounty docs + resolve the G-G launch-gate
-      question. Site is already bounty-free + live; canonical-doc reconciliation is theirs.
+      Kept the 3 report lanes + response timeline + safe harbour. **Canonical docs reconciled
+      2026-10-23 (`e482e26`) per explicit owner override** — `SECURITY.md` + `SECURITY-BOUNTY.md`
+      are phub-security's owned files (SPINE row) + tied to launch Gate G-G (`bf60972`); I first
+      filed a `[from: phub-web]` row (`c824b0e`), then the owner directed me to edit them directly.
+      Did so carefully: cash/USD bands/payout/Gate-G-G-payout removed → coordinated disclosure +
+      credit; §2 in-scope / §3 out-of-scope / §5 how-to / §7 safe harbour preserved; did NOT touch
+      `phub-security.md` (owner editing it) nor the launch-gate/checklist decision. **Residuals for
+      phub-security:** reframe launch Gate G-G + `docs/launch/checklist.md:120`; decide whether to
+      rename/remove `SECURITY-BOUNTY.md` (kept to avoid breaking inbound links).
 - [x] **P3 hero firewall triad** — SHIPPED 2026-10-17 (`d971b3b`, deployed, live-verified via
       Cloudflare). 6-verb lifecycle strip → 3-beat Scan(/check)·Author-safe(/forge)·Block-at-load(/docs)
       linked cards; copy truth-pass accurate (block = fail-closed CI/CLI, advisory MCP). Hero
