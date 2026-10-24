@@ -87,8 +87,11 @@ subcommands); P0 "in-sample F1" qualifier already shipped (Oct-17); flag-off rou
   not-yet-deployed `signatureRiskScore`). TODO inc-2: per-finding certainty (rule type/limits),
   elevate evidence; WS3 Detection-Quality page (needs corpus-eval numbers).
   NOTE: `check-verdict.tsx` is co-edited by the check-ui/RC5 session — watch for collisions.
-- **WS3 Detection-Quality page** — in-sample+held-out(TS 18/25)+FP rate+engine diff+date; I render,
-  `[→ corpus-eval]` owns/ratifies numbers (routed).
+- **WS3 Detection-Quality page** — DONE 2026-10-24 (`ec7a3a0`, preview): new `/detection-quality`
+  rendered from the COMMITTED baseline (`lib/evaluation` — in-sample F1 0.991 + held-out recall
+  0.832 + per-detector table + CCI-005 FP + coverage gaps + Py↔TS parity + limits). UNBLOCKED by
+  using the already-committed artifact (corpus-eval's baseline refresh to 1.000 only *updates* the
+  numbers later — not a build blocker). Linked from /check verdict (TrustDimensions), footer, sitemap.
 - **WS4 hero/IA — PARTLY DONE 2026-10-24 (`f858267`, preview):** renamed **Forge → "Skill IDE"**
   (route `/forge`→`/skill-ide`, 308 redirects, display + nav + sitemap + metadata; kept "Primitive
   Spec v0.1" noun) and positioned **two co-flagships — /check + Skill IDE** (hero dual-CTA + nav
