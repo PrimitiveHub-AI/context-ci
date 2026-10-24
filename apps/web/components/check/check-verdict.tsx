@@ -39,6 +39,26 @@ import type {
 } from "@/lib/check/types"
 
 import { ReportVerdict } from "@/components/check/report-verdict"
+import { TrustDimensions } from "@/components/check/trust-dimensions"
+
+/**
+ * Plain-language outcome — leads the verdict so interpretation comes before
+ * the number (UI/UX audit 2026-10-24). Never says "Safe": a clean static
+ * scan is "no findings under the selected checks", not a safety guarantee.
+ */
+function outcomeHeadline(band: CheckVerdictBand): string {
+  switch (band) {
+    case "clean":
+      return "No findings under the selected checks"
+    case "caution":
+      return "Review suggested"
+    case "suspicious":
+      return "Review required — suspicious instructions found"
+    case "high-risk":
+    default:
+      return "High risk — unsafe instructions found"
+  }
+}
 
 interface CheckVerdictProps {
   result: CheckResponse | null
@@ -183,8 +203,8 @@ export function CheckVerdict({ result, error, isLoading, pastedInput }: CheckVer
             <BandIcon className={`size-8 shrink-0 ${band.tone}`} />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className={`text-xl font-bold tracking-tight ${band.tone}`}>
-                  {band.label}
+                <h2 className={`text-lg font-bold tracking-tight ${band.tone} text-balance`}>
+                  {outcomeHeadline(result.summary.verdictBand)}
                 </h2>
                 <span
                   className="text-[10px] font-mono uppercase tracking-[0.18em] text-muted-foreground cursor-help"
@@ -250,6 +270,11 @@ export function CheckVerdict({ result, error, isLoading, pastedInput }: CheckVer
           </span>
         </div>
       </Card>
+
+      {/* The real trust picture — five separated dimensions shown honestly
+          (content ≠ integrity ≠ publisher ≠ provenance ≠ policy). A clean
+          content scan is not a verified publisher. UI/UX audit 2026-10-24. */}
+      <TrustDimensions result={result} />
 
       {/* Why this score — surface the engine's own derivation so the
           headline number is explainable, not opaque (RC5). */}
