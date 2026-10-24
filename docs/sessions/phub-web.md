@@ -79,10 +79,14 @@ subcommands); P0 "in-sample F1" qualifier already shipped (Oct-17); flag-off rou
   (available/preview/planned/unavailable); `PlannedBadge`+`ComingSoonPanel` routed through it;
   Finding C fixed (Forge "Ready to publish"→"Validation passed"); nav already signals planned;
   all routes 200. tsc clean.
-- **WS2 `/check` flagship redesign** — interpretation-first: verdict+severity→evidence(file/line)
-  →mechanism→certainty→remediation→**5 separated trust dimensions** (Content/Integrity/Publisher/
-  Provenance/Policy, each Assessed/Not-verified/N-A); "No findings under selected checks" not "Safe";
-  score secondary. NEXT, the big one.
+- **WS2 `/check` flagship redesign** — inc-1 DONE 2026-10-24 (`d459806`, preview): interpretation-first
+  verdict headline ("No findings under the selected checks", never "Safe") + **TrustDimensions**
+  (Content risk/Integrity/Publisher/Provenance/Policy — Assessed/Recorded/Not-verified/N-A; "Not
+  verified"=not checked, never pass/fail). Builds on RC5 (check-ui session) which already did
+  signature-risk-score honesty + ScoreRationale. Dimensions read only API-present fields (safe vs
+  not-yet-deployed `signatureRiskScore`). TODO inc-2: per-finding certainty (rule type/limits),
+  elevate evidence; WS3 Detection-Quality page (needs corpus-eval numbers).
+  NOTE: `check-verdict.tsx` is co-edited by the check-ui/RC5 session — watch for collisions.
 - **WS3 Detection-Quality page** — in-sample+held-out(TS 18/25)+FP rate+engine diff+date; I render,
   `[→ corpus-eval]` owns/ratifies numbers (routed).
 - **WS4 hero/IA — PARTLY DONE 2026-10-24 (`f858267`, preview):** renamed **Forge → "Skill IDE"**
