@@ -85,8 +85,11 @@ subcommands); P0 "in-sample F1" qualifier already shipped (Oct-17); flag-off rou
   score secondary. NEXT, the big one.
 - **WS3 Detection-Quality page** — in-sample+held-out(TS 18/25)+FP rate+engine diff+date; I render,
   `[→ corpus-eval]` owns/ratifies numbers (routed).
-- **WS4 hero/IA demote tech narratives + Check·Forge·Protect·Explore journeys** (Protect/Explore =
-  capability `Planned` until phub-cli/platform land them, routed to platform).
+- **WS4 hero/IA — PARTLY DONE 2026-10-24 (`f858267`, preview):** renamed **Forge → "Skill IDE"**
+  (route `/forge`→`/skill-ide`, 308 redirects, display + nav + sitemap + metadata; kept "Primitive
+  Spec v0.1" noun) and positioned **two co-flagships — /check + Skill IDE** (hero dual-CTA + nav
+  grouping). Brand-rename ripple (~27 non-web files) routed `[→ phub-strategy]`. Still TODO in WS4:
+  demote dense tech narratives below fold; Protect·Explore journeys as `Planned` (phub-cli/platform).
 - **WS5 Forge security-first companion** — click-finding→source, safe templates, explainable autofix
   (diff+approval), scan-in-/check.
 - **WS6 a11y (WCAG 2.2 AA) + perf (CWV) + responsive + inspection→evidence→decision motif.**

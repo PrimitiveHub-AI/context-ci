@@ -56,6 +56,17 @@ The one move that forecloses no option (do this regardless of a/b/c):
       rate-limit / cost exposure) spanning phub-web + phub-check-engine, NOT a platform flip. On
       ratify, platform will profile-gate authentik (keep HELD, never delete) + drop OIDC from the
       critical path. Until ratified, authentik stays always-on.
+- [ ] **`[from: phub-web]` 2026-10-24 — brand rename "Forge" → "Skill IDE" + two-flagship positioning.**
+      Owner directive: the authoring surface is now **"Skill IDE"**, and PrimitiveHub leads with **two
+      co-flagships — /check (inspect) + Skill IDE (author)**. phub-web shipped the WEB side (commit
+      `f858267`, preview): route `/forge`→`/skill-ide` (308 redirects), display rename, hero dual-CTA,
+      nav grouping; kept **"Primitive Spec v0.1"** as the formal spec noun (accessible name = Skill IDE;
+      precise noun = primitive). **Strategy decision needed:** is this a brand-wide rename or
+      web-accessible-name-only? **~27 non-web files** still say "Forge" (docs/usage, `packages/*`,
+      `paper/`, `apps/api`, `content/primitives`). If brand-wide, route the ripple to each owning
+      session (CLI help → phub-cli, paper → owner, docs → their owners). Recommend: web uses "Skill IDE"
+      now; ratify brand-wide rename + sequence the non-web rollout. Also fold "two flagships" into
+      `docs/positioning.md`.
 
 ## Decisions / ADRs
 ADR-0045 (launch posture). Related: docs/positioning.md, docs/vision.md, docs/roadmap.md.
