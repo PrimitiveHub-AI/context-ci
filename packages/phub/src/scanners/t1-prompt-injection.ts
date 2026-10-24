@@ -16,7 +16,11 @@ import {
   type Verdict,
   lineForPosition,
 } from "./types.js"
-import { analyzeMarkdownContext, isInAnyCodeOrFrontmatter } from "./markdown-context.js"
+import {
+  analyzeMarkdownContext,
+  isCodeArtifact,
+  isInAnyCodeOrFrontmatter,
+} from "./markdown-context.js"
 import { isInQuotedPhrase } from "./semantic-context.js"
 
 // Pattern families that are commonly quoted in teaching content
@@ -29,6 +33,15 @@ import { isInQuotedPhrase } from "./semantic-context.js"
 const CONTEXT_AWARE_TAGS: ReadonlySet<string> = new Set([
   "override-system-instructions",
   "credential-exfiltration-hint",
+])
+
+// v0.2.3 (RC3). Syntactic-carrier families whose attack vector IS a
+// fence-like structure. They stay a hard FAIL even in a code artifact —
+// only the prose families above get the code-artifact down-weight.
+// Lockstep with apps/api/scanners/t1_prompt_injection.py § v0.2.3.
+const SYNTACTIC_CARRIER_TAGS: ReadonlySet<string> = new Set([
+  "hidden-instructions",
+  "role-hijack",
 ])
 
 const OVERRIDE_PATTERNS: Array<readonly [RegExp, string]> = [
@@ -126,7 +139,7 @@ export class T1PromptInjectionDetector {
   readonly name = "t1.prompt_injection"
   readonly threatCategory = "T1"
   readonly cciId = "CCI-001"
-  readonly detectorVersion = "0.2.2"
+  readonly detectorVersion = "0.2.3"
 
   run(ctx: DetectorContext): Verdict {
     const hints: DiffHint[] = []
@@ -181,6 +194,28 @@ export class T1PromptInjectionDetector {
     }
 
     const plural = hints.length === 1 ? "" : "s"
+    // v0.2.3 (RC3 — language-aware down-weight). In a non-markdown code
+    // artifact a surviving prose-family match is almost always a string
+    // literal / comment / fixture, not live agent prose. When EVERY hint is
+    // a prose family (no syntactic carrier) AND the artifact is code,
+    // down-weight to WARN (reviewer-triage, still RISKY). Syntactic carriers
+    // stay FAIL; markdown / pasted content / unknown extensions keep FAIL.
+    // Lockstep with apps/api/scanners/t1_prompt_injection.py § v0.2.3.
+    const hasSyntacticCarrier = hints.some((h) => SYNTACTIC_CARRIER_TAGS.has(h.detailTag))
+    if (isCodeArtifact(ctx.filename) && !hasSyntacticCarrier) {
+      const base = (ctx.filename ?? "").replace(/\\/g, "/").split("/").pop() || "code"
+      return {
+        detectorName: this.name,
+        threatCategory: this.threatCategory,
+        cciId: this.cciId,
+        severity: Severity.WARN,
+        passed: true,
+        summary: `Matched ${hints.length} prompt-injection pattern${plural} in a non-markdown code artifact (${base}); likely a string literal or fixture — down-weighted to WARN for review, not a hard fail.`,
+        detectorVersion: this.detectorVersion,
+        diffHints: hints,
+      }
+    }
+
     return {
       detectorName: this.name,
       threatCategory: this.threatCategory,

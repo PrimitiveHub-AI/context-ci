@@ -32,6 +32,62 @@ if TYPE_CHECKING:
 OffsetRange = tuple[int, int]
 
 
+# ─────────────────────────────────────────────────────────────────────
+# Artifact-language helper (RC3). Orthogonal to the offset analysis
+# below: answers "is this a source-code file?" from the path alone. The
+# markdown context model (fences / inline code / quotes) does not exist
+# in a .js/.py/... file, so a match there is almost always a string
+# literal, a comment, or a detector fixture rather than live in-band
+# prose. A detector can use this to DOWN-WEIGHT code-artifact prose
+# matches (reviewer-triage) instead of FAILing them as if they were
+# instructions. Lockstep with packages/phub/src/scanners/markdown-context.ts.
+# ─────────────────────────────────────────────────────────────────────
+_CODE_EXTENSIONS: frozenset[str] = frozenset(
+    {
+        ".js",
+        ".jsx",
+        ".ts",
+        ".tsx",
+        ".mjs",
+        ".cjs",
+        ".py",
+        ".rb",
+        ".go",
+        ".rs",
+        ".java",
+        ".kt",
+        ".scala",
+        ".c",
+        ".h",
+        ".cpp",
+        ".cc",
+        ".hpp",
+        ".cs",
+        ".php",
+        ".sh",
+        ".bash",
+        ".zsh",
+        ".ps1",
+        ".lua",
+        ".pl",
+        ".swift",
+    }
+)
+
+
+def is_code_artifact(file_path: str) -> bool:
+    """True when ``file_path`` has a recognized source-code extension.
+
+    An empty path (pasted content), markdown/text, and config/data files
+    all return False, so they keep full markdown-context scrutiny (a hard
+    FAIL). Only explicitly-recognized code gets the down-weight — fail-safe.
+    RC3.
+    """
+    base = file_path.replace("\\", "/").rsplit("/", 1)[-1].lower()
+    dot = base.rfind(".")
+    return dot > 0 and base[dot:] in _CODE_EXTENSIONS
+
+
 @dataclass(frozen=True, slots=True)
 class MarkdownContext:
     """Context boundaries returned by ``analyze_markdown_context``.

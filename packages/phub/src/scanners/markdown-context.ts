@@ -24,6 +24,35 @@
 /** Range of offsets [start, end). Half-open: end is exclusive. */
 export type OffsetRange = readonly [number, number]
 
+// ─────────────────────────────────────────────────────────────────────
+// Artifact-language helper (RC3). Orthogonal to the offset analysis
+// below: answers "is this a source-code file?" from the path alone. The
+// markdown context model does not exist in a .js/.py/... file, so a match
+// there is almost always a string literal / comment / fixture, not live
+// in-band prose — a detector can DOWN-WEIGHT code-artifact prose matches
+// instead of failing them. Lockstep with
+// apps/api/scanners/markdown_context.py.
+// ─────────────────────────────────────────────────────────────────────
+const CODE_EXTENSIONS: ReadonlySet<string> = new Set([
+  ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs",
+  ".py", ".rb", ".go", ".rs", ".java", ".kt", ".scala",
+  ".c", ".h", ".cpp", ".cc", ".hpp", ".cs", ".php",
+  ".sh", ".bash", ".zsh", ".ps1", ".lua", ".pl", ".swift",
+])
+
+/**
+ * True when `filePath` has a recognized source-code extension. Undefined /
+ * empty (pasted content), markdown/text, and config/data files all return
+ * false, so they keep full markdown-context scrutiny (a hard FAIL). Only
+ * explicitly-recognized code gets the down-weight — fail-safe. RC3.
+ */
+export function isCodeArtifact(filePath: string | undefined): boolean {
+  if (!filePath) return false
+  const base = (filePath.replace(/\\/g, "/").split("/").pop() ?? "").toLowerCase()
+  const dot = base.lastIndexOf(".")
+  return dot > 0 && CODE_EXTENSIONS.has(base.slice(dot))
+}
+
 export interface MarkdownContext {
   /** Character offset where frontmatter ends (exclusive). 0 if no frontmatter. */
   frontmatterEndOffset: number

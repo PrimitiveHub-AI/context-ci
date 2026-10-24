@@ -47,7 +47,11 @@ from __future__ import annotations
 
 import re
 
-from .markdown_context import analyze_markdown_context, is_in_any_code_or_frontmatter
+from .markdown_context import (
+    analyze_markdown_context,
+    is_code_artifact,
+    is_in_any_code_or_frontmatter,
+)
 from .semantic_context import is_in_quoted_phrase
 from .types import DetectorContext, DiffHint, Severity, Verdict
 
@@ -170,6 +174,18 @@ _CONTEXT_AWARE_TAGS: frozenset[str] = frozenset(
     }
 )
 
+# v0.2.3 (RC3). Syntactic-carrier families whose attack vector IS a
+# fence-like structure. They stay a hard FAIL even in a code artifact —
+# a `[SYSTEM]:` marker or a system-labelled fence inside a .js string is
+# still a structural injection carrier. Only the prose families (the
+# context-aware ones above) get the code-artifact down-weight.
+_SYNTACTIC_CARRIER_TAGS: frozenset[str] = frozenset(
+    {
+        "hidden-instructions",
+        "role-hijack",
+    }
+)
+
 # Cap on snippet length in the diff hint. Long captures risk rendering
 # attacker-controlled content prominently in the reviewer UI.
 _SNIPPET_MAX_CHARS = 120
@@ -198,7 +214,7 @@ class T1PromptInjectionDetector:
     name = "t1.prompt_injection"
     threat_category = "T1"  # legacy code; back-compat with pre-CCI attestations
     cci_id = "CCI-001"  # Context CI Top 10 v0.1 canonical ID (ADR-0016)
-    detector_version = "0.2.2"
+    detector_version = "0.2.3"
 
     def run(self, ctx: DetectorContext) -> Verdict:
         hints: list[DiffHint] = []
@@ -248,6 +264,36 @@ class T1PromptInjectionDetector:
                 severity=Severity.INFO,
                 passed=True,
                 summary="No prompt-injection patterns matched.",
+                detector_version=self.detector_version,
+            )
+
+        # v0.2.3 (RC3 — language-aware down-weight). The context-aware
+        # (prose) families already skip markdown fences / inline code /
+        # quotes, but that analysis is markdown-only: in a non-markdown
+        # CODE artifact (.js/.py/...) a surviving match is almost always a
+        # string literal, a comment, or a detector fixture — reachable but
+        # unconfirmed, not live agent prose. When EVERY surviving hint is a
+        # prose family (no syntactic carrier) AND the artifact is code,
+        # down-weight to WARN (reviewer-triage, still RISKY — never
+        # suppressed). Syntactic carriers stay FAIL. Markdown / pasted
+        # content / unknown extensions keep the hard FAIL.
+        # Lockstep with packages/phub/src/scanners/t1-prompt-injection.ts § v0.2.3.
+        has_syntactic_carrier = any(h.detail_tag in _SYNTACTIC_CARRIER_TAGS for h in hints)
+        if is_code_artifact(ctx.file_path) and not has_syntactic_carrier:
+            base = ctx.file_path.replace("\\", "/").rsplit("/", 1)[-1] or "code"
+            return Verdict(
+                detector_name=self.name,
+                threat_category=self.threat_category,
+                cci_id=self.cci_id,
+                severity=Severity.WARN,
+                passed=True,
+                summary=(
+                    f"Matched {len(hints)} prompt-injection pattern"
+                    f"{'s' if len(hints) != 1 else ''} in a non-markdown code "
+                    f"artifact ({base}); likely a string literal or fixture — "
+                    "down-weighted to WARN for review, not a hard fail."
+                ),
+                diff_hints=tuple(hints),
                 detector_version=self.detector_version,
             )
 
