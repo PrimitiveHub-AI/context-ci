@@ -55,6 +55,7 @@ function buildColumns(measuredAt: string): readonly Column[] {
     {
       heading: "Project",
       links: [
+        { label: "Detection Quality (measured)", href: "/detection-quality" },
         { label: "Paper (arXiv preprint v0.1)", href: "/paper" },
         { label: "Security & disclosure", href: "/security" },
         { label: "Contributors", href: "/contributors", soon: true },

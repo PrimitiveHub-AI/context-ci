@@ -1,9 +1,11 @@
+import Link from "next/link"
 import {
   FileSearch,
   Fingerprint,
   UserCheck,
   GitBranch,
   Gavel,
+  ArrowUpRight,
   type LucideIcon,
 } from "lucide-react"
 
@@ -160,6 +162,13 @@ export function TrustDimensions({ result }: { result: CheckResponse }) {
           )
         })}
       </ul>
+      <Link
+        href="/detection-quality"
+        className="mt-3 inline-flex items-center gap-1 text-[10px] font-mono text-primary/80 hover:text-primary"
+      >
+        How accurate are these checks? → Detection Quality
+        <ArrowUpRight className="size-2.5" />
+      </Link>
     </Card>
   )
 }
