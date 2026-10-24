@@ -165,14 +165,15 @@ def test_build_summary_derivation_wire_contract() -> None:
     for k in ("n_risky_groups", "raw_penalty", "capped_penalty", "risky_cap", "top_groups"):
         assert k in d, f"derivation missing snake_case key {k!r}"
     groups = d["top_groups"]
-    assert isinstance(groups, list) and groups, "expected at least one top group"
+    assert isinstance(groups, list)
+    assert groups, "expected at least one top group"
     for k in ("cciId", "detailTag", "occurrences", "weight", "samplePaths"):
         assert k in groups[0], f"top_groups entry missing camelCase key {k!r}"
 
 
 def test_build_summary_clean_files_counts_files_not_evaluations() -> None:
     """RC5: `cleanFiles` counts scanned files with no finding — distinct from
-    `infoCount` (INFO detector-evaluations = detectors × files)."""
+    `infoCount` (INFO detector-evaluations = detectors x files)."""
     from checks.scan import FileScan, build_summary_from_files
 
     clean = FileScan(path="a.md", bytes_count=1, verdicts=(_v(Severity.INFO),))
@@ -182,6 +183,64 @@ def test_build_summary_clean_files_counts_files_not_evaluations() -> None:
     summary = build_summary_from_files([clean, dirty])
     assert summary["cleanFiles"] == 1  # only a.md is all-INFO
     assert summary["infoCount"] == 2  # one INFO verdict in each file
+
+
+# ---------------------------------------------------------------------------
+# RC2 Pass B — reachability reach-weight on the RISKY penalty.
+# A finding's penalty is scaled by its file's reachability role (never above
+# 1.0, so no score rises above its reach-blind baseline). De-weight only.
+# ---------------------------------------------------------------------------
+
+
+def test_reach_weight_deweights_inert_file_findings() -> None:
+    """A FAIL only in a test fixture scores higher (less penalty) than the
+    same finding in a loaded instruction surface — down-weighted, not hidden."""
+    from checks.scan import FileScan, build_summary_from_files
+
+    inert = build_summary_from_files(
+        [FileScan(path="tests/hooks.test.js", bytes_count=1, verdicts=(_v(Severity.FAIL, snippet="x"),))]
+    )
+    loaded = build_summary_from_files(
+        [FileScan(path="skills/foo/SKILL.md", bytes_count=1, verdicts=(_v(Severity.FAIL, snippet="x"),))]
+    )
+    assert loaded["signatureRiskScore"] == 75  # 25 * 1.0 -> caution
+    assert inert["signatureRiskScore"] == 90  # 25 * 0.4 = 10 -> clean band
+    assert inert["signatureRiskScore"] > loaded["signatureRiskScore"]
+
+
+def test_reach_weight_is_max_across_files_fail_safe() -> None:
+    """Same payload in BOTH a test fixture and a loaded SKILL.md → the group
+    is NOT de-weighted (max reach across members)."""
+    from checks.scan import FileScan, build_summary_from_files
+
+    summary = build_summary_from_files(
+        [
+            FileScan(path="tests/hooks.test.js", bytes_count=1, verdicts=(_v(Severity.FAIL, snippet="x"),)),
+            FileScan(path="skills/foo/SKILL.md", bytes_count=1, verdicts=(_v(Severity.FAIL, snippet="x"),)),
+        ]
+    )
+    assert summary["signatureRiskScore"] == 75  # reach = max(0.4, 1.0) = 1.0
+    grp = summary["derivation"]["top_groups"][0]
+    assert grp["reachWeight"] == 1.0
+    assert grp["occurrences"] == 2
+
+
+def test_reach_weight_single_blob_unchanged() -> None:
+    """Content-mode (empty file_path) is UNKNOWN → 1.0; a lone FAIL stays 75."""
+    assert build_summary((_v(Severity.FAIL, snippet="x"),))["signatureRiskScore"] == 75
+
+
+def test_reach_weight_derivation_is_auditable() -> None:
+    """The derivation records the reach weighting so the score is reproducible."""
+    from checks.scan import FileScan, build_summary_from_files
+
+    d = build_summary_from_files(
+        [FileScan(path="bench/corpus/x.md", bytes_count=1, verdicts=(_v(Severity.FAIL, snippet="x"),))]
+    )["derivation"]
+    assert d["reach_weighted"] is True
+    grp = d["top_groups"][0]
+    assert grp["reachWeight"] == 0.4  # bench/ → inert
+    assert grp["effectiveWeight"] == 10.0  # 25 * 0.4
 
 
 def test_scan_blob_runs_all_detectors() -> None:

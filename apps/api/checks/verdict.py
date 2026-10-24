@@ -40,6 +40,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
 
+from scanners.reachability import REACH_WEIGHT, classify_role
 from scanners.types import Severity, Verdict
 
 # Versioned governance fields. Stay alongside the rubric in this module
@@ -350,12 +351,19 @@ def aggregate_findings(
     """
     out: list[ClassifiedFinding] = []
     for file_path, verdicts in file_verdicts:
+        # RC2 Pass B: record the reachability role on every finding's
+        # derivation (auditable). This feeds the rubric's `role_class`
+        # input — v0.1 only annotates with it (no classification branch),
+        # so it changes no class. The score-level reach de-weighting lives
+        # in _density_groups / score_findings.
+        role = classify_role(file_path).value
         for v in verdicts:
             if not v.diff_hints:
                 cls, derivation = classify_finding(
                     cci_id=v.cci_id,
                     detail_tag="",
                     severity=v.severity,
+                    role_class=role,
                 )
                 out.append(
                     ClassifiedFinding(
@@ -377,6 +385,7 @@ def aggregate_findings(
                     cci_id=v.cci_id,
                     detail_tag=h.detail_tag,
                     severity=v.severity,
+                    role_class=role,
                 )
                 out.append(
                     ClassifiedFinding(
@@ -395,6 +404,14 @@ def aggregate_findings(
     return out
 
 
+def _reach_weight_for_path(file_path: str) -> float:
+    """Confidence multiplier for a finding's file by reachability role
+    (RC2 Pass B). Empty path (single-blob paste) → UNKNOWN → 1.0, so
+    content-mode scores are unchanged. Never 0 — a finding is down-
+    weighted, never suppressed."""
+    return REACH_WEIGHT[classify_role(file_path)]
+
+
 @dataclass(frozen=True, slots=True)
 class _DensityGroup:
     """One density-damped group of identical RISKY findings."""
@@ -404,6 +421,11 @@ class _DensityGroup:
     snippet_norm: str
     n_occurrences: int
     weight: float
+    # RC2 Pass B: max reach-weight across the group's member files. A group
+    # whose occurrences ALL live in inert/ambient files (tests/, bench/,
+    # docs/) is de-weighted; one occurrence in a loaded/unknown surface
+    # keeps it at 1.0 (fail-safe — reachable-anywhere scores full).
+    reach_weight: float
     sample_paths: tuple[str, ...]  # up to 5 distinct file paths for audit
 
 
@@ -431,6 +453,11 @@ def _density_groups(findings: list[ClassifiedFinding]) -> list[_DensityGroup]:
         worst = (
             Severity.FAIL if any(m.severity is Severity.FAIL for m in members) else Severity.WARN
         )
+        # RC2 Pass B: the group's reach-weight is the MAX across its member
+        # files — if the same payload appears in even one reachable surface,
+        # it is not de-weighted (fail-safe). Only all-inert/ambient groups
+        # drop below 1.0.
+        reach = max((_reach_weight_for_path(m.file_path) for m in members), default=1.0)
         groups.append(
             _DensityGroup(
                 cci_id=cci,
@@ -438,6 +465,7 @@ def _density_groups(findings: list[ClassifiedFinding]) -> list[_DensityGroup]:
                 snippet_norm=norm,
                 n_occurrences=len(members),
                 weight=_risky_weight(worst),
+                reach_weight=reach,
                 sample_paths=tuple(seen_paths),
             )
         )
@@ -505,9 +533,13 @@ def score_findings(findings: list[ClassifiedFinding]) -> ScoreResult:
             score=score, band=verdict_band(score), class_counts=class_counts, derivation=derivation
         )
 
-    # No MALICIOUS findings. Density-damp the RISKY pool.
+    # No MALICIOUS findings. Density-damp the RISKY pool, then apply the
+    # reachability reach-weight per group (RC2 Pass B): a group whose
+    # occurrences all live in inert/ambient files contributes less. This
+    # only ever REDUCES a penalty (reach_weight <= 1.0), so a score never
+    # rises above its reach-blind baseline.
     groups = _density_groups(findings)
-    raw_penalty = sum(g.weight for g in groups)
+    raw_penalty = sum(g.weight * g.reach_weight for g in groups)
     capped_penalty = min(RISKY_CAP, raw_penalty)
     score = max(0, 100 - round(capped_penalty))
     derivation = {
@@ -518,6 +550,7 @@ def score_findings(findings: list[ClassifiedFinding]) -> ScoreResult:
         "n_risky_groups": len(groups),
         "risky_fail_weight": RISKY_FAIL_WEIGHT,
         "risky_warn_weight": RISKY_WARN_WEIGHT,
+        "reach_weighted": True,  # RC2 Pass B: penalties scaled by role reach-weight
         "raw_penalty": raw_penalty,
         "risky_cap": RISKY_CAP,
         "capped_penalty": capped_penalty,
@@ -528,6 +561,8 @@ def score_findings(findings: list[ClassifiedFinding]) -> ScoreResult:
                 "detailTag": g.detail_tag,
                 "occurrences": g.n_occurrences,
                 "weight": g.weight,
+                "reachWeight": g.reach_weight,
+                "effectiveWeight": round(g.weight * g.reach_weight, 2),
                 "samplePaths": list(g.sample_paths),
             }
             for g in groups[:10]
