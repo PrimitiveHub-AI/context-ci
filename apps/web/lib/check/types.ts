@@ -146,6 +146,9 @@ export interface CheckTargetGithub {
   tarballUrl: string
   integrity: string | null
   shasum: string | null
+  /** Immutable commit SHA the scan inspected (vs the mutable `version`
+   *  branch/ref). `null` when the codeload top-dir didn't carry a full SHA. */
+  commitSha?: string | null
   fileCount: number
   totalUncompressedBytes: number
   compressedBytes: number

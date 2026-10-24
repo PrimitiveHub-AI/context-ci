@@ -20,9 +20,11 @@ from checks.api import _sniff_mode
 from checks.github_resolver import (
     GithubCoordinate,
     GithubResolveError,
+    _commit_sha_from_top_dir,
     looks_like_github,
     parse_coordinate,
 )
+from checks.npx_resolver import extract_safely
 
 # Shared async-roundtrip helper (POST 202 → poll). `run_inline` (conftest)
 # makes the scan run synchronously so the poll is terminal.
@@ -271,6 +273,52 @@ def test_github_endpoint_explicit_mode(client: Any, run_inline: None) -> None:
     body = record["result"]
     assert body["mode"] == "github"
     assert body["target"]["name"] == "owner/repo"
+
+
+# ---------------------------------------------------------------------------
+# RC5-E — commit SHA provenance (pin the verdict to an immutable commit)
+# ---------------------------------------------------------------------------
+
+_FULL_SHA = "a1b2c3d4" * 5  # 40 hex chars
+
+
+@pytest.mark.parametrize(
+    ("top_dir", "expected"),
+    [
+        (f"agent-skills-{_FULL_SHA}", _FULL_SHA),  # normal codeload shape
+        (f"my-repo-with-hyphens-{_FULL_SHA}", _FULL_SHA),  # repo name has hyphens
+        ("agent-skills-abc123", None),  # short/synthetic — not a full SHA
+        ("package", None),  # npm root dir — no SHA
+        (f"repo-{'a1b2c3d4' * 4}", None),  # 32-hex, not 40 — rejected
+        (None, None),
+        ("", None),
+    ],
+)
+def test_commit_sha_from_top_dir(top_dir: str | None, expected: str | None) -> None:
+    """Only a full 40-hex trailing segment is accepted as a commit SHA — a
+    repo name that merely ends in `-<shorthex>` must not be mistaken for one."""
+    assert _commit_sha_from_top_dir(top_dir) == expected
+
+
+def test_extract_safely_captures_top_dir() -> None:
+    """extract_safely records the single root directory so the github
+    resolver can parse the commit SHA out of it (no DB / network)."""
+    tarball = _make_repo_tarball({"README.md": b"# hi\n"}, top=f"agent-skills-{_FULL_SHA}")
+    result = extract_safely(tarball, error_prefix="github")
+    assert result.top_dir == f"agent-skills-{_FULL_SHA}"
+    assert _commit_sha_from_top_dir(result.top_dir) == _FULL_SHA
+
+
+@pytest.mark.django_db
+def test_github_endpoint_surfaces_commit_sha(client: Any, run_inline: None) -> None:
+    """The github target carries the immutable commit SHA, not just the
+    mutable branch, when the codeload top-dir carries a full SHA."""
+    cache.clear()
+    tarball = _make_repo_tarball({"README.md": b"# clean\n"}, top=f"repo-{_FULL_SHA}")
+    with patch.object(github_resolver, "urlopen", return_value=_fake_response(tarball)):
+        record = _post_and_poll(client, {"mode": "github", "input": "owner/repo"})
+    assert record["status"] == "done"
+    assert record["result"]["target"]["commitSha"] == _FULL_SHA
 
 
 @pytest.mark.django_db

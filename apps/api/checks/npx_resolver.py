@@ -154,6 +154,12 @@ class ResolvedPackage:
     integrity: str | None  # SRI string e.g. "sha512-..."
     shasum: str | None  # legacy SHA-1 hex
     size_hint: int | None
+    # Immutable commit the scan actually inspected (GitHub path only).
+    # Distinct from `integrity`/`shasum` (npm SRI / SHA-1 of the tarball);
+    # this is the git commit SHA so a repo verdict is pinned to something
+    # that can't silently change under a mutable branch ref. None for the
+    # npm path. RC5-E.
+    commit_sha: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -174,6 +180,10 @@ class ExtractionResult:
     files: tuple[ExtractedFile, ...]
     total_uncompressed_bytes: int
     compressed_bytes: int
+    # The single top-level directory every entry was rooted under
+    # (`package/` for npm, `<repo>-<sha>/` for GitHub codeload). The
+    # github resolver parses the commit SHA out of this. RC5-E.
+    top_dir: str | None = None
 
 
 def parse_coordinate(raw: str) -> NpxCoordinate:
@@ -513,6 +523,7 @@ def extract_safely(
     files: list[ExtractedFile] = []
     total_uncompressed = 0
     entry_count = 0
+    top_dir: str | None = None  # first entry's root segment (RC5-E)
 
     try:
         # Manual gunzip to enforce a strict uncompressed cap. `tarfile`
@@ -550,6 +561,14 @@ def extract_safely(
                         f"{error_prefix}:extraction-timeout",
                         "Tarball extraction exceeded the wall-clock budget.",
                     )
+
+                if top_dir is None:
+                    # Capture the single root dir every entry is nested under
+                    # (`package/` for npm, `<repo>-<sha>/` for codeload) before
+                    # _safe_member_name strips it. RC5-E.
+                    first_seg = member.name.lstrip("/").replace("\\", "/").split("/", 1)[0]
+                    if first_seg and first_seg not in (".", ".."):
+                        top_dir = first_seg
 
                 entry_count += 1
                 if entry_count > max_entries:
@@ -622,4 +641,5 @@ def extract_safely(
         files=tuple(files),
         total_uncompressed_bytes=total_uncompressed,
         compressed_bytes=compressed_len,
+        top_dir=top_dir,
     )

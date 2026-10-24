@@ -269,6 +269,26 @@ def fetch_repo_tarball(coord: GithubCoordinate) -> tuple[bytes, str]:
     )
 
 
+# RC5-E: codeload roots every tarball entry under `<repo>-<40-hex-sha>/`,
+# where the sha is the resolved commit — even when the tarball was fetched
+# by branch or tag name. Parse it so the verdict is pinned to an immutable
+# commit, not just the mutable branch. Require the full 40-hex shape so a
+# repo name that merely ends in `-<shorthex>` can't be mistaken for a SHA.
+_TOPDIR_COMMIT_SHA_RE = re.compile(r"-([0-9a-f]{40})$")
+
+
+def _commit_sha_from_top_dir(top_dir: str | None) -> str | None:
+    """Extract the resolved commit SHA from a codeload top-dir name.
+
+    Returns None when the name isn't the expected `<repo>-<40-hex>` shape
+    (e.g. synthetic test fixtures) — we never guess a partial SHA.
+    """
+    if not top_dir:
+        return None
+    match = _TOPDIR_COMMIT_SHA_RE.search(top_dir)
+    return match.group(1) if match else None
+
+
 def resolve_and_extract(coord: GithubCoordinate) -> tuple[ResolvedPackage, ExtractionResult]:
     """One-call wrapper: fetch + extract. Returns (target metadata, ExtractionResult).
 
@@ -291,6 +311,7 @@ def resolve_and_extract(coord: GithubCoordinate) -> tuple[ResolvedPackage, Extra
         integrity=None,
         shasum=None,
         size_hint=extraction.total_uncompressed_bytes,
+        commit_sha=_commit_sha_from_top_dir(extraction.top_dir),
     )
     return target, extraction
 

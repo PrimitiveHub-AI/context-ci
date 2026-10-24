@@ -276,6 +276,9 @@ def _run_github(raw_input: str, request_id: str) -> dict[str, Any]:
                 "tarballUrl": resolved.tarball_url,
                 "integrity": resolved.integrity,
                 "shasum": resolved.shasum,
+                # Immutable commit the scan inspected (RC5-E). None if the
+                # codeload top-dir didn't carry a full SHA.
+                "commitSha": resolved.commit_sha,
                 "fileCount": len(extraction.files),
                 "totalUncompressedBytes": extraction.total_uncompressed_bytes,
                 "compressedBytes": extraction.compressed_bytes,

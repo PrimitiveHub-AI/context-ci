@@ -303,6 +303,14 @@ function TargetMetadata({ result }: { result: CheckResponse }) {
             value={formatBytes(t.totalUncompressedBytes)}
           />
           {t.integrity && <Meta label="Integrity" value={t.integrity} span={2} mono />}
+          {/* Immutable commit the scan inspected — pins the verdict to
+              something that can't change under a mutable branch ref (RC5-E). */}
+          {t.kind === "github-repo" &&
+            (t.commitSha ? (
+              <Meta label="Commit" value={t.commitSha} span={2} mono />
+            ) : (
+              <Meta label="Commit" value="unresolved — ref not pinned" span={2} />
+            ))}
         </dl>
       </Card>
     )
