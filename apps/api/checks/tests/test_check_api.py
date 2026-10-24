@@ -243,6 +243,53 @@ def test_reach_weight_derivation_is_auditable() -> None:
     assert grp["effectiveWeight"] == 10.0  # 25 * 0.4
 
 
+# ---------------------------------------------------------------------------
+# RC4 — per-family T5 severity calibration (scorer-weight). A dual-use install
+# family (npx / brew / install-instruction) still FAILs (blocks), but
+# contributes a lighter score penalty than a high-confidence RCE shape.
+# ---------------------------------------------------------------------------
+
+
+def _t5_fail(detail_tag: str) -> Verdict:
+    return Verdict(
+        detector_name="t5.unsafe_shell_install",
+        threat_category="T5",
+        cci_id="CCI-005",
+        severity=Severity.FAIL,
+        passed=False,
+        summary="x",
+        diff_hints=(DiffHint(line=1, snippet="cmd", suggestion="y", detail_tag=detail_tag),),
+    )
+
+
+def test_rc4_dual_use_npx_scores_lighter_but_still_fails() -> None:
+    from checks.scan import FileScan, build_summary_from_files
+
+    # Empty path → UNKNOWN role → reach 1.0, isolating the RC4 family weight
+    # from the RC2-B reachability weight.
+    npx = build_summary_from_files(
+        [FileScan(path="", bytes_count=1, verdicts=(_t5_fail("npx-arbitrary-install"),))]
+    )
+    shell = build_summary_from_files(
+        [FileScan(path="", bytes_count=1, verdicts=(_t5_fail("shell-pipe-from-network"),))]
+    )
+    assert npx["signatureRiskScore"] == 88  # dual-use FAIL weight 12 → 100 - 12
+    assert shell["signatureRiskScore"] == 75  # high-confidence FAIL weight 25 → 100 - 25
+    assert npx["passed"] is False  # STILL a hard fail — adversarial npx is not softened
+    assert shell["signatureRiskScore"] < npx["signatureRiskScore"]
+    assert npx["derivation"]["top_groups"][0]["weight"] == 12.0  # auditable
+
+
+def test_rc4_high_confidence_t5_families_keep_full_weight() -> None:
+    from checks.scan import FileScan, build_summary_from_files
+
+    for tag in ("shell-pipe-from-network", "policy-bypass", "pip-arbitrary-install"):
+        s = build_summary_from_files(
+            [FileScan(path="", bytes_count=1, verdicts=(_t5_fail(tag),))]
+        )
+        assert s["signatureRiskScore"] == 75, tag  # full FAIL weight 25
+
+
 def test_scan_blob_runs_all_detectors() -> None:
     """A benign content blob produces one Verdict per detector."""
     verdicts = scan_blob("# Hello, world.\n\nA harmless markdown file.\n")

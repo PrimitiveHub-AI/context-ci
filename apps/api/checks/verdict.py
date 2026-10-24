@@ -191,6 +191,25 @@ def class_meaning(cls: VerdictClass) -> str:
 RISKY_FAIL_WEIGHT: float = 25.0
 RISKY_WARN_WEIGHT: float = 8.0
 
+#: RC4 — per-family calibration. Dual-use install families (a bare named
+#: `npx eslint@latest`, `brew install wget`, a prose "install X" step) are
+#: routine developer onboarding. The T5 detector still FAILs them — an
+#: adversarial npx is NOT softened; it's flagged and blocks — but a signature
+#: match on a dual-use shape is lower-confidence than a pipe-to-shell or a
+#: security-control bypass, so a FAIL in one of these families contributes a
+#: lighter penalty to the aggregate SCORE (never below WARN weight). Keyed on
+#: (cci_id, detail_tag) so only these exact T5 families are affected, and the
+#: high-confidence T5 families (shell-pipe / policy-bypass / pip-from-source)
+#: keep the full FAIL weight. Provisional until corpus-score calibration.
+DUAL_USE_FAIL_WEIGHT: float = 12.0
+_DUAL_USE_KEYS: frozenset[tuple[str, str]] = frozenset(
+    {
+        ("CCI-005", "npx-arbitrary-install"),
+        ("CCI-005", "brew-install"),
+        ("CCI-005", "install-instruction-to-agent"),
+    }
+)
+
 #: Maximum total penalty contributed by RISKY findings. Floors the
 #: dual-use-heavy repo at `100 - RISKY_CAP` = 40 (suspicious).
 #: A repo cannot reach high-risk via RISKY findings alone — that's
@@ -198,9 +217,18 @@ RISKY_WARN_WEIGHT: float = 8.0
 RISKY_CAP: float = 60.0
 
 
-def _risky_weight(severity: Severity) -> float:
-    """Per-group RISKY penalty by severity. FAIL > WARN; INFO is never RISKY."""
-    return RISKY_FAIL_WEIGHT if severity is Severity.FAIL else RISKY_WARN_WEIGHT
+def _risky_weight(severity: Severity, cci_id: str = "", detail_tag: str = "") -> float:
+    """Per-group RISKY penalty by severity. FAIL > WARN; INFO is never RISKY.
+
+    RC4: a FAIL on a dual-use install family (npx / brew / install-instruction)
+    gets a lighter weight than a high-confidence RCE shape — it still FAILs
+    (blocks), it just contributes less to the score.
+    """
+    if severity is not Severity.FAIL:
+        return RISKY_WARN_WEIGHT
+    if (cci_id, detail_tag) in _DUAL_USE_KEYS:
+        return DUAL_USE_FAIL_WEIGHT
+    return RISKY_FAIL_WEIGHT
 
 
 #: Per-MALICIOUS penalty. One MALICIOUS lands the verdict in the
@@ -464,7 +492,7 @@ def _density_groups(findings: list[ClassifiedFinding]) -> list[_DensityGroup]:
                 detail_tag=tag,
                 snippet_norm=norm,
                 n_occurrences=len(members),
-                weight=_risky_weight(worst),
+                weight=_risky_weight(worst, cci, tag),
                 reach_weight=reach,
                 sample_paths=tuple(seen_paths),
             )
