@@ -133,7 +133,7 @@ const SAMPLE_SERVICES: ReadonlyArray<Service> = [
   },
   {
     slug: "forge",
-    name: "Primitive Forge",
+    name: "Skill IDE",
     description: "Authoring surface with live Spec v0.1 lint + Trust Readiness panel.",
     currentState: "operational",
     history: sample90(17, 99.93),

@@ -167,9 +167,9 @@ export default function ForgePage() {
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-primary mb-1">
-                Primitive Forge
+                Skill IDE
               </p>
-              <h1 className="text-xl font-bold text-foreground">Primitive Authoring Environment</h1>
+              <h1 className="text-xl font-bold text-foreground">Author AI context primitives, safely</h1>
               <p className="mt-1 text-xs text-muted-foreground max-w-lg">
                 IDE-grade authoring for AI Context Primitives. CodeMirror editor with live spec
                 validation, inline lint, and section discovery — calibrated to Primitive Spec v0.1.

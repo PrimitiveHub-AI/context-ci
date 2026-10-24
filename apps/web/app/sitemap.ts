@@ -36,7 +36,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: `${BASE}/`, changeFrequency: "weekly", priority: 1.0 },
     { url: `${BASE}/check`, changeFrequency: "weekly", priority: 0.9 },
-    { url: `${BASE}/forge`, changeFrequency: "weekly", priority: 0.9 },
+    { url: `${BASE}/skill-ide`, changeFrequency: "weekly", priority: 0.9 },
     { url: `${BASE}/top-10`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/security`, changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/paper`, changeFrequency: "monthly", priority: 0.6 },

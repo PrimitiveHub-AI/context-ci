@@ -30,7 +30,7 @@ function buildColumns(measuredAt: string): readonly Column[] {
       heading: "Surfaces",
       links: [
         { label: "/check — paste-and-verdict", href: "/check" },
-        { label: "Primitive Forge — author & validate", href: "/forge" },
+        { label: "Skill IDE — author & validate", href: "/skill-ide" },
         { label: "Docs (phub CLI, Action, MCP)", href: "/docs" },
         { label: "Context CI", href: "/validation", soon: true },
         { label: "Registry", href: "/registry", soon: true },

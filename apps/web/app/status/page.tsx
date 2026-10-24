@@ -41,7 +41,7 @@ import { GITHUB_BLOB_BASE } from "@/lib/site"
 export const metadata: Metadata = {
   title: "Status — PrimitiveHub",
   description:
-    "Operational status for every PrimitiveHub surface — /check, Trust Bundle lookup, Registry, Forge, MCP runtime gate, scanner-bench gate, and the public Sigstore dependency.",
+    "Operational status for every PrimitiveHub surface — /check, Trust Bundle lookup, Registry, Skill IDE, MCP runtime gate, scanner-bench gate, and the public Sigstore dependency.",
 }
 
 function StateIcon({ state, className }: { state: ServiceState; className?: string }) {

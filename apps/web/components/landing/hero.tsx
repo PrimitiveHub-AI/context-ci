@@ -3,7 +3,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import {
   ArrowRight,
-  BookOpen,
+  SquarePen,
   ShieldCheck,
   FileSearch,
   Lock,
@@ -53,8 +53,8 @@ const firewallMotions = [
   {
     icon: ShieldCheck,
     beat: "Author-safe",
-    href: "/forge",
-    one: "Lint against the spec as you write, in Forge.",
+    href: "/skill-ide",
+    one: "Lint against the spec as you write, in the Skill IDE.",
   },
   {
     icon: Lock,
@@ -107,7 +107,7 @@ export function Hero() {
               <span className="text-foreground/90">before you ship them to an agent</span>.{" "}
               Three motions, one firewall:{" "}
               <span className="text-foreground/90">scan</span> at /check,{" "}
-              <span className="text-foreground/90">author-safe</span> in /Forge,{" "}
+              <span className="text-foreground/90">author-safe</span> in the Skill IDE,{" "}
               <span className="text-foreground/90">block-at-load</span> in CI and the CLI
               (advisory in MCP today) — open-source, end to end.
             </p>
@@ -124,7 +124,8 @@ export function Hero() {
               />
             </div>
 
-            {/* CTAs — AV-family funnel order */}
+            {/* Two flagships — co-equal entry points: Check (inspect
+                anything) + Skill IDE (author safely). Top 10 is secondary. */}
             <div className="mt-7 flex flex-wrap items-center gap-3">
               <Button
                 size="lg"
@@ -140,12 +141,13 @@ export function Hero() {
               <Button
                 variant="outline"
                 size="lg"
-                className="gap-2 h-11 px-5 border-border/60"
+                className="gap-2 h-11 px-5 border-primary/50 text-foreground hover:bg-primary/[0.06]"
                 asChild
               >
-                <Link href="/top-10">
-                  <Layers className="size-4" />
-                  Read the Top 10
+                <Link href="/skill-ide">
+                  <SquarePen className="size-4 text-primary" />
+                  Open the Skill IDE
+                  <ArrowRight className="size-4" />
                 </Link>
               </Button>
               <Button
@@ -154,9 +156,9 @@ export function Hero() {
                 className="gap-2 text-muted-foreground h-11"
                 asChild
               >
-                <Link href="/paper">
-                  <BookOpen className="size-4" />
-                  Read the paper
+                <Link href="/top-10">
+                  <Layers className="size-4" />
+                  Read the Top 10
                 </Link>
               </Button>
             </div>

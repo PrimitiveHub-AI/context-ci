@@ -18,14 +18,16 @@ const nextConfig = {
   // Launch posture: the pre-launch `X-Robots-Tag: noindex` header was
   // removed on launch day alongside the `robots` metadata in app/layout.tsx
   // and public/robots.txt. Pages are now indexable.
-  // Permanent redirect: the authoring surface renamed from "Workbench"
-  // to "Primitive Forge" in PR 5.5.D (ADR-0017). Old bookmarks survive.
-  // Drop this redirect after launch-day cache windows close (≥ 6 months
-  // post-launch is the conservative call).
+  // Permanent redirects for the authoring surface's renames: "Workbench"
+  // → "Primitive Forge" (PR 5.5.D, ADR-0017), then "Forge" → "Skill IDE"
+  // (2026-10-24). Old bookmarks + inbound links survive; /workbench points
+  // straight at the current route (no hop through the retired /forge).
   async redirects() {
     return [
-      { source: "/workbench", destination: "/forge", permanent: true },
-      { source: "/workbench/:path*", destination: "/forge/:path*", permanent: true },
+      { source: "/forge", destination: "/skill-ide", permanent: true },
+      { source: "/forge/:path*", destination: "/skill-ide/:path*", permanent: true },
+      { source: "/workbench", destination: "/skill-ide", permanent: true },
+      { source: "/workbench/:path*", destination: "/skill-ide/:path*", permanent: true },
     ]
   },
 }

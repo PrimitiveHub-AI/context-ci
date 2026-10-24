@@ -17,7 +17,7 @@ const STAGES: Array<{
   {
     name: "Draft",
     icon: FileEdit,
-    description: "Authored in the Forge. Local-only. Never visible to the registry.",
+    description: "Authored in the Skill IDE. Local-only. Never visible to the registry.",
   },
   {
     name: "Submitted",

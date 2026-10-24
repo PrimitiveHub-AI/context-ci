@@ -20,11 +20,13 @@ import { GITHUB_REPO_URL } from "@/lib/site"
 // includes Bundles) → CLI + service docs → research (Paper).
 // Bundles folds into Registry per ADR-0040 §2; Contributors moves
 // to the footer.
+// The two flagships lead: Check (inspect anything) + Skill IDE (author
+// safely), then the supporting surfaces.
 const navLinks: { href: string; label: string; soon?: boolean }[] = [
   { href: "/check", label: "Check" },
+  { href: "/skill-ide", label: "Skill IDE" },
   { href: "/top-10", label: "Top 10" },
   { href: "/validation", label: "Context CI", soon: true },
-  { href: "/forge", label: "Forge" },
   { href: "/registry", label: "Registry", soon: true },
   { href: "/docs", label: "Docs" },
   { href: "/paper", label: "Paper" },
