@@ -62,6 +62,15 @@ CI, and the pnpm workspace. Keep the "127.0.0.1:3000 IS production" reality safe
       `bench/comparison/`, `bench/scripts/compare.py`, `docs/comparison.md`. Owned by
       phub-check-engine + phub-corpus-eval. Not mine to commit. SPINE "working tree clean @
       2026-10-02" is stale.
+- [ ] **`[from: phub-web]` 2026-10-24 — journeys + retirements for the UI/UX elite plan.**
+      (a) **`/auth` retirement:** `/auth/{login,callback,logout}` + `components/user-menu.tsx` are
+      flag-gated dead (`apps/web/lib/flags.ts auth:false`) after login/registration was stopped
+      (owner 2026-10-17); kept HELD. Decide if the routes get removed.
+      (b) The audit wants journeys **Check·Forge·Protect·Explore**; Protect (CLI/Action/MCP enforcement)
+      + Explore (registry/transparency) need backends you own — I'll ship UI shells as capability-state
+      `Planned` until the `registry`/`status` flags flip.
+      (c) **`/status` backend:** `/security` now says "planned · not live"; when you stand up the status
+      backend + flip the flag, ping me to update the copy.
 
 ## SSRF #1 — defence-in-depth (2026-10-23, security > all)
 

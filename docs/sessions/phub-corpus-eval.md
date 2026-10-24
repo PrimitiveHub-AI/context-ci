@@ -53,6 +53,14 @@ The "measured truth" domain: the expert primitive corpus plus the evaluation har
 - [ ] Roadmap: add **named third-party columns** (trufflehog/gitleaks → CCI-006; promptmap/rebuff/llm-guard
       → CCI-001; unicode linters → CCI-002) run in pinned containers. Heavier (container pinning + per-tool
       category mapping). No row until a tool is actually executed — measured truth only.
+- [ ] **`[from: phub-web]` 2026-10-24 — ratified baseline → web eval refresh + Detection-Quality page.**
+      (1) Web's embedded `apps/web/lib/evaluation.data.json` matches your latest COMMITTED baseline
+      (2026-06-07, 0.991 in-sample); the newer `bench/baseline/2026-10-03-*.json` (F1=1.000 both slices)
+      are untracked + self-inconsistent (samples 99 vs your committed corpus 124). **Commit a canonical
+      dated baseline** (99↔124 reconciled, gate-green) → I run `apps/web/scripts/sync-evaluation.mjs` and
+      drop the "in-sample" hedge on hero/top-10. (2) I'm building a public **Detection-Quality page** (UI/UX
+      audit ask): needs your ratified held-out numbers (TS 18/25), FP rate, unsupported cases, Py↔TS engine
+      diff, benchmark date. I render; you own/ratify the numbers — no web number ships unratified.
 
 ## Decisions / ADRs
 docs/evaluation.md, docs/paper-bibliography.md, project memory: paper_measured_truth.
