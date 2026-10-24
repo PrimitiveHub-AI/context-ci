@@ -15,7 +15,7 @@ import {
  *
  * Aggregates the same live analysis the Lint Output panel uses
  * (errors / warnings / sections / fmRisk / token budget) into one
- * paper-grade "Ready to publish?" summary. Every signal here is
+ * paper-grade "does this pass validation?" summary. Every signal here is
  * already computed by the parent on every keystroke; this component
  * is presentational — no fetches, no hooks, no parallel logic.
  *
@@ -115,10 +115,10 @@ export function TrustReadinessPanel(input: ReadinessInput) {
         {ready ? (
           <span
             className="inline-flex items-center gap-1 rounded-sm border border-success/30 bg-success/[0.07] px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-wider text-success/90"
-            title="Local kernel says yes; final verdict comes from Context CI on submit"
+            title="All local Spec v0.1 checks pass. Submitting to the registry opens when it launches (ADR-0022)."
           >
             <CheckCircle2 className="size-2.5" />
-            Ready to publish
+            Validation passed
           </span>
         ) : (
           <span

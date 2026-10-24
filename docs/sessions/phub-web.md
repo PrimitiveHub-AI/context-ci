@@ -69,6 +69,32 @@ presents `/check` and the `phub` CLI as a new category, not a v0 SaaS toy.
       `apps/web/scripts/sync-evaluation.mjs`, verify, drop the "in-sample" hedge if holdout is also
       perfect. No prebuild auto-sync, so nothing leaks in the meantime.
 
+## UI/UX elite plan (external audit 2026-10-24) — 6 workstreams
+Thesis: optimize the Inspect→Understand→Act loop; make `/check` the flagship (not more hero
+sections). Elite = trustworthy + legible + honest, not flashy. Audit reality-checked first:
+P0 "pre-launch npm command" is STALE (`@primitivehub/phub@0.1.7` live; `audit`+`scan` are real
+subcommands); P0 "in-sample F1" qualifier already shipped (Oct-17); flag-off routes already 200
+(no literal dead-ends). Workstreams, priority-ordered:
+- **WS1 capability-states + availability honesty** — ✅ DONE (preview): new `CapabilityBadge`
+  (available/preview/planned/unavailable); `PlannedBadge`+`ComingSoonPanel` routed through it;
+  Finding C fixed (Forge "Ready to publish"→"Validation passed"); nav already signals planned;
+  all routes 200. tsc clean.
+- **WS2 `/check` flagship redesign** — interpretation-first: verdict+severity→evidence(file/line)
+  →mechanism→certainty→remediation→**5 separated trust dimensions** (Content/Integrity/Publisher/
+  Provenance/Policy, each Assessed/Not-verified/N-A); "No findings under selected checks" not "Safe";
+  score secondary. NEXT, the big one.
+- **WS3 Detection-Quality page** — in-sample+held-out(TS 18/25)+FP rate+engine diff+date; I render,
+  `[→ corpus-eval]` owns/ratifies numbers (routed).
+- **WS4 hero/IA demote tech narratives + Check·Forge·Protect·Explore journeys** (Protect/Explore =
+  capability `Planned` until phub-cli/platform land them, routed to platform).
+- **WS5 Forge security-first companion** — click-finding→source, safe templates, explainable autofix
+  (diff+approval), scan-in-/check.
+- **WS6 a11y (WCAG 2.2 AA) + perf (CWV) + responsive + inspection→evidence→decision motif.**
+- Deferred: persistent records / change-alerts / policy-reuse / Explore — need accounts+backend
+  (login stopped; registry flag-off). Build shells as Planned only.
+Cross-session rows filed 2026-10-24: corpus-eval (baseline refresh + detection-quality numbers),
+platform (auth retirement + Protect/Explore backends + status).
+
 ## Decisions / ADRs
 ADR-0040 (surface/anti-bloat), ADR-0045 (product-first launch), ADR-0047 (Context-Firewall scope).
 

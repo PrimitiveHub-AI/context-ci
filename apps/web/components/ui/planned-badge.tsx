@@ -1,11 +1,11 @@
-import { cn } from "@/lib/utils"
+import { CapabilityBadge } from "@/components/ui/capability-badge"
 
 /**
- * PlannedBadge — the one chip for a deferred-but-coming feature.
+ * PlannedBadge — thin alias over <CapabilityBadge state="planned" />.
  *
- * Reuses the CLIRoadmap "planned for v1" house style: mono, uppercase,
- * tracked, primary-tinted. Factual and quiet — no hype, no countdown
- * (brand-voice). Sits next to a disabled CTA or a deferred nav item.
+ * Kept for the many existing call sites; the canonical primitive is now
+ * CapabilityBadge (available / preview / planned / unavailable), so the
+ * "Planned" house style has one source of truth.
  */
 export function PlannedBadge({
   label = "Planned",
@@ -14,16 +14,5 @@ export function PlannedBadge({
   label?: string
   className?: string
 }) {
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/[0.04] px-2.5 py-0.5",
-        "text-[10px] font-mono uppercase tracking-widest text-primary/80",
-        className,
-      )}
-    >
-      <span className="size-1 rounded-full bg-primary/60" />
-      {label}
-    </span>
-  )
+  return <CapabilityBadge state="planned" label={label} className={className} />
 }
